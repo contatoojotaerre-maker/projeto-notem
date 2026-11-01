@@ -18,6 +18,8 @@ import { Route as EsqueciSenhaRouteImport } from './routes/esqueci-senha'
 import { Route as RedefinirSenhaRouteImport } from './routes/redefinir-senha'
 import { Route as ResetPasswordRouteImport } from './routes/reset-password'
 import { Route as AuthenticatedDashboardRouteImport } from './routes/_authenticated/dashboard'
+import { Route as AuthenticatedAdminSectionRouteImport } from './routes/_authenticated/admin/$section'
+import { Route as AuthenticatedAdminOrganizacoesRouteImport } from './routes/_authenticated/admin/organizacoes'
 import { Route as AuthenticatedOOrgSlugSectionRouteImport } from './routes/_authenticated/o/$orgSlug/$section'
 import { Route as AuthenticatedOOrgSlugEmpresasIndexRouteImport } from './routes/_authenticated/o/$orgSlug/empresas/index'
 import { Route as AuthenticatedOOrgSlugEmpresasCompanyIdRouteImport } from './routes/_authenticated/o/$orgSlug/empresas/$companyId'
@@ -67,6 +69,18 @@ const AuthenticatedDashboardRoute = AuthenticatedDashboardRouteImport.update({
   path: '/dashboard',
   getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
+const AuthenticatedAdminSectionRoute =
+  AuthenticatedAdminSectionRouteImport.update({
+    id: '/admin/$section',
+    path: '/admin/$section',
+    getParentRoute: () => AuthenticatedRouteRoute,
+  } as any)
+const AuthenticatedAdminOrganizacoesRoute =
+  AuthenticatedAdminOrganizacoesRouteImport.update({
+    id: '/admin/organizacoes',
+    path: '/admin/organizacoes',
+    getParentRoute: () => AuthenticatedRouteRoute,
+  } as any)
 const AuthenticatedOOrgSlugSectionRoute =
   AuthenticatedOOrgSlugSectionRouteImport.update({
     id: '/o/$orgSlug/$section',
@@ -101,6 +115,8 @@ export interface FileRoutesByFullPath {
   '/redefinir-senha': typeof RedefinirSenhaRoute
   '/reset-password': typeof ResetPasswordRoute
   '/dashboard': typeof AuthenticatedDashboardRoute
+  '/admin/$section': typeof AuthenticatedAdminSectionRoute
+  '/admin/organizacoes': typeof AuthenticatedAdminOrganizacoesRoute
   '/o/$orgSlug/$section': typeof AuthenticatedOOrgSlugSectionRoute
   '/o/$orgSlug/empresas/$companyId': typeof AuthenticatedOOrgSlugEmpresasCompanyIdRoute
   '/o/$orgSlug/empresas/nova': typeof AuthenticatedOOrgSlugEmpresasNovaRoute
@@ -115,6 +131,8 @@ export interface FileRoutesByTo {
   '/redefinir-senha': typeof RedefinirSenhaRoute
   '/reset-password': typeof ResetPasswordRoute
   '/dashboard': typeof AuthenticatedDashboardRoute
+  '/admin/$section': typeof AuthenticatedAdminSectionRoute
+  '/admin/organizacoes': typeof AuthenticatedAdminOrganizacoesRoute
   '/o/$orgSlug/$section': typeof AuthenticatedOOrgSlugSectionRoute
   '/o/$orgSlug/empresas/$companyId': typeof AuthenticatedOOrgSlugEmpresasCompanyIdRoute
   '/o/$orgSlug/empresas/nova': typeof AuthenticatedOOrgSlugEmpresasNovaRoute
@@ -131,6 +149,8 @@ export interface FileRoutesById {
   '/redefinir-senha': typeof RedefinirSenhaRoute
   '/reset-password': typeof ResetPasswordRoute
   '/_authenticated/dashboard': typeof AuthenticatedDashboardRoute
+  '/_authenticated/admin/$section': typeof AuthenticatedAdminSectionRoute
+  '/_authenticated/admin/organizacoes': typeof AuthenticatedAdminOrganizacoesRoute
   '/_authenticated/o/$orgSlug/$section': typeof AuthenticatedOOrgSlugSectionRoute
   '/_authenticated/o/$orgSlug/empresas/$companyId': typeof AuthenticatedOOrgSlugEmpresasCompanyIdRoute
   '/_authenticated/o/$orgSlug/empresas/nova': typeof AuthenticatedOOrgSlugEmpresasNovaRoute
@@ -147,6 +167,8 @@ export interface FileRouteTypes {
     | '/redefinir-senha'
     | '/reset-password'
     | '/dashboard'
+    | '/admin/$section'
+    | '/admin/organizacoes'
     | '/o/$orgSlug/$section'
     | '/o/$orgSlug/empresas/$companyId'
     | '/o/$orgSlug/empresas/nova'
@@ -161,6 +183,8 @@ export interface FileRouteTypes {
     | '/redefinir-senha'
     | '/reset-password'
     | '/dashboard'
+    | '/admin/$section'
+    | '/admin/organizacoes'
     | '/o/$orgSlug/$section'
     | '/o/$orgSlug/empresas/$companyId'
     | '/o/$orgSlug/empresas/nova'
@@ -176,6 +200,8 @@ export interface FileRouteTypes {
     | '/redefinir-senha'
     | '/reset-password'
     | '/_authenticated/dashboard'
+    | '/_authenticated/admin/$section'
+    | '/_authenticated/admin/organizacoes'
     | '/_authenticated/o/$orgSlug/$section'
     | '/_authenticated/o/$orgSlug/empresas/$companyId'
     | '/_authenticated/o/$orgSlug/empresas/nova'
@@ -258,6 +284,20 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedDashboardRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
+    '/_authenticated/admin/$section': {
+      id: '/_authenticated/admin/$section'
+      path: '/admin/$section'
+      fullPath: '/admin/$section'
+      preLoaderRoute: typeof AuthenticatedAdminSectionRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/_authenticated/admin/organizacoes': {
+      id: '/_authenticated/admin/organizacoes'
+      path: '/admin/organizacoes'
+      fullPath: '/admin/organizacoes'
+      preLoaderRoute: typeof AuthenticatedAdminOrganizacoesRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
     '/_authenticated/o/$orgSlug/$section': {
       id: '/_authenticated/o/$orgSlug/$section'
       path: '/o/$orgSlug/$section'
@@ -291,6 +331,8 @@ declare module '@tanstack/react-router' {
 
 interface AuthenticatedRouteRouteChildren {
   AuthenticatedDashboardRoute: typeof AuthenticatedDashboardRoute
+  AuthenticatedAdminSectionRoute: typeof AuthenticatedAdminSectionRoute
+  AuthenticatedAdminOrganizacoesRoute: typeof AuthenticatedAdminOrganizacoesRoute
   AuthenticatedOOrgSlugSectionRoute: typeof AuthenticatedOOrgSlugSectionRoute
   AuthenticatedOOrgSlugEmpresasCompanyIdRoute: typeof AuthenticatedOOrgSlugEmpresasCompanyIdRoute
   AuthenticatedOOrgSlugEmpresasNovaRoute: typeof AuthenticatedOOrgSlugEmpresasNovaRoute
@@ -299,6 +341,8 @@ interface AuthenticatedRouteRouteChildren {
 
 const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedDashboardRoute: AuthenticatedDashboardRoute,
+  AuthenticatedAdminSectionRoute: AuthenticatedAdminSectionRoute,
+  AuthenticatedAdminOrganizacoesRoute: AuthenticatedAdminOrganizacoesRoute,
   AuthenticatedOOrgSlugSectionRoute: AuthenticatedOOrgSlugSectionRoute,
   AuthenticatedOOrgSlugEmpresasCompanyIdRoute:
     AuthenticatedOOrgSlugEmpresasCompanyIdRoute,
