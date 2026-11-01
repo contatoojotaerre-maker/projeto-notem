@@ -1,5 +1,7 @@
-// prova-mtls v2 — função TEMPORÁRIA de diagnóstico da notem. Apague após o teste.
-// O certificado abaixo é autoassinado, descartável e sem valor (gerado só para este teste).
+// prova-mtls v4 — função TEMPORÁRIA de diagnóstico da notem. APAGUE após o teste.
+// Usa um certificado autoassinado DESCARTÁVEL, sem valor, gerado apenas para este teste.
+// Não acessa banco nem segredos. Só aceita GET.
+
 const CERT_TESTE = `-----BEGIN CERTIFICATE-----
 MIIDJTCCAg2gAwIBAgIUA7Ibp25q7V3/yhrBMW8a3q0srpMwDQYJKoZIhvcNAQEL
 BQAwIjEgMB4GA1UEAwwXbm90ZW0tdGVzdGUtZGVzY2FydGF2ZWwwHhcNMjYxMTAx
@@ -48,53 +50,167 @@ HGj0c0U+WVpXBbGLlaWrZpZKx7gDDlXqILQ0rpfJzWFqz2iocPPp7UgHJHtqIhM4
 sk4wBCAi7RnFlFXUPmtYGg==
 -----END PRIVATE KEY-----`;
 
-const ALVOS: Record<string, string> = {
+const HOSTS = [
+  "adn.producaorestrita.nfse.gov.br",
+  "adn.nfse.gov.br",
+  "sefin.producaorestrita.nfse.gov.br",
+  "sefin.nfse.gov.br",
+  "www.gov.br", // controle: HTTPS geral, não prova acesso aos servidores fiscais
+];
+
+const URLS: Record<string, string> = {
   adn_param_api_homolog: "https://adn.producaorestrita.nfse.gov.br/parametrizacao/4212254/convenio",
   adn_param_docs_homolog: "https://adn.producaorestrita.nfse.gov.br/parametrizacao/docs/index.html",
-  adn_contrib_docs_homolog: "https://adn.producaorestrita.nfse.gov.br/contribuintes/docs/index.html",
   adn_param_api_producao: "https://adn.nfse.gov.br/parametrizacao/4212254/convenio",
-  sefin_api_homolog: "https://sefin.producaorestrita.nfse.gov.br/SefinNacional/nfse/00000000000000000000000000000000000000000000000000",
-  sefin_docs_homolog: "https://sefin.producaorestrita.nfse.gov.br/SefinNacional/docs/index",
+  sefin_api_homolog: "https://sefin.producaorestrita.nfse.gov.br/API/SefinNacional/nfse/00000000000000000000000000000000000000000000000000",
+  sefin_docs_homolog: "https://sefin.producaorestrita.nfse.gov.br/API/SefinNacional/docs/index",
+  controle_govbr: "https://www.gov.br/nfse/pt-br",
 };
+
+const TIMEOUT_MS = 8000;
+const LIMITE_BYTES = 2048;
 
 function msg(e: unknown) {
   const err = e as { name?: string; message?: string; cause?: unknown };
-  return [err?.name, err?.message, err?.cause ? String(err.cause) : ""].filter(Boolean).join(" | ").slice(0, 500);
+  return [err?.name, err?.message, err?.cause ? String(err.cause) : ""].filter(Boolean).join(" | ").slice(0, 400);
 }
 
-async function tentar(url: string, client?: unknown) {
+function classificar(texto: string) {
+  const t = texto.toLowerCase();
+  if (t.includes("tempo esgotado") || t.includes("timeout") || t.includes("timed out")) return "tempo esgotado (etapa indeterminada)";
+  if (t.includes("dns") || t.includes("lookup") || t.includes("name or service")) return "DNS";
+  if (t.includes("connection refused") || t.includes("network is unreachable") || t.includes("tcp connect")) return "conexão TCP";
+  if (t.includes("connection reset")) return "conexão encerrada pelo servidor (provavelmente na negociação TLS)";
+  if (t.includes("decrypt") || t.includes("tls") || t.includes("certificate") || t.includes("handshake") || t.includes("alert")) return "TLS";
+  if (t.includes("http2") || t.includes("http/1.1")) return "protocolo HTTP";
+  return "indeterminada";
+}
+
+function comTempo<T>(p: Promise<T>, ms = TIMEOUT_MS): Promise<T> {
+  let id: number | undefined;
+  const limite = new Promise<never>((_, rej) => { id = setTimeout(() => rej(new Error("tempo esgotado")), ms); });
+  return Promise.race([p, limite]).finally(() => clearTimeout(id));
+}
+
+async function etapa<T>(fn: () => Promise<T>) {
   const inicio = Date.now();
   try {
-    // deno-lint-ignore no-explicit-any
-    const r = await fetch(url, { signal: AbortSignal.timeout(15000), ...(client ? ({ client } as any) : {}) });
-    const corpo = (await r.text()).replace(/\s+/g, " ").slice(0, 300);
-    return { status: r.status, ms: Date.now() - inicio, corpo };
+    const r = await comTempo(fn());
+    return { ok: true, ms: Date.now() - inicio, ...(r as object) };
   } catch (e) {
-    return { erro: msg(e), ms: Date.now() - inicio };
+    const m = msg(e);
+    return { ok: false, ms: Date.now() - inicio, etapa_falha: classificar(m), erro: m };
   }
 }
 
-Deno.serve(async () => {
+async function diagnosticarHost(host: string) {
   // deno-lint-ignore no-explicit-any
   const D = Deno as any;
-  const out: Record<string, unknown> = { versao: "v2", deno: Deno.version.deno };
+  const dns = await etapa(async () => ({ ips: (await Deno.resolveDns(host, "A")).slice(0, 3) }));
+  const tcp = await etapa(async () => {
+    const c = await Deno.connect({ hostname: host, port: 443 });
+    c.close();
+    return {};
+  });
+  const tlsHandshake = async (comCert: boolean) => {
+    // deno-lint-ignore no-explicit-any
+    let conn: any = null;
+    try {
+      conn = await D.connectTls({
+        hostname: host,
+        port: 443,
+        alpnProtocols: ["http/1.1"],
+        ...(comCert ? { cert: CERT_TESTE, key: CHAVE_TESTE } : {}),
+      });
+      const info = await conn.handshake();
+      return { alpn: info?.alpnProtocol ?? null };
+    } finally {
+      try { conn?.close(); } catch { /* ignora */ }
+    }
+  };
+  const tls_sem_certificado = await etapa(() => tlsHandshake(false));
+  const tls_com_certificado_teste = await etapa(() => tlsHandshake(true));
+  return { dns, tcp, tls_sem_certificado, tls_com_certificado_teste };
+}
 
-  let semCert: unknown = null;
-  let comCert: unknown = null;
-  try { semCert = D.createHttpClient({ http1: true, http2: false }); out.cliente_http1 = "criado"; }
-  catch (e) { out.cliente_http1 = "falhou: " + msg(e); }
-  try { comCert = D.createHttpClient({ cert: CERT_TESTE, key: CHAVE_TESTE, http1: true, http2: false }); out.cliente_http1_cert = "criado"; }
-  catch (e) { out.cliente_http1_cert = "falhou: " + msg(e); }
+async function lerLimitado(r: Response) {
+  if (!r.body) return "";
+  const reader = r.body.getReader();
+  const partes: Uint8Array[] = [];
+  let total = 0;
+  try {
+    while (total < LIMITE_BYTES) {
+      const { done, value } = await reader.read();
+      if (done || !value) break;
+      partes.push(value);
+      total += value.length;
+    }
+  } finally {
+    try { await reader.cancel(); } catch { /* ignora */ }
+  }
+  const junto = new Uint8Array(Math.min(total, LIMITE_BYTES));
+  let pos = 0;
+  for (const p of partes) {
+    const fatia = p.subarray(0, Math.max(0, junto.length - pos));
+    junto.set(fatia, pos);
+    pos += fatia.length;
+    if (pos >= junto.length) break;
+  }
+  return new TextDecoder().decode(junto).replace(/\s+/g, " ").slice(0, 400);
+}
 
-  const resultados = await Promise.all(Object.entries(ALVOS).map(async ([nome, url]) => {
-    const [padrao, http1, http1Cert] = await Promise.all([
-      tentar(url),
-      semCert ? tentar(url, semCert) : Promise.resolve("sem cliente"),
-      comCert ? tentar(url, comCert) : Promise.resolve("sem cliente"),
-    ]);
-    return [nome, { padrao, http1, http1_com_certificado_teste: http1Cert }] as const;
-  }));
-  for (const [nome, r] of resultados) out[nome] = r;
+async function requisitar(url: string, client: unknown) {
+  return await etapa(async () => {
+    // deno-lint-ignore no-explicit-any
+    const r = await fetch(url, { redirect: "manual", client } as any);
+    const destino = r.headers.get("location");
+    const corpo = await lerLimitado(r);
+    return { status: r.status, url_final: r.url || url, redirecionamento: destino, corpo };
+  });
+}
+
+Deno.serve(async (req) => {
+  if (req.method !== "GET") return new Response("Método não permitido", { status: 405 });
+
+  // deno-lint-ignore no-explicit-any
+  const D = Deno as any;
+  const out: Record<string, unknown> = {
+    versao: "v4",
+    deno: Deno.version.deno,
+    regiao: Deno.env.get("SB_REGION") ?? "desconhecida",
+    observacao: "IP de saída e controle gov.br são apenas indicativos; não provam autenticação ICP-Brasil.",
+  };
+
+  out.ip_saida = await etapa(async () => {
+    const r = await fetch("https://api.ipify.org?format=json");
+    return { ip: (await r.json()).ip };
+  });
+
+  const hosts: Record<string, unknown> = {};
+  for (const h of HOSTS) hosts[h] = await diagnosticarHost(h);
+  out.etapas_por_servidor = hosts;
+
+  // deno-lint-ignore no-explicit-any
+  let semCert: any = null;
+  // deno-lint-ignore no-explicit-any
+  let comCert: any = null;
+  try {
+    semCert = D.createHttpClient({ http1: true, http2: false });
+    comCert = D.createHttpClient({ cert: CERT_TESTE, key: CHAVE_TESTE, http1: true, http2: false });
+    const reqs: Record<string, unknown> = {};
+    for (const [nome, url] of Object.entries(URLS)) {
+      reqs[nome] = {
+        http1_sem_certificado: await requisitar(url, semCert),
+        http1_com_certificado_teste: await requisitar(url, comCert),
+      };
+    }
+    out.requisicoes_http = reqs;
+  } catch (e) {
+    out.erro_clientes = msg(e);
+  } finally {
+    try { semCert?.close(); } catch { /* ignora */ }
+    try { comCert?.close(); } catch { /* ignora */ }
+  }
 
   return new Response(JSON.stringify(out, null, 2), {
     headers: { "content-type": "application/json; charset=utf-8" },
