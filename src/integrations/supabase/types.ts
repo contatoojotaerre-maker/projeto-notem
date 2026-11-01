@@ -14,16 +14,345 @@ export type Database = {
   }
   public: {
     Tables: {
-      [_ in never]: never
+      companies: {
+        Row: {
+          change_origin: Database["public"]["Enums"]["change_origin"]
+          cnpj: string
+          complement: string
+          created_at: string
+          created_by: string
+          district: string
+          email: string
+          id: string
+          legal_name: string
+          municipal_registration: string
+          municipality_ibge_code: string
+          number: string
+          organization_id: string
+          phone: string
+          postal_code: string
+          state: string
+          status: Database["public"]["Enums"]["company_status"]
+          street: string
+          trade_name: string
+          updated_at: string
+          updated_by: string
+        }
+        Insert: {
+          change_origin?: Database["public"]["Enums"]["change_origin"]
+          cnpj: string
+          complement?: string
+          created_at?: string
+          created_by: string
+          district?: string
+          email?: string
+          id?: string
+          legal_name: string
+          municipal_registration?: string
+          municipality_ibge_code: string
+          number?: string
+          organization_id: string
+          phone?: string
+          postal_code?: string
+          state: string
+          status?: Database["public"]["Enums"]["company_status"]
+          street?: string
+          trade_name?: string
+          updated_at?: string
+          updated_by: string
+        }
+        Update: {
+          change_origin?: Database["public"]["Enums"]["change_origin"]
+          cnpj?: string
+          complement?: string
+          created_at?: string
+          created_by?: string
+          district?: string
+          email?: string
+          id?: string
+          legal_name?: string
+          municipal_registration?: string
+          municipality_ibge_code?: string
+          number?: string
+          organization_id?: string
+          phone?: string
+          postal_code?: string
+          state?: string
+          status?: Database["public"]["Enums"]["company_status"]
+          street?: string
+          trade_name?: string
+          updated_at?: string
+          updated_by?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "companies_municipality_ibge_code_fkey"
+            columns: ["municipality_ibge_code"]
+            isOneToOne: false
+            referencedRelation: "municipalities"
+            referencedColumns: ["ibge_code"]
+          },
+          {
+            foreignKeyName: "companies_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      countries: {
+        Row: {
+          iso2: string
+          name: string
+        }
+        Insert: {
+          iso2: string
+          name: string
+        }
+        Update: {
+          iso2?: string
+          name?: string
+        }
+        Relationships: []
+      }
+      invitations: {
+        Row: {
+          accepted_at: string | null
+          accepted_by: string | null
+          created_at: string
+          email: string
+          id: string
+          invited_by: string
+          organization_id: string
+          requires_explicit_acceptance: boolean
+          role: Database["public"]["Enums"]["org_role"]
+          status: Database["public"]["Enums"]["invitation_status"]
+          updated_at: string
+        }
+        Insert: {
+          accepted_at?: string | null
+          accepted_by?: string | null
+          created_at?: string
+          email: string
+          id?: string
+          invited_by: string
+          organization_id: string
+          requires_explicit_acceptance?: boolean
+          role: Database["public"]["Enums"]["org_role"]
+          status?: Database["public"]["Enums"]["invitation_status"]
+          updated_at?: string
+        }
+        Update: {
+          accepted_at?: string | null
+          accepted_by?: string | null
+          created_at?: string
+          email?: string
+          id?: string
+          invited_by?: string
+          organization_id?: string
+          requires_explicit_acceptance?: boolean
+          role?: Database["public"]["Enums"]["org_role"]
+          status?: Database["public"]["Enums"]["invitation_status"]
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "invitations_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      municipalities: {
+        Row: {
+          ibge_code: string
+          name: string
+          state: string
+          state_name: string
+        }
+        Insert: {
+          ibge_code: string
+          name: string
+          state: string
+          state_name: string
+        }
+        Update: {
+          ibge_code?: string
+          name?: string
+          state?: string
+          state_name?: string
+        }
+        Relationships: []
+      }
+      organization_members: {
+        Row: {
+          created_at: string
+          id: string
+          organization_id: string
+          role: Database["public"]["Enums"]["org_role"]
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          organization_id: string
+          role: Database["public"]["Enums"]["org_role"]
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          organization_id?: string
+          role?: Database["public"]["Enums"]["org_role"]
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "organization_members_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "organization_members_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      organizations: {
+        Row: {
+          created_at: string
+          created_by: string
+          id: string
+          name: string
+          slug: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          created_by: string
+          id?: string
+          name: string
+          slug: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          created_by?: string
+          id?: string
+          name?: string
+          slug?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      platform_admins: {
+        Row: {
+          created_at: string
+          created_by: string | null
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          created_by?: string | null
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          created_by?: string | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "platform_admins_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: true
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      profiles: {
+        Row: {
+          avatar_url: string | null
+          created_at: string
+          display_name: string
+          environment: Database["public"]["Enums"]["environment"]
+          id: string
+          last_organization_id: string | null
+          theme: string
+          updated_at: string
+        }
+        Insert: {
+          avatar_url?: string | null
+          created_at?: string
+          display_name?: string
+          environment?: Database["public"]["Enums"]["environment"]
+          id: string
+          last_organization_id?: string | null
+          theme?: string
+          updated_at?: string
+        }
+        Update: {
+          avatar_url?: string | null
+          created_at?: string
+          display_name?: string
+          environment?: Database["public"]["Enums"]["environment"]
+          id?: string
+          last_organization_id?: string | null
+          theme?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "profiles_last_org_fk"
+            columns: ["last_organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
     }
     Views: {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      accept_invitation: { Args: { invitation_id: string }; Returns: string }
+      has_org_role: {
+        Args: {
+          org_id: string
+          roles: Database["public"]["Enums"]["org_role"][]
+        }
+        Returns: boolean
+      }
+      is_org_member: { Args: { org_id: string }; Returns: boolean }
+      is_platform_admin: { Args: never; Returns: boolean }
+      is_valid_cnpj: { Args: { value: string }; Returns: boolean }
+      pending_invitations: {
+        Args: never
+        Returns: {
+          id: string
+          organization_id: string
+          organization_name: string
+          requires_explicit_acceptance: boolean
+          role: Database["public"]["Enums"]["org_role"]
+        }[]
+      }
     }
     Enums: {
-      [_ in never]: never
+      change_origin: "panel" | "api"
+      company_status: "configuring"
+      environment: "production" | "sandbox"
+      invitation_status: "pending" | "accepted" | "revoked"
+      org_role: "owner" | "admin" | "operator" | "viewer" | "developer"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -150,6 +479,12 @@ export type CompositeTypes<
 
 export const Constants = {
   public: {
-    Enums: {},
+    Enums: {
+      change_origin: ["panel", "api"],
+      company_status: ["configuring"],
+      environment: ["production", "sandbox"],
+      invitation_status: ["pending", "accepted", "revoked"],
+      org_role: ["owner", "admin", "operator", "viewer", "developer"],
+    },
   },
 } as const
