@@ -9,7 +9,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { workspaceQuery } from '@/lib/notem.queries';
 import { getWorkspace, updatePreferences, acceptInvitation } from '@/lib/notem.functions';
 import { canManageOrganization } from '@/lib/notem';
-import { Brand } from './auth-screen';
+import { Brand } from './brand';
 
 type Workspace = Awaited<ReturnType<typeof getWorkspace>>;
 const WorkspaceContext=createContext<Workspace|null>(null);
@@ -25,11 +25,11 @@ export function AppShell(){
  const theme=workspace.profile?.theme??'dark'; const environment=workspace.profile?.environment??'production';
  useEffect(()=>{document.documentElement.dataset['theme']=theme;},[theme]);
  async function preference(data:Parameters<typeof save>[0]['data']){try{await save({data});await cache.invalidateQueries({queryKey:['workspace']});}catch{toast.error('Não foi possível salvar sua preferência.');}}
- async function signOut(){await cache.cancelQueries();cache.clear();await supabase.auth.signOut();await navigate({to:'/auth',replace:true});}
+ async function signOut(){await cache.cancelQueries();cache.clear();await supabase.auth.signOut();await navigate({to:'/entrar',replace:true});}
  async function acceptPending(id:string){try{await accept({data:{id}});await cache.invalidateQueries({queryKey:['workspace']});toast.success('Convite aceito.');}catch{toast.error('Não foi possível aceitar o convite.');}}
  return <WorkspaceContext.Provider value={workspace}><div className={`${collapsed?'app-collapsed ':''}${mobile?'app-mobile-open':''}`}>
  {mobile&&<div className="fixed inset-0 z-20 bg-background/80 md:hidden" onClick={()=>setMobile(false)}/>}
- <aside className="app-sidebar"><div className="flex h-24 items-center justify-between px-6"><Link to="/dashboard" aria-label="notem · início"><span className="sidebar-label"><Brand/></span><span className="hidden app-collapsed:block">n.</span></Link><Button variant="ghost" size="icon" className="md:hidden" onClick={()=>setMobile(false)} aria-label="Fechar menu"><X/></Button></div>
+ <aside className="app-sidebar"><div className="sidebar-brand-row"><Link to="/dashboard" aria-label="notem · início"><span className="sidebar-label"><Brand/></span><span className="sidebar-collapsed-brand"><Brand icon/></span></Link><Button variant="ghost" size="icon" className="md:hidden" onClick={()=>setMobile(false)} aria-label="Fechar menu"><X/></Button></div>
  <div className="flex-1 overflow-y-auto px-3 pb-5"><p className="sidebar-label mb-3 px-3 text-[10px] font-semibold uppercase text-muted-foreground">{current?.name??'Seu espaço'}</p>
  <nav className="space-y-1">{current?organizationItems.filter(i=>!['equipe','organizacao'].includes(i.section)||canManageOrganization(role,workspace.isAdmin)).map(item=><Link key={item.section} to={item.section==='empresas'?'/o/$orgSlug/empresas':'/o/$orgSlug/$section'} params={item.section==='empresas'?{orgSlug:current.slug}:{orgSlug:current.slug,section:item.section}} className="nav-item" title={item.title} data-active={path.includes(`/o/${current.slug}/${item.section}`)} onClick={()=>setMobile(false)}><item.icon size={18}/><span className="sidebar-label">{item.title}</span></Link>):<Link to="/dashboard" className="nav-item" data-active="true"><Home size={18}/><span className="sidebar-label">Início</span></Link>}</nav>
  {workspace.isAdmin&&<><div className="my-6 border-t border-border"/><p className="sidebar-label mb-3 px-3 text-[10px] font-semibold uppercase text-muted-foreground">Administração</p><nav className="space-y-1">{adminItems.map(item=><Link key={item.section} to={item.section==='organizacoes'?'/admin/organizacoes':'/admin/$section'} params={item.section==='organizacoes'?{}:{section:item.section}} className="nav-item" title={item.title} data-active={path===`/admin/${item.section}`} onClick={()=>setMobile(false)}><item.icon size={18}/><span className="sidebar-label">{item.title}</span></Link>)}</nav></>}

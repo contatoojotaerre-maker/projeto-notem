@@ -31,7 +31,7 @@
   --warning-foreground: oklch(0.91 0.13 88); --warning-surface: oklch(0.32 0.07 70);
   --neutral: oklch(0.65 0.015 260); --cyan: oklch(0.8 0.12 190);
   --glass-shadow: 0 20px 65px oklch(0.05 0.02 264 / 25%);
-  --login-pattern: oklch(0.9 0.1 130 / 5%);
+  --login-background: url('/brand/notem-fundo-login.webp');
 }
 :root[data-theme="light"] {
   color-scheme: light; --background: oklch(0.977 0.003 260); --foreground: oklch(0.17 0.025 267);
@@ -49,11 +49,18 @@
   ::selection { background:var(--primary); color:var(--primary-foreground); }
 }
 .glass-panel { background: var(--card); backdrop-filter:blur(20px); border:1px solid var(--border); border-radius:8px; box-shadow:var(--glass-shadow); }
-.login-page { min-height:100svh; display:grid; grid-template-columns: 1fr 1fr; position:relative; }
-.login-art { border-right:1px solid var(--border); padding:52px 60px; display:flex; flex-direction:column; justify-content:space-between; background-image:linear-gradient(var(--login-pattern) 1px,transparent 1px),linear-gradient(90deg,var(--login-pattern) 1px,transparent 1px); background-size:64px 64px; }
-.brand-word { font-size:32px; font-weight:700; letter-spacing:0; }
-.brand-period { color:var(--foreground); background:var(--primary); width:7px; height:7px; display:inline-block; margin-left:4px; }
-.login-form-area { display:flex; align-items:center; justify-content:center; padding:40px 32px; }
+.login-page { min-height:100svh; display:flex; align-items:center; justify-content:center; position:relative; background-image:var(--login-background); background-position:center; background-size:cover; }
+.brand-logo { display:block; width:164px; max-width:100%; }
+.brand-logo img { width:100%; height:auto; object-fit:contain; }
+.brand-light { display:none; }
+:root[data-theme="light"] .brand-dark { display:none; }
+:root[data-theme="light"] .brand-light { display:block; }
+.brand-icon { width:36px; height:36px; object-fit:contain; }
+.sidebar-brand-row { display:flex; height:96px; align-items:center; justify-content:space-between; padding:0 24px; }
+.sidebar-collapsed-brand { display:none; }
+.app-collapsed .sidebar-collapsed-brand { display:block; }
+.app-collapsed .sidebar-brand-row { padding:0 20px; }
+.login-form-area { display:flex; align-items:center; justify-content:center; padding:40px 24px; width:100%; }
 .login-card { width:100%; max-width:430px; padding:36px; }
 .login-label { display:block; font-size:12px; font-weight:500; margin-bottom:9px; }
 .form-grid { display:grid; grid-template-columns:1fr 1fr; gap:22px; }
@@ -78,16 +85,15 @@
 .data-table td { padding:18px 20px;border-top:1px solid var(--border); }
 .field-select { border:1px solid var(--border);border-radius:6px;background:var(--background);height:36px;padding:0 10px;font-size:12px;min-width:0; }
 @media(max-width:900px) {
- .login-art { padding:35px; }
  .app-sidebar { transform:translateX(-100%);width:238px; }
  .app-main,.app-collapsed .app-main { margin-left:0; }
  .app-mobile-open .app-sidebar { transform:translateX(0);width:238px; }
  .app-mobile-open .sidebar-label { display:initial; }
+ .app-mobile-open .sidebar-collapsed-brand { display:none; }
+ .app-mobile-open .sidebar-brand-row { padding:0 24px; }
  .topbar-search { display:none; }
 }
 @media(max-width:640px) {
- .login-page { grid-template-columns:1fr; }
- .login-art { display:none; }
  .login-form-area { padding:24px; }
  .login-card { padding:26px; }
  .form-grid { grid-template-columns:1fr; }
