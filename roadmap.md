@@ -9,3 +9,4 @@
 - [x] Unificar rotas públicas em português, remover duplicadas e entregar guia v2; 13 testes e verificações públicas aprovados.
 - [x] Revogar execução pública de rls_auto_enable; teste de nova tabela passou e gatilho ensure_rls permanece habilitado; aviso específico removido.
 - [x] Explicar rls_auto_enable e consultar RLS: as oito tabelas públicas têm RLS ativo.
+- [x] Nova organização: tipo (partner/company), endereço no painel 3–50 com prévia e unicidade, filtro por tipo.

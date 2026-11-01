@@ -1,0 +1,1 @@
+drop function public.organization_slug_available(text);
