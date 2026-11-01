@@ -1,4 +1,4 @@
-// prova-mtls — função TEMPORÁRIA de diagnóstico da notem. Apague após o teste.
+// prova-mtls v2 — função TEMPORÁRIA de diagnóstico da notem. Apague após o teste.
 // O certificado abaixo é autoassinado, descartável e sem valor (gerado só para este teste).
 const CERT_TESTE = `-----BEGIN CERTIFICATE-----
 MIIDJTCCAg2gAwIBAgIUA7Ibp25q7V3/yhrBMW8a3q0srpMwDQYJKoZIhvcNAQEL
@@ -48,48 +48,53 @@ HGj0c0U+WVpXBbGLlaWrZpZKx7gDDlXqILQ0rpfJzWFqz2iocPPp7UgHJHtqIhM4
 sk4wBCAi7RnFlFXUPmtYGg==
 -----END PRIVATE KEY-----`;
 
-const ALVOS = {
-  parametros_homologacao: "https://adn.producaorestrita.nfse.gov.br/parametrizacao/4212254/convenio",
-  sefin_homologacao: "https://sefin.producaorestrita.nfse.gov.br/SefinNacional/nfse/00000000000000000000000000000000000000000000000000",
+const ALVOS: Record<string, string> = {
+  adn_param_api_homolog: "https://adn.producaorestrita.nfse.gov.br/parametrizacao/4212254/convenio",
+  adn_param_docs_homolog: "https://adn.producaorestrita.nfse.gov.br/parametrizacao/docs/index.html",
+  adn_contrib_docs_homolog: "https://adn.producaorestrita.nfse.gov.br/contribuintes/docs/index.html",
+  adn_param_api_producao: "https://adn.nfse.gov.br/parametrizacao/4212254/convenio",
+  sefin_api_homolog: "https://sefin.producaorestrita.nfse.gov.br/SefinNacional/nfse/00000000000000000000000000000000000000000000000000",
+  sefin_docs_homolog: "https://sefin.producaorestrita.nfse.gov.br/SefinNacional/docs/index",
 };
 
 function msg(e: unknown) {
   const err = e as { name?: string; message?: string; cause?: unknown };
-  return [err?.name, err?.message, err?.cause ? String(err.cause) : ""].filter(Boolean).join(" | ").slice(0, 600);
+  return [err?.name, err?.message, err?.cause ? String(err.cause) : ""].filter(Boolean).join(" | ").slice(0, 500);
 }
 
 async function tentar(url: string, client?: unknown) {
+  const inicio = Date.now();
   try {
     // deno-lint-ignore no-explicit-any
-    const r = await fetch(url, { signal: AbortSignal.timeout(20000), ...(client ? { client } as any : {}) });
-    return { status: r.status, corpo: (await r.text()).slice(0, 400) };
+    const r = await fetch(url, { signal: AbortSignal.timeout(15000), ...(client ? ({ client } as any) : {}) });
+    const corpo = (await r.text()).replace(/\s+/g, " ").slice(0, 300);
+    return { status: r.status, ms: Date.now() - inicio, corpo };
   } catch (e) {
-    return { erro: msg(e) };
+    return { erro: msg(e), ms: Date.now() - inicio };
   }
 }
 
 Deno.serve(async () => {
   // deno-lint-ignore no-explicit-any
   const D = Deno as any;
-  const out: Record<string, unknown> = {
-    deno: Deno.version,
-    createHttpClient: typeof D.createHttpClient,
-  };
+  const out: Record<string, unknown> = { versao: "v2", deno: Deno.version.deno };
 
-  let client: unknown = null;
-  try {
-    client = D.createHttpClient({ cert: CERT_TESTE, key: CHAVE_TESTE });
-    out.cliente_com_certificado = "criado";
-  } catch (e) {
-    out.cliente_com_certificado = "falhou: " + msg(e);
-  }
+  let semCert: unknown = null;
+  let comCert: unknown = null;
+  try { semCert = D.createHttpClient({ http1: true, http2: false }); out.cliente_http1 = "criado"; }
+  catch (e) { out.cliente_http1 = "falhou: " + msg(e); }
+  try { comCert = D.createHttpClient({ cert: CERT_TESTE, key: CHAVE_TESTE, http1: true, http2: false }); out.cliente_http1_cert = "criado"; }
+  catch (e) { out.cliente_http1_cert = "falhou: " + msg(e); }
 
-  for (const [nome, url] of Object.entries(ALVOS)) {
-    out[nome] = {
-      sem_certificado: await tentar(url),
-      com_certificado_teste: client ? await tentar(url, client) : "sem cliente",
-    };
-  }
+  const resultados = await Promise.all(Object.entries(ALVOS).map(async ([nome, url]) => {
+    const [padrao, http1, http1Cert] = await Promise.all([
+      tentar(url),
+      semCert ? tentar(url, semCert) : Promise.resolve("sem cliente"),
+      comCert ? tentar(url, comCert) : Promise.resolve("sem cliente"),
+    ]);
+    return [nome, { padrao, http1, http1_com_certificado_teste: http1Cert }] as const;
+  }));
+  for (const [nome, r] of resultados) out[nome] = r;
 
   return new Response(JSON.stringify(out, null, 2), {
     headers: { "content-type": "application/json; charset=utf-8" },
