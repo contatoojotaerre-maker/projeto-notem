@@ -23,7 +23,7 @@ export function AppShell(){
  const current=workspace.organizations.find(o=>o.slug===slug)??workspace.organizations.find(o=>o.id===workspace.profile?.last_organization_id)??workspace.organizations[0];
  const role=workspace.memberships.find(m=>m.organization_id===current?.id)?.role;
  const theme=workspace.profile?.theme??'dark'; const environment=workspace.profile?.environment??'production';
- useEffect(()=>{document.documentElement.dataset.theme=theme;},[theme]);
+ useEffect(()=>{document.documentElement.dataset['theme']=theme;},[theme]);
  async function preference(data:Parameters<typeof save>[0]['data']){try{await save({data});await cache.invalidateQueries({queryKey:['workspace']});}catch{toast.error('Não foi possível salvar sua preferência.');}}
  async function signOut(){await cache.cancelQueries();cache.clear();await supabase.auth.signOut();await navigate({to:'/auth',replace:true});}
  async function acceptPending(id:string){try{await accept({data:{id}});await cache.invalidateQueries({queryKey:['workspace']});toast.success('Convite aceito.');}catch{toast.error('Não foi possível aceitar o convite.');}}
