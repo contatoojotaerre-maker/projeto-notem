@@ -233,6 +233,7 @@ export type Database = {
           id: string
           name: string
           slug: string
+          type: Database["public"]["Enums"]["organization_type"]
           updated_at: string
         }
         Insert: {
@@ -241,6 +242,7 @@ export type Database = {
           id?: string
           name: string
           slug: string
+          type: Database["public"]["Enums"]["organization_type"]
           updated_at?: string
         }
         Update: {
@@ -249,6 +251,7 @@ export type Database = {
           id?: string
           name?: string
           slug?: string
+          type?: Database["public"]["Enums"]["organization_type"]
           updated_at?: string
         }
         Relationships: []
@@ -336,6 +339,7 @@ export type Database = {
       is_org_member: { Args: { org_id: string }; Returns: boolean }
       is_platform_admin: { Args: never; Returns: boolean }
       is_valid_cnpj: { Args: { value: string }; Returns: boolean }
+      organization_slug_available: { Args: { value: string }; Returns: boolean }
       organization_team: {
         Args: { org_id: string }
         Returns: {
@@ -364,6 +368,7 @@ export type Database = {
       environment: "production" | "sandbox"
       invitation_status: "pending" | "accepted" | "revoked"
       org_role: "owner" | "admin" | "operator" | "viewer" | "developer"
+      organization_type: "partner" | "company"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -496,6 +501,7 @@ export const Constants = {
       environment: ["production", "sandbox"],
       invitation_status: ["pending", "accepted", "revoked"],
       org_role: ["owner", "admin", "operator", "viewer", "developer"],
+      organization_type: ["partner", "company"],
     },
   },
 } as const
