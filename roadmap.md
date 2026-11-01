@@ -12,5 +12,5 @@
 - [x] Nova organização: tipo (partner/company), endereço no painel 3–50 com prévia e unicidade, filtro por tipo.
 
 ## Fase 2A — somente análise e plano nesta solicitação
-- [ ] Responder viabilidade com evidências e apresentar plano completo para aprovação.
+- [x] Responder viabilidade com evidências e preparar plano completo para aprovação; mTLS hospedado e XMLDSig ainda não comprovados, Swagger não anexado.
 - [ ] Aplicar certificados, autorizações e conexão real — aguarda aprovação do plano, definição do impedimento de mTLS se confirmado e certificado real do usuário.
