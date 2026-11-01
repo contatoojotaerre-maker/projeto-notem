@@ -12,6 +12,7 @@ export const getWorkspace = createServerFn({ method: 'POST' }).middleware([requi
     context.supabase.rpc('is_platform_admin'), context.supabase.rpc('pending_invitations'),
   ]);
   for (const result of [profile,organizations,members,admin,invitations]) if (result.error) throw new Error(result.error.message);
+  if (!admin.data && !members.data?.length && !invitations.data?.length) throw new Error('Acesso não autorizado. Solicite um convite ao administrador da sua organização.');
   return { profile: profile.data, organizations: organizations.data ?? [], memberships: members.data ?? [], isAdmin: admin.data === true, invitations: invitations.data ?? [], email: String(context.claims.email ?? '') };
 });
 export const finishSignIn = createServerFn({ method: 'POST' }).middleware([requireSupabaseAuth]).handler(async ({ context }) => {
@@ -21,6 +22,8 @@ export const finishSignIn = createServerFn({ method: 'POST' }).middleware([requi
     const result = await context.supabase.rpc('accept_invitation',{ invitation_id: invitation.id });
     if (result.error) throw new Error(result.error.message);
   }
+  const [admin, memberships] = await Promise.all([context.supabase.rpc('is_platform_admin'), context.supabase.from('organization_members').select('id').eq('user_id',context.userId).limit(1)]);
+  if (!admin.data && !memberships.data?.length && !pending.data?.length) throw new Error('Acesso não autorizado. Solicite um convite ao administrador da sua organização.');
   return { ok: true };
 });
 export const acceptInvitation = createServerFn({ method: 'POST' }).middleware([requireSupabaseAuth]).inputValidator(z.object({ id: z.string().uuid() })).handler(async ({ context,data }) => {

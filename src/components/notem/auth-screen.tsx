@@ -20,7 +20,7 @@ export function AuthScreen({ mode = 'login' }: {mode?:'login'|'forgot'|'reset'|'
       setValidLink(type===expected);
       if(type!==expected)setError('Este link é inválido ou expirou. Solicite um novo e-mail.');
     } else if(hash.get('error'))setError('Acesso não autorizado. Solicite um convite ao administrador da sua organização.');
-    if(mode==='login')void supabase.auth.getUser().then(async({data})=>{if(data.user){await finish();await navigate({to:'/dashboard'});}}).catch(()=>{});
+    if(mode==='login')void supabase.auth.getUser().then(async({data})=>{if(data.user){await finish();await navigate({to:'/dashboard'});}}).catch(err=>setError(err instanceof Error?err.message:'Acesso não autorizado.'));
   },[mode,finish,navigate]);
   async function submit(e:React.FormEvent){e.preventDefault();setBusy(true);setError('');try{
     if(mode==='forgot'){const result=await supabase.auth.resetPasswordForEmail(email,{redirectTo:`${window.location.origin}/reset-password`});if(result.error)throw result.error;setMessage('Se este e-mail tiver acesso à notem, você receberá um link para redefinir sua senha.');}
@@ -29,13 +29,11 @@ export function AuthScreen({ mode = 'login' }: {mode?:'login'|'forgot'|'reset'|'
       const verified=await supabase.auth.getUser();if(!verified.data.user)throw new Error('Link expirado. Solicite um novo e-mail.');
       const result=await supabase.auth.updateUser({password});if(result.error)throw result.error;
       if(mode==='invite')await finish();await navigate({to:'/dashboard'});
-    } else {const result=await supabase.auth.signInWithPassword({email,password});if(result.error)throw new Error('E-mail ou senha inválidos. O acesso é permitido apenas por convite.');
-      // A non-remembered session expires with the browser tab, using the same client.
-      sessionStorage.setItem('notem-session-only',remember?'false':'true');
+    } else {sessionStorage.setItem('notem-session-only',remember?'false':'true');const result=await supabase.auth.signInWithPassword({email,password});if(result.error)throw new Error('E-mail ou senha inválidos. O acesso é permitido apenas por convite.');
       await finish();await navigate({to:'/dashboard'});
     }
   }catch(err){setError(err instanceof Error?err.message:'Não foi possível continuar. Tente novamente.');}finally{setBusy(false);}}
-  async function google(){setBusy(true);setError('');const result=await supabase.auth.signInWithOAuth({provider:'google',options:{redirectTo:`${window.location.origin}/auth`}});if(result.error){setError('Não foi possível entrar com Google. Verifique a configuração do provedor.');setBusy(false);}}
+  async function google(){setBusy(true);setError('');sessionStorage.setItem('notem-session-only',remember?'false':'true');const result=await supabase.auth.signInWithOAuth({provider:'google',options:{redirectTo:`${window.location.origin}/auth`}});if(result.error){setError('Não foi possível entrar com Google. Verifique a configuração do provedor.');setBusy(false);}}
   const title=mode==='login'?'Acesse sua conta':mode==='forgot'?'Esqueceu a senha?':mode==='invite'?'Defina sua senha':'Redefina sua senha';
   return <main className="login-page">
     <section className="login-art"><Brand/><div className="space-y-7"><div className="inline-flex items-center gap-2 text-xs text-muted-foreground"><span className="h-1.5 w-1.5 bg-primary"/>NFS-e · PADRÃO NACIONAL</div><h1 className="text-4xl font-light leading-tight">Sua operação.<br/><span className="font-semibold">Uma nova perspectiva.</span></h1><div className="h-px w-20 bg-primary"/></div><div className="flex items-center gap-2 text-xs text-muted-foreground"><ShieldCheck size={15}/>notem · Gestão de NFS-e</div></section>

@@ -16,3 +16,4 @@
 - Database triggers own company state derivation, audit fields and immutable organization slugs; forms must not become the authority for these rules.
 - Invitation acceptance is an authenticated atomic database function, never an auth-user creation trigger; existing accounts must explicitly accept pending invitations.
 - Keep English database/code identifiers and Portuguese user-facing labels separated; theme values belong in semantic CSS tokens.
+- Preserve the preview auth broker through a storage adapter that chooses persistent or tab-only session storage; never represent “remember me” with a flag alone.
