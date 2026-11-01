@@ -5,7 +5,7 @@
 - [x] Entregar guia Supabase/Google e textos de e-mail em português.
 - [ ] Validar login, convites e isolamento com usuários reais — depende das configurações externas e municípios oficiais; Supabase externo não fornece sessão de teste gerenciada.
 - [ ] Enviar aviso por e-mail para conta existente — aguarda domínio de envio; convite pendente e aceite explícito já implementados.
-- [ ] Integrar marca no login, menu e favicon; preservar originais no repositório e otimizar fundo em WebP.
-- [ ] Unificar rotas públicas em português, remover duplicadas e entregar guia v2 com validações.
-- [ ] Revogar execução pública de rls_auto_enable e testar gatilho administrativo em nova tabela.
+- [x] Integrar marca no login, menu e favicon; originais preservados e fundo WebP otimizado.
+- [x] Unificar rotas públicas em português, remover duplicadas e entregar guia v2; 13 testes e verificações públicas aprovados.
+- [x] Revogar execução pública de rls_auto_enable; teste de nova tabela passou e gatilho ensure_rls permanece habilitado; aviso específico removido.
 - [x] Explicar rls_auto_enable e consultar RLS: as oito tabelas públicas têm RLS ativo.
