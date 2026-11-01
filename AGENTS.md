@@ -11,7 +11,8 @@
 
 ## Application architecture
 - Keep tenant data and organizational roles scoped by organization IDs with database RLS; global administration is a separate protected table to prevent privilege escalation.
-- All private reads and mutations use authenticated TanStack server functions and loader/query options; privileged invitations authorize the caller before importing the admin client.
+- Ordinary panel private reads and mutations use authenticated TanStack server functions and loader/query options; privileged invitations authorize the caller before importing the admin client.
+- All certificate handling runs exclusively in Supabase Edge Functions: browser uploads directly with its session token, functions verify session and organization owner/admin or platform-admin permission before operations, and encryption keys exist only in Edge secrets; this keeps PFX/password and private keys out of the panel Worker.
 - Keep protected pages under `_authenticated` and public password/OAuth return pages outside it; the shared shell renders children through Outlet.
 - Database triggers own company state derivation, audit fields and immutable organization slugs; forms must not become the authority for these rules.
 - Invitation acceptance is an authenticated atomic database function, never an auth-user creation trigger; existing accounts must explicitly accept pending invitations.

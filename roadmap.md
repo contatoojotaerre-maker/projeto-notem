@@ -13,4 +13,8 @@
 
 ## Fase 2A — somente análise e plano nesta solicitação
 - [x] Responder viabilidade com evidências e preparar plano completo para aprovação; mTLS hospedado e XMLDSig ainda não comprovados, Swagger não anexado.
-- [ ] Aplicar certificados, autorizações e conexão real — aguarda aprovação do plano, definição do impedimento de mTLS se confirmado e certificado real do usuário.
+- [ ] Provar API mTLS cert/key em Edge Function hospedada antes do restante — aprovado pelo usuário, bloqueado pela ferramenta que proíbe criar novas Edge Functions neste projeto TanStack.
+- [ ] Ler docs/referencias/LEIAME.md e Swagger oficial — pasta ausente no checkout disponível; aguarda disponibilização.
+- [ ] Manter seis funções e adicionar testes de autorização; garantir imutabilidade de companies.organization_id — após prova inicial, conforme ordem aprovada.
+- [ ] Implementar guarda, abas e auditoria nas Edge Functions aprovadas — aguarda desbloqueio da criação, prova mTLS e documentação.
+- [ ] Validar conexão real de homologação com A1 do usuário pelo formulário seguro — depende da etapa anterior e certificado real.
