@@ -33,7 +33,7 @@ export const updatePreferences = createServerFn({ method: 'POST' }).middleware([
     const org = await context.supabase.from('organizations').select('id').eq('id',data.last_organization_id).single();
     if (org.error) throw new Error('Organização não autorizada.');
   }
-  const result = await context.supabase.from('profiles').update(data).eq('id',context.userId);
+  const result = await context.supabase.from('profiles').update({ ...(data.theme ? {theme:data.theme}:{}), ...(data.environment ? {environment:data.environment}:{}), ...(data.last_organization_id ? {last_organization_id:data.last_organization_id}:{}) }).eq('id',context.userId);
   if (result.error) throw new Error(result.error.message);
   return { ok:true };
 });
