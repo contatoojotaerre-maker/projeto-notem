@@ -10,3 +10,7 @@
 - [x] Revogar execução pública de rls_auto_enable; teste de nova tabela passou e gatilho ensure_rls permanece habilitado; aviso específico removido.
 - [x] Explicar rls_auto_enable e consultar RLS: as oito tabelas públicas têm RLS ativo.
 - [x] Nova organização: tipo (partner/company), endereço no painel 3–50 com prévia e unicidade, filtro por tipo.
+
+## Fase 2A — somente análise e plano nesta solicitação
+- [ ] Responder viabilidade com evidências e apresentar plano completo para aprovação.
+- [ ] Aplicar certificados, autorizações e conexão real — aguarda aprovação do plano, definição do impedimento de mTLS se confirmado e certificado real do usuário.
