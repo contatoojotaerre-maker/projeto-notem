@@ -1,82 +1,84 @@
-# notem — Fase 1: Fundação (plano)
+# notem — Marca e rotas públicas
 
-## 1. Identidade visual
-- Plus Jakarta Sans (300–700) carregada no `<head>`.
-- Tokens de tema em `src/styles.css` (oklch), escuro padrão + claro:
-  - Escuro: fundo Midnight, cartões Charcoal com vidro (blur + borda 8% branca), texto Branco/Cool Gray.
-  - Claro: fundo Branco/Cool Gray, texto Midnight.
-  - `--primary` = Electric Lime com `--primary-foreground` = Midnight; `--highlight` = Acid Yellow; `--glow-lime`, `--glow-cyan`.
-  - Situação (fora da marca): `--status-success`, `--status-error`, `--status-warning`, `--status-neutral`, cada um com fundo suave.
-  - Regra: lime só como preenchimento/indicador; no tema claro, nenhum texto em lime.
-- Variantes: Button (`default` lime, `glass`, `ghost`), Card `glass`, Badge por situação.
-- Logos/ícone/fundo de login: **não vieram anexados** — preciso dos 5 arquivos (logo escuro, logo claro, ícone, app icon/favicon, fundo do login).
+## Escopo
+Integrar os cinco arquivos de marca recebidos, unificar as páginas públicas em português e atualizar o guia de configuração. Nenhuma alteração na aplicação ou no banco será aplicada antes da aprovação deste plano.
 
-## 2. Banco de dados (todas as tabelas com GRANT + RLS)
+## 1. Marca
+- Usar `notem-fundo-login.png` como fundo da tela de acesso inteira, com cartão de vidro e formulário legível, sem o fundo geométrico e a composição dividida atuais.
+- Substituir o nome textual pelo logo enviado, preservando proporções e transparência.
+- No menu lateral expandido, alternar automaticamente entre `notem-logo-fundo-escuro.png` e `notem-logo-fundo-claro.png` conforme o tema salvo.
+- No menu recolhido, usar `notem-icone-512.png` em vez de “n.”.
+- Usar `notem-app-icon-512.png` para gerar o favicon de 64 × 64, sem deformação, e referenciá-lo no cabeçalho; remover o favicon padrão. O `favicon-64.png` extra não substituirá a origem solicitada: o app icon.
+- Manter fonte, cores, preferência de tema e acessibilidade existentes.
 
-| Tabela | Campos principais |
+## 2. Páginas públicas únicas
+| Função | Endereço final |
 |---|---|
-| `profiles` | id (= auth.users), nome, avatar_url, tema (`escuro`/`claro`), ambiente (`producao`/`homologacao`), ultima_organizacao_id |
-| `platform_admins` | user_id (único), criado_em, criado_por |
-| `organizations` | nome, slug (único), criado_por, timestamps |
-| `org_role` (enum) | proprietario, administrador, operador, leitura, desenvolvedor |
-| `organization_members` | organization_id, user_id, papel, único (org, user) |
-| `invitations` | organization_id, email (minúsculo), papel, status (pendente/aceito/revogado), convidado_por, aceito_em; único pendente por (org, email) |
-| `municipios` | codigo_ibge (char 7, PK), nome, uf (char 2), uf_nome — vazia, você importa via CSV |
-| `paises` | iso2 (char 2, PK), nome — vazia, CSV |
-| `company_status` (enum) | em_configuracao (+ demais nas próximas fases) |
-| `companies` | organization_id, cnpj (14 dígitos), razao_social, nome_fantasia, inscricao_municipal, email, telefone, cep, logradouro, numero, complemento, bairro, municipio_codigo_ibge (FK), uf, situacao (padrão em_configuracao), created_by, updated_by, created_at, updated_at, origem_alteracao (`painel`/`api`, padrão painel); **único (organization_id, cnpj)** |
+| Login e retorno Google | `/entrar` |
+| Solicitar recuperação | `/esqueci-senha` |
+| Definir senha do convite | `/definir-senha` |
+| Recuperar senha | `/redefinir-senha` |
 
-- Validação de CNPJ (dígitos verificadores) em função SQL `is_valid_cnpj` usada num CHECK — vale também para a futura API — e repetida no formulário.
-- Gatilhos: `updated_at`/`updated_by` automáticos; criação de `profiles` ao criar usuário; aceite de convite automático (cria membro e marca convite aceito quando o usuário entra com o e-mail convidado).
-- Coluna `ambiente` será adicionada às tabelas futuras que dependerem dele; nada agora além da preferência.
+- Remover as páginas `/auth` e `/reset-password`, sem criar aliases duplicados.
+- `/` será apenas um redirecionamento para `/entrar`, não um segundo formulário. O login mantém o encaminhamento de uma sessão autorizada para o painel.
+- Ajustar retorno Google, recuperação por e-mail, saída da conta, bloqueio de páginas privadas e links de retorno.
+- Convites continuam retornando a `/definir-senha`.
+- Links antigos de recuperação apontando para `/reset-password` precisarão ser solicitados novamente após esta mudança.
 
-## 3. Políticas de segurança
-- Funções `SECURITY DEFINER`: `is_platform_admin(uid)`, `is_org_member(uid, org)`, `has_org_role(uid, org, papeis[])` — evitam recursão.
-- `organizations`/`companies`/`organization_members`: leitura só para membros da organização **ou** admin da plataforma.
-- `companies`: criar/editar por membros com papel ≠ leitura (detalhamento nas próximas fases) ou admin; exclusão só admin da plataforma.
-- `organizations` e `invitations`: criação só por admin da plataforma nesta fase; edição da organização por Proprietário/Administrador.
-- `platform_admins`: leitura só pelo próprio/admins; **nenhuma política de inserção** — ninguém se promove pelo app.
-- `profiles`: cada um lê/edita o seu; papéis nunca ficam no profile.
-- `municipios`/`paises`: leitura para usuários autenticados; escrita só via painel do Supabase.
-- Frontend usa só a chave pública; ações privilegiadas (envio de convite) em funções de servidor que verificam o admin antes.
+## 3. Redirect URLs finais no Supabase
+Cadastrar estas URLs exatas para o preview:
 
-## 4. Primeiro administrador (mecanismo seguro)
-Recomendo: você roda **uma linha de SQL** no SQL Editor do Supabase (acesso que só o dono do projeto tem):
-`insert into platform_admins (user_id) select id from auth.users where email = 'seu@email';`
-Não existe caminho pelo app; os próximos admins também só por SQL (ou por tela de admin numa fase futura, restrita a admins).
+```text
+https://id-preview--24f0f935-7f21-4010-b7cf-276026256fea.lovable.app/entrar
+https://id-preview--24f0f935-7f21-4010-b7cf-276026256fea.lovable.app/definir-senha
+https://id-preview--24f0f935-7f21-4010-b7cf-276026256fea.lovable.app/redefinir-senha
+```
 
-## 5. Login e convites
-- Desativar cadastro público no Supabase (Authentication → Sign In / Providers → desligar "Allow new users to sign up"). Você faz isso no painel; eu indico o passo.
-- Convite (admin da plataforma): cria registro em `invitations` e chama `inviteUserByEmail` no servidor → usuário recebe e-mail, define senha em `/definir-senha`.
-- Google: como o usuário convidado já existe, entra normalmente com o mesmo e-mail; e-mails não convidados são recusados pelo Supabase e a tela mostra "Acesso não autorizado. Solicite um convite ao administrador da sua organização."
-- "Lembrar de mim": sessão persistente quando marcado; senão, sessão só da aba.
-- Recuperação: `/esqueci-senha` → e-mail → `/redefinir-senha`.
-- Google exige configurar as credenciais OAuth no Google Cloud e no Supabase — passo a passo na entrega.
+Não é necessário cadastrar `/esqueci-senha`: ela solicita o e-mail, mas não recebe o retorno de autenticação.
 
-## 6. Telas
-Públicas: `/entrar`, `/esqueci-senha`, `/redefinir-senha`, `/definir-senha`, `/` (redireciona conforme sessão).
+Quando houver URL publicada, repetir os mesmos três caminhos nessa origem. Remover `/auth` e `/reset-password` da lista. A URI de callback do Google Cloud continua sendo a exibida no provedor Google do Supabase, não `/entrar` da notem.
 
-Painel (protegido), estrutura `/o/$orgSlug/...`:
-- Barra superior: seletor de organização, seletor Produção/Homologação (salvo no profile), busca visual, tema, menu do usuário.
-- Faixa âmbar fixa em homologação.
-- Menu lateral recolhível/responsivo: Início, Notas, Empresas, Modelos de serviço, Alertas, Integrações, Equipe*, Organização*, Ajuda (*só Proprietário/Administrador; bloqueado também na rota).
-- **Empresas** (funcional): lista com busca por CNPJ/razão/fantasia e situação; cadastro/edição; detalhe com abas Dados (funcional) e Configuração fiscal, Certificado, Serviços, Prontidão, Sincronização ("Disponível em breve"). Município por busca na tabela oficial, UF preenchida a partir dele; máscaras de CNPJ/CEP/telefone, salvo só números.
-- **Organização**: dados da organização (visualização/edição do nome).
-- **Equipe**: lista de membros e papéis (sem convites pela tela).
-- Demais: estado vazio "Disponível em breve".
+O guia será entregue em uma nova versão com essas URLs. Esta lista descreve o resultado previsto; aguarde a aplicação aprovada antes de testar os novos retornos.
 
-Administração `/admin/...` (só admin da plataforma): **Organizações** funcional (listar, criar, convidar primeiro membro com e-mail + papel); Empresas e notas, Municípios, Mensagens de rejeição, Saúde do sistema, Cobrança em "Disponível em breve".
-- Usuário sem organização vê tela "Você ainda não participa de nenhuma organização".
+## 4. Verificação de RLS — já consultada, sem alterações
+**Todas as oito tabelas do schema public estão com RLS ativo:**
+- `companies`
+- `countries`
+- `invitations`
+- `municipalities`
+- `organization_members`
+- `organizations`
+- `platform_admins`
+- `profiles`
 
-## 7. Componentes
-AppShell, Sidebar, Topbar, OrgSwitcher, EnvironmentSwitcher, HomologBanner, ThemeToggle, UserMenu, ComingSoon, StatusBadge, GlassCard, CompanyForm, MunicipioCombobox, CnpjInput, InviteMemberDialog, CreateOrgDialog.
+RLS ativo não prova sozinho que todas as políticas estão corretas: os testes com usuários de organizações distintas continuam necessários. `FORCE ROW LEVEL SECURITY` não está ativo; isso não desativa RLS para os usuários comuns. Proprietários de tabela e papéis privilegiados podem ter exceções, por isso a chave privilegiada permanece fora do navegador.
 
-## 8. Testes
-Validação de CNPJ, normalização (só números), regra de quem vê Equipe/Organização, e verificação de isolamento entre organizações (critério 5) consultando o banco como outro usuário.
+### O que é rls_auto_enable
+É uma função de gatilho administrativo que habilita RLS quando tabelas são criadas no schema public. Ela já existia antes das migrações da notem; pode aparecer num projeto novo porque o ambiente Supabase pode trazer essa automação de proteção preconfigurada. Não é uma tabela da notem, nem sinal de dados expostos por si só.
 
-## 9. Dúvidas e riscos
-1. **Arquivos de marca** não chegaram — reenvie os 5 arquivos.
-2. O projeto está ligado a um **Supabase próprio** (não Lovable Cloud): desligar cadastro público, configurar Google, URLs de redirecionamento e e-mails de convite são feitos por você no painel do Supabase.
-3. URL com slug da organização (`/o/grupo-jota/empresas`) — ok, ou prefere só seletor sem slug na URL?
-4. Papel "Leitura" pode ver empresas mas não editar — confirma já nesta fase?
-5. E-mails do Supabase (convite/recuperação) virão no padrão em inglês até você personalizar os modelos no painel; posso fornecer os textos em português.
+### Por que o aviso aparece
+A consulta confirmou que a função usa `SECURITY DEFINER` e tem permissão `EXECUTE` para `anon` e `authenticated`. O verificador sinaliza essa combinação porque ela executa com os privilégios de seu proprietário. Neste caso, retorna `event_trigger` e usa operações específicas do evento DDL: não é uma função de negócio normal que o navegador possa chamar livremente como uma consulta comum.
+
+### Exige ação?
+Não exige desativar RLS, excluir a função ou bloquear a configuração do login. Há uma melhoria de segurança recomendável: revogar a execução por `PUBLIC`, `anon` e `authenticated`, preservando o gatilho administrativo. Essa alteração não será aplicada neste pedido, que solicita explicação e confirmação; pode ser aprovada separadamente. O aviso específico pode permanecer até a revogação.
+
+## 5. Detalhes técnicos e arquivos
+- Criar ponteiros CDN em `src/assets/` para os cinco arquivos gráficos, sem deixar originais binários no repositório; favicon local é a exceção.
+- Criar `src/components/notem/brand.tsx` para compartilhar logo/ícone sem importar a tela de login no menu lateral.
+- Alterar `src/components/notem/auth-screen.tsx`, `src/components/notem/app-shell.tsx` e `src/styles.css` para integrar a marca e padronizar endereços.
+- Alterar `src/routes/__root.tsx` para favicon e `src/routes/index.tsx` para redirecionamento.
+- Manter as quatro rotas em português; remover `src/routes/auth.tsx` e `src/routes/reset-password.tsx`.
+- Ajustar o destino do bloqueio em `src/routes/_authenticated/route.tsx`; preservar validação de usuário e proteção dos dados.
+- Preservar os metadados específicos de cada página; não editar a árvore de rotas gerada.
+- Atualizar o teste de navegação com os quatro caminhos existentes e ausência das duas páginas removidas.
+- Entregar `notem-guia-fase-1_v2.md`, preservando o guia anterior.
+
+## 6. Validação após aprovação
+- Executar os testes de navegação e as regras existentes.
+- Conferir o fundo, proporções dos logos, ícone recolhido e favicon.
+- Verificar login e recuperação em desktop e celular, sem sobreposição ou rolagem horizontal.
+- Confirmar que acesso privado sem sessão vai a `/entrar`, `/` redireciona e os caminhos removidos não exibem páginas duplicadas.
+- Conferir redirecionamentos do Google e dos e-mails no código; teste real permanece dependente da configuração externa.
+
+## Fora do escopo
+Não importar os CSV enviados nem modificar seus dados neste pedido; a importação segue sob seu controle. Não configurar provedores Google/Supabase, enviar e-mails ou alterar permissões do banco sem solicitação correspondente.
