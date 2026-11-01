@@ -67,7 +67,7 @@ export const renameOrganization = createServerFn({method:'POST'}).middleware([re
 export const getTeam = createServerFn({method:'POST'}).middleware([requireSupabaseAuth]).inputValidator(z.object({organization_id:z.string().uuid()})).handler(async({context,data})=>{
   const [admin,role]=await Promise.all([context.supabase.rpc('is_platform_admin'),context.supabase.rpc('has_org_role',{org_id:data.organization_id,roles:['owner','admin']})]);
   if(!admin.data&&!role.data)throw new Error('Acesso não autorizado.');
-  const result=await context.supabase.from('organization_members').select('*').eq('organization_id',data.organization_id).order('created_at');if(result.error)throw new Error(result.error.message);return result.data ?? [];
+  const result=await context.supabase.rpc('organization_team',{org_id:data.organization_id});if(result.error)throw new Error(result.error.message);return result.data ?? [];
 });
 export const inviteFirstMember = createServerFn({method:'POST'}).middleware([requireSupabaseAuth]).inputValidator(z.object({organization_id:z.string().uuid(),email:z.string().email().transform(v=>v.trim().toLowerCase()),role:z.enum(roles)})).handler(async({context,data})=>{
   const allowed=await context.supabase.rpc('is_platform_admin');if(allowed.error||!allowed.data)throw new Error('Acesso não autorizado.');
