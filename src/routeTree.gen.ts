@@ -10,33 +10,213 @@
 
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
+import { Route as AuthenticatedRouteRouteImport } from './routes/_authenticated/route'
+import { Route as AuthRouteImport } from './routes/auth'
+import { Route as DefinirSenhaRouteImport } from './routes/definir-senha'
+import { Route as EntrarRouteImport } from './routes/entrar'
+import { Route as EsqueciSenhaRouteImport } from './routes/esqueci-senha'
+import { Route as RedefinirSenhaRouteImport } from './routes/redefinir-senha'
+import { Route as ResetPasswordRouteImport } from './routes/reset-password'
+import { Route as AuthenticatedDashboardRouteImport } from './routes/_authenticated/dashboard'
+import { Route as AuthenticatedAdminSectionRouteImport } from './routes/_authenticated/admin/$section'
+import { Route as AuthenticatedAdminOrganizacoesRouteImport } from './routes/_authenticated/admin/organizacoes'
+import { Route as AuthenticatedOOrgSlugSectionRouteImport } from './routes/_authenticated/o/$orgSlug/$section'
+import { Route as AuthenticatedOOrgSlugEmpresasIndexRouteImport } from './routes/_authenticated/o/$orgSlug/empresas/index'
+import { Route as AuthenticatedOOrgSlugEmpresasCompanyIdRouteImport } from './routes/_authenticated/o/$orgSlug/empresas/$companyId'
+import { Route as AuthenticatedOOrgSlugEmpresasNovaRouteImport } from './routes/_authenticated/o/$orgSlug/empresas/nova'
 
 const IndexRoute = IndexRouteImport.update({
   id: '/',
   path: '/',
   getParentRoute: () => rootRouteImport,
 } as any)
+const AuthenticatedRouteRoute = AuthenticatedRouteRouteImport.update({
+  id: '/_authenticated',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const AuthRoute = AuthRouteImport.update({
+  id: '/auth',
+  path: '/auth',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const DefinirSenhaRoute = DefinirSenhaRouteImport.update({
+  id: '/definir-senha',
+  path: '/definir-senha',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const EntrarRoute = EntrarRouteImport.update({
+  id: '/entrar',
+  path: '/entrar',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const EsqueciSenhaRoute = EsqueciSenhaRouteImport.update({
+  id: '/esqueci-senha',
+  path: '/esqueci-senha',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const RedefinirSenhaRoute = RedefinirSenhaRouteImport.update({
+  id: '/redefinir-senha',
+  path: '/redefinir-senha',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ResetPasswordRoute = ResetPasswordRouteImport.update({
+  id: '/reset-password',
+  path: '/reset-password',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const AuthenticatedDashboardRoute = AuthenticatedDashboardRouteImport.update({
+  id: '/dashboard',
+  path: '/dashboard',
+  getParentRoute: () => AuthenticatedRouteRoute,
+} as any)
+const AuthenticatedAdminSectionRoute =
+  AuthenticatedAdminSectionRouteImport.update({
+    id: '/admin/$section',
+    path: '/admin/$section',
+    getParentRoute: () => AuthenticatedRouteRoute,
+  } as any)
+const AuthenticatedAdminOrganizacoesRoute =
+  AuthenticatedAdminOrganizacoesRouteImport.update({
+    id: '/admin/organizacoes',
+    path: '/admin/organizacoes',
+    getParentRoute: () => AuthenticatedRouteRoute,
+  } as any)
+const AuthenticatedOOrgSlugSectionRoute =
+  AuthenticatedOOrgSlugSectionRouteImport.update({
+    id: '/o/$orgSlug/$section',
+    path: '/o/$orgSlug/$section',
+    getParentRoute: () => AuthenticatedRouteRoute,
+  } as any)
+const AuthenticatedOOrgSlugEmpresasIndexRoute =
+  AuthenticatedOOrgSlugEmpresasIndexRouteImport.update({
+    id: '/o/$orgSlug/empresas/',
+    path: '/o/$orgSlug/empresas/',
+    getParentRoute: () => AuthenticatedRouteRoute,
+  } as any)
+const AuthenticatedOOrgSlugEmpresasCompanyIdRoute =
+  AuthenticatedOOrgSlugEmpresasCompanyIdRouteImport.update({
+    id: '/o/$orgSlug/empresas/$companyId',
+    path: '/o/$orgSlug/empresas/$companyId',
+    getParentRoute: () => AuthenticatedRouteRoute,
+  } as any)
+const AuthenticatedOOrgSlugEmpresasNovaRoute =
+  AuthenticatedOOrgSlugEmpresasNovaRouteImport.update({
+    id: '/o/$orgSlug/empresas/nova',
+    path: '/o/$orgSlug/empresas/nova',
+    getParentRoute: () => AuthenticatedRouteRoute,
+  } as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
+  '/auth': typeof AuthRoute
+  '/definir-senha': typeof DefinirSenhaRoute
+  '/entrar': typeof EntrarRoute
+  '/esqueci-senha': typeof EsqueciSenhaRoute
+  '/redefinir-senha': typeof RedefinirSenhaRoute
+  '/reset-password': typeof ResetPasswordRoute
+  '/dashboard': typeof AuthenticatedDashboardRoute
+  '/admin/$section': typeof AuthenticatedAdminSectionRoute
+  '/admin/organizacoes': typeof AuthenticatedAdminOrganizacoesRoute
+  '/o/$orgSlug/$section': typeof AuthenticatedOOrgSlugSectionRoute
+  '/o/$orgSlug/empresas/$companyId': typeof AuthenticatedOOrgSlugEmpresasCompanyIdRoute
+  '/o/$orgSlug/empresas/nova': typeof AuthenticatedOOrgSlugEmpresasNovaRoute
+  '/o/$orgSlug/empresas/': typeof AuthenticatedOOrgSlugEmpresasIndexRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
+  '/auth': typeof AuthRoute
+  '/definir-senha': typeof DefinirSenhaRoute
+  '/entrar': typeof EntrarRoute
+  '/esqueci-senha': typeof EsqueciSenhaRoute
+  '/redefinir-senha': typeof RedefinirSenhaRoute
+  '/reset-password': typeof ResetPasswordRoute
+  '/dashboard': typeof AuthenticatedDashboardRoute
+  '/admin/$section': typeof AuthenticatedAdminSectionRoute
+  '/admin/organizacoes': typeof AuthenticatedAdminOrganizacoesRoute
+  '/o/$orgSlug/$section': typeof AuthenticatedOOrgSlugSectionRoute
+  '/o/$orgSlug/empresas/$companyId': typeof AuthenticatedOOrgSlugEmpresasCompanyIdRoute
+  '/o/$orgSlug/empresas/nova': typeof AuthenticatedOOrgSlugEmpresasNovaRoute
+  '/o/$orgSlug/empresas': typeof AuthenticatedOOrgSlugEmpresasIndexRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
+  '/_authenticated': typeof AuthenticatedRouteRouteWithChildren
+  '/auth': typeof AuthRoute
+  '/definir-senha': typeof DefinirSenhaRoute
+  '/entrar': typeof EntrarRoute
+  '/esqueci-senha': typeof EsqueciSenhaRoute
+  '/redefinir-senha': typeof RedefinirSenhaRoute
+  '/reset-password': typeof ResetPasswordRoute
+  '/_authenticated/dashboard': typeof AuthenticatedDashboardRoute
+  '/_authenticated/admin/$section': typeof AuthenticatedAdminSectionRoute
+  '/_authenticated/admin/organizacoes': typeof AuthenticatedAdminOrganizacoesRoute
+  '/_authenticated/o/$orgSlug/$section': typeof AuthenticatedOOrgSlugSectionRoute
+  '/_authenticated/o/$orgSlug/empresas/$companyId': typeof AuthenticatedOOrgSlugEmpresasCompanyIdRoute
+  '/_authenticated/o/$orgSlug/empresas/nova': typeof AuthenticatedOOrgSlugEmpresasNovaRoute
+  '/_authenticated/o/$orgSlug/empresas/': typeof AuthenticatedOOrgSlugEmpresasIndexRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/'
+  fullPaths:
+    | '/'
+    | '/auth'
+    | '/definir-senha'
+    | '/entrar'
+    | '/esqueci-senha'
+    | '/redefinir-senha'
+    | '/reset-password'
+    | '/dashboard'
+    | '/admin/$section'
+    | '/admin/organizacoes'
+    | '/o/$orgSlug/$section'
+    | '/o/$orgSlug/empresas/$companyId'
+    | '/o/$orgSlug/empresas/nova'
+    | '/o/$orgSlug/empresas/'
   fileRoutesByTo: FileRoutesByTo
-  to: '/'
-  id: '__root__' | '/'
+  to:
+    | '/'
+    | '/auth'
+    | '/definir-senha'
+    | '/entrar'
+    | '/esqueci-senha'
+    | '/redefinir-senha'
+    | '/reset-password'
+    | '/dashboard'
+    | '/admin/$section'
+    | '/admin/organizacoes'
+    | '/o/$orgSlug/$section'
+    | '/o/$orgSlug/empresas/$companyId'
+    | '/o/$orgSlug/empresas/nova'
+    | '/o/$orgSlug/empresas'
+  id:
+    | '__root__'
+    | '/'
+    | '/_authenticated'
+    | '/auth'
+    | '/definir-senha'
+    | '/entrar'
+    | '/esqueci-senha'
+    | '/redefinir-senha'
+    | '/reset-password'
+    | '/_authenticated/dashboard'
+    | '/_authenticated/admin/$section'
+    | '/_authenticated/admin/organizacoes'
+    | '/_authenticated/o/$orgSlug/$section'
+    | '/_authenticated/o/$orgSlug/empresas/$companyId'
+    | '/_authenticated/o/$orgSlug/empresas/nova'
+    | '/_authenticated/o/$orgSlug/empresas/'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
+  AuthenticatedRouteRoute: typeof AuthenticatedRouteRouteWithChildren
+  AuthRoute: typeof AuthRoute
+  DefinirSenhaRoute: typeof DefinirSenhaRoute
+  EntrarRoute: typeof EntrarRoute
+  EsqueciSenhaRoute: typeof EsqueciSenhaRoute
+  RedefinirSenhaRoute: typeof RedefinirSenhaRoute
+  ResetPasswordRoute: typeof ResetPasswordRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -48,11 +228,142 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof IndexRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/_authenticated': {
+      id: '/_authenticated'
+      path: ''
+      fullPath: '/'
+      preLoaderRoute: typeof AuthenticatedRouteRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/auth': {
+      id: '/auth'
+      path: '/auth'
+      fullPath: '/auth'
+      preLoaderRoute: typeof AuthRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/definir-senha': {
+      id: '/definir-senha'
+      path: '/definir-senha'
+      fullPath: '/definir-senha'
+      preLoaderRoute: typeof DefinirSenhaRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/entrar': {
+      id: '/entrar'
+      path: '/entrar'
+      fullPath: '/entrar'
+      preLoaderRoute: typeof EntrarRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/esqueci-senha': {
+      id: '/esqueci-senha'
+      path: '/esqueci-senha'
+      fullPath: '/esqueci-senha'
+      preLoaderRoute: typeof EsqueciSenhaRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/redefinir-senha': {
+      id: '/redefinir-senha'
+      path: '/redefinir-senha'
+      fullPath: '/redefinir-senha'
+      preLoaderRoute: typeof RedefinirSenhaRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/reset-password': {
+      id: '/reset-password'
+      path: '/reset-password'
+      fullPath: '/reset-password'
+      preLoaderRoute: typeof ResetPasswordRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/_authenticated/dashboard': {
+      id: '/_authenticated/dashboard'
+      path: '/dashboard'
+      fullPath: '/dashboard'
+      preLoaderRoute: typeof AuthenticatedDashboardRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/_authenticated/admin/$section': {
+      id: '/_authenticated/admin/$section'
+      path: '/admin/$section'
+      fullPath: '/admin/$section'
+      preLoaderRoute: typeof AuthenticatedAdminSectionRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/_authenticated/admin/organizacoes': {
+      id: '/_authenticated/admin/organizacoes'
+      path: '/admin/organizacoes'
+      fullPath: '/admin/organizacoes'
+      preLoaderRoute: typeof AuthenticatedAdminOrganizacoesRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/_authenticated/o/$orgSlug/$section': {
+      id: '/_authenticated/o/$orgSlug/$section'
+      path: '/o/$orgSlug/$section'
+      fullPath: '/o/$orgSlug/$section'
+      preLoaderRoute: typeof AuthenticatedOOrgSlugSectionRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/_authenticated/o/$orgSlug/empresas/': {
+      id: '/_authenticated/o/$orgSlug/empresas/'
+      path: '/o/$orgSlug/empresas'
+      fullPath: '/o/$orgSlug/empresas/'
+      preLoaderRoute: typeof AuthenticatedOOrgSlugEmpresasIndexRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/_authenticated/o/$orgSlug/empresas/$companyId': {
+      id: '/_authenticated/o/$orgSlug/empresas/$companyId'
+      path: '/o/$orgSlug/empresas/$companyId'
+      fullPath: '/o/$orgSlug/empresas/$companyId'
+      preLoaderRoute: typeof AuthenticatedOOrgSlugEmpresasCompanyIdRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/_authenticated/o/$orgSlug/empresas/nova': {
+      id: '/_authenticated/o/$orgSlug/empresas/nova'
+      path: '/o/$orgSlug/empresas/nova'
+      fullPath: '/o/$orgSlug/empresas/nova'
+      preLoaderRoute: typeof AuthenticatedOOrgSlugEmpresasNovaRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
   }
 }
 
+interface AuthenticatedRouteRouteChildren {
+  AuthenticatedDashboardRoute: typeof AuthenticatedDashboardRoute
+  AuthenticatedAdminSectionRoute: typeof AuthenticatedAdminSectionRoute
+  AuthenticatedAdminOrganizacoesRoute: typeof AuthenticatedAdminOrganizacoesRoute
+  AuthenticatedOOrgSlugSectionRoute: typeof AuthenticatedOOrgSlugSectionRoute
+  AuthenticatedOOrgSlugEmpresasCompanyIdRoute: typeof AuthenticatedOOrgSlugEmpresasCompanyIdRoute
+  AuthenticatedOOrgSlugEmpresasNovaRoute: typeof AuthenticatedOOrgSlugEmpresasNovaRoute
+  AuthenticatedOOrgSlugEmpresasIndexRoute: typeof AuthenticatedOOrgSlugEmpresasIndexRoute
+}
+
+const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
+  AuthenticatedDashboardRoute: AuthenticatedDashboardRoute,
+  AuthenticatedAdminSectionRoute: AuthenticatedAdminSectionRoute,
+  AuthenticatedAdminOrganizacoesRoute: AuthenticatedAdminOrganizacoesRoute,
+  AuthenticatedOOrgSlugSectionRoute: AuthenticatedOOrgSlugSectionRoute,
+  AuthenticatedOOrgSlugEmpresasCompanyIdRoute:
+    AuthenticatedOOrgSlugEmpresasCompanyIdRoute,
+  AuthenticatedOOrgSlugEmpresasNovaRoute:
+    AuthenticatedOOrgSlugEmpresasNovaRoute,
+  AuthenticatedOOrgSlugEmpresasIndexRoute:
+    AuthenticatedOOrgSlugEmpresasIndexRoute,
+}
+
+const AuthenticatedRouteRouteWithChildren =
+  AuthenticatedRouteRoute._addFileChildren(AuthenticatedRouteRouteChildren)
+
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
+  AuthenticatedRouteRoute: AuthenticatedRouteRouteWithChildren,
+  AuthRoute: AuthRoute,
+  DefinirSenhaRoute: DefinirSenhaRoute,
+  EntrarRoute: EntrarRoute,
+  EsqueciSenhaRoute: EsqueciSenhaRoute,
+  RedefinirSenhaRoute: RedefinirSenhaRoute,
+  ResetPasswordRoute: ResetPasswordRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
