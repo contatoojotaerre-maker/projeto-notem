@@ -1,3 +1,2 @@
 project_id = "crtmzascjihzwckxmmyp"
-[functions.prova-mtls]
-verify_jwt = false
+
