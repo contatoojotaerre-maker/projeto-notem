@@ -8,7 +8,7 @@ export async function makeKey(environment:'sandbox'|'production'){
  return {key,key_hash:await hashKey(key),key_prefix:key.slice(0,environment==='sandbox'?19:16)+'…'}
 }
 export function sanitizeBody(value:unknown):import('@/integrations/supabase/types').Json {
- const secret=/(pfx|senha|password|certificado|certificate|authorization|private.?key|api.?key|key_hash|key_prefix|chave|token|secret|credential)/i
+ const secret=/(^key$|pfx|senha|password|certificado|certificate|authorization|private.?key|api.?key|key_hash|key_prefix|chave|token|secret|credential)/i
  const text=(v:string)=>v.replace(/-----BEGIN [^-]+-----[\s\S]*?-----END [^-]+-----/g,'[REMOVIDO]').replace(/ntm_(?:homolog|prod)_[a-zA-Z0-9._-]+/g,'[REMOVIDO]').replace(/Bearer\s+[^\s"\\,}]+/gi,'Bearer [REMOVIDO]').replace(/eyJ[a-zA-Z0-9_-]+\.[a-zA-Z0-9_-]+\.[a-zA-Z0-9_-]+/g,'[REMOVIDO]')
  const walk=(v:unknown,depth=0):import('@/integrations/supabase/types').Json=>{if(depth>20)return '[TRUNCADO]';if(typeof v==='string')return text(v);if(v===null||typeof v==='boolean'||typeof v==='number')return v;if(Array.isArray(v))return v.slice(0,1000).map(x=>walk(x,depth+1));if(typeof v==='object'){return Object.fromEntries(Object.entries(v).slice(0,1000).map(([k,x])=>[k,secret.test(k)?'[REMOVIDO]':walk(x,depth+1)]))}return null}
  const clean=walk(value);const json=JSON.stringify(clean);if(new TextEncoder().encode(json).length<=60000)return clean
