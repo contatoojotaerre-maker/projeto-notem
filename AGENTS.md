@@ -10,6 +10,8 @@
 <!-- LOVABLE:END -->
 
 ## Application architecture
+- Every new or changed API route must update docs/api/ in the same work; the final-phase public /docs page is generated from docs/api/, keeping the API contract authoritative.
+- Integration API reachability must be verified externally before Phase 3A schema work; use only one official base, preserving the approved feasibility-first order.
 - Municipality lookups use an authenticated server function and an invoker SQL RPC backed by immutable unaccent/trigram normalization; keep catalog existence separate from filtered results so an empty catalog is never mistaken for a failed match.
 - Fiscal catalogs reuse indexed immutable normalization with invoker search RPCs; fiscal forms use authenticated server functions and organization-scoped query loaders/RLS.
 - Guided fiscal labels are separate from persisted codes; validate company-level optional withheld-Simples ISS rates and approximate-tax rules in shared schemas and database triggers without rewriting legacy settings on read.

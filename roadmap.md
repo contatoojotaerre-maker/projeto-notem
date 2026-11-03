@@ -1,6 +1,9 @@
 # notem — Fase 1
 ## Fase 3A — Integrações e primeira rota da API
-- [ ] Aprovar plano de tabelas, permissões, chaves, registro de requisições, telas e GET /api/v1/status conforme docs/api/.
+- [x] Plano aprovado; testar /api/v1 primeiro, adotar /api/public/v1 sem aliases apenas se bloqueado, atualizando somente a base do contrato.
+- [ ] Publicar para teste externo autorizado; informar URL e Redirect URLs /entrar, /definir-senha e /redefinir-senha.
+- [ ] Validar waitUntil hospedado; se indisponível, gravar sincronamente e informar impacto medido.
+- [ ] Prova externa em andamento: publicação solicitada para https://notem-waiting-garden.lovable.app; resposta 404 “No published build” e published_url null. Rota inicial /api/v1/status retorna 401 JSON localmente, sem dados/chaves; não é prova de bloqueio de caminho. Aguardar implantação antes de migrar.
 - [ ] Após aprovação, implementar e testar isolamento, limite de duas chaves por ambiente, sanitização e retenção de 90 dias; verificar acesso externo sem sessão do painel.
 - [ ] Página pública /docs gerada de docs/api/ — fase final, fora da Fase 3A.
 

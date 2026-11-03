@@ -21,7 +21,10 @@ paths:
     get:
       tags: [Geral]
       summary: Verifica a chave e informa o ambiente
-      description: Use para testar a integração. Não consome nada e não acessa o governo.
+      description: |
+        Use para testar a integração. Não consome nada e não acessa o governo.
+        Fase 3A em validação de acesso externo: enquanto as chaves não forem implementadas,
+        todas as chamadas retornam 401 AUTENTICACAO_INVALIDA. A URL pública ainda não foi confirmada.
       responses:
         "200":
           description: Chave válida
@@ -118,6 +121,8 @@ components:
   responses:
     AutenticacaoInvalida:
       description: Chave ausente, inválida ou revogada
+      headers:
+        X-Request-Id: { $ref: "#/components/headers/XRequestId" }
       content:
         application/json:
           schema: { $ref: "#/components/schemas/Erro" }
