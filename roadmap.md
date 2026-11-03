@@ -2,7 +2,7 @@
 ## Fase 3A — Integrações e primeira rota da API
 - [x] Plano aprovado; testar /api/v1 primeiro, adotar /api/public/v1 sem aliases apenas se bloqueado, atualizando somente a base do contrato.
 - [x] Publicação inicial confirmada; URL e três Redirect URLs informadas. Nova publicação com integrações solicitada.
-- [ ] Confirmar publicação atualizada e medir waitUntil/registro hospedado — respostas externas ainda eram do diagnóstico anterior, sem registro no banco. Prévia usou gravação síncrona: 194,3–495,8 ms observados; não é medida da produção.
+- [x] Publicação atualizada confirmada: /api/v1/status retornou 401 e Server-Timing api-log background; req_aef31f2dff00489593bb74583c3c9d7b confirmado no banco. waitUntil disponível hospedado; sem espera síncrona da gravação (duration_ms antes do agendamento: 0 ms na chamada sem chave).
 - [x] Prova externa: /api/v1/status publicado respondeu 401 JSON com X-Request-Id sem sessão às 23:02:49 UTC. Base /api/v1 preservada, sem aliases. Quatro tabelas criadas com RLS, leitura de metadados sem hash e escrita só servidor; limpeza diária 03:00 UTC.
 - [x] Implementar lista/detalhe, geração/revogação e logs com filtros; 55 testes locais passaram e testes de banco com rollback passaram (limite por ambiente, revogação, papéis, empresa de outro tenant quando disponível e concessões sem hash/escrita direta). Limpeza SQL diária ativa às 03:00 UTC.
 - [ ] Conferir criação, geração e leitura na tela autenticada com chave real — Supabase externo sem sessão de teste gerenciada. Concorrência multissessão não exercitada; lock de integração implementado.
