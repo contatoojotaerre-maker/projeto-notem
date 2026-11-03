@@ -1,10 +1,11 @@
 # notem — Fase 1
 ## Fase 3A — Integrações e primeira rota da API
 - [x] Plano aprovado; testar /api/v1 primeiro, adotar /api/public/v1 sem aliases apenas se bloqueado, atualizando somente a base do contrato.
-- [ ] Publicar para teste externo autorizado; informar URL e Redirect URLs /entrar, /definir-senha e /redefinir-senha.
-- [ ] Validar waitUntil hospedado; se indisponível, gravar sincronamente e informar impacto medido.
+- [x] Publicação inicial confirmada; URL e três Redirect URLs informadas. Nova publicação com integrações solicitada.
+- [ ] Confirmar publicação atualizada e medir waitUntil/registro hospedado — respostas externas ainda eram do diagnóstico anterior, sem registro no banco. Prévia usou gravação síncrona: 194,3–495,8 ms observados; não é medida da produção.
 - [x] Prova externa: /api/v1/status publicado respondeu 401 JSON com X-Request-Id sem sessão às 23:02:49 UTC. Base /api/v1 preservada, sem aliases. Quatro tabelas criadas com RLS, leitura de metadados sem hash e escrita só servidor; limpeza diária 03:00 UTC.
-- [ ] Após aprovação, implementar e testar isolamento, limite de duas chaves por ambiente, sanitização e retenção de 90 dias; verificar acesso externo sem sessão do painel.
+- [x] Implementar lista/detalhe, geração/revogação e logs com filtros; 55 testes locais passaram e testes de banco com rollback passaram (limite por ambiente, revogação, papéis, empresa de outro tenant quando disponível e concessões sem hash/escrita direta). Limpeza SQL diária ativa às 03:00 UTC.
+- [ ] Conferir criação, geração e leitura na tela autenticada com chave real — Supabase externo sem sessão de teste gerenciada. Concorrência multissessão não exercitada; lock de integração implementado.
 - [ ] Página pública /docs gerada de docs/api/ — fase final, fora da Fase 3A.
 
 ## Redesenho fiscal guiado
