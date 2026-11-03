@@ -1,47 +1,34 @@
-# notem — Fase 2A (revisada): Certificado e convênio pelo transmissor
+# notem — Catálogos oficiais e busca de municípios
 
-Substitui o plano anterior da 2A. Nada que dependa de Edge Functions. `transmissor/` não é tocado.
+## A. Carga dos catálogos oficiais
+- Criar uma migração com os dados literais dos dois CSV do repositório, sem corrigir, traduzir, remover acentos ou alterar qualquer valor.
+- Municípios: `codigo_ibge → ibge_code`, `nome → name`, `uf → state`, `uf_nome → state_name`.
+- Países: `iso2 → iso2`, `nome → name`.
+- Inserir ou atualizar por chave (`ibge_code` e `iso2`) com `ON CONFLICT DO UPDATE`, sem duplicar e sem apagar registros.
+- Conferir após a carga no banco: **5.570 municípios**, **250 países** e `4212254`, nome **Passo de Torres**, UF **SC** — apresentado como **Passo de Torres - SC**.
 
-## 1. Segredos (somente servidor)
-- `TRANSMISSOR_URL` e `GOOGLE_SERVICE_ACCOUNT_JSON`, pedidos pelo formulário seguro após a aprovação. Lidos só dentro dos handlers; nunca enviados ao navegador nem registrados.
-
-## 2. Cliente do transmissor (módulo só de servidor)
-- Token de identidade Google: JWT RS256 assinado com Web Crypto (chave PKCS#8 do JSON), claims `iss/sub` = e-mail da conta, `aud` = `https://oauth2.googleapis.com/token`, `target_audience` = `TRANSMISSOR_URL`, validade 1 h; troca por `id_token`. Cache em memória do Worker até 5 min antes de expirar (cache por instância; pode renovar mais vezes, sem impacto de segurança).
-- Apenas `POST /v1/certificados/preparar` e `POST /v1/municipios/convenio`. Timeout 40 s (AbortController).
-- Classificação de falhas: indisponível/timeout → "Serviço de transmissão indisponível"; 401/403 → "Credencial do painel com o transmissor inválida — contate o administrador" (detalhe só para admin da plataforma); 422/400 → códigos do LEIAME traduzidos.
-- Nenhum log de corpo de requisição/resposta; erros registram apenas status e código.
-
-## 3. Banco (migração; grants explícitos + RLS em todas)
-- `company_certificates`: id, company_id, organization_id, holder, cnpj, issuer, serial_number, valid_from, valid_until, status (`active`|`replaced`), uploaded_by, created_at, replaced_at. Índice único parcial `(company_id) where status='active'`. SELECT para membros da organização e admin da plataforma; sem INSERT/UPDATE/DELETE para authenticated.
-- `company_certificate_material`: company_id (PK), organization_id, key_version, nonce, data, updated_at. Grant só a `service_role`; RLS ativo sem políticas.
-- `certificate_audit_events`: id, company_id, organization_id, user_id, action (`uploaded`|`replaced`|`used`|`failed`), purpose, environment, result, created_at. SELECT para owner/admin e admin da plataforma; escrita só servidor.
-- `municipality_agreement_queries`: id, company_id, organization_id, municipality_ibge_code, environment (`production`|`sandbox`), requested_by, http_status, response_body (text), error_code, url, duration_ms, created_at. SELECT para membros; escrita só servidor.
-- FKs para companies/organizations e verificação de que organization_id coincide com o da empresa (FK composta via índice único `companies(id, organization_id)`).
-- Função `replace_company_certificate(...)`: executável só por `service_role`, transação única com `pg_advisory_xact_lock` por empresa — marca anterior `replaced`, insere novo `active`, faz upsert do envelope, grava auditoria (`uploaded` ou `replaced`). Falha = rollback, anterior intacto.
-- Gatilho tornando `companies.organization_id` imutável (decisão já aprovada).
-
-## 4. Funções de servidor (TanStack, `requireSupabaseAuth`)
-Autorização sempre via `context.supabase` (`is_platform_admin` / `has_org_role(org, [owner, admin])`) e leitura da empresa pelo RLS do usuário; só então importar o cliente admin dentro do handler.
-- `uploadCertificate` (POST, FormData): arquivo `.pfx`/`.p12` até 100 KB + senha + company_id/organization_id. Base64 em memória → `/preparar` com `cnpj_esperado` só dígitos → `replace_company_certificate` → devolve apenas metadados. Falha → auditoria `failed` com código, sem segredo.
-- `getCertificates`: ativo + histórico (metadados).
-- `checkAgreement`: lê envelope com cliente admin, ambiente do perfil (`sandbox`→`homologacao`, `production`→`producao`), chama `/convenio`, grava consulta e auditoria `used`/`failed`.
-- `getAgreementQueries`: última consulta por ambiente; o painel mostra só a do ambiente atual.
-
-## 5. Telas da empresa
-- **Certificado:** titular, CNPJ, emissor, validade e situação ("Válido", "Vence em X dias" em âmbar com ≤30 dias, "Vencido"). Envio/Substituir só para owner/admin/admin da plataforma; demais veem metadados. Campo de senha sem autocomplete; arquivo e senha limpos ao concluir/cancelar; nada em cache de consulta ou storage. Histórico em tabela.
-- **Prontidão:** item "Município atendido pelo emissor nacional" com botão "Verificar" (mesmos papéis). Mostra campos do Swagger `ParametrosConfiguracaoConvenio`: aderente ao emissor nacional, aderente ao ambiente nacional, situação de emissão padrão dos contribuintes RFB, aderente MAN, aproveitamento de créditos, tipo de convênio, `mensagem`, data e ambiente. "Detalhes técnicos" recolhível: URL, status HTTP, duração, corpo completo. Erros TLS/TEMPO_ESGOTADO/CONEXAO com mensagem clara.
-
-## 6. Testes
-- Regras em vitest: papéis que podem enviar/verificar (owner, admin, admin da plataforma sim; operator, viewer, developer não); situação do certificado nos limites 30/31 dias e vencido; tradução dos códigos do transmissor; mapeamento de ambiente; sanitização (respostas ao navegador nunca contêm `pfx_base64`, `senha`, `envelope`, `nonce`, `data`).
-- Banco: authenticated sem acesso a `company_certificate_material`; outra organização não lê certificados/consultas; `organization_id` da empresa imutável; função de troca negada a authenticated.
-- Testes das seis funções de autorização já aprovados.
-
-## Fora do escopo
-DPS, assinatura, emissão, cancelamento, outras consultas, rotação de chave.
-
-## Conclusão
-Só marcada como concluída com o A1 do Grupo Jota (Passo de Torres/SC, IBGE 4212254) enviado por você, metadados corretos e resposta real de homologação exibida e guardada. Sem `TRANSMISSOR_URL`, credencial ou certificado, declaro o bloqueio.
+## B. Busca de municípios
+- Buscar por nome sem diferenciar acentos nem maiúsculas: `sao joao` encontra nomes com **São João**, preservando a grafia oficial nos resultados.
+- Quando o termo contiver somente números, buscar pelo início do código IBGE; o código completo `4212254` encontra Passo de Torres/SC.
+- Ao abrir a busca com menos de 2 caracteres, mostrar **“Digite pelo menos 2 letras”** e não executar uma busca de resultados.
+- Identificar separadamente se o catálogo está vazio e mostrar **“Catálogo de municípios ainda não importado”**. Essa mensagem terá prioridade quando a ausência do catálogo estiver confirmada.
+- Reservar **“Nenhum município encontrado”** para catálogo importado e termo válido sem correspondências; manter o estado de busca em andamento e mostrar falhas de consulta sem confundi-las com catálogo vazio.
+- Aplicar o comportamento no formulário compartilhado usado em Nova empresa e na edição de empresa; conferir qualquer outro consumidor antes de concluir. Atualmente só esse formulário realiza buscas de municípios.
 
 ## Detalhes técnicos
-- AGENTS.md: substituir a regra de Edge Functions por "certificados passam pelo Worker apenas em memória e são trancados/abertos exclusivamente pelo transmissor". Memória de certificados atualizada no mesmo sentido.
-- Limite de corpo do Worker comporta 100 KB; validação de tamanho no navegador e no servidor.
+- Habilitar `unaccent` e `pg_trgm`; criar uma função própria `IMMUTABLE` com referência explícita ao dicionário de `unaccent` e normalização para minúsculas.
+- Criar índice GIN de trigramas sobre o nome normalizado, compatível com a busca por trecho. Usar o mesmo normalizador na consulta e no índice. Criar índice apropriado para prefixos de códigos IBGE.
+- Criar uma função SQL de busca `SECURITY INVOKER`, respeitando o RLS existente. Revogar execução de `PUBLIC`/`anon` e conceder somente aos papéis necessários, sem abrir os catálogos a visitantes.
+- Manter a função autenticada do painel como ponto de acesso, retornando resultados e indicação explícita de catálogo vazio. Preservar a ordenação por nome e o limite de 30 resultados.
+- Detectar catálogo vazio por consulta de existência independente do filtro e disponível ao abrir o campo, inclusive antes de digitar 2 caracteres.
+- Registrar a regra estrutural de busca no AGENTS.md; não alterar permissões de organizações/empresas nem tocar em `transmissor/`.
+
+## Validações
+- Antes da carga: conferir cabeçalhos, códigos únicos e totais dos CSV; já conferidos **5.570** e **250** registros, sem códigos duplicados.
+- Depois da carga: comparar todos os campos do banco com os CSV, conferir totais e a linha `4212254`; verificar que repetir a carga não duplica registros nem muda os valores.
+- Testar no banco `sao joao`, variações de maiúsculas/acentos, `4212254`, prefixo numérico e termo sem correspondência; conferir os índices criados e o plano de consulta.
+- Acrescentar e executar testes das regras de seleção por nome/código, limite de 2 caracteres e distinção entre catálogo vazio e ausência de resultados. Não testar textos ou estilos por snapshots.
+- Conferir a busca na tela com sessão real, se disponível. Caso o Supabase externo não permita essa verificação, declarar a limitação sem afirmar validação de ponta a ponta.
+
+## Limites
+Somente carga dos catálogos e busca municipal. Nenhuma alteração em certificados, convênios, emissão, marca ou outras funcionalidades. Neste momento os dois catálogos estão vazios no banco; nenhuma migração ou mudança no aplicativo será aplicada antes da aprovação deste plano.
