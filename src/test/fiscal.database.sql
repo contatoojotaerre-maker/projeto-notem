@@ -37,12 +37,18 @@ BEGIN
   UPDATE public.company_fiscal_settings SET dps_series=49999 WHERE company_id=c1;
   UPDATE public.company_fiscal_settings SET dps_series=1 WHERE company_id=c1;
   n:=public.reserve_dps_number(c1,org1,1,'production',u); IF n<>'1' THEN RAISE EXCEPTION 'First production reservation must be 1'; END IF;
-  -- No issuance follows: the reserved number remains consumed; failure in future issuance cannot release it.
+  -- Failure in a separate future issuance transaction cannot undo the prior reservation.
+  BEGIN
+   RAISE EXCEPTION USING ERRCODE='ZX002',MESSAGE='Simulated future issuance failure';
+  EXCEPTION WHEN SQLSTATE 'ZX002' THEN NULL;
+  END;
+  -- No issuance succeeds: the reserved number remains consumed and the next number must advance.
   n:=public.reserve_dps_number(c1,org1,1,'production',u); IF n<>'2' THEN RAISE EXCEPTION 'Definitive reservation without issuance must advance to 2'; END IF;
   n:=public.reserve_dps_number(c1,org1,1,'sandbox',u); IF n<>'1' THEN RAISE EXCEPTION 'Sandbox must independently start at 1'; END IF;
   UPDATE public.company_fiscal_settings SET dps_series=49999 WHERE company_id=c1;
   UPDATE public.company_fiscal_settings SET dps_series=1 WHERE company_id=c1;
   n:=public.reserve_dps_number(c1,org1,1,'production',u); IF n<>'3' THEN RAISE EXCEPTION 'Returning to series must preserve sequence'; END IF;
+  BEGIN UPDATE public.dps_sequences SET next_number=1 WHERE company_id=c1 AND series=1 AND environment='production'; RAISE EXCEPTION 'TEST_FAIL_reuse'; EXCEPTION WHEN OTHERS THEN IF SQLERRM='TEST_FAIL_reuse' OR position('definitivo' IN SQLERRM)=0 THEN RAISE; END IF; END;
   UPDATE public.dps_sequences SET next_number=999999999999999 WHERE company_id=c1 AND series=1 AND environment='production';
   n:=public.reserve_dps_number(c1,org1,1,'production',u);IF n<>'999999999999999' THEN RAISE EXCEPTION 'Maximum reservation must be allowed'; END IF;
   BEGIN PERFORM public.reserve_dps_number(c1,org1,1,'production',u); RAISE EXCEPTION 'TEST_FAIL_exhaustion'; EXCEPTION WHEN OTHERS THEN IF SQLERRM='TEST_FAIL_exhaustion' OR position('esgotada' IN SQLERRM)=0 THEN RAISE; END IF; END;
