@@ -14,6 +14,86 @@ export type Database = {
   }
   public: {
     Tables: {
+      api_request_logs: {
+        Row: {
+          created_at: string
+          duration_ms: number
+          environment: Database["public"]["Enums"]["environment"] | null
+          error_code: string | null
+          id: string
+          integration_id: string | null
+          key_id: string | null
+          method: string
+          organization_id: string | null
+          path: string
+          request_body: Json | null
+          response_body: Json | null
+          status_code: number
+        }
+        Insert: {
+          created_at?: string
+          duration_ms: number
+          environment?: Database["public"]["Enums"]["environment"] | null
+          error_code?: string | null
+          id: string
+          integration_id?: string | null
+          key_id?: string | null
+          method: string
+          organization_id?: string | null
+          path: string
+          request_body?: Json | null
+          response_body?: Json | null
+          status_code: number
+        }
+        Update: {
+          created_at?: string
+          duration_ms?: number
+          environment?: Database["public"]["Enums"]["environment"] | null
+          error_code?: string | null
+          id?: string
+          integration_id?: string | null
+          key_id?: string | null
+          method?: string
+          organization_id?: string | null
+          path?: string
+          request_body?: Json | null
+          response_body?: Json | null
+          status_code?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "api_request_logs_integration_id_organization_id_fkey"
+            columns: ["integration_id", "organization_id"]
+            isOneToOne: false
+            referencedRelation: "integrations"
+            referencedColumns: ["id", "organization_id"]
+          },
+          {
+            foreignKeyName: "api_request_logs_key_id_integration_id_organization_id_env_fkey"
+            columns: [
+              "key_id",
+              "integration_id",
+              "organization_id",
+              "environment",
+            ]
+            isOneToOne: false
+            referencedRelation: "integration_keys"
+            referencedColumns: [
+              "id",
+              "integration_id",
+              "organization_id",
+              "environment",
+            ]
+          },
+          {
+            foreignKeyName: "api_request_logs_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       certificate_audit_events: {
         Row: {
           action: string
@@ -479,6 +559,154 @@ export type Database = {
         }
         Relationships: []
       }
+      integration_companies: {
+        Row: {
+          company_id: string
+          integration_id: string
+          organization_id: string
+        }
+        Insert: {
+          company_id: string
+          integration_id: string
+          organization_id: string
+        }
+        Update: {
+          company_id?: string
+          integration_id?: string
+          organization_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "integration_companies_company_id_organization_id_fkey"
+            columns: ["company_id", "organization_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id", "organization_id"]
+          },
+          {
+            foreignKeyName: "integration_companies_integration_id_organization_id_fkey"
+            columns: ["integration_id", "organization_id"]
+            isOneToOne: false
+            referencedRelation: "integrations"
+            referencedColumns: ["id", "organization_id"]
+          },
+        ]
+      }
+      integration_keys: {
+        Row: {
+          created_at: string
+          created_by: string
+          environment: Database["public"]["Enums"]["environment"]
+          id: string
+          integration_id: string
+          key_hash: string
+          key_prefix: string
+          last_used_at: string | null
+          organization_id: string
+          revoked_at: string | null
+          revoked_by: string | null
+        }
+        Insert: {
+          created_at?: string
+          created_by: string
+          environment: Database["public"]["Enums"]["environment"]
+          id?: string
+          integration_id: string
+          key_hash: string
+          key_prefix: string
+          last_used_at?: string | null
+          organization_id: string
+          revoked_at?: string | null
+          revoked_by?: string | null
+        }
+        Update: {
+          created_at?: string
+          created_by?: string
+          environment?: Database["public"]["Enums"]["environment"]
+          id?: string
+          integration_id?: string
+          key_hash?: string
+          key_prefix?: string
+          last_used_at?: string | null
+          organization_id?: string
+          revoked_at?: string | null
+          revoked_by?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "integration_keys_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "integration_keys_integration_id_organization_id_fkey"
+            columns: ["integration_id", "organization_id"]
+            isOneToOne: false
+            referencedRelation: "integrations"
+            referencedColumns: ["id", "organization_id"]
+          },
+          {
+            foreignKeyName: "integration_keys_revoked_by_fkey"
+            columns: ["revoked_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      integrations: {
+        Row: {
+          active: boolean
+          company_scope: string
+          created_at: string
+          created_by: string
+          description: string
+          id: string
+          name: string
+          organization_id: string
+          updated_at: string
+        }
+        Insert: {
+          active?: boolean
+          company_scope: string
+          created_at?: string
+          created_by: string
+          description?: string
+          id?: string
+          name: string
+          organization_id: string
+          updated_at?: string
+        }
+        Update: {
+          active?: boolean
+          company_scope?: string
+          created_at?: string
+          created_by?: string
+          description?: string
+          id?: string
+          name?: string
+          organization_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "integrations_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "integrations_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       invitations: {
         Row: {
           accepted_at: string | null
@@ -791,6 +1019,16 @@ export type Database = {
       is_org_member: { Args: { org_id: string }; Returns: boolean }
       is_platform_admin: { Args: never; Returns: boolean }
       is_valid_cnpj: { Args: { value: string }; Returns: boolean }
+      manage_integration: {
+        Args: {
+          _action: string
+          _actor: string
+          _id: string
+          _org: string
+          _payload: Json
+        }
+        Returns: string
+      }
       normalize_municipality_name: { Args: { value: string }; Returns: string }
       organization_team: {
         Args: { org_id: string }
