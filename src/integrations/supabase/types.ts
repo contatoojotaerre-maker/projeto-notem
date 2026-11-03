@@ -1009,6 +1009,10 @@ export type Database = {
     }
     Functions: {
       accept_invitation: { Args: { invitation_id: string }; Returns: string }
+      create_integration: {
+        Args: { _actor: string; _org: string; _payload: Json }
+        Returns: string
+      }
       has_org_role: {
         Args: {
           org_id: string
