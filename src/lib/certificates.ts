@@ -50,6 +50,19 @@ export function formatGovernmentValue(value: unknown): string {
   return JSON.stringify(value);
 }
 
+export function formatAgreementField(field:string,value:unknown) {
+  if(['aderenteAmbienteNacional','aderenteEmissorNacional','aderenteMAN'].includes(field)) {
+    if(value===1)return 'Sim';if(value===0)return 'Não';if(value===-1)return 'Não informado';
+  }
+  return formatGovernmentValue(value);
+}
+export function agreementUnavailableMessage(status:number|null|undefined,message:unknown,environment:'production'|'sandbox') {
+  if(status!==404||typeof message!=='string')return null;
+  const text=message.normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase();
+  if(!/convenio/.test(text)||!/(nao\s+(esta\s+)?ativo|inativ|nao\s+possui\s+convenio\s+ativo|convenio\s+nao\s+ativ)/.test(text))return null;
+  return environment==='sandbox'?'Homologação indisponível neste município':'Município não atendido';
+}
+
 export const agreementFieldLabels: Record<string, string> = {
   aderenteEmissorNacional: 'Aderente ao emissor nacional',
   aderenteAmbienteNacional: 'Aderente ao ambiente nacional',

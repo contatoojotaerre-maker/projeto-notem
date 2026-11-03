@@ -11,6 +11,9 @@
 
 ## Application architecture
 - Municipality lookups use an authenticated server function and an invoker SQL RPC backed by immutable unaccent/trigram normalization; keep catalog existence separate from filtered results so an empty catalog is never mistaken for a failed match.
+- Fiscal catalogs reuse indexed immutable normalization with invoker search RPCs; fiscal forms use authenticated server functions and organization-scoped query loaders/RLS.
+- DPS series allocation locks by CNPJ and retains all previous series; number reservation is a separate committed service-role-only RPC after authenticated role validation, with no release/recycle operation, so future issuance failure leaves gaps.
+- Database triggers protect company CNPJ after any certificate or assigned DPS series and serialize certificate/series assignment against company updates; do not synchronize fiscal CNPJ on edits.
 - Keep tenant data and organizational roles scoped by organization IDs with database RLS; global administration is a separate protected table to prevent privilege escalation.
 - Ordinary panel private reads and mutations use authenticated TanStack server functions and loader/query options; privileged invitations authorize the caller before importing the admin client.
 - Certificate files and passwords pass through authenticated panel server functions only in memory and are forwarded to the private transmissor (Google ID token from a server-only service account); only the transmissor holds the envelope key, the panel stores the opaque envelope in a service-role-only table and never logs or returns it.
