@@ -1,4 +1,7 @@
 # notem — Fase 1
+## Configuração fiscal e perfis de serviço
+- [ ] Apresentar plano de tabelas, permissões, telas e testes; aguardar aprovação antes de implementar.
+
 ## Catálogos oficiais e busca municipal
 - [x] Plano aprovado; CSV conferidos com 5.570 municípios, 250 países e códigos únicos.
 - [x] Busca indexada sem acentos/por IBGE e estados do campo aplicados; 11 testes passaram e aplicativo sem erros.
