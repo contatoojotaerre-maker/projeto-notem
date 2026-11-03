@@ -15,5 +15,5 @@
 - [x] Tabelas, troca atômica, imutabilidade de organization_id da empresa.
 - [x] Cliente do transmissor, envio de certificado, consulta de convênio (valores crus, intervalo de 1 min por empresa/ambiente).
 - [x] Abas Certificado e Prontidão; testes de regras.
-- [ ] Cadastrar TRANSMISSOR_URL e GOOGLE_SERVICE_ACCOUNT_JSON — aguarda o usuário.
+- [x] Cadastrar TRANSMISSOR_URL e GOOGLE_SERVICE_ACCOUNT_JSON.
 - [ ] Aceite real: A1 Grupo Jota (IBGE 4212254) e resposta de homologação — aguarda segredos e certificado.
