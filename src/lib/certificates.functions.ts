@@ -67,7 +67,7 @@ export const checkAgreement = createServerFn({ method: 'POST' }).middleware([req
   const material = await supabaseAdmin.from('company_certificate_material').select('key_version, nonce, data').eq('company_id', company.id).eq('organization_id', company.organization_id).maybeSingle();
   if (!material.data) throw new Error('Envie o certificado da empresa antes de verificar.');
   const { callTransmissor, TransmissorError } = await import('./transmissor.server');
-  const row: Record<string, unknown> = { company_id: company.id, organization_id: company.organization_id, municipality_ibge_code: company.municipality_ibge_code, environment, requested_by: context.userId };
+  const row: { [k: string]: unknown; url?: unknown; error_code?: unknown; response_body?: unknown; duration_ms?: unknown; http_status?: unknown } = { company_id: company.id, organization_id: company.organization_id, municipality_ibge_code: company.municipality_ibge_code, environment, requested_by: context.userId };
   try {
     const res = await callTransmissor<AgreementResult>('/v1/municipios/convenio', { organizacao_id: company.organization_id, empresa_id: company.id, envelope: { versao_chave: material.data.key_version, nonce: material.data.nonce, dados: material.data.data }, codigo_municipio: company.municipality_ibge_code, ambiente: toTransmissorEnvironment(environment) });
     row.url = res.url ?? null;

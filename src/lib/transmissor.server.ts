@@ -32,7 +32,7 @@ async function identityToken(audience: string, sa: { client_email: string; priva
   if (!res.ok) { console.error('transmissor: google token status', res.status); throw new TransmissorError('CREDENCIAL', res.status); }
   const body = await res.json() as { id_token?: string };
   if (!body.id_token) throw new TransmissorError('CREDENCIAL');
-  const payload = JSON.parse(atob(body.id_token.split('.')[1].replace(/-/g, '+').replace(/_/g, '/')));
+  const payload = JSON.parse(atob((body.id_token.split('.')[1] ?? '').replace(/-/g, '+').replace(/_/g, '/')));
   cachedToken = { token: body.id_token, exp: Number(payload.exp) || now + 3000 };
   return body.id_token;
 }
