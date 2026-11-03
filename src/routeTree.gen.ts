@@ -23,6 +23,7 @@ import { Route as AuthenticatedOOrgSlugSectionRouteImport } from './routes/_auth
 import { Route as AuthenticatedOOrgSlugEmpresasIndexRouteImport } from './routes/_authenticated/o/$orgSlug/empresas/index'
 import { Route as AuthenticatedOOrgSlugEmpresasCompanyIdRouteImport } from './routes/_authenticated/o/$orgSlug/empresas/$companyId'
 import { Route as AuthenticatedOOrgSlugEmpresasNovaRouteImport } from './routes/_authenticated/o/$orgSlug/empresas/nova'
+import { Route as AuthenticatedOOrgSlugIntegracoesIndexRouteImport } from './routes/_authenticated/o/$orgSlug/integracoes/index'
 
 const IndexRoute = IndexRouteImport.update({
   id: '/',
@@ -99,6 +100,12 @@ const AuthenticatedOOrgSlugEmpresasNovaRoute =
     path: '/o/$orgSlug/empresas/nova',
     getParentRoute: () => AuthenticatedRouteRoute,
   } as any)
+const AuthenticatedOOrgSlugIntegracoesIndexRoute =
+  AuthenticatedOOrgSlugIntegracoesIndexRouteImport.update({
+    id: '/o/$orgSlug/integracoes/',
+    path: '/o/$orgSlug/integracoes/',
+    getParentRoute: () => AuthenticatedRouteRoute,
+  } as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
@@ -114,6 +121,7 @@ export interface FileRoutesByFullPath {
   '/o/$orgSlug/empresas/$companyId': typeof AuthenticatedOOrgSlugEmpresasCompanyIdRoute
   '/o/$orgSlug/empresas/nova': typeof AuthenticatedOOrgSlugEmpresasNovaRoute
   '/o/$orgSlug/empresas/': typeof AuthenticatedOOrgSlugEmpresasIndexRoute
+  '/o/$orgSlug/integracoes/': typeof AuthenticatedOOrgSlugIntegracoesIndexRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
@@ -129,6 +137,7 @@ export interface FileRoutesByTo {
   '/o/$orgSlug/empresas/$companyId': typeof AuthenticatedOOrgSlugEmpresasCompanyIdRoute
   '/o/$orgSlug/empresas/nova': typeof AuthenticatedOOrgSlugEmpresasNovaRoute
   '/o/$orgSlug/empresas': typeof AuthenticatedOOrgSlugEmpresasIndexRoute
+  '/o/$orgSlug/integracoes': typeof AuthenticatedOOrgSlugIntegracoesIndexRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -146,6 +155,7 @@ export interface FileRoutesById {
   '/_authenticated/o/$orgSlug/empresas/$companyId': typeof AuthenticatedOOrgSlugEmpresasCompanyIdRoute
   '/_authenticated/o/$orgSlug/empresas/nova': typeof AuthenticatedOOrgSlugEmpresasNovaRoute
   '/_authenticated/o/$orgSlug/empresas/': typeof AuthenticatedOOrgSlugEmpresasIndexRoute
+  '/_authenticated/o/$orgSlug/integracoes/': typeof AuthenticatedOOrgSlugIntegracoesIndexRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -163,6 +173,7 @@ export interface FileRouteTypes {
     | '/o/$orgSlug/empresas/$companyId'
     | '/o/$orgSlug/empresas/nova'
     | '/o/$orgSlug/empresas/'
+    | '/o/$orgSlug/integracoes/'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
@@ -178,6 +189,7 @@ export interface FileRouteTypes {
     | '/o/$orgSlug/empresas/$companyId'
     | '/o/$orgSlug/empresas/nova'
     | '/o/$orgSlug/empresas'
+    | '/o/$orgSlug/integracoes'
   id:
     | '__root__'
     | '/'
@@ -194,6 +206,7 @@ export interface FileRouteTypes {
     | '/_authenticated/o/$orgSlug/empresas/$companyId'
     | '/_authenticated/o/$orgSlug/empresas/nova'
     | '/_authenticated/o/$orgSlug/empresas/'
+    | '/_authenticated/o/$orgSlug/integracoes/'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -306,6 +319,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedOOrgSlugEmpresasNovaRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
+    '/_authenticated/o/$orgSlug/integracoes/': {
+      id: '/_authenticated/o/$orgSlug/integracoes/'
+      path: '/o/$orgSlug/integracoes'
+      fullPath: '/o/$orgSlug/integracoes/'
+      preLoaderRoute: typeof AuthenticatedOOrgSlugIntegracoesIndexRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
   }
 }
 
@@ -317,6 +337,7 @@ interface AuthenticatedRouteRouteChildren {
   AuthenticatedOOrgSlugEmpresasCompanyIdRoute: typeof AuthenticatedOOrgSlugEmpresasCompanyIdRoute
   AuthenticatedOOrgSlugEmpresasNovaRoute: typeof AuthenticatedOOrgSlugEmpresasNovaRoute
   AuthenticatedOOrgSlugEmpresasIndexRoute: typeof AuthenticatedOOrgSlugEmpresasIndexRoute
+  AuthenticatedOOrgSlugIntegracoesIndexRoute: typeof AuthenticatedOOrgSlugIntegracoesIndexRoute
 }
 
 const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
@@ -330,6 +351,8 @@ const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
     AuthenticatedOOrgSlugEmpresasNovaRoute,
   AuthenticatedOOrgSlugEmpresasIndexRoute:
     AuthenticatedOOrgSlugEmpresasIndexRoute,
+  AuthenticatedOOrgSlugIntegracoesIndexRoute:
+    AuthenticatedOOrgSlugIntegracoesIndexRoute,
 }
 
 const AuthenticatedRouteRouteWithChildren =
