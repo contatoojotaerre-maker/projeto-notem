@@ -18,6 +18,7 @@ import { Route as RedefinirSenhaRouteImport } from './routes/redefinir-senha'
 import { Route as AuthenticatedDashboardRouteImport } from './routes/_authenticated/dashboard'
 import { Route as AuthenticatedAdminSectionRouteImport } from './routes/_authenticated/admin/$section'
 import { Route as AuthenticatedAdminOrganizacoesRouteImport } from './routes/_authenticated/admin/organizacoes'
+import { Route as ApiV1StatusRouteImport } from './routes/api/v1/status'
 import { Route as AuthenticatedOOrgSlugSectionRouteImport } from './routes/_authenticated/o/$orgSlug/$section'
 import { Route as AuthenticatedOOrgSlugEmpresasIndexRouteImport } from './routes/_authenticated/o/$orgSlug/empresas/index'
 import { Route as AuthenticatedOOrgSlugEmpresasCompanyIdRouteImport } from './routes/_authenticated/o/$orgSlug/empresas/$companyId'
@@ -69,6 +70,11 @@ const AuthenticatedAdminOrganizacoesRoute =
     path: '/admin/organizacoes',
     getParentRoute: () => AuthenticatedRouteRoute,
   } as any)
+const ApiV1StatusRoute = ApiV1StatusRouteImport.update({
+  id: '/api/v1/status',
+  path: '/api/v1/status',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const AuthenticatedOOrgSlugSectionRoute =
   AuthenticatedOOrgSlugSectionRouteImport.update({
     id: '/o/$orgSlug/$section',
@@ -103,6 +109,7 @@ export interface FileRoutesByFullPath {
   '/dashboard': typeof AuthenticatedDashboardRoute
   '/admin/$section': typeof AuthenticatedAdminSectionRoute
   '/admin/organizacoes': typeof AuthenticatedAdminOrganizacoesRoute
+  '/api/v1/status': typeof ApiV1StatusRoute
   '/o/$orgSlug/$section': typeof AuthenticatedOOrgSlugSectionRoute
   '/o/$orgSlug/empresas/$companyId': typeof AuthenticatedOOrgSlugEmpresasCompanyIdRoute
   '/o/$orgSlug/empresas/nova': typeof AuthenticatedOOrgSlugEmpresasNovaRoute
@@ -117,6 +124,7 @@ export interface FileRoutesByTo {
   '/dashboard': typeof AuthenticatedDashboardRoute
   '/admin/$section': typeof AuthenticatedAdminSectionRoute
   '/admin/organizacoes': typeof AuthenticatedAdminOrganizacoesRoute
+  '/api/v1/status': typeof ApiV1StatusRoute
   '/o/$orgSlug/$section': typeof AuthenticatedOOrgSlugSectionRoute
   '/o/$orgSlug/empresas/$companyId': typeof AuthenticatedOOrgSlugEmpresasCompanyIdRoute
   '/o/$orgSlug/empresas/nova': typeof AuthenticatedOOrgSlugEmpresasNovaRoute
@@ -133,6 +141,7 @@ export interface FileRoutesById {
   '/_authenticated/dashboard': typeof AuthenticatedDashboardRoute
   '/_authenticated/admin/$section': typeof AuthenticatedAdminSectionRoute
   '/_authenticated/admin/organizacoes': typeof AuthenticatedAdminOrganizacoesRoute
+  '/api/v1/status': typeof ApiV1StatusRoute
   '/_authenticated/o/$orgSlug/$section': typeof AuthenticatedOOrgSlugSectionRoute
   '/_authenticated/o/$orgSlug/empresas/$companyId': typeof AuthenticatedOOrgSlugEmpresasCompanyIdRoute
   '/_authenticated/o/$orgSlug/empresas/nova': typeof AuthenticatedOOrgSlugEmpresasNovaRoute
@@ -149,6 +158,7 @@ export interface FileRouteTypes {
     | '/dashboard'
     | '/admin/$section'
     | '/admin/organizacoes'
+    | '/api/v1/status'
     | '/o/$orgSlug/$section'
     | '/o/$orgSlug/empresas/$companyId'
     | '/o/$orgSlug/empresas/nova'
@@ -163,6 +173,7 @@ export interface FileRouteTypes {
     | '/dashboard'
     | '/admin/$section'
     | '/admin/organizacoes'
+    | '/api/v1/status'
     | '/o/$orgSlug/$section'
     | '/o/$orgSlug/empresas/$companyId'
     | '/o/$orgSlug/empresas/nova'
@@ -178,6 +189,7 @@ export interface FileRouteTypes {
     | '/_authenticated/dashboard'
     | '/_authenticated/admin/$section'
     | '/_authenticated/admin/organizacoes'
+    | '/api/v1/status'
     | '/_authenticated/o/$orgSlug/$section'
     | '/_authenticated/o/$orgSlug/empresas/$companyId'
     | '/_authenticated/o/$orgSlug/empresas/nova'
@@ -191,6 +203,7 @@ export interface RootRouteChildren {
   EntrarRoute: typeof EntrarRoute
   EsqueciSenhaRoute: typeof EsqueciSenhaRoute
   RedefinirSenhaRoute: typeof RedefinirSenhaRoute
+  ApiV1StatusRoute: typeof ApiV1StatusRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -258,6 +271,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedAdminOrganizacoesRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
+    '/api/v1/status': {
+      id: '/api/v1/status'
+      path: '/api/v1/status'
+      fullPath: '/api/v1/status'
+      preLoaderRoute: typeof ApiV1StatusRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/_authenticated/o/$orgSlug/$section': {
       id: '/_authenticated/o/$orgSlug/$section'
       path: '/o/$orgSlug/$section'
@@ -322,6 +342,7 @@ const rootRouteChildren: RootRouteChildren = {
   EntrarRoute: EntrarRoute,
   EsqueciSenhaRoute: EsqueciSenhaRoute,
   RedefinirSenhaRoute: RedefinirSenhaRoute,
+  ApiV1StatusRoute: ApiV1StatusRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
