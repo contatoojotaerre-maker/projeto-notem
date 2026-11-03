@@ -3,7 +3,7 @@
 | Termo | Significado |
 |---|---|
 | **Organização** | Espaço que agrupa empresas, equipe e integrações. Ex.: um sistema parceiro (VistoCash) ou um grupo empresarial. Quem cria a organização é responsável por ela e pela cobrança. |
-| **Integração** | Conexão de um sistema com a notem, pertencente a uma organização. Tem uma chave por ambiente e uma lista de empresas autorizadas. |
+| **Integração** | Conexão de um sistema com a notem, pertencente a uma organização. Tem chaves por ambiente (até duas ativas durante troca) e uma lista de empresas autorizadas. |
 | **Chave de acesso (da integração)** | Credencial secreta usada no cabeçalho `Authorization`. Define também o ambiente. |
 | **Ambiente** | `homologacao` (testes, sem validade fiscal) ou `producao` (validade fiscal). |
 | **Empresa (emitente / prestador)** | Empresa com CNPJ que emite a nota de serviço. |

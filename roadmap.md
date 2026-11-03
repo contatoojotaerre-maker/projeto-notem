@@ -3,7 +3,7 @@
 - [x] Plano aprovado; testar /api/v1 primeiro, adotar /api/public/v1 sem aliases apenas se bloqueado, atualizando somente a base do contrato.
 - [ ] Publicar para teste externo autorizado; informar URL e Redirect URLs /entrar, /definir-senha e /redefinir-senha.
 - [ ] Validar waitUntil hospedado; se indisponível, gravar sincronamente e informar impacto medido.
-- [ ] Prova externa em andamento: publicação solicitada para https://notem-waiting-garden.lovable.app; resposta 404 “No published build” e published_url null. Rota inicial /api/v1/status retorna 401 JSON localmente, sem dados/chaves; não é prova de bloqueio de caminho. Aguardar implantação antes de migrar.
+- [x] Prova externa: /api/v1/status publicado respondeu 401 JSON com X-Request-Id sem sessão às 23:02:49 UTC. Base /api/v1 preservada, sem aliases. Quatro tabelas criadas com RLS, leitura de metadados sem hash e escrita só servidor; limpeza diária 03:00 UTC.
 - [ ] Após aprovação, implementar e testar isolamento, limite de duas chaves por ambiente, sanitização e retenção de 90 dias; verificar acesso externo sem sessão do painel.
 - [ ] Página pública /docs gerada de docs/api/ — fase final, fora da Fase 3A.
 

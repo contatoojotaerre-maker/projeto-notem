@@ -12,7 +12,7 @@ export const getIntegrations=createServerFn({method:'POST'}).middleware([require
 })
 export const saveIntegration=createServerFn({method:'POST'}).middleware([requireSupabaseAuth]).inputValidator(integrationSchema).handler(async({context,data})=>{
  const [admin,allowed]=await Promise.all([context.supabase.rpc('is_platform_admin'),context.supabase.rpc('has_org_role',{org_id:data.organization_id,roles:['owner','admin','developer']})]);if(admin.error||allowed.error||(!admin.data&&!allowed.data))throw new Error('Acesso não autorizado.')
- const {supabaseAdmin}=await import('@/integrations/supabase/client.server');const result=await supabaseAdmin.rpc('manage_integration',{_actor:context.userId,_org:data.organization_id,_action:'save',_id:data.id??null,_payload:{...data}});if(result.error)throw new Error('Não foi possível salvar. Confira as empresas selecionadas e sua permissão.');return {id:result.data}
+ const {supabaseAdmin}=await import('@/integrations/supabase/client.server');const result=data.id?await supabaseAdmin.rpc('manage_integration',{_actor:context.userId,_org:data.organization_id,_action:'save',_id:data.id,_payload:{...data}}):await supabaseAdmin.rpc('create_integration',{_actor:context.userId,_org:data.organization_id,_payload:{...data}});if(result.error)throw new Error('Não foi possível salvar. Confira as empresas selecionadas e sua permissão.');return {id:result.data}
 })
 export const generateIntegrationKey=createServerFn({method:'POST'}).middleware([requireSupabaseAuth]).inputValidator(orgInput.extend({integration_id:z.string().uuid(),environment:z.enum(['sandbox','production'])})).handler(async({context,data})=>{
  setResponseHeader('Cache-Control','no-store')

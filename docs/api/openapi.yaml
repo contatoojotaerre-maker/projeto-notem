@@ -6,6 +6,8 @@ info:
     API para emissão e gestão de NFS-e (padrão nacional) por sistemas parceiros.
     Leia primeiro docs/api/convencoes.md. Campos em português; valores monetários como texto ("150.00").
 servers:
+  - url: https://notem-waiting-garden.lovable.app/api/v1
+    description: Painel publicado da notem
   - url: https://{dominio}/api/v1
     variables:
       dominio:
@@ -23,8 +25,7 @@ paths:
       summary: Verifica a chave e informa o ambiente
       description: |
         Use para testar a integração. Não consome nada e não acessa o governo.
-        Fase 3A em validação de acesso externo: enquanto as chaves não forem implementadas,
-        todas as chamadas retornam 401 AUTENTICACAO_INVALIDA. A URL pública ainda não foi confirmada.
+        O ambiente, a organização e a integração são determinados exclusivamente pela chave.
       responses:
         "200":
           description: Chave válida
@@ -98,7 +99,7 @@ components:
       properties:
         erro:
           type: object
-          required: [codigo, mensagem]
+          required: [codigo, mensagem, detalhes, codigo_governo, mensagem_governo]
           properties:
             codigo: { type: string, examples: ["REQUISICAO_INVALIDA"] }
             mensagem: { type: string }

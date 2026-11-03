@@ -13,3 +13,4 @@ Toda rota nova ou alterada da API deve atualizar `openapi.yaml` (e, se necessár
 
 ## Endereços
 O domínio definitivo ainda não foi definido. Nos documentos, usa-se `https://{dominio}/api/v1`.
+Endereço publicado para testes: `https://notem-waiting-garden.lovable.app/api/v1`. Acesso externo sem sessão confirmado em `/status`, com resposta 401 JSON e `X-Request-Id` para chamada sem chave.

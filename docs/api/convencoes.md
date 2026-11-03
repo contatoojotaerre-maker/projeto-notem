@@ -4,11 +4,13 @@ Estas regras valem para **todas** as rotas. Em caso de dúvida, elas prevalecem 
 
 ## 1. Endereço e versão
 - Base: `https://{dominio}/api/v1` (domínio definitivo a definir).
+- Teste publicado: `https://notem-waiting-garden.lovable.app/api/v1`.
 - Toda rota começa com `/api/v1`. Mudanças **compatíveis** (novos campos, novas rotas, novos valores opcionais) acontecem dentro da v1 sem aviso prévio. Mudanças **incompatíveis** só em uma nova versão (`/api/v2`), com prazo de convivência comunicado.
 - O sistema parceiro **deve ignorar campos que não conhece** nas respostas.
 
 ## 2. Autenticação e ambientes
 - Cada **integração** de uma organização tem **uma chave por ambiente**:
+- Durante a troca, são permitidas até **duas chaves ativas por integração e ambiente**. Gere a nova, atualize o sistema parceiro e revogue a antiga.
   - Homologação: começa com `ntm_homolog_`
   - Produção: começa com `ntm_prod_`
 - Enviar em todas as chamadas: `Authorization: Bearer {chave}`.
@@ -93,6 +95,7 @@ Códigos específicos de cada rota (ex.: `CERTIFICADO_VENCIDO`) são documentado
 - A ordem padrão é do mais recente para o mais antigo, salvo indicação na rota.
 
 ## 9. Limites de uso
+- Na Fase 3A, nenhum limite de uso está ativo; a estrutura para 429 fica preparada.
 - Limite inicial por integração e ambiente (valor definido na publicação). Ao exceder: `429` com `Retry-After` em segundos.
 
 ## 10. Webhooks (visão geral; detalhes em documento próprio)
