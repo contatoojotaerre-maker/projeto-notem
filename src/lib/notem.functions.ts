@@ -3,6 +3,7 @@ import { getRequest } from '@tanstack/react-start/server';
 import { z } from 'zod';
 import { requireSupabaseAuth } from '@/integrations/supabase/auth-middleware';
 import { companySchema, roles, organizationSchema, slugSchema } from './notem';
+import { municipalitySearchTerm } from './municipality-search';
 
 export const getWorkspace = createServerFn({ method: 'POST' }).middleware([requireSupabaseAuth]).handler(async ({ context }) => {
   const [profile, organizations, members, admin, invitations] = await Promise.all([
@@ -56,7 +57,14 @@ export const saveCompany = createServerFn({method:'POST'}).middleware([requireSu
   if(result.error)throw new Error(result.error.code==='23505'?'Este CNPJ já está cadastrado nesta organização.':'Não foi possível salvar. Confira os dados e sua permissão.');return result.data;
 });
 export const searchMunicipalities = createServerFn({method:'POST'}).middleware([requireSupabaseAuth]).inputValidator(z.object({search:z.string().max(100)})).handler(async({context,data})=>{
-  const result=await context.supabase.from('municipalities').select('*').ilike('name',`%${data.search.replace(/[%_]/g,'')}%`).order('name').limit(30);if(result.error)throw new Error(result.error.message);return result.data ?? [];
+  const { term, eligible } = municipalitySearchTerm(data.search);
+  const catalog = await context.supabase.from('municipalities').select('ibge_code').limit(1);
+  if (catalog.error) throw new Error('Não foi possível consultar o catálogo de municípios.');
+  const catalogEmpty = !catalog.data?.length;
+  if (catalogEmpty || !eligible) return { rows: [], catalogEmpty };
+  const result = await context.supabase.rpc('search_municipality_catalog', { search_term: term });
+  if (result.error) throw new Error('Não foi possível buscar municípios. Tente novamente.');
+  return { rows: result.data ?? [], catalogEmpty };
 });
 export const createOrganization = createServerFn({method:'POST'}).middleware([requireSupabaseAuth]).inputValidator(organizationSchema).handler(async({context,data})=>{
   const result=await context.supabase.from('organizations').insert({...data,created_by:context.userId}).select('*').single();if(result.error)throw new Error(result.error.code==='23505'?'Este endereço já está em uso. Escolha outro.':'Você não pode criar esta organização.');return result.data;
