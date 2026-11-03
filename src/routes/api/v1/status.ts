@@ -25,8 +25,8 @@ async function handle(request:Request) {
  // No floating promises: use the runtime's request-scoped waitUntil when present.
  const waitUntil=(request as Request & {waitUntil?: (promise:Promise<unknown>)=>void}).waitUntil
  const logStarted=performance.now()
- const persist=async()=>{const result=await supabaseAdmin.from('api_request_logs').insert({id,...(identity??{}),method:request.method,path:new URL(request.url).pathname,status_code:status,error_code:status===200?null:(body as ReturnType<typeof apiError>).erro.codigo,duration_ms:Math.round(performance.now()-started),request_body:null,response_body:sanitizeBody(body)});if(result.error)console.error('API_LOG_FAILED',id,result.error.code)}
- if(typeof waitUntil==='function'){waitUntil.call(request,persist());headers.set('Server-Timing','api-log;desc="background"')}
+ const persist=async()=>{try{const result=await supabaseAdmin.from('api_request_logs').insert({id,...(identity??{}),method:request.method,path:new URL(request.url).pathname,status_code:status,error_code:status===200?null:(body as ReturnType<typeof apiError>).erro.codigo,duration_ms:Math.round(performance.now()-started),request_body:null,response_body:sanitizeBody(body)});if(result.error)console.error('API_LOG_FAILED',id,result.error.code)}catch{console.error('API_LOG_FAILED',id)}}
+ if(typeof waitUntil==='function'){const work=persist();try{waitUntil.call(request,work);headers.set('Server-Timing','api-log;desc="background"')}catch{await work;headers.set('Server-Timing',`api-log;dur=${(performance.now()-logStarted).toFixed(1)};desc="synchronous"`)}}
  else{await persist();headers.set('Server-Timing',`api-log;dur=${(performance.now()-logStarted).toFixed(1)};desc="synchronous"`)}
  return new Response(JSON.stringify(body),{status,headers})
 }
