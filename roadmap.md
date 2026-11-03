@@ -11,10 +11,9 @@
 - [x] Explicar rls_auto_enable e consultar RLS: as oito tabelas públicas têm RLS ativo.
 - [x] Nova organização: tipo (partner/company), endereço no painel 3–50 com prévia e unicidade, filtro por tipo.
 
-## Fase 2A — somente análise e plano nesta solicitação
-- [x] Responder viabilidade com evidências e preparar plano completo para aprovação; mTLS hospedado e XMLDSig ainda não comprovados, Swagger não anexado.
-- [ ] Provar API mTLS cert/key em Edge Function hospedada antes do restante — aprovado pelo usuário, bloqueado pela ferramenta que proíbe criar novas Edge Functions neste projeto TanStack.
-- [ ] Ler docs/referencias/LEIAME.md e Swagger oficial — pasta ausente no checkout disponível; aguarda disponibilização.
-- [ ] Manter seis funções e adicionar testes de autorização; garantir imutabilidade de companies.organization_id — após prova inicial, conforme ordem aprovada.
-- [ ] Implementar guarda, abas e auditoria nas Edge Functions aprovadas — aguarda desbloqueio da criação, prova mTLS e documentação.
-- [ ] Validar conexão real de homologação com A1 do usuário pelo formulário seguro — depende da etapa anterior e certificado real.
+## Fase 2A (revisada — transmissor)
+- [x] Tabelas, troca atômica, imutabilidade de organization_id da empresa.
+- [x] Cliente do transmissor, envio de certificado, consulta de convênio (valores crus, intervalo de 1 min por empresa/ambiente).
+- [x] Abas Certificado e Prontidão; testes de regras.
+- [ ] Cadastrar TRANSMISSOR_URL e GOOGLE_SERVICE_ACCOUNT_JSON — aguarda o usuário.
+- [ ] Aceite real: A1 Grupo Jota (IBGE 4212254) e resposta de homologação — aguarda segredos e certificado.
