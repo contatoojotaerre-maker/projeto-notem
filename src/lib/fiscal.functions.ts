@@ -17,7 +17,9 @@ export const getCompanyFiscal = createServerFn({method:'POST'}).middleware([requ
 export const saveFiscalSettings = createServerFn({method:'POST'}).middleware([requireSupabaseAuth]).inputValidator(fiscalSchema).handler(async({context,data})=>{
  const current=await context.supabase.from('company_fiscal_settings').select('company_id').eq('company_id',data.company_id).eq('organization_id',data.organization_id).maybeSingle();
  if(current.error)throw new Error('Não foi possível carregar a configuração fiscal.');
- const r=current.data ? await context.supabase.from('company_fiscal_settings').update(data).eq('company_id',data.company_id).eq('organization_id',data.organization_id).select('*').single() : await context.supabase.from('company_fiscal_settings').insert({...data,cnpj:'',created_by:context.userId,updated_by:context.userId,dps_series:data.dps_series as number}).select('*').single();
+ const {dps_series,...fields}=data;
+ // On insertion null is intentionally accepted by the BEFORE trigger and replaced atomically before NOT NULL validation.
+ const r=current.data ? await context.supabase.from('company_fiscal_settings').update({...fields,...(dps_series===null?{}:{dps_series})}).eq('company_id',data.company_id).eq('organization_id',data.organization_id).select('*').single() : await context.supabase.from('company_fiscal_settings').insert({...data,cnpj:'',created_by:context.userId,updated_by:context.userId,dps_series:data.dps_series as number}).select('*').single();
  if(r.error)throw new Error(r.error.code==='23505'?'Esta série DPS já está reservada para este CNPJ em outra empresa.':r.error.message);
  return r.data;
 });
