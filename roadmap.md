@@ -1,8 +1,10 @@
 # notem — Fase 1
 ## Configuração fiscal e perfis de serviço
 - [x] Plano aprovado com os ajustes de CNPJ protegido e reserva definitiva.
-- [ ] Criar catálogos vazios, configuração/perfis, séries e reserva atômica definitiva; aplicar permissões e proteção condicional do CNPJ.
-- [ ] Implementar abas fiscais/serviços e ajustes de Prontidão; testar regras e informar os catálogos para carga SQL.
+- [x] Criar três catálogos vazios, configuração/perfis, séries e reserva definitiva; aplicar RLS/concessões e proteção condicional do CNPJ.
+- [x] Implementar abas fiscais/serviços e Prontidão; 42 testes locais e testes de banco com rollback aprovados. Confirmadas regras condicionais, papéis, isolamento, reserva sem emissão, limite e ambientes separados; catálogos com zero linhas.
+- [ ] Conferir salvamento/leitura nas telas conectadas e catálogos reais — depende de sessão externa de teste disponível e carga SQL pelo usuário; Supabase externo não permite sessão de teste gerenciada.
+- [ ] Teste concorrente de atribuição/reserva e proteção CNPJ em sessões simultâneas — sem conexão SQL de teste multissessão disponível; bloqueios transacionais implementados, execução concorrente não verificada.
 
 ## Catálogos oficiais e busca municipal
 - [x] Plano aprovado; CSV conferidos com 5.570 municípios, 250 países e códigos únicos.
