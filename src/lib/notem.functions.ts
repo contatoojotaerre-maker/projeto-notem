@@ -4,6 +4,7 @@ import { z } from 'zod';
 import { requireSupabaseAuth } from '@/integrations/supabase/auth-middleware';
 import { companySchema, roles, organizationSchema, slugSchema } from './notem';
 import { municipalitySearchTerm } from './municipality-search';
+import { CNPJ_LOCK_MESSAGE } from './fiscal';
 
 export const getWorkspace = createServerFn({ method: 'POST' }).middleware([requireSupabaseAuth]).handler(async ({ context }) => {
   const [profile, organizations, members, admin, invitations] = await Promise.all([
@@ -48,13 +49,15 @@ export const getCompanies = createServerFn({method:'POST'}).middleware([requireS
   const result=await query; if(result.error) throw new Error(result.error.message); return {rows:result.data ?? [],count:result.count ?? 0};
 });
 export const getCompany = createServerFn({method:'POST'}).middleware([requireSupabaseAuth]).inputValidator(z.object({id:z.string().uuid(),organization_id:z.string().uuid()})).handler(async({context,data})=>{
-  const result=await context.supabase.from('companies').select('*, municipalities(*)').eq('id',data.id).eq('organization_id',data.organization_id).single();if(result.error)throw new Error('Empresa não encontrada ou acesso não autorizado.');return result.data;
+  const result=await context.supabase.from('companies').select('*, municipalities(*)').eq('id',data.id).eq('organization_id',data.organization_id).single();if(result.error)throw new Error('Empresa não encontrada ou acesso não autorizado.');
+  const [cert,series]=await Promise.all([context.supabase.from('company_certificates').select('id').eq('company_id',data.id).eq('organization_id',data.organization_id).limit(1),context.supabase.from('dps_sequences').select('series').eq('company_id',data.id).eq('organization_id',data.organization_id).limit(1)]);
+  if(cert.error||series.error)throw new Error('Não foi possível carregar a proteção do CNPJ.');return {...result.data,cnpj_locked:Boolean(cert.data?.length||series.data?.length)};
 });
 export const saveCompany = createServerFn({method:'POST'}).middleware([requireSupabaseAuth]).inputValidator(companySchema).handler(async({context,data})=>{
   const {id,...fields}=data;
   // State and audit fields are authoritative database-trigger outputs, not form inputs.
   const result=id ? await context.supabase.from('companies').update(fields).eq('id',id).eq('organization_id',fields.organization_id).select('id').single() : await context.supabase.from('companies').insert({...fields,state:'',created_by:context.userId,updated_by:context.userId}).select('id').single();
-  if(result.error)throw new Error(result.error.code==='23505'?'Este CNPJ já está cadastrado nesta organização.':'Não foi possível salvar. Confira os dados e sua permissão.');return result.data;
+  if(result.error)throw new Error(result.error.message.includes(CNPJ_LOCK_MESSAGE)?CNPJ_LOCK_MESSAGE:result.error.code==='23505'?'Este CNPJ já está cadastrado nesta organização.':'Não foi possível salvar. Confira os dados e sua permissão.');return result.data;
 });
 export const searchMunicipalities = createServerFn({method:'POST'}).middleware([requireSupabaseAuth]).inputValidator(z.object({search:z.string().max(100)})).handler(async({context,data})=>{
   const { term, eligible } = municipalitySearchTerm(data.search);

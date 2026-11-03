@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
-import { useQuery, useQueryClient } from '@tanstack/react-query';
+import { useQuery, useQueryClient, useSuspenseQuery } from '@tanstack/react-query';
 import { useServerFn } from '@tanstack/react-start';
 import { toast } from 'sonner';
 import { Button } from '@/components/ui/button';
@@ -9,6 +9,9 @@ import { getCertificates, uploadCertificate, getAgreementQueries, checkAgreement
 import { certificateSituation, cooldownRemaining, formatGovernmentValue, agreementFieldLabels, translateTransmissorError, MAX_CERTIFICATE_BYTES } from '@/lib/certificates';
 import { formatCnpj } from '@/lib/notem';
 import { useWorkspace } from '@/components/notem/app-shell';
+import { fiscalQuery } from '@/lib/fiscal.queries';
+import { fiscalSchema,validReadinessCertificate } from '@/lib/fiscal';
+import { formatAgreementField,agreementUnavailableMessage } from '@/lib/certificates';
 
 const fmt = (d: string) => new Date(d).toLocaleDateString('pt-BR');
 const fmtTime = (d: string) => new Date(d).toLocaleString('pt-BR');
@@ -27,7 +30,7 @@ export function CertificateTab({ companyId, organizationId, canUse }: { companyI
     if (file.size > MAX_CERTIFICATE_BYTES) return setError('O arquivo pode ter no máximo 100 KB.');
     const form = new FormData(); form.set('file', file); form.set('password', password); form.set('company_id', companyId); form.set('organization_id', organizationId);
     setBusy(true);
-    try { await upload({ data: form }); toast.success('Certificado guardado.'); reset(); await qc.invalidateQueries({ queryKey: key }); }
+    try { await upload({ data: form }); toast.success('Certificado guardado.'); reset(); await Promise.all([qc.invalidateQueries({ queryKey: key }),qc.invalidateQueries({queryKey:['company-fiscal',companyId]}),qc.invalidateQueries({queryKey:['company',companyId]})]); }
     catch (err) { setError(err instanceof Error ? err.message : 'Falha no envio.'); setPassword(''); }
     finally { setBusy(false); }
   }
@@ -47,7 +50,8 @@ export function CertificateTab({ companyId, organizationId, canUse }: { companyI
   </div>;
 }
 
-export function ReadinessTab({ companyId, organizationId, canUse }: { companyId: string; organizationId: string; canUse: boolean }) {
+export function ReadinessTab({ companyId, organizationId, canUse,cnpj }: { companyId: string; organizationId: string; canUse: boolean;cnpj:string }) {
+  const {data:fiscal}=useSuspenseQuery(fiscalQuery(companyId,organizationId));
   const { profile } = useWorkspace(); const environment = (profile?.environment ?? 'production') as 'production' | 'sandbox';
   const qc = useQueryClient(); const fetchLast = useServerFn(getAgreementQueries); const check = useServerFn(checkAgreement);
   const key = ['agreement', companyId, environment];
@@ -59,14 +63,16 @@ export function ReadinessTab({ companyId, organizationId, canUse }: { companyId:
   let parsed: { mensagem?: unknown; parametrosConvenio?: Record<string, unknown> } | null = null;
   try { parsed = last?.response_body && last.http_status ? JSON.parse(last.response_body) : null; } catch { parsed = null; }
   const fields = parsed?.parametrosConvenio && typeof parsed.parametrosConvenio === 'object' ? parsed.parametrosConvenio : null;
-  return <div className="space-y-4"><div className="rounded-lg border border-border p-6">
+  const unavailable=agreementUnavailableMessage(last?.http_status,parsed?.mensagem,environment);
+  const local=[['Certificado válido',fiscal.certificates.some(c=>validReadinessCertificate(c,cnpj,now))],['Configuração fiscal preenchida',fiscal.settings!==null&&fiscalSchema.safeParse(fiscal.settings).success],['Ao menos um serviço ativo',fiscal.profiles.some(p=>p.active)]] as const;
+  return <div className="space-y-6"><dl className="grid gap-4 sm:grid-cols-3">{local.map(([label,ready])=><div key={label}><dt className="text-sm text-muted-foreground">{label}</dt><dd className="mt-1 font-medium">{ready?'Sim':'Não'}</dd></div>)}</dl><div className="rounded-lg border border-border p-6">
     <div className="flex flex-wrap items-center justify-between gap-3"><div><h2 className="text-lg font-medium">Município atendido pelo emissor nacional</h2><p className="text-sm text-muted-foreground">Ambiente: {environment === 'production' ? 'Produção' : 'Homologação'}</p></div>
       {canUse && <div className="text-right"><Button onClick={run} disabled={busy || remaining > 0}>{busy ? 'Verificando…' : last ? 'Verificar novamente' : 'Verificar'}</Button>{remaining > 0 && <p className="mt-1 text-xs text-muted-foreground">Poderá verificar novamente em {Math.ceil(remaining / 1000)} s</p>}</div>}</div>
     {message && <p role="alert" className="mt-4 text-sm text-destructive">{message}</p>}
     {isLoading ? <p className="mt-4 text-sm text-muted-foreground">Carregando…</p> : !last ? <p className="mt-4 text-sm text-muted-foreground">Ainda não verificado neste ambiente.</p> : <div className="mt-4 space-y-3 text-sm">
       <p className="text-muted-foreground">Consultado em {fmtTime(last.created_at)}</p>
-      {last.error_code ? <p className="text-destructive">{translateTransmissorError(last.error_code)}</p> : last.http_status !== 200 ? <p className="text-destructive">O governo respondeu com status HTTP {last.http_status}.</p> : null}
-      {fields && <dl className="grid gap-2 sm:grid-cols-2">{Object.entries(fields).map(([k, v]) => <div key={k}><dt className="text-muted-foreground">{agreementFieldLabels[k] ?? k}</dt><dd>{formatGovernmentValue(v)}</dd></div>)}</dl>}
+      {last.error_code ? <p className="text-destructive">{translateTransmissorError(last.error_code)}</p> : unavailable?<p className="text-destructive">{unavailable}</p>:last.http_status !== 200 ? <p className="text-destructive">O governo respondeu com status HTTP {last.http_status}.</p> : null}
+      {fields && <dl className="grid gap-2 sm:grid-cols-2">{Object.entries(fields).map(([k, v]) => <div key={k}><dt className="text-muted-foreground">{agreementFieldLabels[k] ?? k}</dt><dd>{formatAgreementField(k,v)}</dd>{k==='situacaoEmissaoPadraoContribuintesRFB'&&<p className="text-xs text-muted-foreground">interpretação provável: 1 = habilitados por padrão</p>}</div>)}</dl>}
       {parsed?.mensagem !== undefined && parsed?.mensagem !== null && <p><span className="text-muted-foreground">Mensagem: </span>{formatGovernmentValue(parsed.mensagem)}</p>}
       <details className="rounded border border-border p-3"><summary className="cursor-pointer">Detalhes técnicos</summary><dl className="mt-2 space-y-1 font-mono text-xs"><div>URL: {last.url ?? '—'}</div><div>Status HTTP: {last.http_status ?? '—'}</div><div>Código de erro: {last.error_code ?? '—'}</div><div>Duração: {last.duration_ms ?? '—'} ms</div></dl><pre className="mt-2 max-h-96 overflow-auto whitespace-pre-wrap break-all text-xs">{last.response_body ?? ''}</pre></details>
     </div>}
