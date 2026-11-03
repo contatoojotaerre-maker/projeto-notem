@@ -527,6 +527,7 @@ export type Database = {
       is_org_member: { Args: { org_id: string }; Returns: boolean }
       is_platform_admin: { Args: never; Returns: boolean }
       is_valid_cnpj: { Args: { value: string }; Returns: boolean }
+      normalize_municipality_name: { Args: { value: string }; Returns: string }
       organization_team: {
         Args: { org_id: string }
         Returns: {
@@ -564,6 +565,21 @@ export type Database = {
           _valid_until: string
         }
         Returns: string
+      }
+      search_municipality_catalog: {
+        Args: { search_term: string }
+        Returns: {
+          ibge_code: string
+          name: string
+          state: string
+          state_name: string
+        }[]
+        SetofOptions: {
+          from: "*"
+          to: "municipalities"
+          isOneToOne: false
+          isSetofReturn: true
+        }
       }
     }
     Enums: {
