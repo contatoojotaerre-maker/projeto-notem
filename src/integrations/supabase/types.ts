@@ -832,6 +832,7 @@ export type Database = {
           _company_id: string
           _environment: Database["public"]["Enums"]["environment"]
           _organization_id: string
+          _requested_by: string
           _series: number
         }
         Returns: string
