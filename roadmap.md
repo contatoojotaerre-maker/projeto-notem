@@ -1,8 +1,10 @@
 # notem — Fase 1
 ## Catálogos oficiais e busca municipal
-- [ ] Aprovar o plano de carga dos CSV oficiais e ajustes da busca.
-- [ ] Aplicar carga idempotente, busca indexada sem acentos/por IBGE e estados do campo.
-- [ ] Validar contagens, Passo de Torres/SC, idempotência e buscas no banco e na tela.
+- [x] Plano aprovado; CSV conferidos com 5.570 municípios, 250 países e códigos únicos.
+- [x] Busca indexada sem acentos/por IBGE e estados do campo aplicados; 11 testes passaram e aplicativo sem erros.
+- [ ] Aplicar carga idempotente — bloqueada pelo envio apenas inline da ferramenta de migração; SQL integral preparado em Files, banco continua vazio.
+- [ ] Validar contagens, valores e idempotência no banco — depende da carga; validação das funções pela conexão de leitura é restrita por permissões.
+- [ ] Verificar busca na tela conectada — Supabase externo sem sessão de teste disponível; navegação de teste foi redirecionada para entrar.
 
 - [x] Aplicar fundação com os ajustes aprovados: banco, isolamento, convites e auditoria.
 - [x] Implementar login, painel, organizações, empresas e preferências.
