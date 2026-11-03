@@ -75,7 +75,9 @@ Funções autenticadas do painel para ler/salvar configuração, listar/criar/ed
 
 **Reserva de número:** função SQL transacional chamada por função autenticada do servidor, com autorização owner/admin/admin da plataforma e conferência de empresa/organização/série/ambiente. Bloqueio da sequência e incremento atômico; retorna apenas o número reservado. Não haverá botão de reserva no painel nem chamada automática ao abrir/salvar telas.
 
-Como o CNPJ da empresa é editável hoje, sincronizar sua associação fiscal pelo banco e recusar mudanças que colidam com séries já reservadas; preservar contadores. A organização da empresa permanece imutável. Não alterar neste escopo o fluxo de certificados.
+O CNPJ permanece editável somente enquanto não houver certificado (ativo ou histórico) nem série DPS atribuída. Depois disso, um gatilho no banco recusa mudanças, inclusive chamadas diretas, com a mensagem: “O CNPJ não pode ser alterado porque a empresa já tem certificado ou série. Cadastre uma nova empresa.” Não sincronizar CNPJ de registros fiscais. Serializar a gravação de certificado/série com a alteração da empresa para proteger também operações simultâneas. A organização da empresa permanece imutável.
+
+Cada número reservado é definitivo: nunca é devolvido, reaproveitado ou reutilizado, mesmo que a emissão futura falhe. Lacunas são aceitas. A função não oferece cancelamento/devolução; testes verificam que reservas subsequentes avançam mesmo sem emissão.
 
 ## 3. Telas
 
@@ -114,7 +116,8 @@ Testes de regras locais e testes de integração do banco, sem testar cópia vis
 3. Percentuais exigidos por modo, limites 0/100, aceitação de zero, incompatibilidade de `percent_simples` com não optante e ausência de percentuais em `none`.
 4. Série aceita 1/49999; recusa 0/50000/70000; CNPJ compartilhado recebe séries distintas entre organizações; edição só por admin da plataforma.
 5. Atribuições concorrentes sem série duplicada; mudança/retorno de série preservam números e reservas anteriores.
-6. Reservas concorrentes retornam números distintos; ambientes iniciam separadamente em 1; limite máximo retorna uma vez e depois recusa; contador não pode ser reduzido diretamente.
+6. Reservas concorrentes retornam números distintos; ambientes iniciam separadamente em 1; limite máximo retorna uma vez e depois recusa; contador não pode ser reduzido diretamente. Reserva sem emissão/falha futura não libera número e a próxima reserva avança.
+7. CNPJ editável antes de certificado/série e bloqueado após certificado ativo, certificado histórico ou série, inclusive concorrência entre gravações.
 7. Owner/admin/admin plataforma editam; operator/viewer/developer só leem; não membro e usuário anônimo não acessam; FK recusa organização incoerente. Exercitar chamadas diretas ao banco, além do formulário.
 8. Busca por código/descrição sem acento e estados de catálogo vazio, termo curto e nenhum resultado; FK recusa código inexistente.
 9. Mapeamento 1/0/-1 do convênio, preservação de códigos inesperados e tratamento condicionado de 404 por ambiente.

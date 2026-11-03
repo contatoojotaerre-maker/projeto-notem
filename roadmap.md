@@ -1,6 +1,8 @@
 # notem — Fase 1
 ## Configuração fiscal e perfis de serviço
-- [ ] Apresentar plano de tabelas, permissões, telas e testes; aguardar aprovação antes de implementar.
+- [x] Plano aprovado com os ajustes de CNPJ protegido e reserva definitiva.
+- [ ] Criar catálogos vazios, configuração/perfis, séries e reserva atômica definitiva; aplicar permissões e proteção condicional do CNPJ.
+- [ ] Implementar abas fiscais/serviços e ajustes de Prontidão; testar regras e informar os catálogos para carga SQL.
 
 ## Catálogos oficiais e busca municipal
 - [x] Plano aprovado; CSV conferidos com 5.570 municípios, 250 países e códigos únicos.
