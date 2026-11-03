@@ -8,7 +8,10 @@ export const fiscalSchema = fiscalIds.extend({
   special_tax_regime: z.number().refine(v => [0,1,2,3,4,5,6,9].includes(v)), dps_series: seriesSchema.nullable(),
   approx_taxes_mode: z.enum(['percent_simples','percent_by_sphere','none']), approx_simples_percent: percent,
   approx_federal_percent: percent, approx_state_percent: percent, approx_municipal_percent: percent,
+  simples_iss_withholding_percent: z.number().min(1.8, 'A alíquota do ISS deve ser pelo menos 1,80%.').max(9.99).refine(v => Math.abs(v * 100 - Math.round(v * 100)) < 1e-8, 'Use até duas casas decimais.').nullable().default(null),
 }).superRefine((v,ctx) => {
+  if (v.simples_nacional_option === 1 && v.approx_taxes_mode !== 'percent_by_sphere') ctx.addIssue({code:'custom',path:['approx_taxes_mode'],message:'Para empresas não optantes do Simples, preencha os percentuais federal, estadual e municipal (E0713).'});
+  if (v.simples_iss_withholding_percent !== null && (v.simples_nacional_option !== 3 || v.simples_nacional_regime !== 1)) ctx.addIssue({code:'custom',path:['simples_iss_withholding_percent'],message:'A alíquota do ISS no Simples só pode ser informada para ME/EPP com ISS dentro do Simples (DAS).'});
   if ((v.simples_nacional_option === 3) !== (v.simples_nacional_regime !== null)) ctx.addIssue({code:'custom',path:['simples_nacional_regime'],message:'Informe o regime de apuração somente para Optante ME/EPP.'});
   const spheres = [v.approx_federal_percent,v.approx_state_percent,v.approx_municipal_percent];
   const valid = v.approx_taxes_mode === 'percent_simples' ? v.simples_nacional_option !== 1 && v.approx_simples_percent !== null && spheres.every(x=>x===null) : v.approx_taxes_mode === 'percent_by_sphere' ? v.approx_simples_percent===null && spheres.every(x=>x!==null) : v.approx_simples_percent===null && spheres.every(x=>x===null);
@@ -37,3 +40,17 @@ export function validReadinessCertificate(c: {status:string;cnpj:string;valid_fr
 export const catalogNames = ['service_codes','nbs_codes','ibscbs_operation_indicators'] as const;
 export type CatalogName = typeof catalogNames[number];
 export type CatalogChoice = {code:string;description:string;details:unknown};
+export function chooseSimples(form: FiscalForm, option: number): FiscalForm {
+  return {...form, simples_nacional_option:option, simples_nacional_regime:option===3 ? (form.simples_nacional_regime ?? 1) : null,
+    approx_taxes_mode:option===1?'percent_by_sphere':form.approx_taxes_mode==='none'?'none':'percent_simples',
+    approx_simples_percent:option===1?null:form.approx_simples_percent,
+    approx_federal_percent:option===1?form.approx_federal_percent:null,approx_state_percent:option===1?form.approx_state_percent:null,approx_municipal_percent:option===1?form.approx_municipal_percent:null,
+    simples_iss_withholding_percent:option===3&&(form.simples_nacional_regime??1)===1?form.simples_iss_withholding_percent:null};
+}
+export function fiscalSummary(form: FiscalForm): string {
+  const company=form.simples_nacional_option===1?'Empresa não optante do Simples Nacional':form.simples_nacional_option===2?'Empresa do Simples Nacional (MEI)':'Empresa do Simples Nacional (ME/EPP)';
+  const regime=form.simples_nacional_option===3 ? ['ISS recolhido no DAS','ISS recolhido fora do Simples','tributos federais e ISS recolhidos fora do Simples'][(form.simples_nacional_regime??1)-1] : null;
+  const pct=(v:number|null)=>v===null?'pendente':`${v.toLocaleString('pt-BR',{minimumFractionDigits:2,maximumFractionDigits:2})}%`;
+  const taxes=form.approx_taxes_mode==='none'?'tributos aproximados não informados':form.approx_taxes_mode==='percent_simples'?`tributos aproximados de ${pct(form.approx_simples_percent)}`:`tributos aproximados: federal ${pct(form.approx_federal_percent)}, estadual ${pct(form.approx_state_percent)} e municipal ${pct(form.approx_municipal_percent)}`;
+  return [company,regime,taxes].filter(Boolean).join(', ')+'.';
+}
