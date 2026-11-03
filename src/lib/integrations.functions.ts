@@ -1,0 +1,30 @@
+import { createServerFn } from '@tanstack/react-start'
+import { setResponseHeader, getRequest } from '@tanstack/react-start/server'
+import { z } from 'zod'
+import { requireSupabaseAuth } from '@/integrations/supabase/auth-middleware'
+import { integrationSchema, makeKey } from './integrations'
+const orgInput=z.object({organization_id:z.string().uuid()})
+const keyColumns='id,integration_id,organization_id,environment,key_prefix,created_by,created_at,last_used_at,revoked_at,revoked_by' as const
+export const getIntegrations=createServerFn({method:'POST'}).middleware([requireSupabaseAuth]).inputValidator(orgInput).handler(async({data,context})=>{
+ const [rows,keys,companies,links]=await Promise.all([context.supabase.from('integrations').select('*').eq('organization_id',data.organization_id).order('created_at',{ascending:false}),context.supabase.from('integration_keys').select(keyColumns).eq('organization_id',data.organization_id),context.supabase.from('companies').select('id,legal_name,cnpj').eq('organization_id',data.organization_id).order('legal_name'),context.supabase.from('integration_companies').select('*').eq('organization_id',data.organization_id)])
+ if([rows,keys,companies,links].some(r=>r.error))throw new Error('Não foi possível carregar as integrações.')
+ return {rows:rows.data??[],keys:keys.data??[],companies:companies.data??[],links:links.data??[],origin:new URL(getRequest().url).origin}
+})
+export const saveIntegration=createServerFn({method:'POST'}).middleware([requireSupabaseAuth]).inputValidator(integrationSchema).handler(async({context,data})=>{
+ const [admin,allowed]=await Promise.all([context.supabase.rpc('is_platform_admin'),context.supabase.rpc('has_org_role',{org_id:data.organization_id,roles:['owner','admin','developer']})]);if(admin.error||allowed.error||(!admin.data&&!allowed.data))throw new Error('Acesso não autorizado.')
+ const {supabaseAdmin}=await import('@/integrations/supabase/client.server');const result=await supabaseAdmin.rpc('manage_integration',{_actor:context.userId,_org:data.organization_id,_action:'save',_id:data.id??null,_payload:{...data}});if(result.error)throw new Error('Não foi possível salvar. Confira as empresas selecionadas e sua permissão.');return {id:result.data}
+})
+export const generateIntegrationKey=createServerFn({method:'POST'}).middleware([requireSupabaseAuth]).inputValidator(orgInput.extend({integration_id:z.string().uuid(),environment:z.enum(['sandbox','production'])})).handler(async({context,data})=>{
+ setResponseHeader('Cache-Control','no-store')
+ const [admin,allowed]=await Promise.all([context.supabase.rpc('is_platform_admin'),context.supabase.rpc('has_org_role',{org_id:data.organization_id,roles:['owner','admin','developer']})]);if(admin.error||allowed.error||(!admin.data&&!allowed.data))throw new Error('Acesso não autorizado.')
+ const material=await makeKey(data.environment);const {supabaseAdmin}=await import('@/integrations/supabase/client.server');const result=await supabaseAdmin.rpc('manage_integration',{_actor:context.userId,_org:data.organization_id,_action:'generate',_id:data.integration_id,_payload:{environment:data.environment,key_prefix:material.key_prefix,key_hash:material.key_hash}});if(result.error)throw new Error(result.error.message.includes('duas chaves')?'Já existem duas chaves ativas neste ambiente. Revogue uma antes de gerar outra.':'Não foi possível gerar a chave.');return {key:material.key}
+})
+export const revokeIntegrationKey=createServerFn({method:'POST'}).middleware([requireSupabaseAuth]).inputValidator(orgInput.extend({integration_id:z.string().uuid(),key_id:z.string().uuid()})).handler(async({context,data})=>{
+ const [admin,allowed]=await Promise.all([context.supabase.rpc('is_platform_admin'),context.supabase.rpc('has_org_role',{org_id:data.organization_id,roles:['owner','admin','developer']})]);if(admin.error||allowed.error||(!admin.data&&!allowed.data))throw new Error('Acesso não autorizado.')
+ const {supabaseAdmin}=await import('@/integrations/supabase/client.server');const result=await supabaseAdmin.rpc('manage_integration',{_actor:context.userId,_org:data.organization_id,_action:'revoke',_id:data.integration_id,_payload:{key_id:data.key_id}});if(result.error)throw new Error('Não foi possível revogar a chave.');return {ok:true}
+})
+export const getIntegrationLogs=createServerFn({method:'POST'}).middleware([requireSupabaseAuth]).inputValidator(orgInput.extend({integration_id:z.string().uuid(),environment:z.enum(['sandbox','production','all']).default('all'),errors:z.boolean().default(false),status:z.number().int().min(100).max(599).optional(),from:z.string().datetime().optional(),until:z.string().datetime().optional(),page:z.number().int().min(0).max(10000).default(0)})).handler(async({context,data})=>{
+ const cutoff=new Date(Date.now()-90*86400000).toISOString();let query=context.supabase.from('api_request_logs').select('*',{count:'exact'}).eq('organization_id',data.organization_id).eq('integration_id',data.integration_id).gte('created_at',cutoff).order('created_at',{ascending:false}).range(data.page*30,data.page*30+29)
+ if(data.environment!=='all')query=query.eq('environment',data.environment);if(data.errors)query=query.gte('status_code',400);if(data.status)query=query.eq('status_code',data.status);if(data.from)query=query.gte('created_at',data.from);if(data.until)query=query.lte('created_at',data.until)
+ const result=await query;if(result.error)throw new Error('Não foi possível carregar as requisições.');return {rows:result.data??[],count:result.count??0}
+})
