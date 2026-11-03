@@ -1,0 +1,123 @@
+openapi: 3.1.0
+info:
+  title: API da notem
+  version: "1.0.0"
+  description: |
+    API para emissão e gestão de NFS-e (padrão nacional) por sistemas parceiros.
+    Leia primeiro docs/api/convencoes.md. Campos em português; valores monetários como texto ("150.00").
+servers:
+  - url: https://{dominio}/api/v1
+    variables:
+      dominio:
+        default: dominio-a-definir
+        description: Domínio definitivo da notem (a definir)
+security:
+  - chaveIntegracao: []
+tags:
+  - name: Geral
+    description: Verificação da chave e do ambiente
+paths:
+  /status:
+    get:
+      tags: [Geral]
+      summary: Verifica a chave e informa o ambiente
+      description: Use para testar a integração. Não consome nada e não acessa o governo.
+      responses:
+        "200":
+          description: Chave válida
+          headers:
+            X-Request-Id: { $ref: "#/components/headers/XRequestId" }
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [ambiente, organizacao, integracao]
+                properties:
+                  ambiente: { $ref: "#/components/schemas/Ambiente" }
+                  organizacao:
+                    type: object
+                    properties:
+                      id: { type: string, format: uuid }
+                      nome: { type: string }
+                  integracao:
+                    type: object
+                    properties:
+                      id: { type: string, format: uuid }
+                      nome: { type: string }
+        "401": { $ref: "#/components/responses/AutenticacaoInvalida" }
+components:
+  securitySchemes:
+    chaveIntegracao:
+      type: http
+      scheme: bearer
+      description: "Chave da integração: ntm_homolog_... (homologação) ou ntm_prod_... (produção)."
+  headers:
+    XRequestId:
+      description: Identificador da requisição (informe ao suporte)
+      schema: { type: string }
+  parameters:
+    IdempotencyKey:
+      name: Idempotency-Key
+      in: header
+      required: false
+      description: Chave de idempotência gerada pelo parceiro (até 100 caracteres). Obrigatória em emissão, cancelamento e substituição.
+      schema: { type: string, maxLength: 100 }
+    Limite:
+      name: limite
+      in: query
+      schema: { type: integer, minimum: 1, maximum: 100, default: 50 }
+    Cursor:
+      name: cursor
+      in: query
+      schema: { type: string }
+  schemas:
+    Ambiente:
+      type: string
+      enum: [homologacao, producao]
+    Valor:
+      type: string
+      pattern: '^\d+\.\d{2}$'
+      description: Valor em reais, ponto decimal, 2 casas
+      examples: ["150.00"]
+    Percentual:
+      type: string
+      pattern: '^\d{1,3}(\.\d{1,2})?$'
+      examples: ["2.00"]
+    Cnpj:
+      type: string
+      pattern: '^\d{14}$'
+    CodigoMunicipio:
+      type: string
+      pattern: '^\d{7}$'
+    Erro:
+      type: object
+      required: [erro, id_requisicao]
+      properties:
+        erro:
+          type: object
+          required: [codigo, mensagem]
+          properties:
+            codigo: { type: string, examples: ["REQUISICAO_INVALIDA"] }
+            mensagem: { type: string }
+            detalhes:
+              type: array
+              items:
+                type: object
+                properties:
+                  campo: { type: string }
+                  mensagem: { type: string }
+            codigo_governo: { type: [string, "null"] }
+            mensagem_governo: { type: [string, "null"] }
+        id_requisicao: { type: string }
+    ListaPaginada:
+      type: object
+      required: [dados, proximo_cursor]
+      properties:
+        dados: { type: array, items: {} }
+        proximo_cursor: { type: [string, "null"] }
+  responses:
+    AutenticacaoInvalida:
+      description: Chave ausente, inválida ou revogada
+      content:
+        application/json:
+          schema: { $ref: "#/components/schemas/Erro" }
