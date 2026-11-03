@@ -1,4 +1,8 @@
 # notem — Fase 1
+## Redesenho fiscal guiado
+- [ ] Aprovar plano: Configuração fiscal e Serviços simples, avançado recolhido e alíquota opcional de ISS do Simples.
+- [ ] Após aprovação, aplicar migração aditiva, redesenho e testes sem mudar as demais regras nem transmissor/.
+
 ## Configuração fiscal e perfis de serviço
 - [x] Plano aprovado com os ajustes de CNPJ protegido e reserva definitiva.
 - [x] Criar três catálogos vazios, configuração/perfis, séries e reserva definitiva; aplicar RLS/concessões e proteção condicional do CNPJ.
