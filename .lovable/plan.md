@@ -1,57 +1,99 @@
-# notem — Configuração fiscal e Serviços guiados
+# notem — Fase 3A: Integrações, chaves e primeira rota da API
 
-## Escopo
-Redesenhar somente as abas **Configuração fiscal** e **Serviços**, mantendo a marca, permissões, códigos gravados, catálogos, auditoria, séries e reservas definitivas. A única alteração de estrutura será a nova alíquota opcional na configuração da empresa, com validação no banco. Não alterar Prontidão, conexão governamental, emissão ou arquivos em `transmissor/`.
+## Escopo e contrato
+Implementar integrações por organização, chaves por ambiente, registro de requisições e **GET /api/v1/status**, seguindo os quatro arquivos lidos de `docs/api/`. Campos da API em português; banco e código em inglês. Preservar o padrão visual e as regras existentes. Nenhuma alteração em `transmissor/`.
 
-## 1. Configuração fiscal
+Não incluir rotas de empresas, configuração fiscal, certificados ou emissão; webhooks; idempotência; página pública `/docs`; limites efetivos de uso.
 
-- **Resumo após salvar**, no topo, calculado exclusivamente a partir dos dados salvos. Exemplo: “Empresa do Simples Nacional (ME/EPP), ISS recolhido no DAS, tributos aproximados de 6,00%.” Adaptar a frase a MEI, não optante, outros regimes e tributos não informados.
-- **Sua empresa é optante do Simples Nacional?** Três cartões selecionáveis: **Não**, **Sim, como MEI**, **Sim, como ME ou EPP**. Uma frase curta de ajuda.
-- Para ME/EPP, **Como o ISS é recolhido?** Padrão em novas configurações: **Dentro do Simples (DAS)**. Outras opções: **ISS fora do Simples** (tributos federais continuam no Simples) e **Tributos federais e ISS fora do Simples**, com explicações curtas. Manter os três valores atuais do banco.
-- **Percentual aproximado de tributos**: optantes veem apenas **Alíquota efetiva do Simples (%)**, com a ajuda solicitada; não optantes veem os três percentuais federal, estadual e municipal. Não pedir o modo no fluxo principal. Não preencher percentuais fictícios nem tratar campo vazio como zero.
-- **Alíquota do ISS no Simples (%) — usada somente em notas com ISS retido pelo tomador**: aparece apenas para ME/EPP com ISS dentro do Simples. Opcional, mínimo **1,8%** quando preenchida. Ajuda: “Só é usada quando o cliente retém o ISS. A notem não envia este valor nas demais notas.” Diferenciar claramente esta alíquota daquela dos tributos aproximados.
-- **Opções avançadas**, recolhida por padrão: regime especial (padrão **Nenhum**), opção **não informar** tributos aproximados e edição da série apenas para administrador da plataforma. Códigos somente aqui ou em detalhes técnicos.
-- Após salvar, rodapé discreto: **Série da notem: 00001 (automática)**, usando a série real. Preservar auditoria; identificadores técnicos ficam em detalhes recolhidos.
+## 1. Banco e permissões
+Criar migração com quatro tabelas, concessões explícitas e RLS:
 
-### Preservação dos dados existentes
-Abrir a aba não modifica valores nem grava nada. Os padrões se aplicam somente a configurações novas e a escolhas feitas pelo usuário. Percentuais já salvos continuam com sua precisão original; o resumo pode formatar duas casas sem arredondar o valor gravado.
+| Tabela | Conteúdo e garantias |
+|---|---|
+| `integrations` | Campos do pedido; escopo `all` ou `selected`; organização imutável; auditoria de criação/alteração. |
+| `integration_companies` | Par integração/empresa único. Chaves estrangeiras compostas com `organization_id` auxiliar garantem a mesma organização. Vínculos somente no escopo `selected`; troca para `all` remove vínculos na mesma transação. |
+| `integration_keys` | Campos do pedido; ambiente `sandbox`/`production`; prefixo identificador e hash único, nunca chave completa. No máximo **2 chaves ativas por integração e ambiente**, imposto atomicamente no banco, inclusive sob concorrência. Revogação preserva histórico. |
+| `api_request_logs` | Campos do pedido; ID `req_` + valor aleatório; corpos já sanitizados. Organização/integração/chave/ambiente podem ser nulos em tentativas sem credencial identificável. Nunca atribuir organização pelo conteúdo enviado. |
 
-Se um optante já usa percentuais separados por esfera, preservar e exibir essa escolha em Opções avançadas, sem conversão silenciosa para um percentual único. Ao mudar uma escolha que invalida percentuais ou a nova alíquota, informar o efeito antes de descartá-los; a mudança só será gravada ao salvar. Manter “não informar” existente, sem ativar percentuais automaticamente.
+- Membros da organização leem integrações, vínculos, metadados seguros das chaves e logs; administrador da plataforma lê globalmente. Outras organizações não têm acesso.
+- Em `integration_keys`, conceder leitura autenticada **somente às colunas seguras**, excluindo `key_hash`; não conceder SELECT da tabela inteira. Aplicar RLS também a essa leitura. Hash acessível exclusivamente ao servidor, nunca ao navegador, cache de consultas ou logs.
+- Escrita das quatro tabelas somente por operações do servidor; sem INSERT/UPDATE/DELETE para `anon` ou `authenticated`. Conceder acesso necessário a `service_role`.
+- Criar/editar integrações, alterar escopo/empresas e gerar/revogar chaves: **owner, admin, developer** da organização e administrador da plataforma. Operator/viewer só consultam.
+- Funções autenticadas verificam identidade e papel pelo cliente do usuário antes de carregar o cliente privilegiado. Operações transacionais de gestão, exclusivas do servidor, repetem a checagem de papel no banco com a identidade verificada pelo servidor. Não alterar as funções de autorização existentes.
+- Índices para hash, chaves ativas, vínculos e logs por integração/organização, ambiente e data. Não apagar integrações/chaves nesta fase: desativar ou revogar.
 
-## 2. Serviços
+## 2. Chaves e autenticação
+- Gerar chave no servidor com aleatoriedade criptográfica (256 bits), prefixada por `ntm_homolog_` ou `ntm_prod_`; persistir hash SHA-256 da chave completa e prefixo curto de identificação.
+- Retornar a chave completa somente na resposta da geração, com `Cache-Control: no-store`; exibir em diálogo temporário com copiar e **“Guarde agora; ela não será exibida novamente”**. Não salvar em armazenamento do navegador, cache de consultas, telemetria ou logs. Fechar o diálogo descarta o valor.
+- Validar Bearer, formato, prefixo, hash existente, revogação e integração ativa. Confirmar consistência prefixo/ambiente armazenado. Organização, integração e ambiente vêm exclusivamente da chave.
+- Chave ausente, malformada, inexistente, revogada ou integração inativa: `401 AUTENTICACAO_INVALIDA`, com a mesma mensagem pública genérica.
+- Atualizar `last_used_at` de forma condicional, no máximo uma vez por minuto por chave. Revogação e desativação continuam verificadas a cada chamada, sem cache de autorização que retarde seu efeito.
+- Preparar um ponto comum para limite de uso e resposta `429 LIMITE_EXCEDIDO` com `Retry-After`, mas não ativar limite nesta fase.
 
-Organizar o formulário em assuntos com perguntas e ajuda curta:
+## 3. Rotas e respostas
+API: **GET `/api/v1/status`**, TanStack server route fora do grupo de páginas autenticadas, usando apenas a chave Bearer; nenhum acesso ao governo.
 
-1. **Como você identifica este serviço?** Nome interno e situação ativo/inativo.
-2. **Qual serviço sua empresa presta?** Busca no catálogo oficial, exibindo descrições completas em vez de códigos no campo e nos resultados. A busca por código continua funcionando; o código selecionado fica nos detalhes técnicos.
-3. **O que deve aparecer na descrição da nota?** Discriminação padrão, preservando o limite de 2.000 caracteres.
-4. **Como este serviço é tributado pelo ISS?** Opções com nomes, sem prefixos numéricos; padrão Operação tributável. Imunidade mantém pergunta condicional e descrição oficial.
-5. **Quem retém o ISS?** Ninguém, tomador ou intermediário, mantendo os valores e padrão atuais.
-6. **Opções avançadas**, recolhida: código municipal, NBS, indicador IBS/CBS, benefício municipal e detalhes técnicos. Preservar todas as buscas, descrições e validações já aprovadas.
+Resposta 200 exatamente conforme o OpenAPI:
+```json
+{
+  "ambiente": "homologacao",
+  "organizacao": { "id": "UUID", "nome": "Nome da organização" },
+  "integracao": { "id": "UUID", "nome": "Nome da integração" }
+}
+```
 
-Na lista de serviços, manter nome, descrição oficial e situação; retirar códigos da apresentação principal. Não criar nem guardar alíquota no perfil de serviço.
+- Toda resposta da API, inclusive erros, recebe `X-Request-Id` gerado pelo servidor e JSON UTF-8. Nos erros, o mesmo identificador aparece em `id_requisicao`.
+- Envelope completo da seção 6: `erro.codigo`, `mensagem`, `detalhes`, `codigo_governo`, `mensagem_governo`, além de `id_requisicao`; governo nulo nesta rota. Não devolver stack ou SQL.
+- Camada comum da API trata falhas internas em JSON, evitando as páginas HTML de erro do painel. Métodos não suportados têm resposta JSON e identificador; não criar outras operações da API.
 
-## 3. Detalhes técnicos e validações
+### Ponto de viabilidade a validar antes das migrações
+O contrato exige `/api/v1/*`, enquanto a exceção documentada de acesso sem autenticação da hospedagem é `/api/public/*`. O painel e a API têm autenticações distintas: liberar a chamada externa não libera os dados do painel.
 
-- Adicionar `company_fiscal_settings.simples_iss_withholding_percent`, decimal opcional, inicialmente nulo em todas as linhas existentes. Usar a representação percentual já adotada no projeto, sem transformação dos demais campos.
-- Validar no formulário, na função autenticada e por gatilho no banco: quando preenchida, aceitar somente ME/EPP (`simples_nacional_option = 3`) com ISS dentro do Simples (`simples_nacional_regime = 1`); mínimo 1,8%, respeitando também o limite oficial do campo `pAliq` no XSD. Não tornar o campo obrigatório para salvar a empresa.
-- Preservar RLS e permissões existentes; nenhuma nova tabela, catálogo ou regra de acesso. Manter o bloqueio de CNPJ e a atribuição de série.
-- E0713: continuar impedindo percentual do Simples para não optante. A referência também restringe `indTotTrib` para não optante na DPS; manter a opção “não informar” na configuração conforme solicitado, sem afirmar que ela já é válida para uma emissão futura.
-- E0621/E0625 são regras da **nota**, com condições de competência, convênio ativo e benefício municipal, além do regime e retenção. Nesta tarefa, guardar apenas o parâmetro opcional da empresa. A futura montagem da DPS deverá exigir/usá-lo nos casos de retenção aplicáveis (incluindo intermediário segundo o anexo) e omiti-lo sem retenção. Não implementar emissão nem modificar `transmissor/`.
-- Reaproveitar os controles e temas existentes; separar rótulos simples dos códigos persistidos. Seções abertas, sem cartões envolvendo seções inteiras; cartões somente para as três escolhas do Simples. Controles acessíveis por teclado, seleção evidente e estados somente leitura preservados.
+Validar acesso externo à URL contratada sem sessão Lovable/Supabase. A prévia atual normalmente exige acesso ao projeto, e o aplicativo ainda não foi publicado; portanto, ela não pode ser anunciada como endereço público de teste já comprovado. Não trocar o contrato para `/api/public/v1`, não adicionar alias nem publicar sem solicitação. Se a hospedagem interceptar `/api/v1/*` e não houver exceção suportada, informar o bloqueio antes de implementar o restante e aguardar decisão.
 
-## 4. Testes e aceite
+## 4. Registro seguro e retenção
+- Registrar cada chamada processada pela API, inclusive 401, com contexto conhecido, método, caminho sem parâmetros secretos, status, código de erro e duração. Logs sem organização identificada ficam acessíveis somente ao administrador da plataforma.
+- Sanitizador central recursivo e sem diferenciar maiúsculas: remover/mascarar `pfx_base64`, `senha`, `certificado`, credenciais, chaves, hashes e Authorization, inclusive objetos/listas aninhados e textos que contenham tokens. Nunca registrar cabeçalho Authorization, chave bruta ou corpo bruto como fallback de erro.
+- Limite de **64 KB em UTF-8 por corpo sanitizado**, com indicação de truncamento e representação válida para leitura. Não copiar a requisição inteira nem persistir buffers brutos. Detalhes técnicos restritos ao log, também sanitizados.
+- Gravar fora do caminho crítico apenas com mecanismo de execução em segundo plano suportado e com duração garantida (`waitUntil`); não usar promessa solta. Verificar esse suporte no ambiente hospedado. Se indisponível, aguardar uma gravação pequena e medir impacto, sem perder logs silenciosamente. Falha de gravação gera diagnóstico seguro, sem expor segredos ao cliente.
+- Propor **uma limpeza diária às 03:00 UTC**, por `pg_cron`, com DELETE idempotente de registros mais antigos que 90 dias e índice de data. Uma execução por dia; remoção física pode levar até 24 horas adicionais. Consultas do painel sempre excluem registros com mais de 90 dias. Não criar verificações frequentes ou várias tarefas de limpeza.
+- Preparar o filtro de empresa sem inferir identidade a partir do corpo: nesta fase `/status` não tem empresa. Habilitar esse filtro quando rotas futuras tiverem empresa validada.
 
-- Testar mapeamento dos três cartões e dos três regimes para os valores atuais; padrão DAS apenas em nova escolha ME/EPP.
-- Testar seleção automática de modo por situação, incompatibilidade do percentual do Simples com não optante, preservação de valores antigos e opção “não informar”.
-- Testar nova alíquota: vazio válido; 1,79 recusado; 1,80 aceito; recusa fora de ME/EPP/regime 1 e acima do limite oficial. Repetir as validações por chamadas diretas ao banco com dados temporários e rollback.
-- Executar os testes fiscais e de serviços existentes, garantindo que não mudaram imunidade, retenção, séries, permissões ou reserva definitiva.
-- Conferir resumo, avançado recolhido, ausência de códigos no fluxo principal e legibilidade em computador e celular. Quando houver sessão de teste disponível, salvar e reabrir as duas abas com dados reais; no Supabase externo, informar explicitamente se esta verificação autenticada não puder ser realizada.
+## 5. Telas do painel
+Substituir “Em breve” no menu **Integrações**, sem alterar outras seções.
 
-## Ordem de aplicação após aprovação
-1. Conferir limite oficial de `pAliq` e aplicar migração aditiva com validação, sem alterar valores existentes.
-2. Atualizar validação e leitura/gravação autenticada do novo campo.
-3. Redesenhar as duas abas e os controles de seleção, preservando navegação e demais telas.
-4. Executar testes locais/de banco e verificações visuais; relatar resultados e limitações.
+- **Lista:** nome, situação, todas/selecionadas, último uso e contagem de chaves ativas em Homologação e Produção. Estado vazio e ações conforme papel.
+- **Nova integração:** nome, descrição, Todas as empresas / Empresas selecionadas, busca e seleção de empresas da organização. Escopo selecionado exige ao menos uma empresa.
+- **Detalhe:** editar nome/descrição e ativar/desativar; abas solicitadas:
+  - **Chaves:** ambientes separados; gerar, copiar uma vez, listar prefixo/criação/último uso e revogar com confirmação. Ao atingir duas ativas, impedir terceira sem revogar; segunda chave permite troca sem interrupção.
+  - **Empresas autorizadas:** visualizar/editar escopo e seleção, somente empresas da organização.
+  - **Requisições:** últimos 90 dias, filtros por período/ambiente/status/somente erros, paginação; detalhe com método, rota, status, duração, ID, corpos formatados e copiar conteúdo sanitizado.
+  - **Como testar:** curl para `/api/v1/status`, com endereço do painel identificado corretamente e marcador para substituir pela chave completa; prefixo visível apenas para identificação, nunca apresentado como credencial funcional.
+- Operator/viewer veem dados e requisições, sem ações de gestão. Estados de carregamento, vazio, erro e somente leitura seguem o padrão existente.
 
-**Até a aprovação:** nenhuma alteração no aplicativo ou no banco.
+## 6. Detalhes técnicos e documentação
+- Páginas protegidas: `/o/$orgSlug/integracoes` e `/o/$orgSlug/integracoes/$integrationId`; criação em diálogo da lista. Garantir que a rota genérica atual não mantenha o conteúdo “Em breve” para esta seção.
+- Reutilizar middleware autenticado, funções de servidor e opções de consulta carregadas pelas páginas; separar gestão do painel, autenticação da API e sanitização. Identificação de organização sempre validada, nunca confiada ao navegador.
+- Atualizar `docs/api/openapi.yaml` no mesmo trabalho: resposta `/status`, exemplos, cabeçalho também no 401, envelope de erro e servidor real quando confirmado. Preservar a base contratada e distinguir prévia restrita de URL pública.
+- Atualizar convenções/glossário para explicitar até duas chaves por ambiente durante rotação e que nenhum limite está ativo na Fase 3A; não mudar contratos das fases futuras.
+- Registrar em `AGENTS.md`: **“Toda rota nova ou alterada da API deve atualizar docs/api/ no mesmo trabalho. A página pública /docs (fase final) será gerada a partir de docs/api/.”** Registrar as novas fronteiras de segurança em inglês.
+- Manter `/docs` no roadmap da fase final; títulos e descrições próprios nas novas páginas.
+
+## 7. Testes e aceite
+1. Chaves distintas, prefixos/ambientes corretos, hash verificável e ausência de texto secreto persistido. Terceira chave recusada, também com geração simultânea; após revogação, permitir substituta.
+2. Chaves ausentes/malformadas/inexistentes/revogadas e integração inativa → 401 no envelope exato; `X-Request-Id` em sucesso, erros e falhas internas.
+3. `/status` com ambas as chaves retorna organização/integração corretas e ambiente conforme OpenAPI, sem aceitar organização ou ambiente enviados pelo cliente.
+4. Isolamento entre organizações; empresa estrangeira recusada no banco; vínculos incompatíveis com escopo recusados. Verificar leituras seguras e recusa de acesso direto ao hash.
+5. Cada papel: owner/admin/developer e administrador global gerenciam; operator/viewer apenas leem; anônimo não acessa tabelas nem operações de gestão.
+6. Sanitização aninhada, maiúsculas, tokens em texto, UTF-8 e truncamento de 64 KB; logs de sucesso/401 sem segredos. Retenção de 90 dias, limpeza diária e atualização leve de último uso.
+7. Testes locais e de banco com rollback para regras; regressões do painel. Medir gravação de logs e concorrência quando houver conexão apropriada.
+8. Fluxo real: criar integração → gerar chave → chamar `/status` → ver requisição → revogar → confirmar 401 e nova requisição. Não anunciar fluxo verificado se faltar sessão ou acesso externo; Supabase externo não dispõe de sessão gerenciada de teste.
+
+## Ordem de execução após aprovação
+1. Validar acesso à URL `/api/v1/status` e mecanismo confiável de logs no ambiente hospedado, sem alterar contrato.
+2. Aplicar tabelas, grants, RLS, restrições, operações transacionais e limpeza diária.
+3. Implementar autenticação comum, sanitização, logs e `/status`; atualizar documentação no mesmo trabalho.
+4. Implementar lista/detalhe e ações protegidas do painel.
+5. Executar testes, conferir fluxo conectado quando possível e informar claramente qualquer validação pendente.
+
+**Até a aprovação:** somente planejamento e registro dos requisitos; nenhum código do aplicativo, tabela, chave ou configuração de hospedagem alterado.
