@@ -236,6 +236,163 @@ export type Database = {
           },
         ]
       }
+      company_fiscal_settings: {
+        Row: {
+          approx_federal_percent: number | null
+          approx_municipal_percent: number | null
+          approx_simples_percent: number | null
+          approx_state_percent: number | null
+          approx_taxes_mode: string
+          cnpj: string
+          company_id: string
+          created_at: string
+          created_by: string
+          dps_series: number
+          organization_id: string
+          simples_nacional_option: number
+          simples_nacional_regime: number | null
+          special_tax_regime: number
+          updated_at: string
+          updated_by: string
+        }
+        Insert: {
+          approx_federal_percent?: number | null
+          approx_municipal_percent?: number | null
+          approx_simples_percent?: number | null
+          approx_state_percent?: number | null
+          approx_taxes_mode: string
+          cnpj: string
+          company_id: string
+          created_at?: string
+          created_by: string
+          dps_series: number
+          organization_id: string
+          simples_nacional_option: number
+          simples_nacional_regime?: number | null
+          special_tax_regime?: number
+          updated_at?: string
+          updated_by: string
+        }
+        Update: {
+          approx_federal_percent?: number | null
+          approx_municipal_percent?: number | null
+          approx_simples_percent?: number | null
+          approx_state_percent?: number | null
+          approx_taxes_mode?: string
+          cnpj?: string
+          company_id?: string
+          created_at?: string
+          created_by?: string
+          dps_series?: number
+          organization_id?: string
+          simples_nacional_option?: number
+          simples_nacional_regime?: number | null
+          special_tax_regime?: number
+          updated_at?: string
+          updated_by?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "company_fiscal_settings_company_id_organization_id_fkey"
+            columns: ["company_id", "organization_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id", "organization_id"]
+          },
+        ]
+      }
+      company_service_profiles: {
+        Row: {
+          active: boolean
+          company_id: string
+          created_at: string
+          created_by: string
+          default_description: string
+          ibscbs_operation_indicator: string | null
+          id: string
+          immunity_type: number | null
+          iss_taxation: number
+          iss_withholding: number
+          municipal_benefit_number: string | null
+          municipal_tax_code: string | null
+          name: string
+          nbs_code: string | null
+          organization_id: string
+          service_code: string
+          updated_at: string
+          updated_by: string
+        }
+        Insert: {
+          active?: boolean
+          company_id: string
+          created_at?: string
+          created_by: string
+          default_description?: string
+          ibscbs_operation_indicator?: string | null
+          id?: string
+          immunity_type?: number | null
+          iss_taxation?: number
+          iss_withholding?: number
+          municipal_benefit_number?: string | null
+          municipal_tax_code?: string | null
+          name: string
+          nbs_code?: string | null
+          organization_id: string
+          service_code: string
+          updated_at?: string
+          updated_by: string
+        }
+        Update: {
+          active?: boolean
+          company_id?: string
+          created_at?: string
+          created_by?: string
+          default_description?: string
+          ibscbs_operation_indicator?: string | null
+          id?: string
+          immunity_type?: number | null
+          iss_taxation?: number
+          iss_withholding?: number
+          municipal_benefit_number?: string | null
+          municipal_tax_code?: string | null
+          name?: string
+          nbs_code?: string | null
+          organization_id?: string
+          service_code?: string
+          updated_at?: string
+          updated_by?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "company_service_profiles_company_id_organization_id_fkey"
+            columns: ["company_id", "organization_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id", "organization_id"]
+          },
+          {
+            foreignKeyName: "company_service_profiles_ibscbs_operation_indicator_fkey"
+            columns: ["ibscbs_operation_indicator"]
+            isOneToOne: false
+            referencedRelation: "ibscbs_operation_indicators"
+            referencedColumns: ["code"]
+          },
+          {
+            foreignKeyName: "company_service_profiles_nbs_code_fkey"
+            columns: ["nbs_code"]
+            isOneToOne: false
+            referencedRelation: "nbs_codes"
+            referencedColumns: ["code"]
+          },
+          {
+            foreignKeyName: "company_service_profiles_service_code_fkey"
+            columns: ["service_code"]
+            isOneToOne: false
+            referencedRelation: "service_codes"
+            referencedColumns: ["code"]
+          },
+        ]
+      }
       countries: {
         Row: {
           iso2: string
@@ -248,6 +405,74 @@ export type Database = {
         Update: {
           iso2?: string
           name?: string
+        }
+        Relationships: []
+      }
+      dps_sequences: {
+        Row: {
+          cnpj: string
+          company_id: string
+          created_at: string
+          environment: Database["public"]["Enums"]["environment"]
+          exhausted: boolean
+          next_number: number
+          organization_id: string
+          series: number
+          updated_at: string
+        }
+        Insert: {
+          cnpj: string
+          company_id: string
+          created_at?: string
+          environment: Database["public"]["Enums"]["environment"]
+          exhausted?: boolean
+          next_number?: number
+          organization_id: string
+          series: number
+          updated_at?: string
+        }
+        Update: {
+          cnpj?: string
+          company_id?: string
+          created_at?: string
+          environment?: Database["public"]["Enums"]["environment"]
+          exhausted?: boolean
+          next_number?: number
+          organization_id?: string
+          series?: number
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "dps_sequences_company_id_organization_id_fkey"
+            columns: ["company_id", "organization_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id", "organization_id"]
+          },
+        ]
+      }
+      ibscbs_operation_indicators: {
+        Row: {
+          code: string
+          location_to_identify: string
+          operation_location: string
+          operation_type: string
+          supply_characteristic: string
+        }
+        Insert: {
+          code: string
+          location_to_identify: string
+          operation_location: string
+          operation_type: string
+          supply_characteristic: string
+        }
+        Update: {
+          code?: string
+          location_to_identify?: string
+          operation_location?: string
+          operation_type?: string
+          supply_characteristic?: string
         }
         Relationships: []
       }
@@ -374,6 +599,24 @@ export type Database = {
             referencedColumns: ["id", "organization_id"]
           },
         ]
+      }
+      nbs_codes: {
+        Row: {
+          code: string
+          description: string
+          formatted_code: string
+        }
+        Insert: {
+          code: string
+          description: string
+          formatted_code: string
+        }
+        Update: {
+          code?: string
+          description?: string
+          formatted_code?: string
+        }
+        Relationships: []
       }
       organization_members: {
         Row: {
@@ -511,6 +754,24 @@ export type Database = {
           },
         ]
       }
+      service_codes: {
+        Row: {
+          code: string
+          description: string
+          group_description: string
+        }
+        Insert: {
+          code: string
+          description: string
+          group_description: string
+        }
+        Update: {
+          code?: string
+          description?: string
+          group_description?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
@@ -565,6 +826,23 @@ export type Database = {
           _valid_until: string
         }
         Returns: string
+      }
+      reserve_dps_number: {
+        Args: {
+          _company_id: string
+          _environment: Database["public"]["Enums"]["environment"]
+          _organization_id: string
+          _series: number
+        }
+        Returns: string
+      }
+      search_fiscal_catalog: {
+        Args: { _catalog: string; _search: string }
+        Returns: {
+          code: string
+          description: string
+          details: Json
+        }[]
       }
       search_municipality_catalog: {
         Args: { search_term: string }
