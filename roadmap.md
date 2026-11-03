@@ -1,4 +1,9 @@
 # notem — Fase 1
+## Fase 3A — Integrações e primeira rota da API
+- [ ] Aprovar plano de tabelas, permissões, chaves, registro de requisições, telas e GET /api/v1/status conforme docs/api/.
+- [ ] Após aprovação, implementar e testar isolamento, limite de duas chaves por ambiente, sanitização e retenção de 90 dias; verificar acesso externo sem sessão do painel.
+- [ ] Página pública /docs gerada de docs/api/ — fase final, fora da Fase 3A.
+
 ## Redesenho fiscal guiado
 - [x] Plano aprovado: Configuração fiscal e Serviços simples, avançado recolhido e alíquota opcional de ISS do Simples.
 - [x] Aplicar redesenho e alíquota opcional; E0713 no formulário, função autenticada e banco: não optante exige três percentuais e não permite none. Preservar linhas antigas incompatíveis e avisar na tela.
