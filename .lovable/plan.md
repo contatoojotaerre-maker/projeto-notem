@@ -1,135 +1,57 @@
-# notem — Configuração fiscal da empresa e perfis de serviço
+# notem — Configuração fiscal e Serviços guiados
 
-## Escopo e limites
+## Escopo
+Redesenhar somente as abas **Configuração fiscal** e **Serviços**, mantendo a marca, permissões, códigos gravados, catálogos, auditoria, séries e reservas definitivas. A única alteração de estrutura será a nova alíquota opcional na configuração da empresa, com validação no banco. Não alterar Prontidão, conexão governamental, emissão ou arquivos em `transmissor/`.
 
-Implementar as abas **Configuração fiscal** e **Serviços**, a estrutura de séries/numeração DPS e os ajustes solicitados em **Prontidão**. Nenhuma emissão, montagem, assinatura ou transmissão de DPS; nenhuma API de parceiros ou modelo de serviço por organização. Não criar, editar, mover nem apagar arquivos em `transmissor/`.
+## 1. Configuração fiscal
 
-Os catálogos serão criados **vazios**: você executará a carga SQL de 338 serviços, 918 NBS e 26 indicadores. Não aplicar neste trabalho a carga pendente de municípios/países nem outras correções anteriores.
+- **Resumo após salvar**, no topo, calculado exclusivamente a partir dos dados salvos. Exemplo: “Empresa do Simples Nacional (ME/EPP), ISS recolhido no DAS, tributos aproximados de 6,00%.” Adaptar a frase a MEI, não optante, outros regimes e tributos não informados.
+- **Sua empresa é optante do Simples Nacional?** Três cartões selecionáveis: **Não**, **Sim, como MEI**, **Sim, como ME ou EPP**. Uma frase curta de ajuda.
+- Para ME/EPP, **Como o ISS é recolhido?** Padrão em novas configurações: **Dentro do Simples (DAS)**. Outras opções: **ISS fora do Simples** (tributos federais continuam no Simples) e **Tributos federais e ISS fora do Simples**, com explicações curtas. Manter os três valores atuais do banco.
+- **Percentual aproximado de tributos**: optantes veem apenas **Alíquota efetiva do Simples (%)**, com a ajuda solicitada; não optantes veem os três percentuais federal, estadual e municipal. Não pedir o modo no fluxo principal. Não preencher percentuais fictícios nem tratar campo vazio como zero.
+- **Alíquota do ISS no Simples (%) — usada somente em notas com ISS retido pelo tomador**: aparece apenas para ME/EPP com ISS dentro do Simples. Opcional, mínimo **1,8%** quando preenchida. Ajuda: “Só é usada quando o cliente retém o ISS. A notem não envia este valor nas demais notas.” Diferenciar claramente esta alíquota daquela dos tributos aproximados.
+- **Opções avançadas**, recolhida por padrão: regime especial (padrão **Nenhum**), opção **não informar** tributos aproximados e edição da série apenas para administrador da plataforma. Códigos somente aqui ou em detalhes técnicos.
+- Após salvar, rodapé discreto: **Série da notem: 00001 (automática)**, usando a série real. Preservar auditoria; identificadores técnicos ficam em detalhes recolhidos.
 
-## 1. Tabelas e integridade
+### Preservação dos dados existentes
+Abrir a aba não modifica valores nem grava nada. Os padrões se aplicam somente a configurações novas e a escolhas feitas pelo usuário. Percentuais já salvos continuam com sua precisão original; o resumo pode formatar duas casas sem arredondar o valor gravado.
 
-### Catálogos oficiais
+Se um optante já usa percentuais separados por esfera, preservar e exibir essa escolha em Opções avançadas, sem conversão silenciosa para um percentual único. Ao mudar uma escolha que invalida percentuais ou a nova alíquota, informar o efeito antes de descartá-los; a mudança só será gravada ao salvar. Manter “não informar” existente, sem ativar percentuais automaticamente.
 
-| Tabela | Campos |
-|---|---|
-| `service_codes` | `code` (PK, texto de 6 dígitos), `description`, `group_description` |
-| `nbs_codes` | `code` (PK, texto de 9 dígitos), `formatted_code`, `description` |
-| `ibscbs_operation_indicators` | `code` (PK, texto de 6 dígitos), `operation_type`, `operation_location`, `supply_characteristic`, `location_to_identify` |
+## 2. Serviços
 
-Preservar zeros iniciais, códigos e descrições oficiais. Busca por código ou texto, ignorando acentos e maiúsculas, com índices e normalização imutável no padrão municipal existente. Para indicadores, pesquisar os campos descritivos disponíveis. Distinguir catálogo não importado de ausência de resultados e exigir pelo menos 2 caracteres para a busca.
+Organizar o formulário em assuntos com perguntas e ajuda curta:
 
-### `company_fiscal_settings`
+1. **Como você identifica este serviço?** Nome interno e situação ativo/inativo.
+2. **Qual serviço sua empresa presta?** Busca no catálogo oficial, exibindo descrições completas em vez de códigos no campo e nos resultados. A busca por código continua funcionando; o código selecionado fica nos detalhes técnicos.
+3. **O que deve aparecer na descrição da nota?** Discriminação padrão, preservando o limite de 2.000 caracteres.
+4. **Como este serviço é tributado pelo ISS?** Opções com nomes, sem prefixos numéricos; padrão Operação tributável. Imunidade mantém pergunta condicional e descrição oficial.
+5. **Quem retém o ISS?** Ninguém, tomador ou intermediário, mantendo os valores e padrão atuais.
+6. **Opções avançadas**, recolhida: código municipal, NBS, indicador IBS/CBS, benefício municipal e detalhes técnicos. Preservar todas as buscas, descrições e validações já aprovadas.
 
-Uma linha por empresa, com FK composta `(company_id, organization_id)` para `companies`, campos fiscais, série e auditoria de criação/última alteração.
+Na lista de serviços, manter nome, descrição oficial e situação; retirar códigos da apresentação principal. Não criar nem guardar alíquota no perfil de serviço.
 
-- `simples_nacional_option`: obrigatório, `1 Não optante`, `2 Optante MEI`, `3 Optante ME/EPP`.
-- `simples_nacional_regime`: obrigatório apenas na opção 3; nulo nas opções 1/2. Valores: `1 Tributos federais e municipal pelo SN`, `2 Federais pelo SN e ISSQN por fora do SN`, `3 Federais e municipal por fora do SN`.
-- `special_tax_regime`: padrão 0; `0 Nenhum`, `1 Ato Cooperado`, `2 Estimativa`, `3 Microempresa Municipal`, `4 Notário ou Registrador`, `5 Profissional Autônomo`, `6 Sociedade de Profissionais`, `9 Outros`.
-- `approx_taxes_mode`: `percent_simples`, `percent_by_sphere` ou `none`. Sugerir o primeiro para opções 2/3 e o segundo para opção 1, sem substituir silenciosamente a escolha do usuário.
-- Percentuais em campos decimais de 0 a 100: um percentual obrigatório em `percent_simples` (somente opções 2/3), três percentuais obrigatórios em `percent_by_sphere`; sem percentuais em `none`, correspondente a `indTotTrib = 0`. Zero é valor válido. Campos incompatíveis com o modo ficam nulos.
-- `dps_series`: inteiro de 1 a 49999, exibido com cinco dígitos (`00001` etc.). Gerado no primeiro salvamento; somente administrador da plataforma pode alterá-lo.
+## 3. Detalhes técnicos e validações
 
-Validações condicionais também no banco; editor/data definidos pelo banco, não por valores enviados pelo formulário.
+- Adicionar `company_fiscal_settings.simples_iss_withholding_percent`, decimal opcional, inicialmente nulo em todas as linhas existentes. Usar a representação percentual já adotada no projeto, sem transformação dos demais campos.
+- Validar no formulário, na função autenticada e por gatilho no banco: quando preenchida, aceitar somente ME/EPP (`simples_nacional_option = 3`) com ISS dentro do Simples (`simples_nacional_regime = 1`); mínimo 1,8%, respeitando também o limite oficial do campo `pAliq` no XSD. Não tornar o campo obrigatório para salvar a empresa.
+- Preservar RLS e permissões existentes; nenhuma nova tabela, catálogo ou regra de acesso. Manter o bloqueio de CNPJ e a atribuição de série.
+- E0713: continuar impedindo percentual do Simples para não optante. A referência também restringe `indTotTrib` para não optante na DPS; manter a opção “não informar” na configuração conforme solicitado, sem afirmar que ela já é válida para uma emissão futura.
+- E0621/E0625 são regras da **nota**, com condições de competência, convênio ativo e benefício municipal, além do regime e retenção. Nesta tarefa, guardar apenas o parâmetro opcional da empresa. A futura montagem da DPS deverá exigir/usá-lo nos casos de retenção aplicáveis (incluindo intermediário segundo o anexo) e omiti-lo sem retenção. Não implementar emissão nem modificar `transmissor/`.
+- Reaproveitar os controles e temas existentes; separar rótulos simples dos códigos persistidos. Seções abertas, sem cartões envolvendo seções inteiras; cartões somente para as três escolhas do Simples. Controles acessíveis por teclado, seleção evidente e estados somente leitura preservados.
 
-### `dps_sequences`
+## 4. Testes e aceite
 
-Chave `(company_id, series, environment)`, com organização coerente, CNPJ associado e próximo número. Produção e homologação são independentes; primeiro número 1, último número reservável `999999999999999`.
-
-- A atribuição de série cria as duas sequências sem reservar números.
-- A mesma série de um CNPJ não pode pertencer a empresas de organizações diferentes. Restrições de unicidade e atribuição transacional impedem colisões, inclusive simultâneas.
-- Guardar as sequências anteriores quando a série mudar: retornar a uma série da mesma empresa continua a numeração, sem reiniciar; outra empresa não pode reutilizar essa série reservada.
-- Não permitir edição direta, redução do contador ou exclusão das sequências pelos usuários.
-- Ao atingir o limite, recusar nova reserva sem ultrapassar a faixa permitida nem reaproveitar número.
-
-### `company_service_profiles`
-
-Várias linhas por empresa, com `id`, FK composta empresa/organização e auditoria:
-
-- `name`, `active`; criar ativo por padrão, permitindo desativar/reativar.
-- `service_code`: FK obrigatória para `service_codes`; `municipal_tax_code`: texto livre opcional.
-- `nbs_code`: FK opcional; `ibscbs_operation_indicator`: FK opcional.
-- `default_description`: até 2000 caracteres.
-- `iss_taxation`: padrão 1; `1 Operação tributável`, `2 Imunidade`, `3 Exportação de serviço`, `4 Não incidência`.
-- `immunity_type`: obrigatório somente com tributação 2, inclusive código 0; nulo nas outras opções. Códigos 0–5 conforme XSD.
-- `iss_withholding`: padrão 1; `1 Não retido`, `2 Retido pelo tomador`, `3 Retido pelo intermediário`.
-- `municipal_benefit_number`: opcional.
-
-**Não incluir alíquota no perfil.** Ela será consultada nos parâmetros municipais em cada emissão futura.
-
-## 2. Permissões e funções seguras
-
-Todas as novas tabelas terão RLS e concessões explícitas na mesma migração, na ordem criação → concessões → RLS → políticas.
-
-| Recurso | Leitura | Escrita |
-|---|---|---|
-| Catálogos | Usuários autenticados | Apenas `service_role` |
-| Configuração fiscal e perfis | Membros da organização ou admin da plataforma | Owner/admin da organização ou admin da plataforma |
-| Sequências | Membros da organização ou admin da plataforma | Apenas funções autorizadas de atribuição/reserva; sem escrita direta por usuários |
-| Alterar série DPS | Mesma leitura da configuração | Apenas admin da plataforma, também validado no banco |
-
-Sem acesso anônimo e sem acesso por membros de outra organização. Manter as seis funções atuais de autorização, usando `auth.uid()` e os papéis protegidos existentes.
-
-Funções autenticadas do painel para ler/salvar configuração, listar/criar/editar/ativar/desativar perfis e pesquisar catálogos. As leituras iniciais seguem os carregamentos e consultas existentes do painel.
-
-**Atribuição de série:** operação transacional no banco, bloqueio por CNPJ e escolha da menor série livre (`1, 2, 3…`), considerando todas as organizações. Recusar colisão e esgotamento da faixa. Não confiar em cálculo no navegador.
-
-**Reserva de número:** função SQL transacional chamada por função autenticada do servidor, com autorização owner/admin/admin da plataforma e conferência de empresa/organização/série/ambiente. Bloqueio da sequência e incremento atômico; retorna apenas o número reservado. Não haverá botão de reserva no painel nem chamada automática ao abrir/salvar telas.
-
-O CNPJ permanece editável somente enquanto não houver certificado (ativo ou histórico) nem série DPS atribuída. Depois disso, um gatilho no banco recusa mudanças, inclusive chamadas diretas, com a mensagem: “O CNPJ não pode ser alterado porque a empresa já tem certificado ou série. Cadastre uma nova empresa.” Não sincronizar CNPJ de registros fiscais. Serializar a gravação de certificado/série com a alteração da empresa para proteger também operações simultâneas. A organização da empresa permanece imutável.
-
-Cada número reservado é definitivo: nunca é devolvido, reaproveitado ou reutilizado, mesmo que a emissão futura falhe. Lacunas são aceitas. A função não oferece cancelamento/devolução; testes verificam que reservas subsequentes avançam mesmo sem emissão.
-
-## 3. Telas
-
-### Configuração fiscal
-
-Substituir apenas o conteúdo provisório da aba existente por formulário com Simples Nacional, regime de apuração condicional, regime especial, tributos aproximados e série DPS. Mostrar campos de percentual conforme o modo e quem alterou/quando.
-
-Série somente leitura para owner/admin; edição disponível para admin da plataforma, com erro claro para série fora da faixa ou já reservada. Demais membros visualizam os valores sem controles de edição.
-
-### Serviços
-
-Substituir o conteúdo provisório por lista de perfis, indicação ativo/inativo e formulário de criação/edição com os campos solicitados. Usar desativação, sem exclusão definitiva nesta fase.
-
-Seleção de serviço, NBS e indicador por busca; mostrar código e descrição oficial completa após a escolha. Quando o catálogo obrigatório estiver vazio, informar isso e impedir o salvamento de um perfil sem serviço válido. Imunidade aparece somente para tributação 2.
-
-Descrições resumidas de imunidade para o seletor, baseadas no XSD: 0 Imunidade (tipo não informado); 1 Entes federativos; 2 Templos de qualquer culto; 3 Partidos políticos, sindicatos e instituições sem fins lucrativos; 4 Livros, jornais, periódicos e papel; 5 Fonogramas e videofonogramas musicais brasileiros. Exibir também a redação oficial completa do XSD, com referências constitucionais e ressalvas, para o valor selecionado.
-
-Preservar tema, marca, abas, navegação e comportamento das demais telas.
-
-## 4. Prontidão
-
-- Para `aderenteAmbienteNacional`, `aderenteEmissorNacional` e `aderenteMAN`, aplicar exatamente a apresentação pedida: `1 = Sim`, `0 = Não`, `-1 = Não informado`. Valor inesperado permanece `código X`, sem inferência.
-- `situacaoEmissaoPadraoContribuintesRFB`: `código X` e nota **“interpretação provável: 1 = habilitados por padrão”**, sem atribuir confirmação oficial.
-- HTTP 404 **com mensagem de convênio não ativo**: “Homologação indisponível neste município” em homologação ou “Município não atendido” em produção. Não transformar qualquer 404 nessa situação; preservar a mensagem original e os detalhes.
-- Adicionar itens locais somente leitura: **Certificado válido**, **Configuração fiscal preenchida**, **Ao menos um serviço ativo**. Calcular com dados salvos; certificado deve estar ativo, dentro da validade e corresponder ao CNPJ atual. Configuração preenchida exige todos os campos condicionais válidos e série atribuída.
-- Abrir/atualizar esses itens não chama o governo. Preservar o botão Verificar, o histórico e o intervalo mínimo de um minuto por empresa/ambiente.
-
-**Referências conferidas:** a faixa da série vem da regra E0010 do Anexo I; o XSD v1.01 fornece os códigos de imunidade. O Swagger usa `TipoSimNao` com 0/1/-1, mas não publica rótulos textuais nem define todo 404 como convênio inativo: as apresentações acima seguem sua decisão, mantendo os valores/mensagens originais nos detalhes.
-
-## 5. Testes e aceite
-
-Testes de regras locais e testes de integração do banco, sem testar cópia visual ou snapshots:
-
-1. Simples 1/2 sem regime; opção 3 com regime obrigatório e valores válidos.
-2. Tributação 2 exige imunidade 0–5; outras tributações não guardam imunidade.
-3. Percentuais exigidos por modo, limites 0/100, aceitação de zero, incompatibilidade de `percent_simples` com não optante e ausência de percentuais em `none`.
-4. Série aceita 1/49999; recusa 0/50000/70000; CNPJ compartilhado recebe séries distintas entre organizações; edição só por admin da plataforma.
-5. Atribuições concorrentes sem série duplicada; mudança/retorno de série preservam números e reservas anteriores.
-6. Reservas concorrentes retornam números distintos; ambientes iniciam separadamente em 1; limite máximo retorna uma vez e depois recusa; contador não pode ser reduzido diretamente. Reserva sem emissão/falha futura não libera número e a próxima reserva avança.
-7. CNPJ editável antes de certificado/série e bloqueado após certificado ativo, certificado histórico ou série, inclusive concorrência entre gravações.
-7. Owner/admin/admin plataforma editam; operator/viewer/developer só leem; não membro e usuário anônimo não acessam; FK recusa organização incoerente. Exercitar chamadas diretas ao banco, além do formulário.
-8. Busca por código/descrição sem acento e estados de catálogo vazio, termo curto e nenhum resultado; FK recusa código inexistente.
-9. Mapeamento 1/0/-1 do convênio, preservação de códigos inesperados e tratamento condicionado de 404 por ambiente.
-10. Itens locais de prontidão, incluindo certificado vencido/CNPJ divergente, configuração incompleta e perfil inativo.
-
-Verificar navegação, salvamento e leitura posterior nas duas abas, estados somente leitura e exibição da Prontidão. Catálogos reais dependem da sua carga SQL; verificações autenticadas na tela dependem de sessão de teste disponível no Supabase externo. Relatar separadamente qualquer teste não executado, sem afirmar aceite de emissão ou de conexão governamental.
+- Testar mapeamento dos três cartões e dos três regimes para os valores atuais; padrão DAS apenas em nova escolha ME/EPP.
+- Testar seleção automática de modo por situação, incompatibilidade do percentual do Simples com não optante, preservação de valores antigos e opção “não informar”.
+- Testar nova alíquota: vazio válido; 1,79 recusado; 1,80 aceito; recusa fora de ME/EPP/regime 1 e acima do limite oficial. Repetir as validações por chamadas diretas ao banco com dados temporários e rollback.
+- Executar os testes fiscais e de serviços existentes, garantindo que não mudaram imunidade, retenção, séries, permissões ou reserva definitiva.
+- Conferir resumo, avançado recolhido, ausência de códigos no fluxo principal e legibilidade em computador e celular. Quando houver sessão de teste disponível, salvar e reabrir as duas abas com dados reais; no Supabase externo, informar explicitamente se esta verificação autenticada não puder ser realizada.
 
 ## Ordem de aplicação após aprovação
+1. Conferir limite oficial de `pAliq` e aplicar migração aditiva com validação, sem alterar valores existentes.
+2. Atualizar validação e leitura/gravação autenticada do novo campo.
+3. Redesenhar as duas abas e os controles de seleção, preservando navegação e demais telas.
+4. Executar testes locais/de banco e verificações visuais; relatar resultados e limitações.
 
-1. Migração: seis tabelas, concessões/RLS, validações, índices, auditoria e funções atômicas; sem carga de catálogos.
-2. Funções autenticadas, consultas e formulários das abas existentes.
-3. Ajustes pontuais de Prontidão.
-4. Testes locais, testes de banco e conferência das telas; resultado e limites de validação.
-
-**Neste momento:** somente planejamento; nenhuma migração ou mudança de aplicativo aplicada.
+**Até a aprovação:** nenhuma alteração no aplicativo ou no banco.
