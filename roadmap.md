@@ -1,8 +1,9 @@
 # notem — Fase 1
 ## Redesenho fiscal guiado
 - [x] Plano aprovado: Configuração fiscal e Serviços simples, avançado recolhido e alíquota opcional de ISS do Simples.
-- [ ] Aplicar redesenho e alíquota opcional; E0713 no formulário, função autenticada e banco: não optante exige três percentuais e não permite none. Preservar linhas antigas incompatíveis e avisar na tela.
-- [ ] Executar testes e conferir telas sem mudar as demais regras nem transmissor/.
+- [x] Aplicar redesenho e alíquota opcional; E0713 no formulário, função autenticada e banco: não optante exige três percentuais e não permite none. Preservar linhas antigas incompatíveis e avisar na tela.
+- [x] 46 testes locais aprovados, validações de banco com rollback aprovadas e aplicativo sem erros; sem alterações em transmissor/.
+- [ ] Conferir visual e salvamento/leitura das abas autenticadas — Supabase externo sem sessão de teste disponível; navegador redirecionou para /entrar.
 
 ## Configuração fiscal e perfis de serviço
 - [x] Plano aprovado com os ajustes de CNPJ protegido e reserva definitiva.
