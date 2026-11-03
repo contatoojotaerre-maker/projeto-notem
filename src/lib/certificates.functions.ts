@@ -59,7 +59,7 @@ type AgreementResult = { url?: string; resposta?: { status: number; tipo_conteud
 export const checkAgreement = createServerFn({ method: 'POST' }).middleware([requireSupabaseAuth]).inputValidator(ids).handler(async ({ context, data }) => {
   const company = await authorizeUse(context, data.company_id, data.organization_id);
   const profile = await context.supabase.from('profiles').select('environment').eq('id', context.userId).single();
-  const environment = (profile.data?.environment ?? 'sandbox') as 'production' | 'sandbox';
+  const environment = (profile.data?.environment ?? 'production') as 'production' | 'sandbox';
   const { supabaseAdmin } = await import('@/integrations/supabase/client.server');
   const last = await supabaseAdmin.from('municipality_agreement_queries').select('created_at').eq('company_id', company.id).eq('environment', environment).order('created_at', { ascending: false }).limit(1);
   const lastAt = last.data?.[0]?.created_at;

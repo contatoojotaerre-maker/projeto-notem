@@ -48,7 +48,7 @@ export function CertificateTab({ companyId, organizationId, canUse }: { companyI
 }
 
 export function ReadinessTab({ companyId, organizationId, canUse }: { companyId: string; organizationId: string; canUse: boolean }) {
-  const { profile } = useWorkspace(); const environment = (profile?.environment ?? 'sandbox') as 'production' | 'sandbox';
+  const { profile } = useWorkspace(); const environment = (profile?.environment ?? 'production') as 'production' | 'sandbox';
   const qc = useQueryClient(); const fetchLast = useServerFn(getAgreementQueries); const check = useServerFn(checkAgreement);
   const key = ['agreement', companyId, environment];
   const { data: last, isLoading } = useQuery({ queryKey: key, queryFn: () => fetchLast({ data: { company_id: companyId, organization_id: organizationId, environment } }) });
