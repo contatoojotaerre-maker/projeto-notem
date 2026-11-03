@@ -14,6 +14,50 @@ export type Database = {
   }
   public: {
     Tables: {
+      certificate_audit_events: {
+        Row: {
+          action: string
+          company_id: string
+          created_at: string
+          environment: string | null
+          id: string
+          organization_id: string
+          purpose: string
+          result: string
+          user_id: string
+        }
+        Insert: {
+          action: string
+          company_id: string
+          created_at?: string
+          environment?: string | null
+          id?: string
+          organization_id: string
+          purpose: string
+          result: string
+          user_id: string
+        }
+        Update: {
+          action?: string
+          company_id?: string
+          created_at?: string
+          environment?: string | null
+          id?: string
+          organization_id?: string
+          purpose?: string
+          result?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "certificate_audit_events_company_id_organization_id_fkey"
+            columns: ["company_id", "organization_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id", "organization_id"]
+          },
+        ]
+      }
       companies: {
         Row: {
           change_origin: Database["public"]["Enums"]["change_origin"]
@@ -98,6 +142,97 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "organizations"
             referencedColumns: ["id"]
+          },
+        ]
+      }
+      company_certificate_material: {
+        Row: {
+          company_id: string
+          data: string
+          key_version: string
+          nonce: string
+          organization_id: string
+          updated_at: string
+        }
+        Insert: {
+          company_id: string
+          data: string
+          key_version: string
+          nonce: string
+          organization_id: string
+          updated_at?: string
+        }
+        Update: {
+          company_id?: string
+          data?: string
+          key_version?: string
+          nonce?: string
+          organization_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "company_certificate_material_company_id_organization_id_fkey"
+            columns: ["company_id", "organization_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id", "organization_id"]
+          },
+        ]
+      }
+      company_certificates: {
+        Row: {
+          cnpj: string
+          company_id: string
+          created_at: string
+          holder: string
+          id: string
+          issuer: string
+          organization_id: string
+          replaced_at: string | null
+          serial_number: string
+          status: string
+          uploaded_by: string
+          valid_from: string
+          valid_until: string
+        }
+        Insert: {
+          cnpj: string
+          company_id: string
+          created_at?: string
+          holder: string
+          id?: string
+          issuer: string
+          organization_id: string
+          replaced_at?: string | null
+          serial_number: string
+          status: string
+          uploaded_by: string
+          valid_from: string
+          valid_until: string
+        }
+        Update: {
+          cnpj?: string
+          company_id?: string
+          created_at?: string
+          holder?: string
+          id?: string
+          issuer?: string
+          organization_id?: string
+          replaced_at?: string | null
+          serial_number?: string
+          status?: string
+          uploaded_by?: string
+          valid_from?: string
+          valid_until?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "company_certificates_company_id_organization_id_fkey"
+            columns: ["company_id", "organization_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id", "organization_id"]
           },
         ]
       }
@@ -186,6 +321,59 @@ export type Database = {
           state_name?: string
         }
         Relationships: []
+      }
+      municipality_agreement_queries: {
+        Row: {
+          company_id: string
+          created_at: string
+          duration_ms: number | null
+          environment: Database["public"]["Enums"]["environment"]
+          error_code: string | null
+          http_status: number | null
+          id: string
+          municipality_ibge_code: string
+          organization_id: string
+          requested_by: string
+          response_body: string | null
+          url: string | null
+        }
+        Insert: {
+          company_id: string
+          created_at?: string
+          duration_ms?: number | null
+          environment: Database["public"]["Enums"]["environment"]
+          error_code?: string | null
+          http_status?: number | null
+          id?: string
+          municipality_ibge_code: string
+          organization_id: string
+          requested_by: string
+          response_body?: string | null
+          url?: string | null
+        }
+        Update: {
+          company_id?: string
+          created_at?: string
+          duration_ms?: number | null
+          environment?: Database["public"]["Enums"]["environment"]
+          error_code?: string | null
+          http_status?: number | null
+          id?: string
+          municipality_ibge_code?: string
+          organization_id?: string
+          requested_by?: string
+          response_body?: string | null
+          url?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "municipality_agreement_queries_company_id_organization_id_fkey"
+            columns: ["company_id", "organization_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id", "organization_id"]
+          },
+        ]
       }
       organization_members: {
         Row: {
@@ -359,6 +547,23 @@ export type Database = {
           requires_explicit_acceptance: boolean
           role: Database["public"]["Enums"]["org_role"]
         }[]
+      }
+      replace_company_certificate: {
+        Args: {
+          _cnpj: string
+          _company_id: string
+          _data: string
+          _holder: string
+          _issuer: string
+          _key_version: string
+          _nonce: string
+          _organization_id: string
+          _serial: string
+          _user_id: string
+          _valid_from: string
+          _valid_until: string
+        }
+        Returns: string
       }
     }
     Enums: {
