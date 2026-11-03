@@ -1,4 +1,9 @@
 # notem — Fase 1
+## Catálogos oficiais e busca municipal
+- [ ] Aprovar o plano de carga dos CSV oficiais e ajustes da busca.
+- [ ] Aplicar carga idempotente, busca indexada sem acentos/por IBGE e estados do campo.
+- [ ] Validar contagens, Passo de Torres/SC, idempotência e buscas no banco e na tela.
+
 - [x] Aplicar fundação com os ajustes aprovados: banco, isolamento, convites e auditoria.
 - [x] Implementar login, painel, organizações, empresas e preferências.
 - [x] Verificar regras locais e páginas públicas: 7 testes aprovados, verificações desktop/celular sem erros.
