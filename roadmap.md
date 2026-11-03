@@ -1,7 +1,8 @@
 # notem — Fase 1
 ## Redesenho fiscal guiado
-- [ ] Aprovar plano: Configuração fiscal e Serviços simples, avançado recolhido e alíquota opcional de ISS do Simples.
-- [ ] Após aprovação, aplicar migração aditiva, redesenho e testes sem mudar as demais regras nem transmissor/.
+- [x] Plano aprovado: Configuração fiscal e Serviços simples, avançado recolhido e alíquota opcional de ISS do Simples.
+- [ ] Aplicar redesenho e alíquota opcional; E0713 no formulário, função autenticada e banco: não optante exige três percentuais e não permite none. Preservar linhas antigas incompatíveis e avisar na tela.
+- [ ] Executar testes e conferir telas sem mudar as demais regras nem transmissor/.
 
 ## Configuração fiscal e perfis de serviço
 - [x] Plano aprovado com os ajustes de CNPJ protegido e reserva definitiva.
