@@ -903,7 +903,7 @@ export type Database = {
           created_by: string
           id?: string
           name: string
-          slug: string
+          slug?: string
           type: Database["public"]["Enums"]["organization_type"]
           updated_at?: string
         }
