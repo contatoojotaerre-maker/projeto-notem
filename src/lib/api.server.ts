@@ -70,7 +70,7 @@ export function apiRoute(handlers: Partial<Record<'GET' | 'POST' | 'PATCH' | 'PU
         }
       }
       if (!replayed) {
-        const ctx: ApiCtx = { db, requestId, request, url, params, body: requestBody, env: auth.env!, organization_id: auth.integration!.id && identity!.organization_id, integration_id: auth.integration!.id, integration_name: auth.integration!.name, actor: auth.integration!.created_by, background, setCompany: id => { companyId = id; } };
+        const ctx: ApiCtx = { db, requestId, request, url, params, body: requestBody, env: auth.env!, organization_id: identity!.organization_id, integration_id: auth.integration!.id, integration_name: auth.integration!.name, actor: auth.integration!.created_by, background, setCompany: id => { companyId = id; } };
         try { const r = await handler(ctx); status = r.status; body = r.body; headers = r.headers ?? {}; }
         catch (e) { if (e instanceof ApiFailure) { status = e.status; body = errorBody(requestId, e); headers = e.headers; } else throw e; }
         if (key) { const scope = { integration_id: auth.integration!.id, environment: auth.env!, key }; if (status >= 500) await db.from('api_idempotency_keys').delete().match(scope); else await db.from('api_idempotency_keys').update({ status_code: status, response_body: (body ?? null) as Json }).match(scope); }
