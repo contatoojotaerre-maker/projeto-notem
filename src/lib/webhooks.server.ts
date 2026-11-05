@@ -31,4 +31,4 @@ async function deliver(db:DB,master:string,d:{id:string,event_id:string,endpoint
 export async function processWebhookBatch(db:DB,master:string,options:{event?:string,skipDisable?:boolean}={}){let disabled=0;if(!options.skipDisable){const disable=await db.rpc('disable_failing_webhooks');if(disable.error)throw new Error('VERIFICACAO_FALHOU');disabled=disable.data??0}const claimed=await db.rpc('claim_webhook_deliveries',{_limit:10,...options.event?{_event:options.event}:{}});if(claimed.error)throw new Error('RESERVA_FALHOU');const rows=claimed.data??[];const results:DeliveryResult[]=[]
  // Three workers each resolve two DNS types within the six-connection runtime budget.
  for(let start=0;start<rows.length;start+=3){const done=await Promise.all(rows.slice(start,start+3).map(d=>deliver(db,master,d)));for(const r of done)if(r)results.push(r)}
- const failed=results.filter(r=>r.error).length;return {reserved:rows.length,completed:results.length,failed,disabled,results}}
+ const failed=results.filter(r=>r.error).length;return {reserved:rows.length,completed:results.length-failed,failed,disabled,results}}
