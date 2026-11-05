@@ -51,13 +51,26 @@ export const getCompanies = createServerFn({method:'POST'}).middleware([requireS
 export const getCompany = createServerFn({method:'POST'}).middleware([requireSupabaseAuth]).inputValidator(z.object({id:z.string().uuid(),organization_id:z.string().uuid()})).handler(async({context,data})=>{
   const result=await context.supabase.from('companies').select('*, municipalities(*)').eq('id',data.id).eq('organization_id',data.organization_id).single();if(result.error)throw new Error('Empresa não encontrada ou acesso não autorizado.');
   const [cert,series]=await Promise.all([context.supabase.from('company_certificates').select('id').eq('company_id',data.id).eq('organization_id',data.organization_id).limit(1),context.supabase.from('dps_sequences').select('series').eq('company_id',data.id).eq('organization_id',data.organization_id).limit(1)]);
-  if(cert.error||series.error)throw new Error('Não foi possível carregar a proteção do CNPJ.');return {...result.data,cnpj_locked:Boolean(cert.data?.length||series.data?.length)};
+  if(cert.error||series.error)throw new Error('Não foi possível carregar a proteção do CNPJ.');
+  const integration=result.data.change_origin==='api'&&result.data.changed_by_integration_id?await context.supabase.from('integrations').select('name').eq('id',result.data.changed_by_integration_id).maybeSingle():null;
+  return {...result.data,cnpj_locked:Boolean(cert.data?.length||series.data?.length),changed_by_integration_name:integration?.data?.name??null};
 });
+/** Panel readiness (same calculation as GET /api/v1/empresas/{id}/situacao). */
+export const getCompanyReadiness = createServerFn({method:'POST'}).middleware([requireSupabaseAuth]).inputValidator(z.object({id:z.string().uuid(),organization_id:z.string().uuid(),environment:z.enum(['sandbox','production'])})).handler(async({context,data})=>{
+  const own=await context.supabase.from('companies').select('id').eq('id',data.id).eq('organization_id',data.organization_id).maybeSingle();if(own.error||!own.data)throw new Error('Empresa não encontrada ou acesso não autorizado.');
+  const {loadReadiness}=await import('./readiness.server');const r=await loadReadiness(context.supabase,data.id,data.environment);return r.readiness;
+});
+export const setCompanyActive = createServerFn({method:'POST'}).middleware([requireSupabaseAuth]).inputValidator(z.object({id:z.string().uuid(),organization_id:z.string().uuid(),active:z.boolean()})).handler(async({context,data})=>{
+  const r=await context.supabase.from('companies').update({active:data.active}).eq('id',data.id).eq('organization_id',data.organization_id).select('id').single();if(r.error)throw new Error('Não foi possível alterar a situação da empresa. Confira sua permissão.');
+  await panelRefreshReadiness(data.id);return {ok:true};
+});
+/** After panel changes: recompute readiness; webhook events stay queued for the scheduler. */
+export async function panelRefreshReadiness(companyId:string){const {supabaseAdmin}=await import('@/integrations/supabase/client.server');const {refreshReadiness}=await import('./readiness.server');await refreshReadiness(supabaseAdmin,companyId)}
 export const saveCompany = createServerFn({method:'POST'}).middleware([requireSupabaseAuth]).inputValidator(companySchema).handler(async({context,data})=>{
   const {id,...fields}=data;
   // State and audit fields are authoritative database-trigger outputs, not form inputs.
   const result=id ? await context.supabase.from('companies').update(fields).eq('id',id).eq('organization_id',fields.organization_id).select('id').single() : await context.supabase.from('companies').insert({...fields,state:'',created_by:context.userId,updated_by:context.userId}).select('id').single();
-  if(result.error)throw new Error(result.error.message.includes(CNPJ_LOCK_MESSAGE)?CNPJ_LOCK_MESSAGE:result.error.code==='23505'?'Este CNPJ já está cadastrado nesta organização.':'Não foi possível salvar. Confira os dados e sua permissão.');return result.data;
+  if(result.error)throw new Error(result.error.message.includes(CNPJ_LOCK_MESSAGE)?CNPJ_LOCK_MESSAGE:result.error.code==='23505'?'Este CNPJ já está cadastrado nesta organização.':'Não foi possível salvar. Confira os dados e sua permissão.');await panelRefreshReadiness(result.data.id);return result.data;
 });
 export const searchMunicipalities = createServerFn({method:'POST'}).middleware([requireSupabaseAuth]).inputValidator(z.object({search:z.string().max(100)})).handler(async({context,data})=>{
   const { term, eligible } = municipalitySearchTerm(data.search);
