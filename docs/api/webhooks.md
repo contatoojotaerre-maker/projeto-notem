@@ -9,7 +9,26 @@ Webhooks são **avisos automáticos** que a notem envia ao sistema parceiro quan
 - Ao criar o endereço, a notem gera um **segredo de assinatura** (`whsec_...`), exibido no cadastro. Depois ele fica **oculto**; o botão **Revelar** está disponível apenas para owner, admin, developer e administrador da plataforma, e cada revelação registra quem revelou e quando. O segredo pode ser trocado a qualquer momento.
 - **Chave de autorização (opcional):** o parceiro pode informar um valor escolhido por ele e, opcionalmente, o nome do cabeçalho (padrão `Authorization`). Quando preenchida, a chave é enviada em todas as entregas, junto com a assinatura. Fica guardada cifrada e nunca aparece em registros. Não são aceitos nomes `Notem-*` nem cabeçalhos de protocolo (`Host`, `Content-Length`, `Content-Type`, `Transfer-Encoding`, `Connection`, `Cookie` etc.).
 - **Filtro por empresa (opcional):** o endereço pode receber eventos de apenas uma das empresas autorizadas da integração. Vazio = todas. O `webhook.teste` é sempre entregue.
-- Ao escolher os eventos, o painel mostra um **exemplo da mensagem** (envelope abaixo) com botão copiar. Eventos cujos dados ainda não foram definidos aparecem com `"dados": {}`.
+- No cadastro e no detalhe de cada endereço, o painel mostra o **exemplo do envio como comando curl** pronto, com botão copiar, nas versões Linux/macOS e PowerShell (`curl.exe`): POST para a URL cadastrada com `Content-Type`, `Notem-Evento`, `Notem-Evento-Id`, `Notem-Entrega-Id`, `Notem-Assinatura` (valor ilustrativo) e o cabeçalho de autorização configurado (valor mascarado), e o envelope abaixo no corpo. Eventos cujos dados ainda não foram definidos aparecem com `"dados": {}`; os exemplos completos dos eventos de nota virão com o contrato de emissão.
+
+```bash
+curl -X POST 'https://seu-endereco.exemplo/webhook' \
+  -H 'Content-Type: application/json; charset=utf-8' \
+  -H 'Notem-Evento: webhook.teste' \
+  -H 'Notem-Evento-Id: evt_00000000000000000000000000000000' \
+  -H 'Notem-Entrega-Id: whd_00000000000000000000000000000000' \
+  -H 'Notem-Assinatura: t=1762344000,v1=ASSINATURA_ILUSTRATIVA' \
+  -H 'Authorization: ••••••••' \
+  --data-raw '{"id":"evt_00000000000000000000000000000000","tipo":"webhook.teste","criado_em":"2026-11-05T12:00:00.000Z","ambiente":"homologacao","organizacao_id":"...","integracao_id":"...","dados":{}}'
+```
+
+```powershell
+curl.exe -X POST 'https://seu-endereco.exemplo/webhook' `
+  -H 'Content-Type: application/json; charset=utf-8' `
+  -H 'Notem-Evento: webhook.teste' `
+  -H 'Notem-Assinatura: t=1762344000,v1=ASSINATURA_ILUSTRATIVA' `
+  --data-raw '{\"id\":\"evt_...\",\"tipo\":\"webhook.teste\",\"dados\":{}}'
+```
 
 ## 2. Formato da mensagem
 `POST` para o endereço cadastrado, `Content-Type: application/json; charset=utf-8`:
