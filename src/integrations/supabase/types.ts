@@ -1344,6 +1344,13 @@ export type Database = {
         }
         Returns: boolean
       }
+      integration_revocation_actors: {
+        Args: { _org: string }
+        Returns: {
+          display_name: string
+          id: string
+        }[]
+      }
       is_org_member: { Args: { org_id: string }; Returns: boolean }
       is_platform_admin: { Args: never; Returns: boolean }
       is_valid_cnpj: { Args: { value: string }; Returns: boolean }
