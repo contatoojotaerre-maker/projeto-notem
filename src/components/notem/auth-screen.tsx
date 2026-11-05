@@ -3,6 +3,7 @@ import { Link, useNavigate } from '@tanstack/react-router';
 import { useServerFn } from '@tanstack/react-start';
 import { Eye, EyeOff, ArrowRight, Loader2 } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
+import { appLink } from '@/lib/app-url';
 import { finishSignIn } from '@/lib/notem.functions';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -23,7 +24,7 @@ export function AuthScreen({ mode = 'login' }: {mode?:'login'|'forgot'|'reset'|'
     if(mode==='login')void supabase.auth.getUser().then(async({data})=>{if(data.user){await finish();await navigate({to:'/dashboard'});}}).catch(err=>setError(err instanceof Error?err.message:'Acesso não autorizado.'));
   },[mode,finish,navigate]);
   async function submit(e:React.FormEvent){e.preventDefault();setBusy(true);setError('');try{
-    if(mode==='forgot'){const result=await supabase.auth.resetPasswordForEmail(email,{redirectTo:`${window.location.origin}/redefinir-senha`});if(result.error)throw result.error;setMessage('Se este e-mail tiver acesso à notem, você receberá um link para redefinir sua senha.');}
+    if(mode==='forgot'){const result=await supabase.auth.resetPasswordForEmail(email,{redirectTo:appLink('/redefinir-senha')});if(result.error)throw result.error;setMessage('Se este e-mail tiver acesso à notem, você receberá um link para redefinir sua senha.');}
     else if(mode==='reset'||mode==='invite'){
       if(!validLink)throw new Error('Solicite um novo link.');if(password.length<8)throw new Error('Use pelo menos 8 caracteres.');if(password!==confirm)throw new Error('As senhas não coincidem.');
       const verified=await supabase.auth.getUser();if(!verified.data.user)throw new Error('Link expirado. Solicite um novo e-mail.');

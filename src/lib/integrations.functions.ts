@@ -1,5 +1,5 @@
 import { createServerFn } from '@tanstack/react-start'
-import { setResponseHeader, getRequest } from '@tanstack/react-start/server'
+import { setResponseHeader } from '@tanstack/react-start/server'
 import { z } from 'zod'
 import { requireSupabaseAuth } from '@/integrations/supabase/auth-middleware'
 import { integrationSchema, makeKey } from './integrations'
@@ -10,7 +10,7 @@ export const getIntegrations=createServerFn({method:'POST'}).middleware([require
  if([rows,keys,companies,links].some(r=>r.error))throw new Error('Não foi possível carregar as integrações.')
  const [admin,member]=await Promise.all([context.supabase.rpc('is_platform_admin'),context.supabase.rpc('is_org_member',{org_id:data.organization_id})]);if(admin.error||member.error||(!admin.data&&!member.data))throw new Error('Acesso não autorizado.')
  const {supabaseAdmin}=await import('@/integrations/supabase/client.server');const actors=await supabaseAdmin.rpc('integration_revocation_actors',{_org:data.organization_id});if(actors.error)throw new Error('Não foi possível carregar os responsáveis.')
- return {rows:rows.data??[],keys:keys.data??[],companies:companies.data??[],links:links.data??[],actors:actors.data??[],origin:new URL(getRequest().url).origin}
+ return {rows:rows.data??[],keys:keys.data??[],companies:companies.data??[],links:links.data??[],actors:actors.data??[]}
 })
 export const saveIntegration=createServerFn({method:'POST'}).middleware([requireSupabaseAuth]).inputValidator(integrationSchema).handler(async({context,data})=>{
  const [admin,allowed]=await Promise.all([context.supabase.rpc('is_platform_admin'),context.supabase.rpc('has_org_role',{org_id:data.organization_id,roles:['owner','admin','developer']})]);if(admin.error||allowed.error||(!admin.data&&!allowed.data))throw new Error('Acesso não autorizado.')

@@ -34,3 +34,4 @@
 - Shared brand rendering lives separately from auth screens so the app shell does not import login logic; theme selects transparent wordmark variants and collapsed navigation uses the icon.
 - The `transmissor/` folder holds a separate service, published on Google Cloud Run, responsible exclusively for signing and transmitting fiscal documents; Lovable must never create, edit, move or delete files inside `transmissor/`.
 - Always reply to the user in Brazilian Portuguese (pt-BR); the project owner works in Portuguese.
+- Displayed URLs and e-mail links (redirectTo) come from the single official-address module `src/lib/app-url.ts`, never from the current page/request origin; internal navigation and OAuth return stay relative so previews keep working.
