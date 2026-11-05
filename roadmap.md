@@ -1,4 +1,8 @@
 # notem — Fase 1
+## Fase 3A.2 — Webhooks e ajustes de Integrações
+- [ ] Finalizar plano após ler docs/api/webhooks.md — contrato ainda ausente no checkout após aviso de incorporação pelo GitHub.
+- [ ] Aplicar após aprovação: comprovar segurança/agendamento, tabelas/permissões, motor único, telas, documentação e testes.
+
 ## Fase 3A — Integrações e primeira rota da API
 - [x] Plano aprovado; testar /api/v1 primeiro, adotar /api/public/v1 sem aliases apenas se bloqueado, atualizando somente a base do contrato.
 - [x] Publicação inicial confirmada; URL e três Redirect URLs informadas. Nova publicação com integrações solicitada.
