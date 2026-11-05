@@ -1,99 +1,84 @@
-# notem — Fase 3A: Integrações, chaves e primeira rota da API
+# notem — Fase 3A.2: Webhooks e ajustes de Integrações
 
 ## Escopo e contrato
-Implementar integrações por organização, chaves por ambiente, registro de requisições e **GET /api/v1/status**, seguindo os quatro arquivos lidos de `docs/api/`. Campos da API em português; banco e código em inglês. Preservar o padrão visual e as regras existentes. Nenhuma alteração em `transmissor/`.
+Contrato lido: `docs/api/webhooks.md` e `docs/api/convencoes.md`. Implementar configuração, entrega assinada, reenvios e **somente o disparo real de `webhook.teste`**. Os outros 13 tipos do contrato ficam disponíveis para assinatura, mas seus produtores e dados específicos pertencem às fases futuras.
 
-Não incluir rotas de empresas, configuração fiscal, certificados ou emissão; webhooks; idempotência; página pública `/docs`; limites efetivos de uso.
+Preservar a API oficial `https://app.notemfiscal.com.br/api/v1`, os ambientes e permissões existentes. Não criar API de cadastro de webhooks, emissão, página pública de documentação nem alterar `transmissor/`.
 
-## 1. Banco e permissões
-Criar migração com quatro tabelas, concessões explícitas e RLS:
+## 1. Viabilidade primeiro: segurança e agendamento
+- Propor **Inngest**, serviço de execução durável disponível por conexão, para acordar entregas e aguardar os intervalos exatos sem uma varredura permanente do banco. Será necessário conectar e sincronizar o serviço após aprovação; uso e custos dependem do plano contratado. Nada será conectado nesta etapa.
+- Não utilizar `pg_cron` + `pg_net` para chamadas HTTP: esse caminho não é suportado para o Supabase externo deste projeto. `pg_cron` permanece apenas na limpeza SQL diária já existente.
+- Antes das tabelas definitivas, comprovar no ambiente publicado: recebimento autenticado das chamadas do serviço, execução após a resposta do painel, retomada de trabalho interrompido e agendamento durável.
+- Comprovar também uma conexão HTTPS cujo destino seja o **IP público validado**, mantendo Host, SNI e validação do certificado do domínio original. Apenas consultar DNS e depois fazer `fetch` pelo nome não evita troca maliciosa de DNS entre as duas operações.
+- Recusar URLs com credenciais, localhost, IPs privados/reservados/link-local e equivalentes IPv4/IPv6; verificar todos os endereços resolvidos e repetir a validação antes de cada tentativa. Não seguir redirecionamentos.
+- **Limitação a resolver antes de prosseguir:** o controle de conexão/IP no servidor hospedado ainda não foi comprovado. Se não for suportado, parar e apresentar a necessidade de um serviço de saída dedicado, separado do transmissor, para aprovação. Não substituir por validação DNS parcial nem anunciar proteção completa sem evidência.
 
-| Tabela | Conteúdo e garantias |
+## 2. Banco, segredos e permissões
+Criar migração com concessões explícitas, RLS e vínculos compostos garantindo organização, integração e ambiente consistentes.
+
+| Tabela | Conteúdo e regras |
 |---|---|
-| `integrations` | Campos do pedido; escopo `all` ou `selected`; organização imutável; auditoria de criação/alteração. |
-| `integration_companies` | Par integração/empresa único. Chaves estrangeiras compostas com `organization_id` auxiliar garantem a mesma organização. Vínculos somente no escopo `selected`; troca para `all` remove vínculos na mesma transação. |
-| `integration_keys` | Campos do pedido; ambiente `sandbox`/`production`; prefixo identificador e hash único, nunca chave completa. No máximo **2 chaves ativas por integração e ambiente**, imposto atomicamente no banco, inclusive sob concorrência. Revogação preserva histórico. |
-| `api_request_logs` | Campos do pedido; ID `req_` + valor aleatório; corpos já sanitizados. Organização/integração/chave/ambiente podem ser nulos em tentativas sem credencial identificável. Nunca atribuir organização pelo conteúdo enviado. |
+| `webhook_endpoints` | Campos do brief, URL, eventos, situação, motivo, auditoria, prefixo, último sucesso e início das falhas. `secret` e `previous_secret` contêm envelopes cifrados, nunca texto legível. Expiração do anterior em 24 h. |
+| `webhook_events` | ID `evt_`, contexto, tipo, payload contratual imutável e criação. Persistir os bytes JSON usados nas tentativas para assinar e reenviar exatamente o mesmo corpo. |
+| `webhook_deliveries` | ID `whd_` por tentativa, evento/endereço, número, estado, próxima execução, HTTP, resposta sanitizada até 4 KB UTF-8, duração, erro seguro e criação. Acrescentar identificador do ciclo manual e controle de reserva/expiração para retomada concorrente. |
+| `webhook_alerts` | Alerta persistente, restrito à organização, para desativação automática; deduplicado por episódio de falhas e exibido no painel. Não incluir e-mail nesta fase. |
 
-- Membros da organização leem integrações, vínculos, metadados seguros das chaves e logs; administrador da plataforma lê globalmente. Outras organizações não têm acesso.
-- Em `integration_keys`, conceder leitura autenticada **somente às colunas seguras**, excluindo `key_hash`; não conceder SELECT da tabela inteira. Aplicar RLS também a essa leitura. Hash acessível exclusivamente ao servidor, nunca ao navegador, cache de consultas ou logs.
-- Escrita das quatro tabelas somente por operações do servidor; sem INSERT/UPDATE/DELETE para `anon` ou `authenticated`. Conceder acesso necessário a `service_role`.
-- Criar/editar integrações, alterar escopo/empresas e gerar/revogar chaves: **owner, admin, developer** da organização e administrador da plataforma. Operator/viewer só consultam.
-- Funções autenticadas verificam identidade e papel pelo cliente do usuário antes de carregar o cliente privilegiado. Operações transacionais de gestão, exclusivas do servidor, repetem a checagem de papel no banco com a identidade verificada pelo servidor. Não alterar as funções de autorização existentes.
-- Índices para hash, chaves ativas, vínculos e logs por integração/organização, ambiente e data. Não apagar integrações/chaves nesta fase: desativar ou revogar.
+- Membros e administrador da plataforma leem somente metadados autorizados. Revogar concessões herdadas antes de conceder SELECT apenas nas colunas seguras dos endereços; segredos cifrados também não chegam ao navegador.
+- Nenhuma escrita direta por `anon` ou `authenticated`. Servidor possui os privilégios necessários; operações de gestão verificam sessão/papel antes de carregar o cliente privilegiado e repetem a autorização nas operações transacionais.
+- **Owner/admin/developer e administrador da plataforma** gerenciam; **operator/viewer** apenas consultam. Organização/integração/ambiente não podem ser trocados para mover registros.
+- Cifrar segredos com AES-256-GCM, nonce único, versão de chave e contexto do endereço como dados autenticados. Chave de cifração criada no armazenamento seguro do servidor após aprovação; nunca no banco ou código.
+- `whsec_` aleatório com 256 bits, revelado uma vez em criação/troca, resposta sem cache; nenhum segredo em logs, consultas armazenadas ou armazenamento do navegador. Troca serializada e atômica; a nova troca substitui a janela anterior, mantendo somente atual e anterior.
+- Exclusão com confirmação interrompe novas entregas e elimina o material secreto; preservar tentativas/eventos para o histórico de 90 dias com remoção lógica do endereço.
 
-## 2. Chaves e autenticação
-- Gerar chave no servidor com aleatoriedade criptográfica (256 bits), prefixada por `ntm_homolog_` ou `ntm_prod_`; persistir hash SHA-256 da chave completa e prefixo curto de identificação.
-- Retornar a chave completa somente na resposta da geração, com `Cache-Control: no-store`; exibir em diálogo temporário com copiar e **“Guarde agora; ela não será exibida novamente”**. Não salvar em armazenamento do navegador, cache de consultas, telemetria ou logs. Fechar o diálogo descarta o valor.
-- Validar Bearer, formato, prefixo, hash existente, revogação e integração ativa. Confirmar consistência prefixo/ambiente armazenado. Organização, integração e ambiente vêm exclusivamente da chave.
-- Chave ausente, malformada, inexistente, revogada ou integração inativa: `401 AUTENTICACAO_INVALIDA`, com a mesma mensagem pública genérica.
-- Atualizar `last_used_at` de forma condicional, no máximo uma vez por minuto por chave. Revogação e desativação continuam verificadas a cada chamada, sem cache de autorização que retarde seu efeito.
-- Preparar um ponto comum para limite de uso e resposta `429 LIMITE_EXCEDIDO` com `Retry-After`, mas não ativar limite nesta fase.
+## 3. Motor único e entrega
+- Criar helper exclusivo de servidor **`emitWebhookEvent(...)`**, validando tipo, contexto e dados; gravar evento e tentativas iniciais de todos os endereços ativos assinantes da mesma integração/ambiente numa transação.
+- Preservar exatamente o envelope: `id`, `tipo`, `criado_em`, `ambiente` (`homologacao`/`producao`), `organizacao_id`, `integracao_id`, `dados`. Propor `dados: {}` para `webhook.teste`, já que o contrato não define campos extras; documentar esse exemplo sem inventar dados de notas.
+- Assinar os bytes do corpo com HMAC-SHA256 de `{t}.{corpo_bruto}`, hexadecimal minúsculo. Enviar `Notem-Assinatura: t=...,v1=...` e os três identificadores contratados. Durante 24 h da troca, acrescentar segundo `v1` com o segredo anterior. Timestamp renovado em cada tentativa; ID do evento estável e ID de entrega próprio de cada tentativa.
+- Primeira tentativa imediata em `waitUntil` comprovado no servidor publicado. Registrar também trabalho durável idempotente para recuperar interrupções; nunca depender de promessa solta ou somente do tempo de vida da requisição. Se o contexto de execução não estiver disponível na operação, informar essa limitação antes de substituir o mecanismo.
+- Aguardar no máximo **10 s** pela tentativa completa, incluindo leitura limitada da resposta; **2xx** é sucesso. Erro, timeout, redirecionamento ou outro HTTP é falha.
+- Reenvios com **intervalos entre tentativas** de **1 min, 5 min, 30 min, 2 h, 6 h, 12 h e 24 h**: oito tentativas automáticas. Após a oitava falha, `exhausted` (apresentado como falha/esgotado no painel).
+- Sucesso atualiza `last_success_at` e encerra o episódio de falhas. A primeira falha inicia `failing_since`; agendar uma verificação única para +3 dias. Se o episódio continuar sem sucesso, desativar, registrar motivo e criar alerta, mesmo sem novas tentativas naquele momento.
+- Reenviar manualmente mantém o evento/corpo, inicia ciclo novo com IDs de entrega novos e exige endereço ativo; não reiniciar silenciosamente endpoint desativado.
+- Claim transacional e chave única por evento/endereço/ciclo/tentativa impedem dois processadores de executar a mesma tentativa ao mesmo tempo. Reserva com expiração permite recuperação. A entrega continua **pelo menos uma vez**, não exatamente uma vez: um destinatário pode receber novamente após falha de confirmação; orientar deduplicação por `evt_`, conforme contrato.
+- Fila persistida antes de acordar o serviço, com confirmação e reconciliação durável de publicações pendentes. Lotes pequenos e concorrência de saída limitada para respeitar o servidor hospedado; nenhuma varredura frequente permanente.
 
-## 3. Rotas e respostas
-API: **GET `/api/v1/status`**, TanStack server route fora do grupo de páginas autenticadas, usando apenas a chave Bearer; nenhum acesso ao governo.
+## 4. Painel
+### Aba Webhooks
+- Homologação/Produção: URL, descrição, tipos assinados, ativo/com falhas/desativado, motivo e último sucesso.
+- Adicionar/editar: HTTPS, descrição, caixas com os 14 eventos e explicação simples, opção Todos. Diálogo de segredo com copiar e aviso de exibição única.
+- Ativar/desativar, trocar segredo com aviso de validade anterior por 24 h, enviar teste e excluir com confirmação. Ações ausentes para quem só pode consultar.
+- Histórico paginado por ambiente/endereço: evento, data, tentativa, HTTP, duração, resposta resumida; filtro somente falhas, detalhe sanitizado e Reenviar quando aplicável.
+- Alerta persistente de desativação visível à organização no painel, com ligação ao endereço afetado. Estados vazio, carregamento, erro e somente leitura seguem o padrão existente.
 
-Resposta 200 exatamente conforme o OpenAPI:
-```json
-{
-  "ambiente": "homologacao",
-  "organizacao": { "id": "UUID", "nome": "Nome da organização" },
-  "integracao": { "id": "UUID", "nome": "Nome da integração" }
-}
-```
+### Ajustes solicitados
+- Selo **Ativa verde sucesso**, **Inativa cinza**, na lista e no detalhe.
+- Trocar lixeira das chaves por **Revogar**, preservando confirmação e histórico. Ativas em destaque; revogadas em seção recolhida **Revogadas**, com data e nome de quem revogou obtido por leitura autorizada.
+- Abaixo do prefixo: **“Identificação apenas — a chave completa não fica guardada”**.
+- Como testar mantém curl para API oficial e acrescenta exemplo Node ou Python: corpo bruto, extração de múltiplos `v1`, comparação de tempo constante e tolerância absoluta de **5 min**, rejeitando assinaturas inválidas e timestamps futuros além da janela.
 
-- Toda resposta da API, inclusive erros, recebe `X-Request-Id` gerado pelo servidor e JSON UTF-8. Nos erros, o mesmo identificador aparece em `id_requisicao`.
-- Envelope completo da seção 6: `erro.codigo`, `mensagem`, `detalhes`, `codigo_governo`, `mensagem_governo`, além de `id_requisicao`; governo nulo nesta rota. Não devolver stack ou SQL.
-- Camada comum da API trata falhas internas em JSON, evitando as páginas HTML de erro do painel. Métodos não suportados têm resposta JSON e identificador; não criar outras operações da API.
+## 5. Documentação e detalhes técnicos
+- Atualizar OpenAPI 3.1 com seção raiz `webhooks`, POST da mensagem, cabeçalhos, envelope e exemplo `webhook.teste`; documentar respostas 2xx esperadas. Sem inventar schemas dos eventos futuros.
+- LEIAME passa a listar `webhooks.md`; atualizar documentação de qualquer callback técnico novo no mesmo trabalho, distinguindo-o da API pública v1.
+- Callback de execução durável sob `/api/public/`, protegido por assinatura do Inngest; não autorizar por URL pública nem pela chave da integração. Não expor payloads privados ou segredos na descoberta do serviço.
+- Reutilizar funções autenticadas, carregamento por consultas e sanitização existentes; separar schemas seguros, gestão, assinatura e execução no servidor.
+- Registrar em AGENTS.md, em inglês, o helper único obrigatório para fases futuras e as fronteiras de segurança/agendamento, somente quando implementados.
+- Ampliar a limpeza **SQL diária existente às 03:00 UTC** para eventos, entregas e alertas históricos acima de 90 dias, em ordem compatível com os vínculos. Uma execução/dia; remoção física pode levar até 24 h adicionais. Consultas do painel excluem dados fora da retenção.
 
-### Ponto de viabilidade a validar antes das migrações
-O contrato exige `/api/v1/*`, enquanto a exceção documentada de acesso sem autenticação da hospedagem é `/api/public/*`. O painel e a API têm autenticações distintas: liberar a chamada externa não libera os dados do painel.
+## 6. Testes e aceite
+1. Assinatura sobre corpo exato, dois segredos por 24 h, expiração e exemplo com ±5 min e comparação segura.
+2. Oito tentativas, intervalos concretos, timeout 10 s, somente 2xx, exhausted e ciclo manual.
+3. Falhas contínuas por 3 dias, sucesso reiniciando episódio, desativação e alerta único.
+4. SSRF: localhost, 10.x, 192.168.x, 169.254.x, demais faixas reservadas, IPv6 local/mapeado, resolução privada, DNS alterado e redirect recusado; evidência da conexão protegida no ambiente real.
+5. Isolamento de organizações/ambientes, cada papel, escrita direta recusada e ausência de segredos/ciphertext nas respostas de leitura e logs; sanitização/truncamento UTF-8 em 4 KB e retenção 90 dias.
+6. Concorrência real, reserva recuperável e interrupção entre persistência, publicação, envio e confirmação; nenhum trabalho perdido silenciosamente.
+7. Fluxo conectado: criar endereço → copiar segredo uma vez → enviar `webhook.teste` a receptor HTTPS externo controlado → validar corpo/assinatura → ler histórico → simular falha/reenvio → trocar segredo. Não enviar dados reais de clientes a receptor público de terceiros.
+8. Regressões das chaves e API; verificar abas em desktop/celular. Sessão do Supabase externo e receptor controlado são dependências do aceite; se indisponíveis, relatar precisamente os testes não executados, sem afirmar fluxo validado.
 
-Validar acesso externo à URL contratada sem sessão Lovable/Supabase. A prévia atual normalmente exige acesso ao projeto, e o aplicativo ainda não foi publicado; portanto, ela não pode ser anunciada como endereço público de teste já comprovado. Não trocar o contrato para `/api/public/v1`, não adicionar alias nem publicar sem solicitação. Se a hospedagem interceptar `/api/v1/*` e não houver exceção suportada, informar o bloqueio antes de implementar o restante e aguardar decisão.
+## Ordem após aprovação
+1. Conectar agendamento durável e provar saída segura, callback e execução imediata no ambiente publicado; parar se houver limitação.
+2. Aplicar migrações, proteção de segredos, claims, alertas e retenção.
+3. Implementar motor único, retries e callbacks; atualizar contrato técnico no mesmo trabalho.
+4. Implementar aba Webhooks e somente os ajustes de Integrações solicitados.
+5. Executar testes e aceite externo/controlado, informando limitações e dependências reais.
 
-## 4. Registro seguro e retenção
-- Registrar cada chamada processada pela API, inclusive 401, com contexto conhecido, método, caminho sem parâmetros secretos, status, código de erro e duração. Logs sem organização identificada ficam acessíveis somente ao administrador da plataforma.
-- Sanitizador central recursivo e sem diferenciar maiúsculas: remover/mascarar `pfx_base64`, `senha`, `certificado`, credenciais, chaves, hashes e Authorization, inclusive objetos/listas aninhados e textos que contenham tokens. Nunca registrar cabeçalho Authorization, chave bruta ou corpo bruto como fallback de erro.
-- Limite de **64 KB em UTF-8 por corpo sanitizado**, com indicação de truncamento e representação válida para leitura. Não copiar a requisição inteira nem persistir buffers brutos. Detalhes técnicos restritos ao log, também sanitizados.
-- Gravar fora do caminho crítico apenas com mecanismo de execução em segundo plano suportado e com duração garantida (`waitUntil`); não usar promessa solta. Verificar esse suporte no ambiente hospedado. Se indisponível, aguardar uma gravação pequena e medir impacto, sem perder logs silenciosamente. Falha de gravação gera diagnóstico seguro, sem expor segredos ao cliente.
-- Propor **uma limpeza diária às 03:00 UTC**, por `pg_cron`, com DELETE idempotente de registros mais antigos que 90 dias e índice de data. Uma execução por dia; remoção física pode levar até 24 horas adicionais. Consultas do painel sempre excluem registros com mais de 90 dias. Não criar verificações frequentes ou várias tarefas de limpeza.
-- Preparar o filtro de empresa sem inferir identidade a partir do corpo: nesta fase `/status` não tem empresa. Habilitar esse filtro quando rotas futuras tiverem empresa validada.
-
-## 5. Telas do painel
-Substituir “Em breve” no menu **Integrações**, sem alterar outras seções.
-
-- **Lista:** nome, situação, todas/selecionadas, último uso e contagem de chaves ativas em Homologação e Produção. Estado vazio e ações conforme papel.
-- **Nova integração:** nome, descrição, Todas as empresas / Empresas selecionadas, busca e seleção de empresas da organização. Escopo selecionado exige ao menos uma empresa.
-- **Detalhe:** editar nome/descrição e ativar/desativar; abas solicitadas:
-  - **Chaves:** ambientes separados; gerar, copiar uma vez, listar prefixo/criação/último uso e revogar com confirmação. Ao atingir duas ativas, impedir terceira sem revogar; segunda chave permite troca sem interrupção.
-  - **Empresas autorizadas:** visualizar/editar escopo e seleção, somente empresas da organização.
-  - **Requisições:** últimos 90 dias, filtros por período/ambiente/status/somente erros, paginação; detalhe com método, rota, status, duração, ID, corpos formatados e copiar conteúdo sanitizado.
-  - **Como testar:** curl para `/api/v1/status`, com endereço do painel identificado corretamente e marcador para substituir pela chave completa; prefixo visível apenas para identificação, nunca apresentado como credencial funcional.
-- Operator/viewer veem dados e requisições, sem ações de gestão. Estados de carregamento, vazio, erro e somente leitura seguem o padrão existente.
-
-## 6. Detalhes técnicos e documentação
-- Páginas protegidas: `/o/$orgSlug/integracoes` e `/o/$orgSlug/integracoes/$integrationId`; criação em diálogo da lista. Garantir que a rota genérica atual não mantenha o conteúdo “Em breve” para esta seção.
-- Reutilizar middleware autenticado, funções de servidor e opções de consulta carregadas pelas páginas; separar gestão do painel, autenticação da API e sanitização. Identificação de organização sempre validada, nunca confiada ao navegador.
-- Atualizar `docs/api/openapi.yaml` no mesmo trabalho: resposta `/status`, exemplos, cabeçalho também no 401, envelope de erro e servidor real quando confirmado. Preservar a base contratada e distinguir prévia restrita de URL pública.
-- Atualizar convenções/glossário para explicitar até duas chaves por ambiente durante rotação e que nenhum limite está ativo na Fase 3A; não mudar contratos das fases futuras.
-- Registrar em `AGENTS.md`: **“Toda rota nova ou alterada da API deve atualizar docs/api/ no mesmo trabalho. A página pública /docs (fase final) será gerada a partir de docs/api/.”** Registrar as novas fronteiras de segurança em inglês.
-- Manter `/docs` no roadmap da fase final; títulos e descrições próprios nas novas páginas.
-
-## 7. Testes e aceite
-1. Chaves distintas, prefixos/ambientes corretos, hash verificável e ausência de texto secreto persistido. Terceira chave recusada, também com geração simultânea; após revogação, permitir substituta.
-2. Chaves ausentes/malformadas/inexistentes/revogadas e integração inativa → 401 no envelope exato; `X-Request-Id` em sucesso, erros e falhas internas.
-3. `/status` com ambas as chaves retorna organização/integração corretas e ambiente conforme OpenAPI, sem aceitar organização ou ambiente enviados pelo cliente.
-4. Isolamento entre organizações; empresa estrangeira recusada no banco; vínculos incompatíveis com escopo recusados. Verificar leituras seguras e recusa de acesso direto ao hash.
-5. Cada papel: owner/admin/developer e administrador global gerenciam; operator/viewer apenas leem; anônimo não acessa tabelas nem operações de gestão.
-6. Sanitização aninhada, maiúsculas, tokens em texto, UTF-8 e truncamento de 64 KB; logs de sucesso/401 sem segredos. Retenção de 90 dias, limpeza diária e atualização leve de último uso.
-7. Testes locais e de banco com rollback para regras; regressões do painel. Medir gravação de logs e concorrência quando houver conexão apropriada.
-8. Fluxo real: criar integração → gerar chave → chamar `/status` → ver requisição → revogar → confirmar 401 e nova requisição. Não anunciar fluxo verificado se faltar sessão ou acesso externo; Supabase externo não dispõe de sessão gerenciada de teste.
-
-## Ordem de execução após aprovação
-1. Validar acesso à URL `/api/v1/status` e mecanismo confiável de logs no ambiente hospedado, sem alterar contrato.
-2. Aplicar tabelas, grants, RLS, restrições, operações transacionais e limpeza diária.
-3. Implementar autenticação comum, sanitização, logs e `/status`; atualizar documentação no mesmo trabalho.
-4. Implementar lista/detalhe e ações protegidas do painel.
-5. Executar testes, conferir fluxo conectado quando possível e informar claramente qualquer validação pendente.
-
-**Até a aprovação:** somente planejamento e registro dos requisitos; nenhum código do aplicativo, tabela, chave ou configuração de hospedagem alterado.
+**Neste momento:** somente plano e registro dos requisitos. Nenhuma alteração em aplicativo, banco, segredos, conexões ou publicação antes da aprovação.
