@@ -10,6 +10,8 @@
 <!-- LOVABLE:END -->
 
 ## Application architecture
+- Webhook dispatch runs on Cloudflare Workers: enforce HTTPS, no URL credentials, public IPv4/IPv6 and DNS checks before each attempt, and no redirects. Per the owner's accepted network model, do not pin destination IPs or introduce a separate egress service; DNS preflight is not a rebinding-proof connection guarantee.
+- Google Cloud Scheduler wakes the database-backed webhook processor once per minute through an OIDC-protected /api/public/ callback; do not use Inngest. All delivery and three-day failure state remains in PostgreSQL.
 - Domain map: `notemfiscal.com.br` is the future institutional website (currently redirects to the app); `app.notemfiscal.com.br` hosts the panel and API (`/api/v1`); `docs.notemfiscal.com.br` will host public documentation in the final phase. Keep these destinations separate so each domain retains its intended responsibility.
 - Every new or changed API route must update docs/api/ in the same work; the final-phase public /docs page is generated from docs/api/, keeping the API contract authoritative.
 - Integration API reachability must be verified externally before Phase 3A schema work; use only one official base, preserving the approved feasibility-first order.

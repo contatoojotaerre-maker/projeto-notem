@@ -1,7 +1,8 @@
 # notem — Fase 1
 ## Fase 3A.2 — Webhooks e ajustes de Integrações
 - [x] Ler contrato docs/api/webhooks.md e convenções; preparar plano da Fase 3A.2 com prova prévia de saída segura e agendamento durável.
-- [ ] Aplicar após aprovação: comprovar segurança/agendamento, tabelas/permissões, motor único, telas, documentação e testes.
+- [ ] Provar waitUntil e rota POST /api/public/webhooks/process com OIDC Google; Google Cloud Scheduler a cada minuto, sem Inngest. Entregar URL e autenticação para configuração pelo usuário.
+- [ ] Aplicar plano aprovado: validação HTTPS/DNS sem fixar IP (decisão aceita para Workers), tabelas/permissões, motor único, telas, documentação e testes.
 
 ## Fase 3A — Integrações e primeira rota da API
 - [x] Plano aprovado; testar /api/v1 primeiro, adotar /api/public/v1 sem aliases apenas se bloqueado, atualizando somente a base do contrato.
