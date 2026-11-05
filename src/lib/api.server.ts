@@ -43,12 +43,12 @@ export function apiRoute(handlers: Partial<Record<'GET' | 'POST' | 'PATCH' | 'PU
     const pending: Promise<unknown>[] = [];
     const background = (p: Promise<unknown>) => { const safe = p.catch(() => console.error('API_BACKGROUND_FAILED', requestId)); if (typeof waitUntil === 'function') { try { waitUntil.call(request, safe); return; } catch { /* fall through */ } } pending.push(safe); };
     let identity: { organization_id: string; integration_id: string; key_id: string; environment: Env } | undefined;
-    let companyId: string | null = params.id && /^[0-9a-f-]{36}$/i.test(params.id) ? params.id : null;
+    let companyId: string | null = params['id'] && /^[0-9a-f-]{36}$/i.test(params['id']) ? params['id'] : null;
     let status = 500; let body: unknown; let headers: Record<string, string> = {}; let requestBody: unknown = null; let replayed = false;
     try {
       const auth = await authenticate(db, request); identity = auth.identity as typeof identity;
       if (auth.error) throw auth.error;
-      const handler = handlers[request.method as keyof typeof handlers]; if (!handler) throw fail(405, 'REQUISICAO_INVALIDA', [], defaultMessages.METODO_NAO_PERMITIDO);
+      const handler = handlers[request.method as keyof typeof handlers]; if (!handler) throw fail(405, 'REQUISICAO_INVALIDA', [], defaultMessages['METODO_NAO_PERMITIDO']);
       let raw = '';
       if (request.method !== 'GET' && request.method !== 'DELETE') {
         raw = await request.text(); if (new TextEncoder().encode(raw).length > MAX_BODY) throw fail(400, 'REQUISICAO_INVALIDA', [{ campo: 'corpo', mensagem: 'Corpo maior que 200 KB.' }]);
@@ -93,7 +93,7 @@ export function apiRoute(handlers: Partial<Record<'GET' | 'POST' | 'PATCH' | 'PU
 }
 
 /** Loads a company of the key's organization or fails with 404 (never reveals other organizations). */
-export async function loadCompany(ctx: ApiCtx, id = ctx.params.id) {
+export async function loadCompany(ctx: ApiCtx, id = ctx.params['id'] ?? '') {
   if (!/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(id ?? '')) throw fail(404, 'NAO_ENCONTRADO');
   const r = await ctx.db.from('companies').select('*, municipalities(name)').eq('id', id).eq('organization_id', ctx.organization_id).maybeSingle();
   if (r.error) throw new Error('COMPANY_READ_FAILED'); if (!r.data) throw fail(404, 'NAO_ENCONTRADO');

@@ -29,7 +29,7 @@ export const defaultMessages: Record<string, string> = {
   CERTIFICADO_SENHA_OU_ARQUIVO_INVALIDO: 'Senha incorreta ou arquivo inválido.', CERTIFICADO_SEM_CHAVE_PRIVADA: 'O arquivo não contém a chave privada (não é um A1).', CERTIFICADO_VENCIDO: 'Este certificado está vencido.',
   CERTIFICADO_AINDA_NAO_VALIDO: 'A validade deste certificado ainda não começou.', CERTIFICADO_CNPJ_NAO_ENCONTRADO: 'O certificado não é um e-CNPJ ICP-Brasil reconhecível.', CERTIFICADO_CNPJ_DIVERGENTE: 'O CNPJ do certificado é diferente do cadastro da empresa.',
 };
-export const fail = (status: number, code: string, details: Detail[] = [], message?: string) => new ApiFailure(status, code, message ?? defaultMessages[code] ?? defaultMessages.ERRO_INTERNO, details);
+export const fail = (status: number, code: string, details: Detail[] = [], message?: string) => new ApiFailure(status, code, message ?? defaultMessages[code] ?? defaultMessages['ERRO_INTERNO'] ?? code, details);
 export function zodDetails(e: z.ZodError, map: Record<string, string> = {}): Detail[] {
   return e.issues.map(i => { const p = i.path.map(String).join('.'); return { campo: map[p] ?? (p || 'corpo'), mensagem: i.message }; });
 }
@@ -59,10 +59,10 @@ export function companyOut(c: CompanyRow) {
 }
 export function companyIn(v: z.infer<typeof companyPatch>) {
   const r: Record<string, unknown> = {};
-  if (v.id_externo !== undefined) r.external_id = v.id_externo; if (v.cnpj !== undefined) r.cnpj = digits(v.cnpj); if (v.razao_social !== undefined) r.legal_name = v.razao_social;
-  if (v.nome_fantasia !== undefined) r.trade_name = v.nome_fantasia; if (v.inscricao_municipal !== undefined) r.municipal_registration = v.inscricao_municipal; if (v.email !== undefined) r.email = v.email;
-  if (v.telefone !== undefined) r.phone = v.telefone; if (v.ativa !== undefined) r.active = v.ativa;
-  const e = v.endereco; if (e) { if (e.cep !== undefined) r.postal_code = e.cep; if (e.logradouro !== undefined) r.street = e.logradouro; if (e.numero !== undefined) r.number = e.numero; if (e.complemento !== undefined) r.complement = e.complemento ?? ''; if (e.bairro !== undefined) r.district = e.bairro; if (e.codigo_municipio !== undefined) r.municipality_ibge_code = e.codigo_municipio; }
+  if (v.id_externo !== undefined) r['external_id'] = v.id_externo; if (v.cnpj !== undefined) r['cnpj'] = digits(v.cnpj); if (v.razao_social !== undefined) r['legal_name'] = v.razao_social;
+  if (v.nome_fantasia !== undefined) r['trade_name'] = v.nome_fantasia; if (v.inscricao_municipal !== undefined) r['municipal_registration'] = v.inscricao_municipal; if (v.email !== undefined) r['email'] = v.email;
+  if (v.telefone !== undefined) r['phone'] = v.telefone; if (v.ativa !== undefined) r['active'] = v.ativa;
+  const e = v.endereco; if (e) { if (e.cep !== undefined) r['postal_code'] = e.cep; if (e.logradouro !== undefined) r['street'] = e.logradouro; if (e.numero !== undefined) r['number'] = e.numero; if (e.complemento !== undefined) r['complement'] = e.complemento ?? ''; if (e.bairro !== undefined) r['district'] = e.bairro; if (e.codigo_municipio !== undefined) r['municipality_ibge_code'] = e.codigo_municipio; }
   return r;
 }
 

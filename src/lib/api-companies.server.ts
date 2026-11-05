@@ -74,7 +74,7 @@ export async function putFiscal(ctx: ApiCtx): Promise<ApiResult> {
 export async function getCertificate(ctx: ApiCtx): Promise<ApiResult> {
   const c = await loadCompany(ctx); const r = await ctx.db.from('company_certificates').select('holder,cnpj,issuer,serial_number,valid_from,valid_until,status').eq('company_id', c.id).eq('status', 'active').order('created_at', { ascending: false }).limit(1);
   if (r.error) throw new Error('CERT_READ_FAILED'); if (!r.data?.length) throw fail(404, 'NAO_ENCONTRADO', [], 'A empresa não tem certificado ativo.');
-  return { status: 200, body: certificateOut(r.data[0]) };
+  return { status: 200, body: certificateOut(r.data[0]!) };
 }
 export function decodeCertificate(b64: string) {
   let bin: string; try { bin = atob(b64.replace(/\s+/g, '')); } catch { throw fail(422, 'CERTIFICADO_SENHA_OU_ARQUIVO_INVALIDO'); }
@@ -116,7 +116,7 @@ export async function createService(ctx: ApiCtx): Promise<ApiResult> {
   if (r.error) serviceWriteError(r.error); refresh(ctx, c.id); return { status: 201, body: serviceOut(r.data as unknown as ServiceRow) };
 }
 async function loadService(ctx: ApiCtx, companyId: string) {
-  const id = ctx.params.servicoId; if (!/^[0-9a-f-]{36}$/i.test(id ?? '')) throw fail(404, 'NAO_ENCONTRADO');
+  const id = ctx.params['servicoId'] ?? ''; if (!/^[0-9a-f-]{36}$/i.test(id ?? '')) throw fail(404, 'NAO_ENCONTRADO');
   const r = await ctx.db.from('company_service_profiles').select(SERVICE_SELECT).eq('id', id).eq('company_id', companyId).eq('organization_id', ctx.organization_id).maybeSingle();
   if (r.error) throw new Error('SERVICE_READ_FAILED'); if (!r.data) throw fail(404, 'NAO_ENCONTRADO'); return r.data as unknown as ServiceRow;
 }
@@ -142,7 +142,7 @@ export async function verifyMunicipality(ctx: ApiCtx): Promise<ApiResult> {
   const material = await ctx.db.from('company_certificate_material').select('key_version, nonce, data').eq('company_id', c.id).maybeSingle();
   if (!material.data) throw fail(422, 'REGRA_DE_NEGOCIO', [{ campo: 'certificado', mensagem: 'Envie o certificado novamente.' }]);
   const { callTransmissor, TransmissorError } = await import('./transmissor.server');
-  const row: Record<string, unknown> = { company_id: c.id, organization_id: c.organization_id, municipality_ibge_code: c.municipality_ibge_code, environment: ctx.env, requested_by: ctx.actor };
+  const row: { [k: string]: unknown; url?: unknown; error_code?: unknown; response_body?: unknown; duration_ms?: unknown; http_status?: unknown } = { company_id: c.id, organization_id: c.organization_id, municipality_ibge_code: c.municipality_ibge_code, environment: ctx.env, requested_by: ctx.actor };
   type Res = { url?: string; resposta?: { status: number; corpo: string; ms?: number } | { erro: string; detalhe?: string; ms?: number } };
   try {
     const res = await callTransmissor<Res>('/v1/municipios/convenio', { organizacao_id: c.organization_id, empresa_id: c.id, envelope: { versao_chave: material.data.key_version, nonce: material.data.nonce, dados: material.data.data }, codigo_municipio: c.municipality_ibge_code, ambiente: toTransmissorEnvironment(ctx.env) });
