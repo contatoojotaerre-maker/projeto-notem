@@ -105,3 +105,21 @@ Os campos de `dados` de cada evento são documentados junto com a rota correspon
 - Nunca confie no conteúdo sem validar a assinatura.
 - O webhook **avisa**; para ações sensíveis, confirme o estado consultando a API.
 - Mensagens nunca contêm certificados, senhas ou chaves.
+
+
+## Assinatura por grupo
+
+Um endereço pode assinar eventos individuais (tipo exato) ou grupos inteiros por curinga, guardados no mesmo campo `eventos`. Assinar um grupo inclui automaticamente os eventos que forem adicionados a ele no futuro.
+
+| Grupo no painel | Curingas | Eventos atuais |
+|---|---|---|
+| Notas de serviço (NFS-e) | `nota.*` | `nota.autorizada`, `nota.rejeitada`, `nota.cancelada`, `nota.cancelamento_em_analise`, `nota.cancelamento_indeferido`, `nota.substituida`, `nota.cancelada_prefeitura`, `nota.bloqueada_prefeitura`, `nota.manifestacao` |
+| Empresas e certificados | `empresa.*`, `certificado.*` | `empresa.situacao_alterada`, `certificado.vencendo`, `certificado.vencido` |
+| Municípios | `municipio.*` | `municipio.disponivel` |
+
+- **Correspondência:** um evento é entregue quando o endereço assina o tipo exato **ou** o curinga do seu prefixo (por exemplo, `nota.rejeitada` corresponde a `nota.rejeitada` ou `nota.*`).
+- `webhook.teste` é sempre incluído e sempre entregue, independentemente dos eventos e do filtro de empresa.
+- Só são aceitos tipos conhecidos e os curingas acima; outros valores são recusados.
+- Escolher eventos individualmente ("Personalizar eventos") não inclui eventos futuros do grupo.
+- Endereços já cadastrados com eventos individuais continuam funcionando sem alteração.
+- O envelope, os cabeçalhos, a assinatura e o cronograma de tentativas não mudam.

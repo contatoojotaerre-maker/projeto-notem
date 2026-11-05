@@ -57,4 +57,4 @@
 - [x] Abas Certificado e Prontidão; testes de regras.
 - [x] Cadastrar TRANSMISSOR_URL e GOOGLE_SERVICE_ACCOUNT_JSON.
 - [ ] Aceite real: A1 Grupo Jota (IBGE 4212254) e resposta de homologação — aguarda segredos e certificado.
-- [ ] Modal de webhook redesenhado + assinatura por grupo (curingas) e publicação
+- [x] Modal de webhook redesenhado + assinatura por grupo (curingas) e publicação
