@@ -6,13 +6,8 @@ info:
     API para emissão e gestão de NFS-e (padrão nacional) por sistemas parceiros.
     Leia primeiro docs/api/convencoes.md. Campos em português; valores monetários como texto ("150.00").
 servers:
-  - url: https://notem-waiting-garden.lovable.app/api/v1
-    description: Painel publicado da notem
-  - url: https://{dominio}/api/v1
-    variables:
-      dominio:
-        default: dominio-a-definir
-        description: Domínio definitivo da notem (a definir)
+  - url: https://app.notemfiscal.com.br/api/v1
+    description: API oficial da notem
 security:
   - chaveIntegracao: []
 tags:

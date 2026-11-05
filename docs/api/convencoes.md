@@ -3,8 +3,7 @@
 Estas regras valem para **todas** as rotas. Em caso de dúvida, elas prevalecem sobre exemplos isolados.
 
 ## 1. Endereço e versão
-- Base: `https://{dominio}/api/v1` (domínio definitivo a definir).
-- Teste publicado: `https://notem-waiting-garden.lovable.app/api/v1`.
+- Base oficial: `https://app.notemfiscal.com.br/api/v1`.
 - Toda rota começa com `/api/v1`. Mudanças **compatíveis** (novos campos, novas rotas, novos valores opcionais) acontecem dentro da v1 sem aviso prévio. Mudanças **incompatíveis** só em uma nova versão (`/api/v2`), com prazo de convivência comunicado.
 - O sistema parceiro **deve ignorar campos que não conhece** nas respostas.
 
