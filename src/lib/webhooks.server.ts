@@ -32,3 +32,6 @@ export async function processWebhookBatch(db:DB,master:string,options:{event?:st
  // Three workers each resolve two DNS types within the six-connection runtime budget.
  for(let start=0;start<rows.length;start+=3){const done=await Promise.all(rows.slice(start,start+3).map(d=>deliver(db,master,d)));for(const r of done)if(r)results.push(r)}
  const failed=results.filter(r=>r.error).length;return {reserved:rows.length,completed:results.length-failed,failed,disabled,results}}
+export type SchedulerSummary={reserved:number,completed:number,failed:number,disabled:number}
+/** Logs only cycles with work or errors; successful cycles always refresh the single heartbeat row. Never throws. */
+export async function recordSchedulerRun(db:DB,summary:SchedulerSummary,error:string|null){try{const writes:PromiseLike<{error:unknown}>[]=[];if(error||summary.reserved>0||summary.disabled>0)writes.push(db.from('webhook_scheduler_runs').insert({...summary,error}));if(!error){const now=new Date().toISOString();writes.push(db.from('system_heartbeats').upsert({name:'webhook_scheduler',last_success_at:now,updated_at:now}))}const done=await Promise.all(writes);if(done.some(r=>r.error))console.error('WEBHOOK_SCHEDULER_RECORD_FAILED')}catch{console.error('WEBHOOK_SCHEDULER_RECORD_FAILED')}}
