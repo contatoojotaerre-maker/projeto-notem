@@ -29,3 +29,14 @@ describe('delivery processor',()=>{
   try {expect(await processWebhookBatch(db,master)).toEqual({reserved:1,completed:1,disabled:0});const call=send.mock.calls[0] as unknown as [string,RequestInit];expect(call[1].body).toBe(body);expect(call[1].redirect).toBe('manual');const h=call[1].headers as Record<string,string>;expect(h['Notem-Evento-Id']).toBe('evt_test');expect(h['Notem-Entrega-Id']).toBe('whd_test');expect(h['Notem-Evento']).toBe('webhook.teste');const signature=h['Notem-Assinatura'];if(!signature)throw new Error('Signature missing');const stamp=signature.split(',')[0];if(!stamp)throw new Error('Timestamp missing');const t=Number(stamp.slice(2));expect(signature).toBe('t='+t+',v1='+await webhookSignature(secret,t,body));expect(rpc.mock.calls.at(-1)?.[0]).toBe('finish_webhook_delivery');expect(rpc).toHaveBeenCalledWith('finish_webhook_delivery',expect.objectContaining({_http:204,_error:''}));}finally{vi.unstubAllGlobals()}
  })
 })
+
+describe('redirect handling',()=>{
+ it.each([301,302])('fails a %s delivery without following it',async code=>{
+  const master='m';const envelope=await encryptWebhook('whsec_x',master,'endpoint');
+  const rpc=vi.fn(async(name:string)=>({data:name==='claim_webhook_deliveries'?[{id:'whd_r',event_id:'evt_r',endpoint_id:'endpoint',claim_token:'l'}]:0,error:null}));
+  const db={rpc,from:(table:string)=>({select:()=>({eq:()=>({single:async()=>({error:null,data:table==='webhook_endpoints'?{id:'endpoint',active:true,url:'https://8.8.8.8/r',deleted_at:null,secret:envelope,previous_secret:null,previous_secret_expires_at:null}:{body:'{}',type:'webhook.teste'}})})})})} as unknown as SupabaseClient<Database>;
+  const send=vi.fn(async(..._a:unknown[])=>new Response(null,{status:code,headers:{Location:'https://8.8.4.4/other'}}));vi.stubGlobal('fetch',send);
+  try{await processWebhookBatch(db,master);expect(send).toHaveBeenCalledTimes(1);expect((send.mock.calls[0] as unknown as [string,RequestInit])[1].redirect).toBe('manual');expect(rpc).toHaveBeenCalledWith('finish_webhook_delivery',expect.objectContaining({_http:code,_error:'Redirecionamento não permitido'}))}finally{vi.unstubAllGlobals()}
+ })
+ it('DNS lookup never uses the unsupported error redirect mode',async()=>{const f=vi.fn(async(..._a:unknown[])=>Response.json({Status:0,Answer:[{type:1,data:'8.8.8.8'}]}));vi.stubGlobal('fetch',f);try{await validateDestination('https://example.com');for(const c of f.mock.calls)expect((c[1] as RequestInit).redirect).toBe('manual')}finally{vi.unstubAllGlobals()}})
+})
