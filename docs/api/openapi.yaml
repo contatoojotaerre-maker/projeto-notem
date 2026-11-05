@@ -13,6 +13,10 @@ security:
 tags:
   - name: Geral
     description: Verificação da chave e do ambiente
+  - name: Empresas
+    description: Cadastro e preparação das empresas emitentes (compartilhadas entre ambientes)
+  - name: Catálogos
+    description: Catálogos oficiais somente leitura
 paths:
   /status:
     get:
@@ -44,6 +48,170 @@ paths:
                       id: { type: string, format: uuid }
                       nome: { type: string }
         "401": { $ref: "#/components/responses/AutenticacaoInvalida" }
+  /empresas:
+    get:
+      tags: [Empresas]
+      summary: Lista as empresas da organização da chave
+      parameters:
+        - { $ref: "#/components/parameters/Limite" }
+        - { $ref: "#/components/parameters/Cursor" }
+        - { name: cnpj, in: query, schema: { $ref: "#/components/schemas/Cnpj" } }
+        - { name: id_externo, in: query, schema: { type: string, maxLength: 100 } }
+        - { name: ativa, in: query, schema: { type: boolean } }
+        - { name: busca, in: query, description: "Razão social ou nome fantasia (2+ caracteres)", schema: { type: string, minLength: 2 } }
+      responses:
+        "200": { description: Lista paginada, content: { application/json: { schema: { allOf: [{ $ref: "#/components/schemas/ListaPaginada" }, { properties: { dados: { type: array, items: { $ref: "#/components/schemas/Empresa" } } } }] } } } }
+        "400": { $ref: "#/components/responses/Erro" }
+        "401": { $ref: "#/components/responses/AutenticacaoInvalida" }
+    post:
+      tags: [Empresas]
+      summary: Cadastra uma empresa
+      parameters: [{ $ref: "#/components/parameters/IdempotencyKey" }]
+      requestBody: { required: true, content: { application/json: { schema: { $ref: "#/components/schemas/EmpresaEntrada" } } } }
+      responses:
+        "201": { description: Empresa criada, content: { application/json: { schema: { $ref: "#/components/schemas/Empresa" } } } }
+        "400": { $ref: "#/components/responses/Erro" }
+        "401": { $ref: "#/components/responses/AutenticacaoInvalida" }
+        "409": { description: "EMPRESA_DUPLICADA (detalhes traz o id existente), ID_EXTERNO_DUPLICADO ou IDEMPOTENCIA_CONFLITO", content: { application/json: { schema: { $ref: "#/components/schemas/Erro" } } } }
+  /empresas/{id}:
+    parameters: [{ $ref: "#/components/parameters/EmpresaId" }]
+    get:
+      tags: [Empresas]
+      summary: Consulta uma empresa
+      responses:
+        "200": { description: Empresa, content: { application/json: { schema: { $ref: "#/components/schemas/Empresa" } } } }
+        "404": { $ref: "#/components/responses/Erro" }
+    patch:
+      tags: [Empresas]
+      summary: Altera os campos enviados (ativa false desativa; true reativa)
+      parameters: [{ $ref: "#/components/parameters/IdempotencyKey" }]
+      requestBody: { required: true, content: { application/json: { schema: { $ref: "#/components/schemas/EmpresaAlteracao" } } } }
+      responses:
+        "200": { description: Empresa alterada, content: { application/json: { schema: { $ref: "#/components/schemas/Empresa" } } } }
+        "404": { $ref: "#/components/responses/Erro" }
+        "409": { description: "CNPJ_IMUTAVEL, ID_EXTERNO_DUPLICADO, EMPRESA_DUPLICADA ou IDEMPOTENCIA_CONFLITO", content: { application/json: { schema: { $ref: "#/components/schemas/Erro" } } } }
+    delete:
+      tags: [Empresas]
+      summary: Exclui definitivamente (somente se nunca reservou número de DPS)
+      parameters: [{ $ref: "#/components/parameters/IdempotencyKey" }]
+      responses:
+        "204": { description: Excluída (serviços, certificado e configuração removidos) }
+        "404": { $ref: "#/components/responses/Erro" }
+        "409": { description: EMPRESA_POSSUI_HISTORICO — use ativa false, content: { application/json: { schema: { $ref: "#/components/schemas/Erro" } } } }
+  /empresas/{id}/configuracao-fiscal:
+    parameters: [{ $ref: "#/components/parameters/EmpresaId" }]
+    get:
+      tags: [Empresas]
+      summary: Consulta a configuração fiscal
+      responses:
+        "200": { description: Configuração, content: { application/json: { schema: { $ref: "#/components/schemas/ConfiguracaoFiscal" } } } }
+        "404": { $ref: "#/components/responses/Erro" }
+    put:
+      tags: [Empresas]
+      summary: Grava a configuração fiscal (serie_dps é ignorada; atribuída automaticamente)
+      parameters: [{ $ref: "#/components/parameters/IdempotencyKey" }]
+      requestBody: { required: true, content: { application/json: { schema: { $ref: "#/components/schemas/ConfiguracaoFiscal" }, example: { simples_nacional: me_epp, regime_apuracao_simples: dentro_do_simples, regime_especial: nenhum, tributos_aproximados: { modo: percentual_simples, percentual_simples: "6.00", federal: null, estadual: null, municipal: null }, aliquota_iss_simples: null } } } }
+      responses:
+        "200": { description: Configuração gravada, content: { application/json: { schema: { $ref: "#/components/schemas/ConfiguracaoFiscal" } } } }
+        "400": { $ref: "#/components/responses/Erro" }
+        "404": { $ref: "#/components/responses/Erro" }
+        "422": { description: "REGRA_DE_NEGOCIO com detalhes por campo (ex.: E0713, alíquota do ISS no Simples)", content: { application/json: { schema: { $ref: "#/components/schemas/Erro" } } } }
+  /empresas/{id}/certificado:
+    parameters: [{ $ref: "#/components/parameters/EmpresaId" }]
+    get:
+      tags: [Empresas]
+      summary: Metadados do certificado ativo
+      responses:
+        "200": { description: Certificado, content: { application/json: { schema: { $ref: "#/components/schemas/Certificado" } } } }
+        "404": { $ref: "#/components/responses/Erro" }
+    post:
+      tags: [Empresas]
+      summary: Envia ou substitui o certificado A1 (arquivo e senha nunca são devolvidos nem registrados)
+      parameters: [{ $ref: "#/components/parameters/IdempotencyKey" }]
+      requestBody: { required: true, content: { application/json: { schema: { type: object, required: [arquivo_base64, senha], additionalProperties: false, properties: { arquivo_base64: { type: string, description: ".pfx/.p12 de até 100 KB em base64" }, senha: { type: string } } } } } }
+      responses:
+        "200": { description: Certificado aceito, content: { application/json: { schema: { $ref: "#/components/schemas/Certificado" } } } }
+        "400": { $ref: "#/components/responses/Erro" }
+        "404": { $ref: "#/components/responses/Erro" }
+        "422": { description: "CERTIFICADO_SENHA_OU_ARQUIVO_INVALIDO, CERTIFICADO_SEM_CHAVE_PRIVADA, CERTIFICADO_VENCIDO, CERTIFICADO_AINDA_NAO_VALIDO, CERTIFICADO_CNPJ_NAO_ENCONTRADO ou CERTIFICADO_CNPJ_DIVERGENTE", content: { application/json: { schema: { $ref: "#/components/schemas/Erro" } } } }
+  /empresas/{id}/servicos:
+    parameters: [{ $ref: "#/components/parameters/EmpresaId" }]
+    get:
+      tags: [Empresas]
+      summary: Lista os serviços da empresa
+      parameters: [{ $ref: "#/components/parameters/Limite" }, { $ref: "#/components/parameters/Cursor" }]
+      responses:
+        "200": { description: Lista paginada, content: { application/json: { schema: { allOf: [{ $ref: "#/components/schemas/ListaPaginada" }, { properties: { dados: { type: array, items: { $ref: "#/components/schemas/Servico" } } } }] } } } }
+    post:
+      tags: [Empresas]
+      summary: Cadastra um serviço
+      parameters: [{ $ref: "#/components/parameters/IdempotencyKey" }]
+      requestBody: { required: true, content: { application/json: { schema: { $ref: "#/components/schemas/Servico" } } } }
+      responses:
+        "201": { description: Serviço criado, content: { application/json: { schema: { $ref: "#/components/schemas/Servico" } } } }
+        "400": { $ref: "#/components/responses/Erro" }
+        "409": { description: ID_EXTERNO_DUPLICADO, content: { application/json: { schema: { $ref: "#/components/schemas/Erro" } } } }
+        "422": { $ref: "#/components/responses/Erro" }
+  /empresas/{id}/servicos/{servico_id}:
+    parameters: [{ $ref: "#/components/parameters/EmpresaId" }, { name: servico_id, in: path, required: true, schema: { type: string, format: uuid } }]
+    get:
+      tags: [Empresas]
+      summary: Consulta um serviço
+      responses:
+        "200": { description: Serviço, content: { application/json: { schema: { $ref: "#/components/schemas/Servico" } } } }
+        "404": { $ref: "#/components/responses/Erro" }
+    patch:
+      tags: [Empresas]
+      summary: Altera um serviço (ativo false desativa; não há exclusão)
+      parameters: [{ $ref: "#/components/parameters/IdempotencyKey" }]
+      requestBody: { required: true, content: { application/json: { schema: { $ref: "#/components/schemas/Servico" } } } }
+      responses:
+        "200": { description: Serviço alterado, content: { application/json: { schema: { $ref: "#/components/schemas/Servico" } } } }
+        "404": { $ref: "#/components/responses/Erro" }
+        "422": { $ref: "#/components/responses/Erro" }
+  /empresas/{id}/situacao:
+    parameters: [{ $ref: "#/components/parameters/EmpresaId" }]
+    get:
+      tags: [Empresas]
+      summary: Pronta para emitir? (ambiente da chave)
+      responses:
+        "200": { description: Situação, content: { application/json: { schema: { $ref: "#/components/schemas/Situacao" } } } }
+        "404": { $ref: "#/components/responses/Erro" }
+  /empresas/{id}/situacao/verificar-municipio:
+    parameters: [{ $ref: "#/components/parameters/EmpresaId" }]
+    post:
+      tags: [Empresas]
+      summary: Consulta o convênio do município no governo e devolve a situação atualizada
+      parameters: [{ $ref: "#/components/parameters/IdempotencyKey" }]
+      responses:
+        "200": { description: Situação atualizada, content: { application/json: { schema: { $ref: "#/components/schemas/Situacao" } } } }
+        "404": { $ref: "#/components/responses/Erro" }
+        "422": { description: REGRA_DE_NEGOCIO — exige certificado válido, content: { application/json: { schema: { $ref: "#/components/schemas/Erro" } } } }
+        "429": { description: "LIMITE_EXCEDIDO — 1 por minuto por empresa e ambiente; ver Retry-After", headers: { Retry-After: { schema: { type: integer } } }, content: { application/json: { schema: { $ref: "#/components/schemas/Erro" } } } }
+  /catalogos/municipios:
+    get:
+      tags: [Catálogos]
+      summary: "Municípios (nome sem acento ou código IBGE)"
+      parameters: [{ $ref: "#/components/parameters/Limite" }, { $ref: "#/components/parameters/Cursor" }, { name: busca, in: query, schema: { type: string, minLength: 2 } }]
+      responses:
+        "200": { description: Lista paginada, content: { application/json: { schema: { $ref: "#/components/schemas/ListaPaginada" } } } }
+        "400": { $ref: "#/components/responses/Erro" }
+  /catalogos/servicos:
+    get:
+      tags: [Catálogos]
+      summary: "Códigos nacionais de serviço (descrição ou código)"
+      parameters: [{ $ref: "#/components/parameters/Limite" }, { $ref: "#/components/parameters/Cursor" }, { name: busca, in: query, schema: { type: string, minLength: 2 } }]
+      responses:
+        "200": { description: Lista paginada, content: { application/json: { schema: { $ref: "#/components/schemas/ListaPaginada" } } } }
+        "400": { $ref: "#/components/responses/Erro" }
+  /catalogos/nbs:
+    get:
+      tags: [Catálogos]
+      summary: "Códigos NBS (descrição ou código)"
+      parameters: [{ $ref: "#/components/parameters/Limite" }, { $ref: "#/components/parameters/Cursor" }, { name: busca, in: query, schema: { type: string, minLength: 2 } }]
+      responses:
+        "200": { description: Lista paginada, content: { application/json: { schema: { $ref: "#/components/schemas/ListaPaginada" } } } }
+        "400": { $ref: "#/components/responses/Erro" }
 components:
   securitySchemes:
     chaveIntegracao:
@@ -59,12 +227,18 @@ components:
       name: Idempotency-Key
       in: header
       required: false
-      description: Chave de idempotência gerada pelo parceiro (até 100 caracteres). Obrigatória em emissão, cancelamento e substituição.
+      description: Chave de idempotência (até 100 caracteres) aceita em POST, PATCH, PUT e DELETE; vale 24 h por integração e ambiente. Mesmo conteúdo devolve a mesma resposta (cabeçalho Idempotent-Replayed true); conteúdo diferente devolve 409 IDEMPOTENCIA_CONFLITO. Obrigatória em emissão, cancelamento e substituição.
       schema: { type: string, maxLength: 100 }
     Limite:
       name: limite
       in: query
       schema: { type: integer, minimum: 1, maximum: 100, default: 50 }
+    EmpresaId:
+      name: id
+      in: path
+      required: true
+      description: Empresa da organização da chave (de outra organização → 404)
+      schema: { type: string, format: uuid }
     Cursor:
       name: cursor
       in: query
@@ -114,7 +288,112 @@ components:
       properties:
         dados: { type: array, items: {} }
         proximo_cursor: { type: [string, "null"] }
+    Endereco:
+      type: object
+      required: [cep, logradouro, numero, bairro, codigo_municipio]
+      properties:
+        cep: { type: string, pattern: '^\d{8}$' }
+        logradouro: { type: string }
+        numero: { type: string }
+        complemento: { type: [string, "null"] }
+        bairro: { type: string }
+        codigo_municipio: { $ref: "#/components/schemas/CodigoMunicipio" }
+        municipio: { type: [string, "null"], readOnly: true }
+        uf: { type: string, readOnly: true }
+    EmpresaEntrada:
+      type: object
+      required: [cnpj, razao_social, endereco]
+      additionalProperties: false
+      properties:
+        id_externo: { type: [string, "null"], maxLength: 100, description: Único por organização }
+        cnpj: { $ref: "#/components/schemas/Cnpj" }
+        razao_social: { type: string }
+        nome_fantasia: { type: string }
+        inscricao_municipal: { type: string }
+        email: { type: string }
+        telefone: { type: string, pattern: '^\d{0,15}$' }
+        ativa: { type: boolean, default: true }
+        endereco: { $ref: "#/components/schemas/Endereco" }
+    EmpresaAlteracao:
+      description: Mesmos campos de EmpresaEntrada, todos opcionais (endereco aceita campos parciais)
+      allOf: [{ $ref: "#/components/schemas/EmpresaEntrada" }]
+    Empresa:
+      allOf:
+        - { $ref: "#/components/schemas/EmpresaEntrada" }
+        - type: object
+          properties:
+            id: { type: string, format: uuid }
+            criada_em: { type: string, format: date-time }
+            atualizada_em: { type: string, format: date-time }
+    ConfiguracaoFiscal:
+      type: object
+      required: [simples_nacional, regime_especial, tributos_aproximados]
+      properties:
+        simples_nacional: { type: string, enum: [nao_optante, mei, me_epp] }
+        regime_apuracao_simples: { type: [string, "null"], enum: [dentro_do_simples, iss_fora_do_simples, tudo_fora_do_simples, null] }
+        regime_especial: { type: string, enum: [nenhum, ato_cooperado, estimativa, microempresa_municipal, notario_registrador, profissional_autonomo, sociedade_profissionais, outros] }
+        tributos_aproximados:
+          type: object
+          required: [modo]
+          properties:
+            modo: { type: string, enum: [percentual_simples, percentual_por_esfera, nao_informar] }
+            percentual_simples: { oneOf: [{ $ref: "#/components/schemas/Percentual" }, { type: "null" }] }
+            federal: { oneOf: [{ $ref: "#/components/schemas/Percentual" }, { type: "null" }] }
+            estadual: { oneOf: [{ $ref: "#/components/schemas/Percentual" }, { type: "null" }] }
+            municipal: { oneOf: [{ $ref: "#/components/schemas/Percentual" }, { type: "null" }] }
+        aliquota_iss_simples: { oneOf: [{ $ref: "#/components/schemas/Percentual" }, { type: "null" }] }
+        serie_dps: { type: [string, "null"], readOnly: true, examples: ["00001"] }
+    Certificado:
+      type: object
+      properties:
+        titular: { type: string }
+        cnpj: { $ref: "#/components/schemas/Cnpj" }
+        emissor: { type: string }
+        numero_serie: { type: string }
+        valido_de: { type: string, format: date-time }
+        valido_ate: { type: string, format: date-time }
+        situacao: { type: string, enum: [valido, vencendo, vencido] }
+        dias_para_vencer: { type: integer }
+    Servico:
+      type: object
+      required: [nome, codigo_servico, tributacao_iss, retencao_iss]
+      properties:
+        id: { type: string, format: uuid, readOnly: true }
+        id_externo: { type: [string, "null"], maxLength: 100 }
+        nome: { type: string }
+        ativo: { type: boolean, default: true }
+        codigo_servico: { type: string, pattern: '^\d{6}$' }
+        descricao_servico: { type: [string, "null"], readOnly: true }
+        codigo_municipal: { type: [string, "null"] }
+        codigo_nbs: { type: [string, "null"], pattern: '^\d{9}$' }
+        descricao_padrao: { type: string }
+        tributacao_iss: { type: string, enum: [tributavel, imunidade, exportacao, nao_incidencia] }
+        tipo_imunidade: { type: [string, "null"], enum: [nao_informado, entes_federativos, templos, partidos_sindicatos_entidades, livros_jornais_papel, fonogramas_musicais, null] }
+        retencao_iss: { type: string, enum: [nao_retido, retido_tomador, retido_intermediario] }
+        indicador_operacao_ibscbs: { type: [string, "null"] }
+        numero_beneficio_municipal: { type: [string, "null"] }
+    Situacao:
+      type: object
+      properties:
+        ambiente: { $ref: "#/components/schemas/Ambiente" }
+        pronta_para_emitir: { type: boolean }
+        itens:
+          type: array
+          items:
+            type: object
+            properties:
+              item: { type: string, enum: [empresa_ativa, certificado, configuracao_fiscal, servico_ativo, municipio] }
+              ok: { type: [boolean, "null"] }
+              mensagem: { type: string }
+              verificado_em: { type: [string, "null"], format: date-time }
   responses:
+    Erro:
+      description: Erro no formato padrão (ver convencoes.md)
+      headers:
+        X-Request-Id: { $ref: "#/components/headers/XRequestId" }
+      content:
+        application/json:
+          schema: { $ref: "#/components/schemas/Erro" }
     AutenticacaoInvalida:
       description: Chave ausente, inválida ou revogada
       headers:
