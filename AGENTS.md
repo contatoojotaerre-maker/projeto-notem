@@ -36,3 +36,5 @@
 - Always reply to the user in Brazilian Portuguese (pt-BR); the project owner works in Portuguese.
 - Displayed URLs and e-mail links (redirectTo) come from the single official-address module `src/lib/app-url.ts`, never from the current page/request origin; internal navigation and OAuth return stay relative so previews keep working.
 - The database generates every new organization's panel address on insert (normalized name, max 30 chars, plus a random 6-char suffix without ambiguous characters, retried on collision) and ignores client-supplied values; addresses stay immutable and organization names may repeat (the panel only warns).
+- Business routes under /api/v1 go through the shared `apiRoute` runtime (key auth, X-Request-Id, idempotency table, sanitized logs with company, waitUntil); handlers use the service client but always scope by the key's organization, so isolation and audit (origin + integration) stay uniform.
+- Company readiness has one pure calculation shared by API and panel; change detection lives in a service-only state table so `empresa.situacao_alterada` fires once per change.
