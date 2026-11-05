@@ -1,5 +1,5 @@
 import { createServerFn } from '@tanstack/react-start'
-import { setResponseHeader, getRequest } from '@tanstack/react-start/server'
+import { setResponseHeader } from '@tanstack/react-start/server'
 import { z } from 'zod'
 import { requireSupabaseAuth } from '@/integrations/supabase/auth-middleware'
 import { integrationSchema, makeKey } from './integrations'
