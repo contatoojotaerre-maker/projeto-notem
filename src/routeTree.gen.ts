@@ -20,6 +20,7 @@ import { Route as AuthenticatedAdminSectionRouteImport } from './routes/_authent
 import { Route as AuthenticatedAdminOrganizacoesRouteImport } from './routes/_authenticated/admin/organizacoes'
 import { Route as ApiV1StatusRouteImport } from './routes/api/v1/status'
 import { Route as AuthenticatedOOrgSlugSectionRouteImport } from './routes/_authenticated/o/$orgSlug/$section'
+import { Route as ApiPublicWebhooksProcessRouteImport } from './routes/api/public/webhooks/process'
 import { Route as AuthenticatedOOrgSlugEmpresasIndexRouteImport } from './routes/_authenticated/o/$orgSlug/empresas/index'
 import { Route as AuthenticatedOOrgSlugEmpresasCompanyIdRouteImport } from './routes/_authenticated/o/$orgSlug/empresas/$companyId'
 import { Route as AuthenticatedOOrgSlugEmpresasNovaRouteImport } from './routes/_authenticated/o/$orgSlug/empresas/nova'
@@ -83,6 +84,12 @@ const AuthenticatedOOrgSlugSectionRoute =
     path: '/o/$orgSlug/$section',
     getParentRoute: () => AuthenticatedRouteRoute,
   } as any)
+const ApiPublicWebhooksProcessRoute =
+  ApiPublicWebhooksProcessRouteImport.update({
+    id: '/api/public/webhooks/process',
+    path: '/api/public/webhooks/process',
+    getParentRoute: () => rootRouteImport,
+  } as any)
 const AuthenticatedOOrgSlugEmpresasIndexRoute =
   AuthenticatedOOrgSlugEmpresasIndexRouteImport.update({
     id: '/o/$orgSlug/empresas/',
@@ -125,6 +132,7 @@ export interface FileRoutesByFullPath {
   '/admin/organizacoes': typeof AuthenticatedAdminOrganizacoesRoute
   '/api/v1/status': typeof ApiV1StatusRoute
   '/o/$orgSlug/$section': typeof AuthenticatedOOrgSlugSectionRoute
+  '/api/public/webhooks/process': typeof ApiPublicWebhooksProcessRoute
   '/o/$orgSlug/empresas/$companyId': typeof AuthenticatedOOrgSlugEmpresasCompanyIdRoute
   '/o/$orgSlug/empresas/nova': typeof AuthenticatedOOrgSlugEmpresasNovaRoute
   '/o/$orgSlug/integracoes/$integrationId': typeof AuthenticatedOOrgSlugIntegracoesIntegrationIdRoute
@@ -142,6 +150,7 @@ export interface FileRoutesByTo {
   '/admin/organizacoes': typeof AuthenticatedAdminOrganizacoesRoute
   '/api/v1/status': typeof ApiV1StatusRoute
   '/o/$orgSlug/$section': typeof AuthenticatedOOrgSlugSectionRoute
+  '/api/public/webhooks/process': typeof ApiPublicWebhooksProcessRoute
   '/o/$orgSlug/empresas/$companyId': typeof AuthenticatedOOrgSlugEmpresasCompanyIdRoute
   '/o/$orgSlug/empresas/nova': typeof AuthenticatedOOrgSlugEmpresasNovaRoute
   '/o/$orgSlug/integracoes/$integrationId': typeof AuthenticatedOOrgSlugIntegracoesIntegrationIdRoute
@@ -161,6 +170,7 @@ export interface FileRoutesById {
   '/_authenticated/admin/organizacoes': typeof AuthenticatedAdminOrganizacoesRoute
   '/api/v1/status': typeof ApiV1StatusRoute
   '/_authenticated/o/$orgSlug/$section': typeof AuthenticatedOOrgSlugSectionRoute
+  '/api/public/webhooks/process': typeof ApiPublicWebhooksProcessRoute
   '/_authenticated/o/$orgSlug/empresas/$companyId': typeof AuthenticatedOOrgSlugEmpresasCompanyIdRoute
   '/_authenticated/o/$orgSlug/empresas/nova': typeof AuthenticatedOOrgSlugEmpresasNovaRoute
   '/_authenticated/o/$orgSlug/integracoes/$integrationId': typeof AuthenticatedOOrgSlugIntegracoesIntegrationIdRoute
@@ -180,6 +190,7 @@ export interface FileRouteTypes {
     | '/admin/organizacoes'
     | '/api/v1/status'
     | '/o/$orgSlug/$section'
+    | '/api/public/webhooks/process'
     | '/o/$orgSlug/empresas/$companyId'
     | '/o/$orgSlug/empresas/nova'
     | '/o/$orgSlug/integracoes/$integrationId'
@@ -197,6 +208,7 @@ export interface FileRouteTypes {
     | '/admin/organizacoes'
     | '/api/v1/status'
     | '/o/$orgSlug/$section'
+    | '/api/public/webhooks/process'
     | '/o/$orgSlug/empresas/$companyId'
     | '/o/$orgSlug/empresas/nova'
     | '/o/$orgSlug/integracoes/$integrationId'
@@ -215,6 +227,7 @@ export interface FileRouteTypes {
     | '/_authenticated/admin/organizacoes'
     | '/api/v1/status'
     | '/_authenticated/o/$orgSlug/$section'
+    | '/api/public/webhooks/process'
     | '/_authenticated/o/$orgSlug/empresas/$companyId'
     | '/_authenticated/o/$orgSlug/empresas/nova'
     | '/_authenticated/o/$orgSlug/integracoes/$integrationId'
@@ -230,6 +243,7 @@ export interface RootRouteChildren {
   EsqueciSenhaRoute: typeof EsqueciSenhaRoute
   RedefinirSenhaRoute: typeof RedefinirSenhaRoute
   ApiV1StatusRoute: typeof ApiV1StatusRoute
+  ApiPublicWebhooksProcessRoute: typeof ApiPublicWebhooksProcessRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -311,6 +325,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedOOrgSlugSectionRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
+    '/api/public/webhooks/process': {
+      id: '/api/public/webhooks/process'
+      path: '/api/public/webhooks/process'
+      fullPath: '/api/public/webhooks/process'
+      preLoaderRoute: typeof ApiPublicWebhooksProcessRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/_authenticated/o/$orgSlug/empresas/': {
       id: '/_authenticated/o/$orgSlug/empresas/'
       path: '/o/$orgSlug/empresas'
@@ -389,6 +410,7 @@ const rootRouteChildren: RootRouteChildren = {
   EsqueciSenhaRoute: EsqueciSenhaRoute,
   RedefinirSenhaRoute: RedefinirSenhaRoute,
   ApiV1StatusRoute: ApiV1StatusRoute,
+  ApiPublicWebhooksProcessRoute: ApiPublicWebhooksProcessRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
