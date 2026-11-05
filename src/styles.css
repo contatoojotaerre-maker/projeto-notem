@@ -71,6 +71,10 @@
 .nav-item[data-active="true"] { background:var(--primary);color:var(--primary-foreground);font-weight:600; }
 .status-badge { display:inline-flex; align-items:center; gap:7px; border-radius:4px; padding:5px 9px; background:var(--warning-surface); color:var(--warning-foreground); font-size:11px; white-space:nowrap; }
 .status-badge:before { content:""; width:5px;height:5px; border-radius:50%;background:var(--warning); }
+.status-badge[data-status="active"] { background:color-mix(in oklch,var(--success) 15%,var(--background));color:var(--success); }
+.status-badge[data-status="active"]:before { background:var(--success); }
+.status-badge[data-status="inactive"] { background:var(--secondary);color:var(--muted-foreground); }
+.status-badge[data-status="inactive"]:before { background:var(--neutral); }
 .app-sidebar { position:fixed;top:0;bottom:0;left:0;width:238px;z-index:30;background:var(--background);border-right:1px solid var(--border);display:flex;flex-direction:column;transition:width .2s,transform .2s; }
 .app-main { margin-left:238px; transition:margin .2s; min-height:100svh; }
 .app-collapsed .app-sidebar { width:76px; }
