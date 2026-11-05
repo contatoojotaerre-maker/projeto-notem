@@ -2,7 +2,7 @@
 ## Fase 3A.2 — Webhooks e ajustes de Integrações
 - [x] Ler contrato docs/api/webhooks.md e convenções; preparar plano aprovado com Google Cloud Scheduler e DNS preflight sem IP pinning.
 - [x] Provar waitUntil e rota POST /api/public/webhooks/process com OIDC Google: 401 sem token; 200 com Google real e req_0c386b1ec9a046cc90ee0bb33f2c11cf confirmado no banco. URL/auth informadas; tarefa Google Cloud a cada minuto será criada pelo usuário.
-- [x] Aplicar plano aprovado: HTTPS/DNS sem IP pinning, quatro tabelas/RLS, motor de assinaturas/entregas, telas e docs. Testes de banco com rollback passaram (8 tentativas, reenvio, corpo preservado, sucesso limpa falha, desativação/alerta 3 dias, grants/RLS); 100 testes locais passaram.
+- [x] Aplicar plano aprovado: HTTPS/DNS sem IP pinning, quatro tabelas/RLS, motor de assinaturas/entregas, telas e docs. Testes de banco com rollback passaram (8 tentativas, reenvio, corpo preservado, sucesso limpa falha, desativação/alerta 3 dias, grants/RLS); 101 testes locais passaram.
 - [ ] Criar tarefa Google Cloud Scheduler a cada minuto — depende do proprietário; configuração em docs/api/agendador-webhooks.md.
 - [ ] Validar cadastro, teste e leitura em tela autenticada com receptor real — Supabase externo sem sessão de teste gerenciada; navegador redirecionou para /entrar, sem erros.
 - [ ] Confirmar publicação definitiva e processamento OIDC externo.
