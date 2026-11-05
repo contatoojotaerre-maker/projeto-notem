@@ -21,11 +21,22 @@ import { Route as AuthenticatedAdminOrganizacoesRouteImport } from './routes/_au
 import { Route as ApiV1StatusRouteImport } from './routes/api/v1/status'
 import { Route as AuthenticatedOOrgSlugSectionRouteImport } from './routes/_authenticated/o/$orgSlug/$section'
 import { Route as ApiPublicWebhooksProcessRouteImport } from './routes/api/public/webhooks/process'
+import { Route as ApiV1CatalogosMunicipiosRouteImport } from './routes/api/v1/catalogos/municipios'
+import { Route as ApiV1CatalogosNbsRouteImport } from './routes/api/v1/catalogos/nbs'
+import { Route as ApiV1CatalogosServicosRouteImport } from './routes/api/v1/catalogos/servicos'
+import { Route as ApiV1EmpresasIndexRouteImport } from './routes/api/v1/empresas/index'
 import { Route as AuthenticatedOOrgSlugEmpresasIndexRouteImport } from './routes/_authenticated/o/$orgSlug/empresas/index'
 import { Route as AuthenticatedOOrgSlugEmpresasCompanyIdRouteImport } from './routes/_authenticated/o/$orgSlug/empresas/$companyId'
 import { Route as AuthenticatedOOrgSlugEmpresasNovaRouteImport } from './routes/_authenticated/o/$orgSlug/empresas/nova'
 import { Route as AuthenticatedOOrgSlugIntegracoesIndexRouteImport } from './routes/_authenticated/o/$orgSlug/integracoes/index'
 import { Route as AuthenticatedOOrgSlugIntegracoesIntegrationIdRouteImport } from './routes/_authenticated/o/$orgSlug/integracoes/$integrationId'
+import { Route as ApiV1EmpresasIdIndexRouteImport } from './routes/api/v1/empresas/$id/index'
+import { Route as ApiV1EmpresasIdCertificadoRouteImport } from './routes/api/v1/empresas/$id/certificado'
+import { Route as ApiV1EmpresasIdConfiguracaoFiscalRouteImport } from './routes/api/v1/empresas/$id/configuracao-fiscal'
+import { Route as ApiV1EmpresasIdServicosIndexRouteImport } from './routes/api/v1/empresas/$id/servicos/index'
+import { Route as ApiV1EmpresasIdServicosServicoIdRouteImport } from './routes/api/v1/empresas/$id/servicos/$servicoId'
+import { Route as ApiV1EmpresasIdSituacaoIndexRouteImport } from './routes/api/v1/empresas/$id/situacao/index'
+import { Route as ApiV1EmpresasIdSituacaoVerificarMunicipioRouteImport } from './routes/api/v1/empresas/$id/situacao/verificar-municipio'
 
 const IndexRoute = IndexRouteImport.update({
   id: '/',
@@ -90,6 +101,27 @@ const ApiPublicWebhooksProcessRoute =
     path: '/api/public/webhooks/process',
     getParentRoute: () => rootRouteImport,
   } as any)
+const ApiV1CatalogosMunicipiosRoute =
+  ApiV1CatalogosMunicipiosRouteImport.update({
+    id: '/api/v1/catalogos/municipios',
+    path: '/api/v1/catalogos/municipios',
+    getParentRoute: () => rootRouteImport,
+  } as any)
+const ApiV1CatalogosNbsRoute = ApiV1CatalogosNbsRouteImport.update({
+  id: '/api/v1/catalogos/nbs',
+  path: '/api/v1/catalogos/nbs',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ApiV1CatalogosServicosRoute = ApiV1CatalogosServicosRouteImport.update({
+  id: '/api/v1/catalogos/servicos',
+  path: '/api/v1/catalogos/servicos',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ApiV1EmpresasIndexRoute = ApiV1EmpresasIndexRouteImport.update({
+  id: '/api/v1/empresas/',
+  path: '/api/v1/empresas/',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const AuthenticatedOOrgSlugEmpresasIndexRoute =
   AuthenticatedOOrgSlugEmpresasIndexRouteImport.update({
     id: '/o/$orgSlug/empresas/',
@@ -120,6 +152,47 @@ const AuthenticatedOOrgSlugIntegracoesIntegrationIdRoute =
     path: '/o/$orgSlug/integracoes/$integrationId',
     getParentRoute: () => AuthenticatedRouteRoute,
   } as any)
+const ApiV1EmpresasIdIndexRoute = ApiV1EmpresasIdIndexRouteImport.update({
+  id: '/api/v1/empresas/$id/',
+  path: '/api/v1/empresas/$id/',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ApiV1EmpresasIdCertificadoRoute =
+  ApiV1EmpresasIdCertificadoRouteImport.update({
+    id: '/api/v1/empresas/$id/certificado',
+    path: '/api/v1/empresas/$id/certificado',
+    getParentRoute: () => rootRouteImport,
+  } as any)
+const ApiV1EmpresasIdConfiguracaoFiscalRoute =
+  ApiV1EmpresasIdConfiguracaoFiscalRouteImport.update({
+    id: '/api/v1/empresas/$id/configuracao-fiscal',
+    path: '/api/v1/empresas/$id/configuracao-fiscal',
+    getParentRoute: () => rootRouteImport,
+  } as any)
+const ApiV1EmpresasIdServicosIndexRoute =
+  ApiV1EmpresasIdServicosIndexRouteImport.update({
+    id: '/api/v1/empresas/$id/servicos/',
+    path: '/api/v1/empresas/$id/servicos/',
+    getParentRoute: () => rootRouteImport,
+  } as any)
+const ApiV1EmpresasIdServicosServicoIdRoute =
+  ApiV1EmpresasIdServicosServicoIdRouteImport.update({
+    id: '/api/v1/empresas/$id/servicos/$servicoId',
+    path: '/api/v1/empresas/$id/servicos/$servicoId',
+    getParentRoute: () => rootRouteImport,
+  } as any)
+const ApiV1EmpresasIdSituacaoIndexRoute =
+  ApiV1EmpresasIdSituacaoIndexRouteImport.update({
+    id: '/api/v1/empresas/$id/situacao/',
+    path: '/api/v1/empresas/$id/situacao/',
+    getParentRoute: () => rootRouteImport,
+  } as any)
+const ApiV1EmpresasIdSituacaoVerificarMunicipioRoute =
+  ApiV1EmpresasIdSituacaoVerificarMunicipioRouteImport.update({
+    id: '/api/v1/empresas/$id/situacao/verificar-municipio',
+    path: '/api/v1/empresas/$id/situacao/verificar-municipio',
+    getParentRoute: () => rootRouteImport,
+  } as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
@@ -133,11 +206,22 @@ export interface FileRoutesByFullPath {
   '/api/v1/status': typeof ApiV1StatusRoute
   '/o/$orgSlug/$section': typeof AuthenticatedOOrgSlugSectionRoute
   '/api/public/webhooks/process': typeof ApiPublicWebhooksProcessRoute
+  '/api/v1/catalogos/municipios': typeof ApiV1CatalogosMunicipiosRoute
+  '/api/v1/catalogos/nbs': typeof ApiV1CatalogosNbsRoute
+  '/api/v1/catalogos/servicos': typeof ApiV1CatalogosServicosRoute
+  '/api/v1/empresas/': typeof ApiV1EmpresasIndexRoute
   '/o/$orgSlug/empresas/$companyId': typeof AuthenticatedOOrgSlugEmpresasCompanyIdRoute
   '/o/$orgSlug/empresas/nova': typeof AuthenticatedOOrgSlugEmpresasNovaRoute
   '/o/$orgSlug/integracoes/$integrationId': typeof AuthenticatedOOrgSlugIntegracoesIntegrationIdRoute
+  '/api/v1/empresas/$id/certificado': typeof ApiV1EmpresasIdCertificadoRoute
+  '/api/v1/empresas/$id/configuracao-fiscal': typeof ApiV1EmpresasIdConfiguracaoFiscalRoute
   '/o/$orgSlug/empresas/': typeof AuthenticatedOOrgSlugEmpresasIndexRoute
   '/o/$orgSlug/integracoes/': typeof AuthenticatedOOrgSlugIntegracoesIndexRoute
+  '/api/v1/empresas/$id/': typeof ApiV1EmpresasIdIndexRoute
+  '/api/v1/empresas/$id/servicos/$servicoId': typeof ApiV1EmpresasIdServicosServicoIdRoute
+  '/api/v1/empresas/$id/situacao/verificar-municipio': typeof ApiV1EmpresasIdSituacaoVerificarMunicipioRoute
+  '/api/v1/empresas/$id/servicos/': typeof ApiV1EmpresasIdServicosIndexRoute
+  '/api/v1/empresas/$id/situacao/': typeof ApiV1EmpresasIdSituacaoIndexRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
@@ -151,11 +235,22 @@ export interface FileRoutesByTo {
   '/api/v1/status': typeof ApiV1StatusRoute
   '/o/$orgSlug/$section': typeof AuthenticatedOOrgSlugSectionRoute
   '/api/public/webhooks/process': typeof ApiPublicWebhooksProcessRoute
+  '/api/v1/catalogos/municipios': typeof ApiV1CatalogosMunicipiosRoute
+  '/api/v1/catalogos/nbs': typeof ApiV1CatalogosNbsRoute
+  '/api/v1/catalogos/servicos': typeof ApiV1CatalogosServicosRoute
+  '/api/v1/empresas': typeof ApiV1EmpresasIndexRoute
   '/o/$orgSlug/empresas/$companyId': typeof AuthenticatedOOrgSlugEmpresasCompanyIdRoute
   '/o/$orgSlug/empresas/nova': typeof AuthenticatedOOrgSlugEmpresasNovaRoute
   '/o/$orgSlug/integracoes/$integrationId': typeof AuthenticatedOOrgSlugIntegracoesIntegrationIdRoute
+  '/api/v1/empresas/$id/certificado': typeof ApiV1EmpresasIdCertificadoRoute
+  '/api/v1/empresas/$id/configuracao-fiscal': typeof ApiV1EmpresasIdConfiguracaoFiscalRoute
   '/o/$orgSlug/empresas': typeof AuthenticatedOOrgSlugEmpresasIndexRoute
   '/o/$orgSlug/integracoes': typeof AuthenticatedOOrgSlugIntegracoesIndexRoute
+  '/api/v1/empresas/$id': typeof ApiV1EmpresasIdIndexRoute
+  '/api/v1/empresas/$id/servicos/$servicoId': typeof ApiV1EmpresasIdServicosServicoIdRoute
+  '/api/v1/empresas/$id/situacao/verificar-municipio': typeof ApiV1EmpresasIdSituacaoVerificarMunicipioRoute
+  '/api/v1/empresas/$id/servicos': typeof ApiV1EmpresasIdServicosIndexRoute
+  '/api/v1/empresas/$id/situacao': typeof ApiV1EmpresasIdSituacaoIndexRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -171,11 +266,22 @@ export interface FileRoutesById {
   '/api/v1/status': typeof ApiV1StatusRoute
   '/_authenticated/o/$orgSlug/$section': typeof AuthenticatedOOrgSlugSectionRoute
   '/api/public/webhooks/process': typeof ApiPublicWebhooksProcessRoute
+  '/api/v1/catalogos/municipios': typeof ApiV1CatalogosMunicipiosRoute
+  '/api/v1/catalogos/nbs': typeof ApiV1CatalogosNbsRoute
+  '/api/v1/catalogos/servicos': typeof ApiV1CatalogosServicosRoute
+  '/api/v1/empresas/': typeof ApiV1EmpresasIndexRoute
   '/_authenticated/o/$orgSlug/empresas/$companyId': typeof AuthenticatedOOrgSlugEmpresasCompanyIdRoute
   '/_authenticated/o/$orgSlug/empresas/nova': typeof AuthenticatedOOrgSlugEmpresasNovaRoute
   '/_authenticated/o/$orgSlug/integracoes/$integrationId': typeof AuthenticatedOOrgSlugIntegracoesIntegrationIdRoute
+  '/api/v1/empresas/$id/certificado': typeof ApiV1EmpresasIdCertificadoRoute
+  '/api/v1/empresas/$id/configuracao-fiscal': typeof ApiV1EmpresasIdConfiguracaoFiscalRoute
   '/_authenticated/o/$orgSlug/empresas/': typeof AuthenticatedOOrgSlugEmpresasIndexRoute
   '/_authenticated/o/$orgSlug/integracoes/': typeof AuthenticatedOOrgSlugIntegracoesIndexRoute
+  '/api/v1/empresas/$id/': typeof ApiV1EmpresasIdIndexRoute
+  '/api/v1/empresas/$id/servicos/$servicoId': typeof ApiV1EmpresasIdServicosServicoIdRoute
+  '/api/v1/empresas/$id/situacao/verificar-municipio': typeof ApiV1EmpresasIdSituacaoVerificarMunicipioRoute
+  '/api/v1/empresas/$id/servicos/': typeof ApiV1EmpresasIdServicosIndexRoute
+  '/api/v1/empresas/$id/situacao/': typeof ApiV1EmpresasIdSituacaoIndexRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -191,11 +297,22 @@ export interface FileRouteTypes {
     | '/api/v1/status'
     | '/o/$orgSlug/$section'
     | '/api/public/webhooks/process'
+    | '/api/v1/catalogos/municipios'
+    | '/api/v1/catalogos/nbs'
+    | '/api/v1/catalogos/servicos'
+    | '/api/v1/empresas/'
     | '/o/$orgSlug/empresas/$companyId'
     | '/o/$orgSlug/empresas/nova'
     | '/o/$orgSlug/integracoes/$integrationId'
+    | '/api/v1/empresas/$id/certificado'
+    | '/api/v1/empresas/$id/configuracao-fiscal'
     | '/o/$orgSlug/empresas/'
     | '/o/$orgSlug/integracoes/'
+    | '/api/v1/empresas/$id/'
+    | '/api/v1/empresas/$id/servicos/$servicoId'
+    | '/api/v1/empresas/$id/situacao/verificar-municipio'
+    | '/api/v1/empresas/$id/servicos/'
+    | '/api/v1/empresas/$id/situacao/'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
@@ -209,11 +326,22 @@ export interface FileRouteTypes {
     | '/api/v1/status'
     | '/o/$orgSlug/$section'
     | '/api/public/webhooks/process'
+    | '/api/v1/catalogos/municipios'
+    | '/api/v1/catalogos/nbs'
+    | '/api/v1/catalogos/servicos'
+    | '/api/v1/empresas'
     | '/o/$orgSlug/empresas/$companyId'
     | '/o/$orgSlug/empresas/nova'
     | '/o/$orgSlug/integracoes/$integrationId'
+    | '/api/v1/empresas/$id/certificado'
+    | '/api/v1/empresas/$id/configuracao-fiscal'
     | '/o/$orgSlug/empresas'
     | '/o/$orgSlug/integracoes'
+    | '/api/v1/empresas/$id'
+    | '/api/v1/empresas/$id/servicos/$servicoId'
+    | '/api/v1/empresas/$id/situacao/verificar-municipio'
+    | '/api/v1/empresas/$id/servicos'
+    | '/api/v1/empresas/$id/situacao'
   id:
     | '__root__'
     | '/'
@@ -228,11 +356,22 @@ export interface FileRouteTypes {
     | '/api/v1/status'
     | '/_authenticated/o/$orgSlug/$section'
     | '/api/public/webhooks/process'
+    | '/api/v1/catalogos/municipios'
+    | '/api/v1/catalogos/nbs'
+    | '/api/v1/catalogos/servicos'
+    | '/api/v1/empresas/'
     | '/_authenticated/o/$orgSlug/empresas/$companyId'
     | '/_authenticated/o/$orgSlug/empresas/nova'
     | '/_authenticated/o/$orgSlug/integracoes/$integrationId'
+    | '/api/v1/empresas/$id/certificado'
+    | '/api/v1/empresas/$id/configuracao-fiscal'
     | '/_authenticated/o/$orgSlug/empresas/'
     | '/_authenticated/o/$orgSlug/integracoes/'
+    | '/api/v1/empresas/$id/'
+    | '/api/v1/empresas/$id/servicos/$servicoId'
+    | '/api/v1/empresas/$id/situacao/verificar-municipio'
+    | '/api/v1/empresas/$id/servicos/'
+    | '/api/v1/empresas/$id/situacao/'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -244,6 +383,17 @@ export interface RootRouteChildren {
   RedefinirSenhaRoute: typeof RedefinirSenhaRoute
   ApiV1StatusRoute: typeof ApiV1StatusRoute
   ApiPublicWebhooksProcessRoute: typeof ApiPublicWebhooksProcessRoute
+  ApiV1CatalogosMunicipiosRoute: typeof ApiV1CatalogosMunicipiosRoute
+  ApiV1CatalogosNbsRoute: typeof ApiV1CatalogosNbsRoute
+  ApiV1CatalogosServicosRoute: typeof ApiV1CatalogosServicosRoute
+  ApiV1EmpresasIndexRoute: typeof ApiV1EmpresasIndexRoute
+  ApiV1EmpresasIdCertificadoRoute: typeof ApiV1EmpresasIdCertificadoRoute
+  ApiV1EmpresasIdConfiguracaoFiscalRoute: typeof ApiV1EmpresasIdConfiguracaoFiscalRoute
+  ApiV1EmpresasIdIndexRoute: typeof ApiV1EmpresasIdIndexRoute
+  ApiV1EmpresasIdServicosServicoIdRoute: typeof ApiV1EmpresasIdServicosServicoIdRoute
+  ApiV1EmpresasIdSituacaoVerificarMunicipioRoute: typeof ApiV1EmpresasIdSituacaoVerificarMunicipioRoute
+  ApiV1EmpresasIdServicosIndexRoute: typeof ApiV1EmpresasIdServicosIndexRoute
+  ApiV1EmpresasIdSituacaoIndexRoute: typeof ApiV1EmpresasIdSituacaoIndexRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -332,6 +482,34 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ApiPublicWebhooksProcessRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/api/v1/catalogos/municipios': {
+      id: '/api/v1/catalogos/municipios'
+      path: '/api/v1/catalogos/municipios'
+      fullPath: '/api/v1/catalogos/municipios'
+      preLoaderRoute: typeof ApiV1CatalogosMunicipiosRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/v1/catalogos/nbs': {
+      id: '/api/v1/catalogos/nbs'
+      path: '/api/v1/catalogos/nbs'
+      fullPath: '/api/v1/catalogos/nbs'
+      preLoaderRoute: typeof ApiV1CatalogosNbsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/v1/catalogos/servicos': {
+      id: '/api/v1/catalogos/servicos'
+      path: '/api/v1/catalogos/servicos'
+      fullPath: '/api/v1/catalogos/servicos'
+      preLoaderRoute: typeof ApiV1CatalogosServicosRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/v1/empresas/': {
+      id: '/api/v1/empresas/'
+      path: '/api/v1/empresas'
+      fullPath: '/api/v1/empresas/'
+      preLoaderRoute: typeof ApiV1EmpresasIndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/_authenticated/o/$orgSlug/empresas/': {
       id: '/_authenticated/o/$orgSlug/empresas/'
       path: '/o/$orgSlug/empresas'
@@ -366,6 +544,55 @@ declare module '@tanstack/react-router' {
       fullPath: '/o/$orgSlug/integracoes/$integrationId'
       preLoaderRoute: typeof AuthenticatedOOrgSlugIntegracoesIntegrationIdRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/api/v1/empresas/$id/': {
+      id: '/api/v1/empresas/$id/'
+      path: '/api/v1/empresas/$id'
+      fullPath: '/api/v1/empresas/$id/'
+      preLoaderRoute: typeof ApiV1EmpresasIdIndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/v1/empresas/$id/certificado': {
+      id: '/api/v1/empresas/$id/certificado'
+      path: '/api/v1/empresas/$id/certificado'
+      fullPath: '/api/v1/empresas/$id/certificado'
+      preLoaderRoute: typeof ApiV1EmpresasIdCertificadoRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/v1/empresas/$id/configuracao-fiscal': {
+      id: '/api/v1/empresas/$id/configuracao-fiscal'
+      path: '/api/v1/empresas/$id/configuracao-fiscal'
+      fullPath: '/api/v1/empresas/$id/configuracao-fiscal'
+      preLoaderRoute: typeof ApiV1EmpresasIdConfiguracaoFiscalRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/v1/empresas/$id/servicos/': {
+      id: '/api/v1/empresas/$id/servicos/'
+      path: '/api/v1/empresas/$id/servicos'
+      fullPath: '/api/v1/empresas/$id/servicos/'
+      preLoaderRoute: typeof ApiV1EmpresasIdServicosIndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/v1/empresas/$id/servicos/$servicoId': {
+      id: '/api/v1/empresas/$id/servicos/$servicoId'
+      path: '/api/v1/empresas/$id/servicos/$servicoId'
+      fullPath: '/api/v1/empresas/$id/servicos/$servicoId'
+      preLoaderRoute: typeof ApiV1EmpresasIdServicosServicoIdRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/v1/empresas/$id/situacao/': {
+      id: '/api/v1/empresas/$id/situacao/'
+      path: '/api/v1/empresas/$id/situacao'
+      fullPath: '/api/v1/empresas/$id/situacao/'
+      preLoaderRoute: typeof ApiV1EmpresasIdSituacaoIndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/v1/empresas/$id/situacao/verificar-municipio': {
+      id: '/api/v1/empresas/$id/situacao/verificar-municipio'
+      path: '/api/v1/empresas/$id/situacao/verificar-municipio'
+      fullPath: '/api/v1/empresas/$id/situacao/verificar-municipio'
+      preLoaderRoute: typeof ApiV1EmpresasIdSituacaoVerificarMunicipioRouteImport
+      parentRoute: typeof rootRouteImport
     }
   }
 }
@@ -411,6 +638,19 @@ const rootRouteChildren: RootRouteChildren = {
   RedefinirSenhaRoute: RedefinirSenhaRoute,
   ApiV1StatusRoute: ApiV1StatusRoute,
   ApiPublicWebhooksProcessRoute: ApiPublicWebhooksProcessRoute,
+  ApiV1CatalogosMunicipiosRoute: ApiV1CatalogosMunicipiosRoute,
+  ApiV1CatalogosNbsRoute: ApiV1CatalogosNbsRoute,
+  ApiV1CatalogosServicosRoute: ApiV1CatalogosServicosRoute,
+  ApiV1EmpresasIndexRoute: ApiV1EmpresasIndexRoute,
+  ApiV1EmpresasIdCertificadoRoute: ApiV1EmpresasIdCertificadoRoute,
+  ApiV1EmpresasIdConfiguracaoFiscalRoute:
+    ApiV1EmpresasIdConfiguracaoFiscalRoute,
+  ApiV1EmpresasIdIndexRoute: ApiV1EmpresasIdIndexRoute,
+  ApiV1EmpresasIdServicosServicoIdRoute: ApiV1EmpresasIdServicosServicoIdRoute,
+  ApiV1EmpresasIdSituacaoVerificarMunicipioRoute:
+    ApiV1EmpresasIdSituacaoVerificarMunicipioRoute,
+  ApiV1EmpresasIdServicosIndexRoute: ApiV1EmpresasIdServicosIndexRoute,
+  ApiV1EmpresasIdSituacaoIndexRoute: ApiV1EmpresasIdSituacaoIndexRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
