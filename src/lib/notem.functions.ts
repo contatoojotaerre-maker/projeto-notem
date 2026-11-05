@@ -1,6 +1,7 @@
 import { createServerFn } from '@tanstack/react-start';
 import { getRequest } from '@tanstack/react-start/server';
 import { z } from 'zod';
+import { appLink } from '@/lib/app-url';
 import { requireSupabaseAuth } from '@/integrations/supabase/auth-middleware';
 import { companySchema, roles, organizationSchema, slugSchema } from './notem';
 import { municipalitySearchTerm } from './municipality-search';
@@ -87,7 +88,7 @@ export const inviteFirstMember = createServerFn({method:'POST'}).middleware([req
   let exists=false;
   for(let page=1;;page++) {const users=await supabaseAdmin.auth.admin.listUsers({page,perPage:1000});if(users.error)throw new Error('Não foi possível verificar o convite.');if(users.data.users.some(u=>u.email?.toLowerCase()===data.email)){exists=true;break;}if(users.data.users.length<1000)break;}
   const result=await supabaseAdmin.from('invitations').insert({...data,invited_by:context.userId,requires_explicit_acceptance:exists}).select('id').single();if(result.error)throw new Error(result.error.code==='23505'?'Já existe um convite pendente para este e-mail.':'Não foi possível enviar o convite. Tente novamente.');
-  if(!exists){const origin=new URL(getRequest().url).origin;const sent=await supabaseAdmin.auth.admin.inviteUserByEmail(data.email,{redirectTo:`${origin}/definir-senha`});if(sent.error){await supabaseAdmin.from('invitations').update({status:'revoked'}).eq('id',result.data.id);throw new Error('O e-mail não foi enviado. Verifique as configurações de envio no Supabase e tente novamente.');}}
+  if(!exists){const sent=await supabaseAdmin.auth.admin.inviteUserByEmail(data.email,{redirectTo:appLink('/definir-senha')});if(sent.error){await supabaseAdmin.from('invitations').update({status:'revoked'}).eq('id',result.data.id);throw new Error('O e-mail não foi enviado. Verifique as configurações de envio no Supabase e tente novamente.');}}
   return {existing:exists,notice:exists?'Convite pendente. O usuário poderá aceitá-lo ao entrar. O aviso por e-mail aguarda a configuração do domínio de envio.':'Convite enviado por e-mail.'};
 });export const checkOrganizationSlug = createServerFn({method:'POST'}).middleware([requireSupabaseAuth]).inputValidator(z.object({slug:slugSchema})).handler(async({context,data})=>{
   const admin=await context.supabase.rpc('is_platform_admin');if(admin.error||!admin.data)throw new Error('Acesso não autorizado.');

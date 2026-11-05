@@ -1,6 +1,8 @@
 import { createRemoteJWKSet, jwtVerify } from 'jose'
 
-export const schedulerAudience = 'https://app.notemfiscal.com.br/api/public/webhooks/process'
+import { appLink } from '@/lib/app-url'
+
+export const schedulerAudience = appLink('/api/public/webhooks/process')
 
 export async function verifyScheduler(request: Request, accountJson: string | undefined) {
   if (!accountJson) return false
