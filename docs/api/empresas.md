@@ -6,7 +6,8 @@ Rotas para o sistema parceiro cadastrar e preparar as empresas emitentes, sem qu
 - Uma integração opera **todas as empresas da sua organização** (não há seleção de empresas por integração).
 - **Empresas, configuração fiscal, certificado e serviços são compartilhados entre os ambientes**: são os mesmos dados com a chave de homologação ou de produção. O que muda por ambiente são as **notas**, a **numeração** e a **verificação do município**. Atenção: alterar uma empresa com a chave de homologação altera também os dados usados em produção.
 - Valores fiscais são enviados em texto legível (ex.: `"me_epp"`); a notem converte para os códigos oficiais.
-- `Idempotency-Key` é aceito em todos os `POST` e recomendado em `POST /empresas`.
+- `Idempotency-Key` é aceito em `POST`, `PATCH`, `PUT` e `DELETE` (24 h por integração e ambiente; ver `convencoes.md` seção 7) e recomendado em `POST /empresas`.
+- Alterações feitas pela API aparecem no painel como "Alterado via API — integração X".
 
 ## 1. Empresa
 
@@ -38,7 +39,7 @@ Rotas para o sistema parceiro cadastrar e preparar as empresas emitentes, sem qu
 ```
 - `municipio` e `uf` são preenchidos pela notem a partir de `codigo_municipio` (não enviar).
 - `cnpj` é imutável depois que a empresa recebe certificado ou série de numeração (`409 CNPJ_IMUTAVEL`).
-- `id_externo` é único por organização.
+- `id_externo` é único por organização (`409 ID_EXTERNO_DUPLICADO`). Pode ser definido ou trocado apenas pela API.
 
 ### Rotas
 | Método e rota | Descrição | Respostas |
@@ -51,7 +52,7 @@ Rotas para o sistema parceiro cadastrar e preparar as empresas emitentes, sem qu
 
 **Desativar × excluir**
 - **Desativar** (`PATCH ativa: false`): bloqueia novas emissões, mantém todo o histórico; pode ser reativada.
-- **Excluir** (`DELETE`): só é permitido se a empresa **nunca reservou número de DPS e não tem notas** em nenhum ambiente. Remove a empresa, seus serviços e o certificado guardado. Caso contrário: `409 EMPRESA_POSSUI_HISTORICO` — use desativar. (Notas fiscais precisam ser guardadas, e a numeração já usada no governo não pode ser reaproveitada.)
+- **Excluir** (`DELETE`): só é permitido se a empresa **nunca reservou número de DPS e não tem notas** em nenhum ambiente (enquanto a emissão não existe, é verificada a numeração DPS). Remove a empresa, seus serviços e o certificado guardado. Caso contrário: `409 EMPRESA_POSSUI_HISTORICO` — use desativar. (Notas fiscais precisam ser guardadas, e a numeração já usada no governo não pode ser reaproveitada.)
 
 ## 2. Configuração fiscal
 

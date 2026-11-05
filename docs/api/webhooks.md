@@ -99,7 +99,20 @@ Durante a troca de segredo, a notem pode enviar duas assinaturas (`v1=...,v1=...
 | `certificado.vencido` | Certificado venceu |
 | `municipio.disponivel` | Município passou a ser atendido |
 
-Os campos de `dados` de cada evento são documentados junto com a rota correspondente da API. Novos tipos podem ser adicionados sem aviso; ignore tipos que você não conhece.
+Os campos de `dados` de cada evento são documentados junto com a rota correspondente da API.
+
+### Dados dos eventos de empresa e certificado
+`empresa.situacao_alterada` — enviado uma única vez a cada mudança de `pronta_para_emitir` em um ambiente (após alteração pela API ou pelo painel, verificação do município ou vencimento do certificado):
+```json
+"dados": { "empresa_id": "UUID", "id_externo": "ECV-1029", "cnpj": "11222333000181", "ambiente": "producao", "pronta_para_emitir": true, "pendencias": [] }
+```
+`pendencias`: itens de `GET /empresas/{id}/situacao` com `ok` diferente de `true` (`empresa_ativa`, `certificado`, `configuracao_fiscal`, `servico_ativo`, `municipio`).
+
+`certificado.vencendo` (30, 15, 7 e 1 dia antes) e `certificado.vencido` — verificados uma vez por dia; cada marco é avisado uma única vez por certificado, nos dois ambientes:
+```json
+"dados": { "empresa_id": "UUID", "id_externo": "ECV-1029", "cnpj": "11222333000181", "valido_ate": "2027-01-10T00:00:00-03:00", "dias_para_vencer": 7 }
+```
+Esses eventos respeitam o filtro por empresa do endereço. Pela API, a primeira tentativa é imediata; alterações feitas no painel e a rotina diária são entregues pelo processamento automático (cerca de 1 minuto). Novos tipos podem ser adicionados sem aviso; ignore tipos que você não conhece.
 
 ## 7. Segurança
 - Nunca confie no conteúdo sem validar a assinatura.
