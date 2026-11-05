@@ -1,5 +1,5 @@
 import { z } from 'zod'
-export const integrationSchema = z.object({ organization_id: z.string().uuid(), id: z.string().uuid().optional(), name: z.string().trim().min(1).max(100), description: z.string().max(2000).default(''), active: z.boolean().default(true), company_scope: z.enum(['all','selected']), company_ids: z.array(z.string().uuid()).max(10000).default([]) }).refine(v=>v.company_scope==='all'||v.company_ids.length>0,{message:'Selecione ao menos uma empresa.',path:['company_ids']})
+export const integrationSchema = z.object({ organization_id: z.string().uuid(), id: z.string().uuid().optional(), name: z.string().trim().min(1).max(100), description: z.string().max(2000).default(''), active: z.boolean().default(true), company_scope: z.literal('all').default('all'), company_ids: z.array(z.string().uuid()).max(0).default([]) })
 export const canManageIntegrations = (role?:string, admin=false)=>admin||['owner','admin','developer'].includes(role??'')
 export const keyEnvironment = (key:string)=>/^ntm_homolog_[a-f0-9]{64}$/.test(key)?'sandbox':/^ntm_prod_[a-f0-9]{64}$/.test(key)?'production':null
 export async function hashKey(key:string){return Array.from(new Uint8Array(await crypto.subtle.digest('SHA-256',new TextEncoder().encode(key))),b=>b.toString(16).padStart(2,'0')).join('')}
