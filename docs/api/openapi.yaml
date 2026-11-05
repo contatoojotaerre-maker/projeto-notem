@@ -122,3 +122,64 @@ components:
       content:
         application/json:
           schema: { $ref: "#/components/schemas/Erro" }
+
+# Webhooks são callbacks de saída; não são novos endpoints da API v1.
+webhooks:
+  eventoNotem:
+    post:
+      summary: Evento assinado da notem (inclui webhook.teste)
+      description: |
+        Contrato completo em webhooks.md. URL cadastrada no painel por ambiente.
+        Corpo bruto preservado em todas as tentativas, sem garantia de ordem.
+        HMAC SHA-256 de "{timestamp}.{corpoBruto}"; tolerância do receptor de 5 minutos.
+        Oito tentativas: inicial, depois 1 min, 5 min, 30 min, 2 h, 6 h, 12 h e 24 h.
+        Segredo anterior aceito por 24 h durante troca; múltiplos v1 no mesmo cabeçalho.
+        Retenção 90 dias; três dias contínuos sem sucesso desativam o endereço e geram alerta.
+      security: []
+      parameters:
+        - in: header
+          name: Notem-Evento
+          required: true
+          schema: { type: string }
+        - in: header
+          name: Notem-Evento-Id
+          required: true
+          schema: { type: string, pattern: '^evt_[a-f0-9]{32}$' }
+        - in: header
+          name: Notem-Entrega-Id
+          required: true
+          schema: { type: string, pattern: '^whd_[a-f0-9]{32}$' }
+        - in: header
+          name: Notem-Assinatura
+          required: true
+          schema: { type: string }
+          description: 't=timestamp,v1=HMAC; pode incluir duas assinaturas v1 na troca de segredo.'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              additionalProperties: false
+              required: [id, tipo, criado_em, ambiente, organizacao_id, integracao_id, dados]
+              properties:
+                id: { type: string, pattern: '^evt_[a-f0-9]{32}$' }
+                tipo:
+                  type: string
+                  enum: [webhook.teste, nota.autorizada, nota.rejeitada, nota.cancelada, nota.cancelamento_em_analise, nota.cancelamento_indeferido, nota.substituida, nota.cancelada_prefeitura, nota.bloqueada_prefeitura, nota.manifestacao, empresa.situacao_alterada, certificado.vencendo, certificado.vencido, municipio.disponivel]
+                criado_em: { type: string, format: date-time }
+                ambiente: { type: string, enum: [homologacao, producao] }
+                organizacao_id: { type: string, format: uuid }
+                integracao_id: { type: string, format: uuid }
+                dados: { type: object }
+            example:
+              id: evt_00000000000000000000000000000000
+              tipo: webhook.teste
+              criado_em: '2026-11-05T00:00:00Z'
+              ambiente: homologacao
+              organizacao_id: '00000000-0000-0000-0000-000000000001'
+              integracao_id: '00000000-0000-0000-0000-000000000002'
+              dados: {}
+      responses:
+        '200':
+          description: 'Qualquer 2xx recebido em até 10 segundos confirma a entrega.'
