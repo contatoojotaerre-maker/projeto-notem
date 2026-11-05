@@ -1003,6 +1003,24 @@ export type Database = {
         }
         Relationships: []
       }
+      system_heartbeats: {
+        Row: {
+          last_success_at: string
+          name: string
+          updated_at: string
+        }
+        Insert: {
+          last_success_at: string
+          name: string
+          updated_at?: string
+        }
+        Update: {
+          last_success_at?: string
+          name?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       webhook_alerts: {
         Row: {
           created_at: string
@@ -1155,6 +1173,10 @@ export type Database = {
       webhook_endpoints: {
         Row: {
           active: boolean
+          auth_configured: boolean | null
+          auth_header: string | null
+          auth_value: Json | null
+          company_id: string | null
           created_at: string
           created_by: string
           deleted_at: string | null
@@ -1176,6 +1198,10 @@ export type Database = {
         }
         Insert: {
           active?: boolean
+          auth_configured?: boolean | null
+          auth_header?: string | null
+          auth_value?: Json | null
+          company_id?: string | null
           created_at?: string
           created_by: string
           deleted_at?: string | null
@@ -1197,6 +1223,10 @@ export type Database = {
         }
         Update: {
           active?: boolean
+          auth_configured?: boolean | null
+          auth_header?: string | null
+          auth_value?: Json | null
+          company_id?: string | null
           created_at?: string
           created_by?: string
           deleted_at?: string | null
@@ -1217,6 +1247,13 @@ export type Database = {
           url?: string
         }
         Relationships: [
+          {
+            foreignKeyName: "webhook_endpoint_company_fk"
+            columns: ["company_id", "organization_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id", "organization_id"]
+          },
           {
             foreignKeyName: "webhook_endpoints_created_by_fkey"
             columns: ["created_by"]
@@ -1274,6 +1311,75 @@ export type Database = {
           },
         ]
       }
+      webhook_scheduler_runs: {
+        Row: {
+          completed: number
+          created_at: string
+          disabled: number
+          error: string | null
+          failed: number
+          id: string
+          reserved: number
+        }
+        Insert: {
+          completed?: number
+          created_at?: string
+          disabled?: number
+          error?: string | null
+          failed?: number
+          id?: string
+          reserved?: number
+        }
+        Update: {
+          completed?: number
+          created_at?: string
+          disabled?: number
+          error?: string | null
+          failed?: number
+          id?: string
+          reserved?: number
+        }
+        Relationships: []
+      }
+      webhook_secret_reveals: {
+        Row: {
+          actor_id: string
+          created_at: string
+          endpoint_id: string
+          id: string
+          organization_id: string
+        }
+        Insert: {
+          actor_id: string
+          created_at?: string
+          endpoint_id: string
+          id?: string
+          organization_id: string
+        }
+        Update: {
+          actor_id?: string
+          created_at?: string
+          endpoint_id?: string
+          id?: string
+          organization_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "webhook_secret_reveals_actor_id_fkey"
+            columns: ["actor_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "webhook_secret_reveals_endpoint_id_fkey"
+            columns: ["endpoint_id"]
+            isOneToOne: false
+            referencedRelation: "webhook_endpoints"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
     }
     Views: {
       [_ in never]: never
@@ -1317,6 +1423,7 @@ export type Database = {
       emit_webhook_event: {
         Args: {
           _body: string
+          _company?: string
           _endpoint?: string
           _environment: Database["public"]["Enums"]["environment"]
           _id: string
