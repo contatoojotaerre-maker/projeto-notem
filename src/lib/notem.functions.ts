@@ -68,7 +68,7 @@ export const saveCompany = createServerFn({method:'POST'}).middleware([requireSu
   const {id,...fields}=data;
   // State and audit fields are authoritative database-trigger outputs, not form inputs.
   const result=id ? await context.supabase.from('companies').update(fields).eq('id',id).eq('organization_id',fields.organization_id).select('id').single() : await context.supabase.from('companies').insert({...fields,state:'',created_by:context.userId,updated_by:context.userId}).select('id').single();
-  if(result.error)throw new Error(result.error.message.includes(CNPJ_LOCK_MESSAGE)?CNPJ_LOCK_MESSAGE:result.error.code==='23505'?'Este CNPJ já está cadastrado nesta organização.':'Não foi possível salvar. Confira os dados e sua permissão.');await panelRefreshReadiness(result.data.id);return result.data;
+  if(result.error)throw new Error(result.error.message.includes(CNPJ_LOCK_MESSAGE)?CNPJ_LOCK_MESSAGE:result.error.code==='23505'?'Este CNPJ já está cadastrado nesta organização.':'Não foi possível salvar. Confira os dados e sua permissão.');await (await import('./readiness.server')).panelRefreshReadiness(result.data.id);return result.data;
 });
 export const searchMunicipalities = createServerFn({method:'POST'}).middleware([requireSupabaseAuth]).inputValidator(z.object({search:z.string().max(100)})).handler(async({context,data})=>{
   const { term, eligible } = municipalitySearchTerm(data.search);
