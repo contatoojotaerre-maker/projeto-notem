@@ -1003,15 +1003,339 @@ export type Database = {
         }
         Relationships: []
       }
+      webhook_alerts: {
+        Row: {
+          created_at: string
+          endpoint_id: string
+          environment: Database["public"]["Enums"]["environment"]
+          episode_at: string
+          id: string
+          integration_id: string
+          message: string
+          organization_id: string
+        }
+        Insert: {
+          created_at?: string
+          endpoint_id: string
+          environment: Database["public"]["Enums"]["environment"]
+          episode_at: string
+          id?: string
+          integration_id: string
+          message: string
+          organization_id: string
+        }
+        Update: {
+          created_at?: string
+          endpoint_id?: string
+          environment?: Database["public"]["Enums"]["environment"]
+          episode_at?: string
+          id?: string
+          integration_id?: string
+          message?: string
+          organization_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "webhook_alerts_endpoint_id_organization_id_integration_id__fkey"
+            columns: [
+              "endpoint_id",
+              "organization_id",
+              "integration_id",
+              "environment",
+            ]
+            isOneToOne: false
+            referencedRelation: "webhook_endpoints"
+            referencedColumns: [
+              "id",
+              "organization_id",
+              "integration_id",
+              "environment",
+            ]
+          },
+        ]
+      }
+      webhook_deliveries: {
+        Row: {
+          attempt: number
+          claim_token: string | null
+          created_at: string
+          cycle: number
+          duration_ms: number | null
+          endpoint_id: string
+          environment: Database["public"]["Enums"]["environment"]
+          error: string | null
+          event_id: string
+          id: string
+          integration_id: string
+          lease_until: string | null
+          next_attempt_at: string
+          organization_id: string
+          response_body: string | null
+          response_status: number | null
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          attempt: number
+          claim_token?: string | null
+          created_at?: string
+          cycle?: number
+          duration_ms?: number | null
+          endpoint_id: string
+          environment: Database["public"]["Enums"]["environment"]
+          error?: string | null
+          event_id: string
+          id: string
+          integration_id: string
+          lease_until?: string | null
+          next_attempt_at?: string
+          organization_id: string
+          response_body?: string | null
+          response_status?: number | null
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          attempt?: number
+          claim_token?: string | null
+          created_at?: string
+          cycle?: number
+          duration_ms?: number | null
+          endpoint_id?: string
+          environment?: Database["public"]["Enums"]["environment"]
+          error?: string | null
+          event_id?: string
+          id?: string
+          integration_id?: string
+          lease_until?: string | null
+          next_attempt_at?: string
+          organization_id?: string
+          response_body?: string | null
+          response_status?: number | null
+          status?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "webhook_deliveries_endpoint_id_organization_id_integration_fkey"
+            columns: [
+              "endpoint_id",
+              "organization_id",
+              "integration_id",
+              "environment",
+            ]
+            isOneToOne: false
+            referencedRelation: "webhook_endpoints"
+            referencedColumns: [
+              "id",
+              "organization_id",
+              "integration_id",
+              "environment",
+            ]
+          },
+          {
+            foreignKeyName: "webhook_deliveries_event_id_organization_id_integration_id_fkey"
+            columns: [
+              "event_id",
+              "organization_id",
+              "integration_id",
+              "environment",
+            ]
+            isOneToOne: false
+            referencedRelation: "webhook_events"
+            referencedColumns: [
+              "id",
+              "organization_id",
+              "integration_id",
+              "environment",
+            ]
+          },
+        ]
+      }
+      webhook_endpoints: {
+        Row: {
+          active: boolean
+          created_at: string
+          created_by: string
+          deleted_at: string | null
+          description: string
+          disabled_reason: string | null
+          environment: Database["public"]["Enums"]["environment"]
+          events: string[]
+          failing_since: string | null
+          id: string
+          integration_id: string
+          last_success_at: string | null
+          organization_id: string
+          previous_secret: Json | null
+          previous_secret_expires_at: string | null
+          secret: Json | null
+          secret_prefix: string
+          updated_at: string
+          url: string
+        }
+        Insert: {
+          active?: boolean
+          created_at?: string
+          created_by: string
+          deleted_at?: string | null
+          description?: string
+          disabled_reason?: string | null
+          environment: Database["public"]["Enums"]["environment"]
+          events: string[]
+          failing_since?: string | null
+          id?: string
+          integration_id: string
+          last_success_at?: string | null
+          organization_id: string
+          previous_secret?: Json | null
+          previous_secret_expires_at?: string | null
+          secret?: Json | null
+          secret_prefix: string
+          updated_at?: string
+          url: string
+        }
+        Update: {
+          active?: boolean
+          created_at?: string
+          created_by?: string
+          deleted_at?: string | null
+          description?: string
+          disabled_reason?: string | null
+          environment?: Database["public"]["Enums"]["environment"]
+          events?: string[]
+          failing_since?: string | null
+          id?: string
+          integration_id?: string
+          last_success_at?: string | null
+          organization_id?: string
+          previous_secret?: Json | null
+          previous_secret_expires_at?: string | null
+          secret?: Json | null
+          secret_prefix?: string
+          updated_at?: string
+          url?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "webhook_endpoints_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "webhook_endpoints_integration_id_organization_id_fkey"
+            columns: ["integration_id", "organization_id"]
+            isOneToOne: false
+            referencedRelation: "integrations"
+            referencedColumns: ["id", "organization_id"]
+          },
+        ]
+      }
+      webhook_events: {
+        Row: {
+          body: string
+          created_at: string
+          environment: Database["public"]["Enums"]["environment"]
+          id: string
+          integration_id: string
+          organization_id: string
+          payload: Json
+          type: string
+        }
+        Insert: {
+          body: string
+          created_at?: string
+          environment: Database["public"]["Enums"]["environment"]
+          id: string
+          integration_id: string
+          organization_id: string
+          payload: Json
+          type: string
+        }
+        Update: {
+          body?: string
+          created_at?: string
+          environment?: Database["public"]["Enums"]["environment"]
+          id?: string
+          integration_id?: string
+          organization_id?: string
+          payload?: Json
+          type?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "webhook_events_integration_id_organization_id_fkey"
+            columns: ["integration_id", "organization_id"]
+            isOneToOne: false
+            referencedRelation: "integrations"
+            referencedColumns: ["id", "organization_id"]
+          },
+        ]
+      }
     }
     Views: {
       [_ in never]: never
     }
     Functions: {
       accept_invitation: { Args: { invitation_id: string }; Returns: string }
+      claim_webhook_deliveries: {
+        Args: { _event?: string; _limit?: number }
+        Returns: {
+          attempt: number
+          claim_token: string | null
+          created_at: string
+          cycle: number
+          duration_ms: number | null
+          endpoint_id: string
+          environment: Database["public"]["Enums"]["environment"]
+          error: string | null
+          event_id: string
+          id: string
+          integration_id: string
+          lease_until: string | null
+          next_attempt_at: string
+          organization_id: string
+          response_body: string | null
+          response_status: number | null
+          status: string
+          updated_at: string
+        }[]
+        SetofOptions: {
+          from: "*"
+          to: "webhook_deliveries"
+          isOneToOne: false
+          isSetofReturn: true
+        }
+      }
       create_integration: {
         Args: { _actor: string; _org: string; _payload: Json }
         Returns: string
+      }
+      disable_failing_webhooks: { Args: never; Returns: number }
+      emit_webhook_event: {
+        Args: {
+          _body: string
+          _endpoint?: string
+          _environment: Database["public"]["Enums"]["environment"]
+          _id: string
+          _integration: string
+          _org: string
+          _type: string
+        }
+        Returns: number
+      }
+      finish_webhook_delivery: {
+        Args: {
+          _duration: number
+          _error: string
+          _http: number
+          _id: string
+          _response: string
+          _token: string
+        }
+        Returns: boolean
       }
       has_org_role: {
         Args: {
@@ -1028,6 +1352,17 @@ export type Database = {
           _action: string
           _actor: string
           _id: string
+          _org: string
+          _payload: Json
+        }
+        Returns: string
+      }
+      manage_webhook: {
+        Args: {
+          _action: string
+          _actor: string
+          _id: string
+          _integration: string
           _org: string
           _payload: Json
         }
@@ -1070,6 +1405,10 @@ export type Database = {
           _valid_from: string
           _valid_until: string
         }
+        Returns: string
+      }
+      replay_webhook_delivery: {
+        Args: { _actor: string; _id: string; _org: string }
         Returns: string
       }
       reserve_dps_number: {
