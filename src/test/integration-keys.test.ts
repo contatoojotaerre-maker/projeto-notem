@@ -13,3 +13,12 @@ describe('webhook curl',()=>{
  it('no auth header when not configured',()=>{expect(webhookCurl('bash',base)).not.toContain('••••')})
  it('powershell uses curl.exe and escapes quotes',()=>{const c=webhookCurl('powershell',base);expect(c.startsWith('curl.exe')).toBe(true);expect(c).toContain('\\"tipo\\"');expect(c).toContain(' `\n')})
 })
+import { subscriptionMatches,groupState,webhookGroups,webhookInput } from '../lib/webhooks'
+describe('webhook groups',()=>{
+ it('exact type matches',()=>expect(subscriptionMatches(['nota.autorizada'],'nota.autorizada')).toBe(true))
+ it('wildcard matches any nota, including future ones',()=>{expect(subscriptionMatches(['nota.*'],'nota.rejeitada')).toBe(true);expect(subscriptionMatches(['nota.*'],'nota.evento_futuro')).toBe(true)})
+ it('no cross-group match',()=>expect(subscriptionMatches(['nota.*'],'certificado.vencido')).toBe(false))
+ it('teste always matches',()=>expect(subscriptionMatches(['municipio.*'],'webhook.teste')).toBe(true))
+ it('group state all/some/none',()=>{const g=webhookGroups[1];expect(groupState(['empresa.*','certificado.*'],g).mode).toBe('all');expect(groupState(['certificado.vencido'],g)).toEqual({mode:'some',count:1});expect(groupState([],g).mode).toBe('none')})
+ it('unknown wildcard rejected',()=>{const r=webhookInput.safeParse({organization_id:crypto.randomUUID(),integration_id:crypto.randomUUID(),environment:'sandbox',url:'https://ex.com/h',events:['outro.*']});expect(r.success).toBe(false)})
+})
