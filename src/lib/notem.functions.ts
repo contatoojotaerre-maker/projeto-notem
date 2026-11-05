@@ -13,16 +13,16 @@ export const getWorkspace = createServerFn({ method: 'POST' }).middleware([requi
     context.supabase.from('organization_members').select('*').eq('user_id',context.userId),
     context.supabase.rpc('is_platform_admin'), context.supabase.rpc('pending_invitations'),
   ]);
-  for (const result of [profile,organizations,members,admin,invitations]) if (result.error) throw new Error(result.error.message);
+  for (const result of [profile,organizations,members,admin,invitations]) if (result.error) {console.error('notem: database error',result.error.code);throw new Error('Não foi possível carregar ou salvar os dados. Tente novamente.')};
   if (!admin.data && !members.data?.length && !invitations.data?.length) throw new Error('Acesso não autorizado. Solicite um convite ao administrador da sua organização.');
   return { profile: profile.data, organizations: organizations.data ?? [], memberships: members.data ?? [], isAdmin: admin.data === true, invitations: invitations.data ?? [], email: String(context.claims.email ?? '') };
 });
 export const finishSignIn = createServerFn({ method: 'POST' }).middleware([requireSupabaseAuth]).handler(async ({ context }) => {
   const pending = await context.supabase.rpc('pending_invitations');
-  if (pending.error) throw new Error(pending.error.message);
+  if (pending.error) {console.error('notem: database error',pending.error.code);throw new Error('Não foi possível carregar ou salvar os dados. Tente novamente.')};
   for (const invitation of pending.data ?? []) if (!invitation.requires_explicit_acceptance) {
     const result = await context.supabase.rpc('accept_invitation',{ invitation_id: invitation.id });
-    if (result.error) throw new Error(result.error.message);
+    if (result.error) {console.error('notem: database error',result.error.code);throw new Error('Não foi possível carregar ou salvar os dados. Tente novamente.')};
   }
   const [admin, memberships] = await Promise.all([context.supabase.rpc('is_platform_admin'), context.supabase.from('organization_members').select('id').eq('user_id',context.userId).limit(1)]);
   if (!admin.data && !memberships.data?.length && !pending.data?.length) throw new Error('Acesso não autorizado. Solicite um convite ao administrador da sua organização.');
@@ -39,14 +39,14 @@ export const updatePreferences = createServerFn({ method: 'POST' }).middleware([
     if (org.error) throw new Error('Organização não autorizada.');
   }
   const result = await context.supabase.from('profiles').update({ ...(data.theme ? {theme:data.theme}:{}), ...(data.environment ? {environment:data.environment}:{}), ...(data.last_organization_id ? {last_organization_id:data.last_organization_id}:{}) }).eq('id',context.userId);
-  if (result.error) throw new Error(result.error.message);
+  if (result.error) {console.error('notem: database error',result.error.code);throw new Error('Não foi possível carregar ou salvar os dados. Tente novamente.')};
   return { ok:true };
 });
 export const getCompanies = createServerFn({method:'POST'}).middleware([requireSupabaseAuth]).inputValidator(z.object({organization_id:z.string().uuid(),search:z.string().default(''),page:z.number().int().min(0).default(0)})).handler(async ({context,data}) => {
   let query=context.supabase.from('companies').select('*',{count:'exact'}).eq('organization_id',data.organization_id).order('legal_name').range(data.page*30,data.page*30+29);
   const search=data.search.replace(/[%_,().]/g,'').trim();
   if(search) query=query.or(`legal_name.ilike.%${search}%,trade_name.ilike.%${search}%,cnpj.ilike.%${search}%`);
-  const result=await query; if(result.error) throw new Error(result.error.message); return {rows:result.data ?? [],count:result.count ?? 0};
+  const result=await query; if(result.error) {console.error('notem: database error',result.error.code);throw new Error('Não foi possível carregar ou salvar os dados. Tente novamente.')}; return {rows:result.data ?? [],count:result.count ?? 0};
 });
 export const getCompany = createServerFn({method:'POST'}).middleware([requireSupabaseAuth]).inputValidator(z.object({id:z.string().uuid(),organization_id:z.string().uuid()})).handler(async({context,data})=>{
   const result=await context.supabase.from('companies').select('*, municipalities(*)').eq('id',data.id).eq('organization_id',data.organization_id).single();if(result.error)throw new Error('Empresa não encontrada ou acesso não autorizado.');
@@ -78,18 +78,18 @@ export const renameOrganization = createServerFn({method:'POST'}).middleware([re
 export const getTeam = createServerFn({method:'POST'}).middleware([requireSupabaseAuth]).inputValidator(z.object({organization_id:z.string().uuid()})).handler(async({context,data})=>{
   const [admin,role]=await Promise.all([context.supabase.rpc('is_platform_admin'),context.supabase.rpc('has_org_role',{org_id:data.organization_id,roles:['owner','admin']})]);
   if(!admin.data&&!role.data)throw new Error('Acesso não autorizado.');
-  const result=await context.supabase.rpc('organization_team',{org_id:data.organization_id});if(result.error)throw new Error(result.error.message);return result.data ?? [];
+  const result=await context.supabase.rpc('organization_team',{org_id:data.organization_id});if(result.error){console.error('notem: database error',result.error.code);throw new Error('Não foi possível carregar ou salvar os dados. Tente novamente.')};return result.data ?? [];
 });
 export const inviteFirstMember = createServerFn({method:'POST'}).middleware([requireSupabaseAuth]).inputValidator(z.object({organization_id:z.string().uuid(),email:z.string().email().transform(v=>v.trim().toLowerCase()),role:z.enum(roles)})).handler(async({context,data})=>{
   const allowed=await context.supabase.rpc('is_platform_admin');if(allowed.error||!allowed.data)throw new Error('Acesso não autorizado.');
   const {supabaseAdmin}=await import('@/integrations/supabase/client.server');
-  const members=await supabaseAdmin.from('organization_members').select('id',{count:'exact',head:true}).eq('organization_id',data.organization_id);if(members.error)throw new Error(members.error.message);if(members.count)throw new Error('Esta organização já tem membros. Convites adicionais estarão disponíveis em uma próxima fase.');
+  const members=await supabaseAdmin.from('organization_members').select('id',{count:'exact',head:true}).eq('organization_id',data.organization_id);if(members.error){console.error('notem: database error',members.error.code);throw new Error('Não foi possível carregar ou salvar os dados. Tente novamente.')};if(members.count)throw new Error('Esta organização já tem membros. Convites adicionais estarão disponíveis em uma próxima fase.');
   let exists=false;
   for(let page=1;;page++) {const users=await supabaseAdmin.auth.admin.listUsers({page,perPage:1000});if(users.error)throw new Error('Não foi possível verificar o convite.');if(users.data.users.some(u=>u.email?.toLowerCase()===data.email)){exists=true;break;}if(users.data.users.length<1000)break;}
-  const result=await supabaseAdmin.from('invitations').insert({...data,invited_by:context.userId,requires_explicit_acceptance:exists}).select('id').single();if(result.error)throw new Error(result.error.code==='23505'?'Já existe um convite pendente para este e-mail.':result.error.message);
+  const result=await supabaseAdmin.from('invitations').insert({...data,invited_by:context.userId,requires_explicit_acceptance:exists}).select('id').single();if(result.error)throw new Error(result.error.code==='23505'?'Já existe um convite pendente para este e-mail.':'Não foi possível enviar o convite. Tente novamente.');
   if(!exists){const origin=new URL(getRequest().url).origin;const sent=await supabaseAdmin.auth.admin.inviteUserByEmail(data.email,{redirectTo:`${origin}/definir-senha`});if(sent.error){await supabaseAdmin.from('invitations').update({status:'revoked'}).eq('id',result.data.id);throw new Error('O e-mail não foi enviado. Verifique as configurações de envio no Supabase e tente novamente.');}}
   return {existing:exists,notice:exists?'Convite pendente. O usuário poderá aceitá-lo ao entrar. O aviso por e-mail aguarda a configuração do domínio de envio.':'Convite enviado por e-mail.'};
 });export const checkOrganizationSlug = createServerFn({method:'POST'}).middleware([requireSupabaseAuth]).inputValidator(z.object({slug:slugSchema})).handler(async({context,data})=>{
   const admin=await context.supabase.rpc('is_platform_admin');if(admin.error||!admin.data)throw new Error('Acesso não autorizado.');
-  const result=await context.supabase.from('organizations').select('id').eq('slug',data.slug).limit(1);if(result.error)throw new Error(result.error.message);return {available:!result.data?.length};
+  const result=await context.supabase.from('organizations').select('id').eq('slug',data.slug).limit(1);if(result.error){console.error('notem: database error',result.error.code);throw new Error('Não foi possível carregar ou salvar os dados. Tente novamente.')};return {available:!result.data?.length};
 });

@@ -1,3 +1,4 @@
+import { userMessage } from '@/lib/webhooks'
 import { useEffect, useRef, useState } from 'react';
 import { useQuery, useQueryClient, useSuspenseQuery } from '@tanstack/react-query';
 import { useServerFn } from '@tanstack/react-start';
@@ -31,7 +32,7 @@ export function CertificateTab({ companyId, organizationId, canUse }: { companyI
     const form = new FormData(); form.set('file', file); form.set('password', password); form.set('company_id', companyId); form.set('organization_id', organizationId);
     setBusy(true);
     try { await upload({ data: form }); toast.success('Certificado guardado.'); reset(); await Promise.all([qc.invalidateQueries({ queryKey: key }),qc.invalidateQueries({queryKey:['company-fiscal',companyId]}),qc.invalidateQueries({queryKey:['company',companyId]})]); }
-    catch (err) { setError(err instanceof Error ? err.message : 'Falha no envio.'); setPassword(''); }
+    catch (err) { setError(userMessage(err,'Falha no envio.')); setPassword(''); }
     finally { setBusy(false); }
   }
   if (isLoading) return <p className="text-sm text-muted-foreground">Carregando…</p>;
@@ -59,7 +60,7 @@ export function ReadinessTab({ companyId, organizationId, canUse,cnpj }: { compa
   const [now, setNow] = useState(Date.now()); const [busy, setBusy] = useState(false); const [message, setMessage] = useState('');
   useEffect(() => { const t = setInterval(() => setNow(Date.now()), 1000); return () => clearInterval(t); }, []);
   const remaining = cooldownRemaining(last?.created_at, now);
-  async function run() { setBusy(true); setMessage(''); try { const r = await check({ data: { company_id: companyId, organization_id: organizationId } }); if (r.message) setMessage(r.message); } catch (e) { setMessage(e instanceof Error ? e.message : 'Falha na verificação.'); } finally { setBusy(false); await qc.invalidateQueries({ queryKey: key }); } }
+  async function run() { setBusy(true); setMessage(''); try { const r = await check({ data: { company_id: companyId, organization_id: organizationId } }); if (r.message) setMessage(r.message); } catch (e) { setMessage(userMessage(e,'Falha na verificação.')); } finally { setBusy(false); await qc.invalidateQueries({ queryKey: key }); } }
   let parsed: { mensagem?: unknown; parametrosConvenio?: Record<string, unknown> } | null = null;
   try { parsed = last?.response_body && last.http_status ? JSON.parse(last.response_body) : null; } catch { parsed = null; }
   const fields = parsed?.parametrosConvenio && typeof parsed.parametrosConvenio === 'object' ? parsed.parametrosConvenio : null;

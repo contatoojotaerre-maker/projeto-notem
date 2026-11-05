@@ -135,6 +135,9 @@ webhooks:
         Oito tentativas: inicial, depois 1 min, 5 min, 30 min, 2 h, 6 h, 12 h e 24 h.
         Segredo anterior aceito por 24 h durante troca; múltiplos v1 no mesmo cabeçalho.
         Retenção 90 dias; três dias contínuos sem sucesso desativam o endereço e geram alerta.
+        Filtro opcional por empresa autorizada (vazio = todas); webhook.teste é sempre entregue.
+        Envio de teste: tentativa direta de até 10 s com resultado no painel; falhas seguem o cronograma.
+        Validação: assinatura (recomendada), chave de autorização opcional, ou confirmação do estado pela API.
       security: []
       parameters:
         - in: header
@@ -154,6 +157,14 @@ webhooks:
           required: true
           schema: { type: string }
           description: 't=timestamp,v1=HMAC; pode incluir duas assinaturas v1 na troca de segredo.'
+        - in: header
+          name: Authorization
+          required: false
+          schema: { type: string }
+          description: |
+            Somente quando o parceiro cadastrou uma chave de autorização. O nome do cabeçalho é escolhido no cadastro
+            (padrão Authorization; nomes Notem-* e cabeçalhos de protocolo não são aceitos) e o valor é exatamente o cadastrado.
+            A assinatura continua sempre enviada e é a validação recomendada.
       requestBody:
         required: true
         content:

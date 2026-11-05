@@ -9,12 +9,15 @@ export const Route = createFileRoute('/api/public/webhooks/process')({
     const master = process.env['WEBHOOK_ENCRYPTION_KEY']
     if (!master) return Response.json({ erro: 'CONFIGURACAO_INDISPONIVEL' }, { status: 503 })
     const { supabaseAdmin } = await import('@/integrations/supabase/client.server')
-    const { processWebhookBatch } = await import('@/lib/webhooks.server')
+    const { processWebhookBatch, recordSchedulerRun } = await import('@/lib/webhooks.server')
     try {
-      const result = await processWebhookBatch(supabaseAdmin, master)
-      return Response.json(result, { headers: { 'Cache-Control': 'no-store' } })
-    } catch {
-      console.error('WEBHOOK_SCHEDULER_FAILED')
+      const { results: _results, ...summary } = await processWebhookBatch(supabaseAdmin, master)
+      await recordSchedulerRun(supabaseAdmin, summary, null)
+      return Response.json(summary, { headers: { 'Cache-Control': 'no-store' } })
+    } catch (e) {
+      const code = e instanceof Error && /^[A-Z_]+$/.test(e.message) ? e.message : 'PROCESSAMENTO_FALHOU'
+      console.error('WEBHOOK_SCHEDULER_FAILED', code)
+      await recordSchedulerRun(supabaseAdmin, { reserved: 0, completed: 0, failed: 0, disabled: 0 }, code)
       return Response.json({ erro: 'PROCESSAMENTO_FALHOU' }, { status: 503 })
     }
   } } },

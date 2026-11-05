@@ -6,7 +6,10 @@ Webhooks são **avisos automáticos** que a notem envia ao sistema parceiro quan
 - Cada **integração** pode ter **endereços de webhook por ambiente** (homologação e produção), cadastrados no painel (Integrações → Webhooks) ou, futuramente, pela API.
 - Para cada endereço o parceiro escolhe **quais eventos** quer receber.
 - O endereço deve ser **HTTPS** e público. Endereços internos (localhost, IPs privados) são recusados.
-- Ao criar o endereço, a notem gera um **segredo de assinatura** (`whsec_...`), exibido **uma única vez**. Ele pode ser trocado a qualquer momento.
+- Ao criar o endereço, a notem gera um **segredo de assinatura** (`whsec_...`), exibido no cadastro. Depois ele fica **oculto**; o botão **Revelar** está disponível apenas para owner, admin, developer e administrador da plataforma, e cada revelação registra quem revelou e quando. O segredo pode ser trocado a qualquer momento.
+- **Chave de autorização (opcional):** o parceiro pode informar um valor escolhido por ele e, opcionalmente, o nome do cabeçalho (padrão `Authorization`). Quando preenchida, a chave é enviada em todas as entregas, junto com a assinatura. Fica guardada cifrada e nunca aparece em registros. Não são aceitos nomes `Notem-*` nem cabeçalhos de protocolo (`Host`, `Content-Length`, `Content-Type`, `Transfer-Encoding`, `Connection`, `Cookie` etc.).
+- **Filtro por empresa (opcional):** o endereço pode receber eventos de apenas uma das empresas autorizadas da integração. Vazio = todas. O `webhook.teste` é sempre entregue.
+- Ao escolher os eventos, o painel mostra um **exemplo da mensagem** (envelope abaixo) com botão copiar. Eventos cujos dados ainda não foram definidos aparecem com `"dados": {}`.
 
 ## 2. Formato da mensagem
 `POST` para o endereço cadastrado, `Content-Type: application/json; charset=utf-8`:
@@ -35,7 +38,14 @@ Webhooks são **avisos automáticos** que a notem envia ao sistema parceiro quan
 | `Notem-Entrega-Id` | identificador desta tentativa de entrega |
 | `Notem-Assinatura` | `t={timestamp},v1={assinatura}` |
 
-## 4. Validação da assinatura (obrigatória)
+## 4. Como validar que a mensagem veio da notem
+Há duas formas, que podem ser usadas juntas:
+
+- **Assinatura (recomendada):** sempre enviada em `Notem-Assinatura`. Prova a origem e que o corpo não foi alterado. Passos abaixo.
+- **Chave de autorização (opção simples):** se cadastrada, chega no cabeçalho escolhido (ex.: `Authorization: Bearer minha-chave`). Basta comparar com o valor que você cadastrou. Não protege contra alteração do corpo; prefira a assinatura sempre que possível.
+- **Confirmar pela API:** em caso de dúvida, trate o webhook apenas como aviso e consulte o estado atual pela API (`https://app.notemfiscal.com.br/api/v1`) com a sua chave de integração antes de agir.
+
+### Validação da assinatura
 1. Leia `t` e `v1` do cabeçalho `Notem-Assinatura`.
 2. Monte o texto `{t}.{corpo_bruto}` — o corpo **exatamente como recebido**, antes de converter o JSON.
 3. Calcule HMAC-SHA256 desse texto com o segredo `whsec_...`, em hexadecimal minúsculo.
@@ -47,6 +57,8 @@ Durante a troca de segredo, a notem pode enviar duas assinaturas (`v1=...,v1=...
 ## 5. Resposta esperada e reenvios
 - Responda **2xx em até 10 segundos**. Processe de forma assíncrona se precisar de mais tempo.
 - Qualquer outra resposta, erro de conexão ou tempo esgotado é falha. A notem tenta novamente com intervalos crescentes: **1 min, 5 min, 30 min, 2 h, 6 h, 12 h e 24 h** (8 tentativas no total).
+- **Envio de teste pelo painel:** o evento e a entrega são registrados primeiro; a notem faz uma tentativa direta (até 10 segundos) e mostra o resultado na tela (HTTP e tempo, ou o motivo). Se falhar, a entrega segue o mesmo cronograma de novas tentativas.
+- **Eventos reais:** a primeira tentativa é feita em segundo plano logo após o evento; se isso não for possível, a entrega fica na fila e é enviada pelo processamento automático em até cerca de 1 minuto, sem perda.
 - Depois de esgotadas as tentativas, a entrega fica como **falhou** e pode ser reenviada manualmente pelo painel.
 - Se um endereço falhar continuamente por **3 dias**, ele é **desativado automaticamente** e a organização é avisada no painel.
 

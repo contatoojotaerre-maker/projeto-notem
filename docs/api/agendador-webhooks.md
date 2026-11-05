@@ -21,3 +21,7 @@ Reenvios podem começar até cerca de um minuto após seu vencimento, além do t
 
 ## Destinos
 DNS público A e AAAA é verificado antes de cada tentativa usando DNS-over-HTTPS. Somente HTTPS, sem credenciais na URL, sem localhost/IPs privados, reservados ou link-local; nenhum redirect é seguido. No modelo de rede aprovado para Workers não há IP pinning nem serviço de saída separado: DNS preflight não é garantia contra rebinding entre consulta e conexão.
+
+
+## Registro dos ciclos
+Somente ciclos que processaram entregas ou tiveram erro são registrados, com resumo (reservadas, concluídas, falhas, desativadas). A data/hora da última execução bem-sucedida fica em um único registro (`system_heartbeats`, nome `webhook_scheduler`), para a futura tela "Saúde do sistema".
