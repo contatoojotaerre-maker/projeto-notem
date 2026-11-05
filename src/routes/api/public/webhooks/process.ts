@@ -11,6 +11,7 @@ export const Route = createFileRoute('/api/public/webhooks/process')({
     const { supabaseAdmin } = await import('@/integrations/supabase/client.server')
     const { processWebhookBatch, recordSchedulerRun } = await import('@/lib/webhooks.server')
     try {
+      try { const { runDailyRoutine } = await import('@/lib/readiness.server'); await runDailyRoutine(supabaseAdmin) } catch { console.error('DAILY_ROUTINE_FAILED') }
       const { results: _results, ...summary } = await processWebhookBatch(supabaseAdmin, master)
       await recordSchedulerRun(supabaseAdmin, summary, null)
       return Response.json(summary, { headers: { 'Cache-Control': 'no-store' } })

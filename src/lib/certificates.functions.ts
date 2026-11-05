@@ -45,6 +45,7 @@ export const uploadCertificate = createServerFn({ method: 'POST' }).middleware([
   const m = prepared.metadados;
   const r = await supabaseAdmin.rpc('replace_company_certificate', { _company_id: company.id, _organization_id: company.organization_id, _user_id: context.userId, _holder: m.titular, _cnpj: m.cnpj, _issuer: m.emissor, _serial: m.numero_serie, _valid_from: m.valido_de, _valid_until: m.valido_ate, _key_version: prepared.envelope.versao_chave, _nonce: prepared.envelope.nonce, _data: prepared.envelope.dados });
   if (r.error) { console.error('certificate: replace failed', r.error.code); await audit('ERRO_GRAVACAO'); throw new Error('Não foi possível guardar o certificado. O anterior foi mantido.'); }
+  { const { panelRefreshReadiness } = await import('./readiness.server'); await panelRefreshReadiness(company.id); }
   return stripSensitive({ holder: m.titular, cnpj: m.cnpj, issuer: m.emissor, serial_number: m.numero_serie, valid_from: m.valido_de, valid_until: m.valido_ate });
 });
 
@@ -77,5 +78,6 @@ export const checkAgreement = createServerFn({ method: 'POST' }).middleware([req
   } catch (e) { row.error_code = e instanceof TransmissorError ? e.code : 'INDISPONIVEL'; }
   await supabaseAdmin.from('municipality_agreement_queries').insert(row as never);
   await supabaseAdmin.from('certificate_audit_events').insert({ company_id: company.id, organization_id: company.organization_id, user_id: context.userId, action: row.error_code ? 'failed' : 'used', purpose: 'consulta de convênio municipal', environment, result: String(row.error_code ?? row.http_status ?? '') });
+  { const { panelRefreshReadiness } = await import('./readiness.server'); await panelRefreshReadiness(company.id); }
   return { ok: !row.error_code, message: row.error_code ? translateTransmissorError(String(row.error_code)) : null };
 });

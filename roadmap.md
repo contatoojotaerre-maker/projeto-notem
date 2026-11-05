@@ -58,3 +58,12 @@
 - [x] Cadastrar TRANSMISSOR_URL e GOOGLE_SERVICE_ACCOUNT_JSON.
 - [ ] Aceite real: A1 Grupo Jota (IBGE 4212254) e resposta de homologação — aguarda segredos e certificado.
 - [x] Modal de webhook redesenhado + assinatura por grupo (curingas) e publicação
+
+## Fase 3B — API de empresas
+- [x] Banco: ativa, id_externo, origem/integração, idempotência, situação, avisos de certificado, exclusão segura, developer só leitura, integrações = organização inteira.
+- [x] Rotas /api/v1 de empresas, configuração fiscal, certificado, serviços, situação, verificação de município e catálogos.
+- [x] Situação única (painel e API), webhook de situação, rotina diária de certificados.
+- [x] Painel: sem seleção de empresas, aba Situação, desativar/reativar, "Alterado via API", filtro por empresa nas requisições.
+- [x] Documentação (openapi, convencoes, empresas, webhooks, glossario) e testes de regras.
+- [ ] Verificação externa com chave de homologação — feita pelo usuário.
+- [ ] Testes de banco do papel developer e da exclusão com dados reais — não executados.

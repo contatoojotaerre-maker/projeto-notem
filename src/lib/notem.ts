@@ -3,7 +3,7 @@ import { z } from 'zod';
 export const roles = ['owner', 'admin', 'operator', 'viewer', 'developer'] as const;
 export const roleLabels = { owner: 'Proprietário', admin: 'Administrador', operator: 'Operador', viewer: 'Leitura', developer: 'Desenvolvedor' };
 export function canManageOrganization(role?: string, platformAdmin = false) { return platformAdmin || role === 'owner' || role === 'admin'; }
-export function canEditCompany(role?: string, platformAdmin = false) { return platformAdmin || ['owner','admin','operator','developer'].includes(role ?? ''); }
+export function canEditCompany(role?: string, platformAdmin = false) { return platformAdmin || ['owner','admin','operator'].includes(role ?? ''); }
 export const digits = (value: string) => value.replace(/\D/g, '');
 export function isValidCnpj(value: string) {
   const cnpj = digits(value);

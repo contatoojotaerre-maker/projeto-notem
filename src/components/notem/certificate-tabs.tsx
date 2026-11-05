@@ -1,3 +1,4 @@
+import { getCompanyReadiness } from '@/lib/notem.functions';
 import { userMessage } from '@/lib/webhooks'
 import { useEffect, useRef, useState } from 'react';
 import { useQuery, useQueryClient, useSuspenseQuery } from '@tanstack/react-query';
@@ -51,22 +52,23 @@ export function CertificateTab({ companyId, organizationId, canUse }: { companyI
   </div>;
 }
 
+const readinessLabels: Record<string, string> = { empresa_ativa: 'Empresa ativa', certificado: 'Certificado válido', configuracao_fiscal: 'Configuração fiscal', servico_ativo: 'Serviço ativo', municipio: 'Município' };
 export function ReadinessTab({ companyId, organizationId, canUse,cnpj }: { companyId: string; organizationId: string; canUse: boolean;cnpj:string }) {
   const {data:fiscal}=useSuspenseQuery(fiscalQuery(companyId,organizationId));
   const { profile } = useWorkspace(); const environment = (profile?.environment ?? 'production') as 'production' | 'sandbox';
-  const qc = useQueryClient(); const fetchLast = useServerFn(getAgreementQueries); const check = useServerFn(checkAgreement);
+  const qc = useQueryClient(); const fetchLast = useServerFn(getAgreementQueries); const fetchReadiness = useServerFn(getCompanyReadiness); const check = useServerFn(checkAgreement);
   const key = ['agreement', companyId, environment];
   const { data: last, isLoading } = useQuery({ queryKey: key, queryFn: () => fetchLast({ data: { company_id: companyId, organization_id: organizationId, environment } }) });
   const [now, setNow] = useState(Date.now()); const [busy, setBusy] = useState(false); const [message, setMessage] = useState('');
   useEffect(() => { const t = setInterval(() => setNow(Date.now()), 1000); return () => clearInterval(t); }, []);
   const remaining = cooldownRemaining(last?.created_at, now);
-  async function run() { setBusy(true); setMessage(''); try { const r = await check({ data: { company_id: companyId, organization_id: organizationId } }); if (r.message) setMessage(r.message); } catch (e) { setMessage(userMessage(e,'Falha na verificação.')); } finally { setBusy(false); await qc.invalidateQueries({ queryKey: key }); } }
+  async function run() { setBusy(true); setMessage(''); try { const r = await check({ data: { company_id: companyId, organization_id: organizationId } }); if (r.message) setMessage(r.message); } catch (e) { setMessage(userMessage(e,'Falha na verificação.')); } finally { setBusy(false); await qc.invalidateQueries({ queryKey: key }); await qc.invalidateQueries({ queryKey: ['readiness', companyId, environment] }); } }
   let parsed: { mensagem?: unknown; parametrosConvenio?: Record<string, unknown> } | null = null;
   try { parsed = last?.response_body && last.http_status ? JSON.parse(last.response_body) : null; } catch { parsed = null; }
   const fields = parsed?.parametrosConvenio && typeof parsed.parametrosConvenio === 'object' ? parsed.parametrosConvenio : null;
   const unavailable=agreementUnavailableMessage(last?.http_status,parsed?.mensagem,environment);
-  const local=[['Certificado válido',fiscal.certificates.some(c=>validReadinessCertificate(c,cnpj,now))],['Configuração fiscal preenchida',fiscal.settings!==null&&fiscalSchema.safeParse(fiscal.settings).success],['Ao menos um serviço ativo',fiscal.profiles.some(p=>p.active)]] as const;
-  return <div className="space-y-6"><dl className="grid gap-4 sm:grid-cols-3">{local.map(([label,ready])=><div key={label}><dt className="text-sm text-muted-foreground">{label}</dt><dd className="mt-1 font-medium">{ready?'Sim':'Não'}</dd></div>)}</dl><div className="rounded-lg border border-border p-6">
+  const readiness = useQuery({ queryKey: ['readiness', companyId, environment], queryFn: () => fetchReadiness({ data: { id: companyId, organization_id: organizationId, environment } }) });
+  return <div className="space-y-6"><div><p className="text-lg font-medium">{readiness.data ? (readiness.data.pronta_para_emitir ? 'Pronta para emitir' : 'Ainda não está pronta para emitir') : 'Calculando situação…'}</p><p className="text-sm text-muted-foreground">Mesmo cálculo usado pela API, no ambiente {environment === 'production' ? 'Produção' : 'Homologação'}.</p>{readiness.data && <ul className="mt-4 divide-y divide-border border-y border-border">{readiness.data.itens.map(i => <li key={i.item} className="flex items-start justify-between gap-4 py-3"><span className="text-sm">{readinessLabels[i.item] ?? i.item}<span className="block text-xs text-muted-foreground">{i.mensagem}</span></span><span className="status-badge" data-status={i.ok === true ? 'active' : 'inactive'}>{i.ok === true ? 'OK' : i.ok === null ? 'Não verificado' : 'Pendente'}</span></li>)}</ul>}</div><div className="rounded-lg border border-border p-6">
     <div className="flex flex-wrap items-center justify-between gap-3"><div><h2 className="text-lg font-medium">Município atendido pelo emissor nacional</h2><p className="text-sm text-muted-foreground">Ambiente: {environment === 'production' ? 'Produção' : 'Homologação'}</p></div>
       {canUse && <div className="text-right"><Button onClick={run} disabled={busy || remaining > 0}>{busy ? 'Verificando…' : last ? 'Verificar novamente' : 'Verificar'}</Button>{remaining > 0 && <p className="mt-1 text-xs text-muted-foreground">Poderá verificar novamente em {Math.ceil(remaining / 1000)} s</p>}</div>}</div>
     {message && <p role="alert" className="mt-4 text-sm text-destructive">{message}</p>}

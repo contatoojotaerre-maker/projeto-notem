@@ -17,13 +17,13 @@ Estas regras valem para **todas** as rotas. Em caso de dúvida, elas prevalecem 
 - Enviar em todas as chamadas: `Authorization: Bearer {chave}`.
 - **O ambiente é definido pela chave**. Não existe parâmetro de ambiente: com a chave de homologação, tudo acontece em homologação (notas sem validade fiscal); com a de produção, em produção.
 - A chave é exibida **uma única vez** ao ser criada. A notem guarda apenas uma impressão irreversível dela. Se perdida, gere outra e revogue a antiga.
-- Uma integração só opera as empresas **autorizadas** para ela, sempre dentro da própria organização.
+- Uma integração opera **todas as empresas da sua organização** (não há seleção de empresas por integração). Empresa de outra organização responde `404 NAO_ENCONTRADO`.
 
 ## 3. Formato das mensagens
 - JSON em UTF-8: `Content-Type: application/json; charset=utf-8`.
 - **Nomes de campos em português**, minúsculos, sem acentos, separados por sublinhado: `razao_social`, `valor_servico`, `codigo_municipio`.
 - Identificadores da notem: texto UUID no campo `id`.
-- **Identificador do parceiro:** recursos criados pelo parceiro aceitam `id_externo` (texto, até 100 caracteres), único por integração, para o parceiro localizar o recurso com o próprio código.
+- **Identificador do parceiro:** recursos criados pelo parceiro aceitam `id_externo` (texto, até 100 caracteres), único por organização, para o parceiro localizar o recurso com o próprio código.
 
 ## 4. Padrões de dados
 | Tipo | Formato | Exemplo |
@@ -72,7 +72,7 @@ Todo erro tem **sempre** o mesmo formato:
 | 400 | `REQUISICAO_INVALIDA` | formato ou campo inválido |
 | 401 | `AUTENTICACAO_INVALIDA` | chave ausente, inválida ou revogada |
 | 403 | `SEM_PERMISSAO` | a integração não pode fazer esta operação |
-| 403 | `EMPRESA_NAO_AUTORIZADA` | empresa não autorizada para esta integração |
+| 403 | `EMPRESA_NAO_AUTORIZADA` | reservado (não usado: toda integração opera todas as empresas da organização) |
 | 404 | `NAO_ENCONTRADO` | recurso inexistente ou de outra organização |
 | 409 | `CONFLITO` | estado atual não permite a operação |
 | 409 | `IDEMPOTENCIA_CONFLITO` | mesma `Idempotency-Key` com conteúdo diferente |
@@ -85,15 +85,18 @@ Todo erro tem **sempre** o mesmo formato:
 Códigos específicos de cada rota (ex.: `CERTIFICADO_VENCIDO`) são documentados na própria rota.
 
 ## 7. Idempotência (reenvio seguro)
-- Operações que criam ou alteram (`POST`, `PATCH`) aceitam o cabeçalho `Idempotency-Key` (texto de até 100 caracteres, gerado pelo parceiro, ex.: um UUID).
+- Operações que criam, alteram ou excluem (`POST`, `PATCH`, `PUT`, `DELETE`) aceitam o cabeçalho `Idempotency-Key` (texto de até 100 caracteres, gerado pelo parceiro, ex.: um UUID).
 - **Obrigatório** em emissão, cancelamento e substituição de notas.
 - Repetir a mesma chave com o **mesmo conteúdo** devolve a **mesma resposta**, sem refazer a operação — inclusive após falha de rede. Com conteúdo diferente: `409 IDEMPOTENCIA_CONFLITO`.
-- A chave vale por 24 horas, por integração e ambiente.
+- A chave vale por 24 horas, por integração e ambiente. Depois disso pode ser reutilizada.
+- A resposta repetida traz o cabeçalho `Idempotent-Replayed: true`. Enquanto a primeira requisição ainda estiver em andamento, a repetição recebe `409 CONFLITO`. Respostas `5xx` não são guardadas, para que você possa tentar de novo com a mesma chave.
+- Implementado em todas as rotas de escrita da v1 (Fase 3B).
 
 ## 8. Listas e paginação
 - Parâmetros: `limite` (padrão 50, máximo 100) e `cursor` (o `proximo_cursor` recebido).
 - `proximo_cursor = null` indica o fim da lista.
-- A ordem padrão é do mais recente para o mais antigo, salvo indicação na rota.
+- A ordem padrão é do mais recente para o mais antigo, salvo indicação na rota (catálogos: por nome/código).
+- O `cursor` é opaco: não o monte nem o interprete.
 
 ## 9. Limites de uso
 - Na Fase 3A, nenhum limite de uso está ativo; a estrutura para 429 fica preparada.
@@ -110,4 +113,4 @@ Códigos específicos de cada rota (ex.: `CERTIFICADO_VENCIDO`) são documentado
 - Nunca envie a chave em parâmetros de URL.
 - Certificados digitais enviados pela API nunca são devolvidos em nenhuma resposta.
 
-Implementação inicial de webhooks: configuração e `webhook.teste` pelo painel; eventos fiscais reais entram nas próximas fases. A API v1 não ganhou endpoints de gerenciamento de webhooks. O agendador interno, separado do contrato v1, está documentado em `agendador-webhooks.md`.
+Implementação inicial de webhooks: configuração e `webhook.teste` pelo painel; eventos fiscais reais entram nas próximas fases. A API v1 não tem endpoints de gerenciamento de webhooks. Rotas de empresas (Fase 3B): ver `empresas.md`. O agendador interno, separado do contrato v1, está documentado em `agendador-webhooks.md`.

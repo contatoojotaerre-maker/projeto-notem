@@ -8,7 +8,7 @@ Webhooks são **avisos automáticos** que a notem envia ao sistema parceiro quan
 - O endereço deve ser **HTTPS** e público. Endereços internos (localhost, IPs privados) são recusados.
 - Ao criar o endereço, a notem gera um **segredo de assinatura** (`whsec_...`), exibido no cadastro. Depois ele fica **oculto**; o botão **Revelar** está disponível apenas para owner, admin, developer e administrador da plataforma, e cada revelação registra quem revelou e quando. O segredo pode ser trocado a qualquer momento.
 - **Chave de autorização (opcional):** o parceiro pode informar um valor escolhido por ele e, opcionalmente, o nome do cabeçalho (padrão `Authorization`). Quando preenchida, a chave é enviada em todas as entregas, junto com a assinatura. Fica guardada cifrada e nunca aparece em registros. Não são aceitos nomes `Notem-*` nem cabeçalhos de protocolo (`Host`, `Content-Length`, `Content-Type`, `Transfer-Encoding`, `Connection`, `Cookie` etc.).
-- **Filtro por empresa (opcional):** o endereço pode receber eventos de apenas uma das empresas autorizadas da integração. Vazio = todas. O `webhook.teste` é sempre entregue.
+- **Filtro por empresa (opcional):** o endereço pode receber eventos de apenas uma das empresas da organização. Vazio = todas. O `webhook.teste` é sempre entregue.
 - No cadastro e no detalhe de cada endereço, o painel mostra o **exemplo do envio como comando curl** pronto, com botão copiar, nas versões Linux/macOS e PowerShell (`curl.exe`): POST para a URL cadastrada com `Content-Type`, `Notem-Evento`, `Notem-Evento-Id`, `Notem-Entrega-Id`, `Notem-Assinatura` (valor ilustrativo) e o cabeçalho de autorização configurado (valor mascarado), e o envelope abaixo no corpo. Eventos cujos dados ainda não foram definidos aparecem com `"dados": {}`; os exemplos completos dos eventos de nota virão com o contrato de emissão.
 
 ```bash
@@ -99,7 +99,20 @@ Durante a troca de segredo, a notem pode enviar duas assinaturas (`v1=...,v1=...
 | `certificado.vencido` | Certificado venceu |
 | `municipio.disponivel` | Município passou a ser atendido |
 
-Os campos de `dados` de cada evento são documentados junto com a rota correspondente da API. Novos tipos podem ser adicionados sem aviso; ignore tipos que você não conhece.
+Os campos de `dados` de cada evento são documentados junto com a rota correspondente da API.
+
+### Dados dos eventos de empresa e certificado
+`empresa.situacao_alterada` — enviado uma única vez a cada mudança de `pronta_para_emitir` em um ambiente (após alteração pela API ou pelo painel, verificação do município ou vencimento do certificado):
+```json
+"dados": { "empresa_id": "UUID", "id_externo": "ECV-1029", "cnpj": "11222333000181", "ambiente": "producao", "pronta_para_emitir": true, "pendencias": [] }
+```
+`pendencias`: itens de `GET /empresas/{id}/situacao` com `ok` diferente de `true` (`empresa_ativa`, `certificado`, `configuracao_fiscal`, `servico_ativo`, `municipio`).
+
+`certificado.vencendo` (30, 15, 7 e 1 dia antes) e `certificado.vencido` — verificados uma vez por dia; cada marco é avisado uma única vez por certificado, nos dois ambientes:
+```json
+"dados": { "empresa_id": "UUID", "id_externo": "ECV-1029", "cnpj": "11222333000181", "valido_ate": "2027-01-10T00:00:00-03:00", "dias_para_vencer": 7 }
+```
+Esses eventos respeitam o filtro por empresa do endereço. Pela API, a primeira tentativa é imediata; alterações feitas no painel e a rotina diária são entregues pelo processamento automático (cerca de 1 minuto). Novos tipos podem ser adicionados sem aviso; ignore tipos que você não conhece.
 
 ## 7. Segurança
 - Nunca confie no conteúdo sem validar a assinatura.

@@ -1,5 +1,5 @@
 import { z } from 'zod'
-export const integrationSchema = z.object({ organization_id: z.string().uuid(), id: z.string().uuid().optional(), name: z.string().trim().min(1).max(100), description: z.string().max(2000).default(''), active: z.boolean().default(true), company_scope: z.enum(['all','selected']), company_ids: z.array(z.string().uuid()).max(10000).default([]) }).refine(v=>v.company_scope==='all'||v.company_ids.length>0,{message:'Selecione ao menos uma empresa.',path:['company_ids']})
+export const integrationSchema = z.object({ organization_id: z.string().uuid(), id: z.string().uuid().optional(), name: z.string().trim().min(1).max(100), description: z.string().max(2000).default(''), active: z.boolean().default(true), company_scope: z.literal('all').default('all'), company_ids: z.array(z.string().uuid()).max(0).default([]) })
 export const canManageIntegrations = (role?:string, admin=false)=>admin||['owner','admin','developer'].includes(role??'')
 export const keyEnvironment = (key:string)=>/^ntm_homolog_[a-f0-9]{64}$/.test(key)?'sandbox':/^ntm_prod_[a-f0-9]{64}$/.test(key)?'production':null
 export async function hashKey(key:string){return Array.from(new Uint8Array(await crypto.subtle.digest('SHA-256',new TextEncoder().encode(key))),b=>b.toString(16).padStart(2,'0')).join('')}
@@ -8,7 +8,7 @@ export async function makeKey(environment:'sandbox'|'production'){
  return {key,key_hash:await hashKey(key),key_prefix:key.slice(0,environment==='sandbox'?19:16)+'…'}
 }
 export function sanitizeBody(value:unknown):import('@/integrations/supabase/types').Json {
- const secret=/(^key$|pfx|senha|password|certificado|certificate|authorization|private.?key|api.?key|key_hash|key_prefix|chave|token|secret|credential)/i
+ const secret=/(^key$|pfx|arquivo_base64|base64|senha|password|certificado|certificate|authorization|private.?key|api.?key|key_hash|key_prefix|chave|token|secret|credential)/i
  const text=(v:string)=>v.replace(/-----BEGIN [^-]+-----[\s\S]*?-----END [^-]+-----/g,'[REMOVIDO]').replace(/ntm_(?:homolog|prod)_[a-zA-Z0-9._-]+/g,'[REMOVIDO]').replace(/Bearer\s+[^\s"\\,}]+/gi,'Bearer [REMOVIDO]').replace(/eyJ[a-zA-Z0-9_-]+\.[a-zA-Z0-9_-]+\.[a-zA-Z0-9_-]+/g,'[REMOVIDO]')
  const walk=(v:unknown,depth=0):import('@/integrations/supabase/types').Json=>{if(depth>20)return '[TRUNCADO]';if(typeof v==='string')return text(v);if(v===null||typeof v==='boolean'||typeof v==='number')return v;if(Array.isArray(v))return v.slice(0,1000).map(x=>walk(x,depth+1));if(typeof v==='object'){return Object.fromEntries(Object.entries(v).slice(0,1000).map(([k,x])=>[k,secret.test(k)?'[REMOVIDO]':walk(x,depth+1)]))}return null}
  const clean=walk(value);const json=JSON.stringify(clean);if(new TextEncoder().encode(json).length<=60000)return clean

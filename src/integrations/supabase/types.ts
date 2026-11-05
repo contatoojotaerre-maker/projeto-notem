@@ -14,8 +14,56 @@ export type Database = {
   }
   public: {
     Tables: {
+      api_idempotency_keys: {
+        Row: {
+          body_hash: string
+          created_at: string
+          environment: Database["public"]["Enums"]["environment"]
+          expires_at: string
+          integration_id: string
+          key: string
+          method: string
+          path: string
+          response_body: Json | null
+          status_code: number | null
+        }
+        Insert: {
+          body_hash: string
+          created_at?: string
+          environment: Database["public"]["Enums"]["environment"]
+          expires_at?: string
+          integration_id: string
+          key: string
+          method: string
+          path: string
+          response_body?: Json | null
+          status_code?: number | null
+        }
+        Update: {
+          body_hash?: string
+          created_at?: string
+          environment?: Database["public"]["Enums"]["environment"]
+          expires_at?: string
+          integration_id?: string
+          key?: string
+          method?: string
+          path?: string
+          response_body?: Json | null
+          status_code?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "api_idempotency_keys_integration_id_fkey"
+            columns: ["integration_id"]
+            isOneToOne: false
+            referencedRelation: "integrations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       api_request_logs: {
         Row: {
+          company_id: string | null
           created_at: string
           duration_ms: number
           environment: Database["public"]["Enums"]["environment"] | null
@@ -31,6 +79,7 @@ export type Database = {
           status_code: number
         }
         Insert: {
+          company_id?: string | null
           created_at?: string
           duration_ms: number
           environment?: Database["public"]["Enums"]["environment"] | null
@@ -46,6 +95,7 @@ export type Database = {
           status_code: number
         }
         Update: {
+          company_id?: string | null
           created_at?: string
           duration_ms?: number
           environment?: Database["public"]["Enums"]["environment"] | null
@@ -138,15 +188,44 @@ export type Database = {
           },
         ]
       }
+      certificate_expiry_notices: {
+        Row: {
+          certificate_id: string
+          created_at: string
+          milestone: string
+        }
+        Insert: {
+          certificate_id: string
+          created_at?: string
+          milestone: string
+        }
+        Update: {
+          certificate_id?: string
+          created_at?: string
+          milestone?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "certificate_expiry_notices_certificate_id_fkey"
+            columns: ["certificate_id"]
+            isOneToOne: false
+            referencedRelation: "company_certificates"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       companies: {
         Row: {
+          active: boolean
           change_origin: Database["public"]["Enums"]["change_origin"]
+          changed_by_integration_id: string | null
           cnpj: string
           complement: string
           created_at: string
           created_by: string
           district: string
           email: string
+          external_id: string | null
           id: string
           legal_name: string
           municipal_registration: string
@@ -163,13 +242,16 @@ export type Database = {
           updated_by: string
         }
         Insert: {
+          active?: boolean
           change_origin?: Database["public"]["Enums"]["change_origin"]
+          changed_by_integration_id?: string | null
           cnpj: string
           complement?: string
           created_at?: string
           created_by: string
           district?: string
           email?: string
+          external_id?: string | null
           id?: string
           legal_name: string
           municipal_registration?: string
@@ -186,13 +268,16 @@ export type Database = {
           updated_by: string
         }
         Update: {
+          active?: boolean
           change_origin?: Database["public"]["Enums"]["change_origin"]
+          changed_by_integration_id?: string | null
           cnpj?: string
           complement?: string
           created_at?: string
           created_by?: string
           district?: string
           email?: string
+          external_id?: string | null
           id?: string
           legal_name?: string
           municipal_registration?: string
@@ -209,6 +294,13 @@ export type Database = {
           updated_by?: string
         }
         Relationships: [
+          {
+            foreignKeyName: "companies_changed_by_integration_id_fkey"
+            columns: ["changed_by_integration_id"]
+            isOneToOne: false
+            referencedRelation: "integrations"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "companies_municipality_ibge_code_fkey"
             columns: ["municipality_ibge_code"]
@@ -323,6 +415,8 @@ export type Database = {
           approx_simples_percent: number | null
           approx_state_percent: number | null
           approx_taxes_mode: string
+          change_origin: Database["public"]["Enums"]["change_origin"]
+          changed_by_integration_id: string | null
           cnpj: string
           company_id: string
           created_at: string
@@ -342,6 +436,8 @@ export type Database = {
           approx_simples_percent?: number | null
           approx_state_percent?: number | null
           approx_taxes_mode: string
+          change_origin?: Database["public"]["Enums"]["change_origin"]
+          changed_by_integration_id?: string | null
           cnpj: string
           company_id: string
           created_at?: string
@@ -361,6 +457,8 @@ export type Database = {
           approx_simples_percent?: number | null
           approx_state_percent?: number | null
           approx_taxes_mode?: string
+          change_origin?: Database["public"]["Enums"]["change_origin"]
+          changed_by_integration_id?: string | null
           cnpj?: string
           company_id?: string
           created_at?: string
@@ -376,6 +474,13 @@ export type Database = {
         }
         Relationships: [
           {
+            foreignKeyName: "company_fiscal_settings_changed_by_integration_id_fkey"
+            columns: ["changed_by_integration_id"]
+            isOneToOne: false
+            referencedRelation: "integrations"
+            referencedColumns: ["id"]
+          },
+          {
             foreignKeyName: "company_fiscal_settings_company_id_organization_id_fkey"
             columns: ["company_id", "organization_id"]
             isOneToOne: false
@@ -384,13 +489,48 @@ export type Database = {
           },
         ]
       }
+      company_readiness_state: {
+        Row: {
+          company_id: string
+          environment: Database["public"]["Enums"]["environment"]
+          pending: string[]
+          ready: boolean
+          updated_at: string
+        }
+        Insert: {
+          company_id: string
+          environment: Database["public"]["Enums"]["environment"]
+          pending?: string[]
+          ready: boolean
+          updated_at?: string
+        }
+        Update: {
+          company_id?: string
+          environment?: Database["public"]["Enums"]["environment"]
+          pending?: string[]
+          ready?: boolean
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "company_readiness_state_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       company_service_profiles: {
         Row: {
           active: boolean
+          change_origin: Database["public"]["Enums"]["change_origin"]
+          changed_by_integration_id: string | null
           company_id: string
           created_at: string
           created_by: string
           default_description: string
+          external_id: string | null
           ibscbs_operation_indicator: string | null
           id: string
           immunity_type: number | null
@@ -407,10 +547,13 @@ export type Database = {
         }
         Insert: {
           active?: boolean
+          change_origin?: Database["public"]["Enums"]["change_origin"]
+          changed_by_integration_id?: string | null
           company_id: string
           created_at?: string
           created_by: string
           default_description?: string
+          external_id?: string | null
           ibscbs_operation_indicator?: string | null
           id?: string
           immunity_type?: number | null
@@ -427,10 +570,13 @@ export type Database = {
         }
         Update: {
           active?: boolean
+          change_origin?: Database["public"]["Enums"]["change_origin"]
+          changed_by_integration_id?: string | null
           company_id?: string
           created_at?: string
           created_by?: string
           default_description?: string
+          external_id?: string | null
           ibscbs_operation_indicator?: string | null
           id?: string
           immunity_type?: number | null
@@ -446,6 +592,13 @@ export type Database = {
           updated_by?: string
         }
         Relationships: [
+          {
+            foreignKeyName: "company_service_profiles_changed_by_integration_id_fkey"
+            columns: ["changed_by_integration_id"]
+            isOneToOne: false
+            referencedRelation: "integrations"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "company_service_profiles_company_id_organization_id_fkey"
             columns: ["company_id", "organization_id"]
@@ -1417,6 +1570,10 @@ export type Database = {
       }
       create_integration: {
         Args: { _actor: string; _org: string; _payload: Json }
+        Returns: string
+      }
+      delete_company_if_unused: {
+        Args: { _company: string; _org: string }
         Returns: string
       }
       disable_failing_webhooks: { Args: never; Returns: number }
