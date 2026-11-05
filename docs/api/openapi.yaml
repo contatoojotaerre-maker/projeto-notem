@@ -49,7 +49,7 @@ components:
     chaveIntegracao:
       type: http
       scheme: bearer
-      description: "Chave da integração: ntm_homolog_... (homologação) ou ntm_prod_... (produção)."
+      description: "Chave da integração: ntm_homolog_... (homologação) ou ntm_prod_... (produção). Não expira; vale até ser revogada (efeito imediato). Até duas chaves ativas por integração e ambiente."
   headers:
     XRequestId:
       description: Identificador da requisição (informe ao suporte)

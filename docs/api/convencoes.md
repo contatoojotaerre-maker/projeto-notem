@@ -10,6 +10,8 @@ Estas regras valem para **todas** as rotas. Em caso de dúvida, elas prevalecem 
 ## 2. Autenticação e ambientes
 - Cada **integração** de uma organização tem **uma chave por ambiente**:
 - Durante a troca, são permitidas até **duas chaves ativas por integração e ambiente**. Gere a nova, atualize o sistema parceiro e revogue a antiga.
+- **Chaves não expiram**: valem até serem revogadas. A revogação tem efeito imediato. Não há revogação automática nem prazo.
+- Ao criar uma organização, a notem cria automaticamente uma integração com o mesmo nome, sem chaves. Ela pode ser renomeada, e outras integrações podem ser criadas.
   - Homologação: começa com `ntm_homolog_`
   - Produção: começa com `ntm_prod_`
 - Enviar em todas as chamadas: `Authorization: Bearer {chave}`.

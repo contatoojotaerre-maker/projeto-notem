@@ -14,7 +14,9 @@ Esta pasta é a **fonte da verdade** da API pública da notem. A página públic
 Toda rota nova ou alterada da API deve atualizar `openapi.yaml` (e, se necessário, `convencoes.md` e `glossario.md`) **no mesmo trabalho** em que o código é alterado. Uma rota sem especificação é considerada incompleta.
 
 ## Endereços
-Endereço oficial: `https://app.notemfiscal.com.br/api/v1`. Acesso externo sem sessão confirmado em `/status`, com resposta 401 JSON (`AUTENTICACAO_INVALIDA`) e `X-Request-Id` para chamada sem chave.
+Endereço oficial: `https://app.notemfiscal.com.br/api/v1`.
+
+Chaves de integração não expiram (valem até a revogação, que é imediata); até duas ativas por ambiente para troca sem interrupção. Cada nova organização recebe uma integração padrão com o mesmo nome, sem chaves. Acesso externo sem sessão confirmado em `/status`, com resposta 401 JSON (`AUTENTICACAO_INVALIDA`) e `X-Request-Id` para chamada sem chave.
 
 ## Registro e retenção
 Os registros são sanitizados, limitados a 64 KB por corpo e removidos automaticamente após 90 dias por tarefa SQL diária às 03:00 UTC. A gravação usa `waitUntil` quando disponibilizado pela requisição; caso contrário, é aguardada antes da resposta. O cabeçalho `Server-Timing` identifica o modo e, no modo síncrono, o tempo da gravação. `waitUntil` confirmado na publicação: resposta com `api-log;desc="background"` e registro correspondente confirmado no banco. Não há espera síncrona pela gravação no ambiente hospedado validado.

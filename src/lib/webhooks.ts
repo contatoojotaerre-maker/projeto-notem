@@ -43,3 +43,6 @@ function validarAssinatura(cabecalho, corpoBruto, segredo) {
     return crypto.timingSafeEqual(esperado, recebido);
   });
 }`
+export type CurlShell='bash'|'powershell'
+/** Ready-to-run example of a delivery; signature is illustrative and the authorization value is always masked. */
+export function webhookCurl(shell:CurlShell,input:{url:string,type:typeof webhookTypes[number],environment:'sandbox'|'production',organization_id:string,integration_id:string,auth_header?:string|null}){const body=webhookExample(input.type,input.environment,input.organization_id,input.integration_id);const headers:[string,string][]=[['Content-Type','application/json; charset=utf-8'],['Notem-Evento',input.type],['Notem-Evento-Id','evt_00000000000000000000000000000000'],['Notem-Entrega-Id','whd_00000000000000000000000000000000'],['Notem-Assinatura','t=1762344000,v1=ASSINATURA_ILUSTRATIVA']];if(input.auth_header)headers.push([input.auth_header,'••••••••']);const q=(v:string)=>shell==='bash'?`'${v.replaceAll("'","'\\''")}'`:`'${v.replaceAll("'","''")}'`;const cont=shell==='bash'?' \\':' `';const cmd=shell==='bash'?'curl':'curl.exe';const data=shell==='bash'?q(body):q(body.replaceAll('"','\\"'));return [`${cmd} -X POST ${q(input.url||'https://seu-endereco.exemplo/webhook')}`,...headers.map(([k,v])=>`  -H ${q(`${k}: ${v}`)}`),`  --data-raw ${data}`].join(cont+'\n')}
