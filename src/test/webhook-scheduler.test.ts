@@ -34,4 +34,16 @@ describe('Google Scheduler OIDC', () => {
       .setSubject('123456').setIssuedAt().setExpirationTime('5m').sign(signing.privateKey)
     expect(await verifyScheduler(new Request(schedulerAudience, { headers: { Authorization: `Bearer ${token}` } }), account)).toBe(false)
   })
+  it('rejects another issuer', async () => {
+    const token = await new SignJWT({ email, email_verified: true }).setProtectedHeader({ alg: 'RS256' })
+      .setIssuer('https://untrusted.example').setAudience(schedulerAudience)
+      .setSubject('123456').setIssuedAt().setExpirationTime('5m').sign(signing.privateKey)
+    expect(await verifyScheduler(new Request(schedulerAudience, { headers: { Authorization: `Bearer ${token}` } }), account)).toBe(false)
+  })
+  it('rejects an expired token', async () => {
+    const token = await new SignJWT({ email, email_verified: true }).setProtectedHeader({ alg: 'RS256' })
+      .setIssuer('https://accounts.google.com').setAudience(schedulerAudience)
+      .setSubject('123456').setIssuedAt().setExpirationTime(Math.floor(Date.now()/1000)-60).sign(signing.privateKey)
+    expect(await verifyScheduler(new Request(schedulerAudience, { headers: { Authorization: `Bearer ${token}` } }), account)).toBe(false)
+  })
 })
