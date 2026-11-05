@@ -15,6 +15,6 @@ export async function verifyScheduler(request: Request, accountJson: string | un
       algorithms: ['RS256'], issuer: ['https://accounts.google.com', 'accounts.google.com'],
       audience: schedulerAudience, maxTokenAge: '1h', clockTolerance: 30,
     })
-    return payload.email === email && payload.email_verified === true && typeof payload.sub === 'string'
+    return payload['email'] === email && payload['email_verified'] === true && typeof payload.sub === 'string'
   } catch { return false }
 }
