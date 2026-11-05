@@ -32,6 +32,4 @@ export function pageHead(title: string, description = 'Gestão de organizações
 export type OrganizationType = typeof organizationTypes[number];
 export const organizationTypeLabels: Record<OrganizationType,string> = { partner: 'Sistema parceiro', company: 'Empresa ou grupo' };
 export const organizationTypeDescriptions: Record<OrganizationType,string> = { partner: 'Integra pela API e emite para as empresas clientes dele (ex.: OneDesp, VistoCash).', company: 'Emite notas para os próprios CNPJs (ex.: Grupo Jota).' };
-export const slugify = (value: string) => value.normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase().replace(/[^a-z0-9]+/g,'-').replace(/^-+|-+$/g,'').slice(0,50).replace(/-+$/,'');
-export const slugSchema = z.string().min(3,'Informe um endereço com pelo menos 3 caracteres').max(50,'O endereço pode ter no máximo 50 caracteres').regex(/^[a-z0-9]+(-[a-z0-9]+)*$/,'Use apenas letras minúsculas, números e hífen.');
-export const organizationSchema = z.object({ name: z.string().trim().min(1,'Informe o nome.'), slug: slugSchema, type: z.enum(organizationTypes,{ message: 'Selecione o tipo de organização.' }) });
+export const organizationSchema = z.object({ name: z.string().trim().min(1,'Informe o nome.'), type: z.enum(organizationTypes,{ message: 'Selecione o tipo de organização.' }) });
