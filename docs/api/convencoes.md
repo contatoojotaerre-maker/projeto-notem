@@ -113,4 +113,4 @@ Códigos específicos de cada rota (ex.: `CERTIFICADO_VENCIDO`) são documentado
 - Nunca envie a chave em parâmetros de URL.
 - Certificados digitais enviados pela API nunca são devolvidos em nenhuma resposta.
 
-Implementação inicial de webhooks: configuração e `webhook.teste` pelo painel; eventos fiscais reais entram nas próximas fases. A API v1 não ganhou endpoints de gerenciamento de webhooks. O agendador interno, separado do contrato v1, está documentado em `agendador-webhooks.md`.
+Implementação inicial de webhooks: configuração e `webhook.teste` pelo painel; eventos fiscais reais entram nas próximas fases. A API v1 não tem endpoints de gerenciamento de webhooks. Rotas de empresas (Fase 3B): ver `empresas.md`. O agendador interno, separado do contrato v1, está documentado em `agendador-webhooks.md`.
