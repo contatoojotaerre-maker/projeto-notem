@@ -69,3 +69,6 @@ export async function runDailyRoutine(db: DB, now = Date.now()) {
   const stamp = new Date(now).toISOString(); await db.from('system_heartbeats').upsert({ name: 'daily_routine', last_success_at: stamp, updated_at: stamp });
   return { ran: true, notices };
 }
+
+/** After panel changes: recompute readiness with the service client; webhook events stay queued for the scheduler. */
+export async function panelRefreshReadiness(companyId: string) { const { supabaseAdmin } = await import('@/integrations/supabase/client.server'); await refreshReadiness(supabaseAdmin, companyId); }

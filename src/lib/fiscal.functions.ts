@@ -21,13 +21,13 @@ export const saveFiscalSettings = createServerFn({method:'POST'}).middleware([re
  // On insertion null is intentionally accepted by the BEFORE trigger and replaced atomically before NOT NULL validation.
  const r=current.data ? await context.supabase.from('company_fiscal_settings').update({...fields,...(dps_series===null?{}:{dps_series})}).eq('company_id',data.company_id).eq('organization_id',data.organization_id).select('*').single() : await context.supabase.from('company_fiscal_settings').insert({...data,cnpj:'',created_by:context.userId,updated_by:context.userId,dps_series:data.dps_series as number}).select('*').single();
  if(r.error)throw new Error(r.error.code==='23505'?'Esta série DPS já está reservada para este CNPJ em outra empresa.':'Não foi possível salvar. Confira os dados e tente novamente.');
- const {panelRefreshReadiness}=await import('./notem.functions');await panelRefreshReadiness(data.company_id);
+ const {panelRefreshReadiness}=await import('./readiness.server');await panelRefreshReadiness(data.company_id);
  return r.data;
 });
 export const saveServiceProfile = createServerFn({method:'POST'}).middleware([requireSupabaseAuth]).inputValidator(serviceProfileSchema).handler(async({context,data})=>{
  const {id,...fields}=data;
  const r=id?await context.supabase.from('company_service_profiles').update(fields).eq('id',id).eq('company_id',data.company_id).eq('organization_id',data.organization_id).select('id').single():await context.supabase.from('company_service_profiles').insert({...fields,created_by:context.userId,updated_by:context.userId}).select('id').single();
- if(r.error)throw new Error(r.error.code==='23503'?'Selecione códigos existentes nos catálogos oficiais.':'Não foi possível salvar o perfil. Confira os campos e sua permissão.');const {panelRefreshReadiness}=await import('./notem.functions');await panelRefreshReadiness(data.company_id);return r.data;
+ if(r.error)throw new Error(r.error.code==='23503'?'Selecione códigos existentes nos catálogos oficiais.':'Não foi possível salvar o perfil. Confira os campos e sua permissão.');const {panelRefreshReadiness}=await import('./readiness.server');await panelRefreshReadiness(data.company_id);return r.data;
 });
 export const searchFiscalCatalog = createServerFn({method:'POST'}).middleware([requireSupabaseAuth]).inputValidator(z.object({catalog:z.enum(catalogNames),search:z.string().max(200)})).handler(async({context,data})=>{
  const exists=await context.supabase.from(data.catalog).select('code').limit(1);if(exists.error)throw new Error('Não foi possível consultar o catálogo.');
