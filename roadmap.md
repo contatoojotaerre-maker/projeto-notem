@@ -5,7 +5,7 @@
 - [x] Aplicar plano aprovado: HTTPS/DNS sem IP pinning, quatro tabelas/RLS, motor de assinaturas/entregas, telas e docs. Testes de banco com rollback passaram (8 tentativas, reenvio, corpo preservado, sucesso limpa falha, desativação/alerta 3 dias, grants/RLS); 101 testes locais passaram.
 - [ ] Criar tarefa Google Cloud Scheduler a cada minuto — depende do proprietário; configuração em docs/api/agendador-webhooks.md.
 - [ ] Validar cadastro, teste e leitura em tela autenticada com receptor real — Supabase externo sem sessão de teste gerenciada; navegador redirecionou para /entrar, sem erros.
-- [ ] Confirmar publicação definitiva e processamento OIDC externo.
+- [ ] Confirmar publicação definitiva e processamento OIDC externo — republicação solicitada; chamadas externas ainda serviram o diagnóstico anterior, não o motor definitivo.
 
 ## Fase 3A — Integrações e primeira rota da API
 - [x] Plano aprovado; testar /api/v1 primeiro, adotar /api/public/v1 sem aliases apenas se bloqueado, atualizando somente a base do contrato.
