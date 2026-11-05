@@ -2,7 +2,7 @@ import { createServerFn } from '@tanstack/react-start';
 import { z } from 'zod';
 import { appLink } from '@/lib/app-url';
 import { requireSupabaseAuth } from '@/integrations/supabase/auth-middleware';
-import { companySchema, roles, organizationSchema, slugSchema } from './notem';
+import { companySchema, roles, organizationSchema } from './notem';
 import { municipalitySearchTerm } from './municipality-search';
 import { CNPJ_LOCK_MESSAGE } from './fiscal';
 
@@ -70,7 +70,10 @@ export const searchMunicipalities = createServerFn({method:'POST'}).middleware([
   return { rows: result.data ?? [], catalogEmpty };
 });
 export const createOrganization = createServerFn({method:'POST'}).middleware([requireSupabaseAuth]).inputValidator(organizationSchema).handler(async({context,data})=>{
-  const result=await context.supabase.from('organizations').insert({...data,created_by:context.userId}).select('*').single();if(result.error)throw new Error(result.error.code==='23505'?'Este endereço já está em uso. Escolha outro.':'Você não pode criar esta organização.');return result.data;
+  // The database generates the immutable panel address; names may repeat.
+  const result=await context.supabase.from('organizations').insert({name:data.name,type:data.type,created_by:context.userId}).select('*').single();if(result.error)throw new Error('Você não pode criar esta organização.');
+  const same=await context.supabase.from('organizations').select('id',{count:'exact',head:true}).ilike('name',data.name.replace(/[\\%_]/g,m=>'\\'+m)).neq('id',result.data.id);
+  return {...result.data,duplicateName:!same.error&&(same.count??0)>0};
 });
 export const renameOrganization = createServerFn({method:'POST'}).middleware([requireSupabaseAuth]).inputValidator(z.object({id:z.string().uuid(),name:z.string().trim().min(1)})).handler(async({context,data})=>{
   const result=await context.supabase.from('organizations').update({name:data.name}).eq('id',data.id).select('id').single();if(result.error)throw new Error('Não foi possível alterar a organização.');return result.data;
@@ -89,7 +92,4 @@ export const inviteFirstMember = createServerFn({method:'POST'}).middleware([req
   const result=await supabaseAdmin.from('invitations').insert({...data,invited_by:context.userId,requires_explicit_acceptance:exists}).select('id').single();if(result.error)throw new Error(result.error.code==='23505'?'Já existe um convite pendente para este e-mail.':'Não foi possível enviar o convite. Tente novamente.');
   if(!exists){const sent=await supabaseAdmin.auth.admin.inviteUserByEmail(data.email,{redirectTo:appLink('/definir-senha')});if(sent.error){await supabaseAdmin.from('invitations').update({status:'revoked'}).eq('id',result.data.id);throw new Error('O e-mail não foi enviado. Verifique as configurações de envio no Supabase e tente novamente.');}}
   return {existing:exists,notice:exists?'Convite pendente. O usuário poderá aceitá-lo ao entrar. O aviso por e-mail aguarda a configuração do domínio de envio.':'Convite enviado por e-mail.'};
-});export const checkOrganizationSlug = createServerFn({method:'POST'}).middleware([requireSupabaseAuth]).inputValidator(z.object({slug:slugSchema})).handler(async({context,data})=>{
-  const admin=await context.supabase.rpc('is_platform_admin');if(admin.error||!admin.data)throw new Error('Acesso não autorizado.');
-  const result=await context.supabase.from('organizations').select('id').eq('slug',data.slug).limit(1);if(result.error){console.error('notem: database error',result.error.code);throw new Error('Não foi possível carregar ou salvar os dados. Tente novamente.')};return {available:!result.data?.length};
 });
