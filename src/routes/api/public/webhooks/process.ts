@@ -6,22 +6,16 @@ export const Route = createFileRoute('/api/public/webhooks/process')({
     if (!await verifyScheduler(request, process.env['GOOGLE_SERVICE_ACCOUNT_JSON'])) {
       return Response.json({ erro: 'AUTENTICACAO_INVALIDA' }, { status: 401, headers: { 'Cache-Control': 'no-store' } })
     }
-    const id = `req_${crypto.randomUUID().replaceAll('-', '')}`
-    const waitUntil = (request as Request & { waitUntil?: (promise: Promise<unknown>) => void }).waitUntil
-    if (typeof waitUntil !== 'function') {
-      return Response.json({ erro: 'EXECUCAO_EM_SEGUNDO_PLANO_INDISPONIVEL' }, { status: 503 })
-    }
+    const master = process.env['WEBHOOK_ENCRYPTION_KEY']
+    if (!master) return Response.json({ erro: 'CONFIGURACAO_INDISPONIVEL' }, { status: 503 })
     const { supabaseAdmin } = await import('@/integrations/supabase/client.server')
-    const work = async () => {
-      const result = await supabaseAdmin.from('api_request_logs').insert({
-        id, method: 'POST', path: '/api/public/webhooks/process', status_code: 200,
-        duration_ms: 0, response_body: { diagnostico: 'waitUntil', autenticacao: 'google-oidc' },
-      })
-      if (result.error) console.error('WEBHOOK_SCHEDULER_PROBE_FAILED', id)
+    const { processWebhookBatch } = await import('@/lib/webhooks.server')
+    try {
+      const result = await processWebhookBatch(supabaseAdmin, master)
+      return Response.json(result, { headers: { 'Cache-Control': 'no-store' } })
+    } catch {
+      console.error('WEBHOOK_SCHEDULER_FAILED')
+      return Response.json({ erro: 'PROCESSAMENTO_FALHOU' }, { status: 503 })
     }
-    waitUntil.call(request, work())
-    return Response.json({ id, autenticacao: 'google-oidc', execucao: 'waitUntil', diagnostico: true }, {
-      headers: { 'Cache-Control': 'no-store', 'Server-Timing': 'webhook;desc="background"' },
-    })
   } } },
 })
