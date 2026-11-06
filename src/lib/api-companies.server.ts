@@ -1,6 +1,7 @@
 // Business handlers for /api/v1 empresas and catalogos. Organization always comes from the key.
 import { apiAudit, loadCompany, type ApiCtx, type ApiResult } from './api.server';
 import { certificateIn, certificateOut, companyCreate, companyIn, companyOut, companyPatch, fail, fiscalIn, fiscalOut, fiscalToDb, page, pageParams, parseBody, serviceCreate, serviceOut, servicePatch, serviceToDb, transmissorToContract, type CompanyRow, type FiscalRow, type ServiceRow } from './api-contract';
+import { fiscalDbDetail } from './api-contract';
 import { CNPJ_LOCK_MESSAGE, validReadinessCertificate } from './fiscal';
 import { AGREEMENT_COOLDOWN_MS, MAX_CERTIFICATE_BYTES, toTransmissorEnvironment } from './certificates';
 import { municipalitySearchTerm } from './municipality-search';
@@ -54,6 +55,10 @@ export async function deleteCompany(ctx: ApiCtx): Promise<ApiResult> {
 }
 
 // ---------- Configuração fiscal ----------
+function fiscalWriteError(e: { code?: string; message: string }): never {
+  const detail = fiscalDbDetail(e); if (detail) throw fail(422, 'REGRA_DE_NEGOCIO', [detail]);
+  console.error('FISCAL_WRITE_FAILED', e.code, e.message); throw new Error('FISCAL_WRITE_FAILED');
+}
 export async function getFiscal(ctx: ApiCtx): Promise<ApiResult> {
   const c = await loadCompany(ctx); const r = await ctx.db.from('company_fiscal_settings').select('*').eq('company_id', c.id).maybeSingle();
   if (r.error) throw new Error('FISCAL_READ_FAILED'); if (!r.data) throw fail(404, 'NAO_ENCONTRADO', [], 'A empresa ainda não tem configuração fiscal.');
@@ -66,7 +71,7 @@ export async function putFiscal(ctx: ApiCtx): Promise<ApiResult> {
   const r = current.data
     ? await ctx.db.from('company_fiscal_settings').update({ ...fields, ...apiAudit(ctx) } as never).eq('company_id', company_id).eq('organization_id', organization_id).select('*').single()
     : await ctx.db.from('company_fiscal_settings').insert({ ...fields, company_id, organization_id, cnpj: '', dps_series: null as unknown as number, created_by: ctx.actor, ...apiAudit(ctx) } as never).select('*').single();
-  if (r.error) { if (r.error.code === 'P0001' || r.error.code === '23514') throw fail(422, 'REGRA_DE_NEGOCIO', [{ campo: 'corpo', mensagem: 'A combinação de valores não é permitida pelas regras fiscais.' }]); throw new Error('FISCAL_WRITE_FAILED'); }
+  if (r.error) fiscalWriteError(r.error);
   refresh(ctx, c.id); return { status: 200, body: fiscalOut(r.data as unknown as FiscalRow) };
 }
 
