@@ -318,6 +318,7 @@ components:
       description: Mesmos campos de EmpresaEntrada, todos opcionais (endereco aceita campos parciais)
       allOf: [{ $ref: "#/components/schemas/EmpresaEntrada" }]
     Empresa:
+      description: Na resposta, campos de texto não preenchidos (nome_fantasia, inscricao_municipal, email, telefone, endereco.complemento etc.) saem como null, nunca como texto vazio.
       allOf:
         - { $ref: "#/components/schemas/EmpresaEntrada" }
         - type: object
