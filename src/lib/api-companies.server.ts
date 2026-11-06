@@ -1,7 +1,6 @@
 // Business handlers for /api/v1 empresas and catalogos. Organization always comes from the key.
 import { apiAudit, loadCompany, type ApiCtx, type ApiResult } from './api.server';
-import { certificateIn, certificateOut, companyCreate, companyIn, companyOut, companyPatch, fail, fiscalIn, fiscalOut, fiscalToDb, page, pageParams, parseBody, serviceCreate, serviceOut, servicePatch, serviceToDb, transmissorToContract, type CompanyRow, type FiscalRow, type ServiceRow } from './api-contract';
-import { fiscalDbDetail } from './api-contract';
+import { certificateIn, certificateOut, companyCreate, companyIn, companyOut, companyPatch, fail, fiscalDbDetail, fiscalIn, fiscalOut, fiscalToDb, page, pageParams, parseBody, serviceCreate, serviceOut, servicePatch, serviceToDb, transmissorToContract, type CompanyRow, type FiscalRow, type ServiceRow } from './api-contract';
 import { CNPJ_LOCK_MESSAGE, validReadinessCertificate } from './fiscal';
 import { AGREEMENT_COOLDOWN_MS, MAX_CERTIFICATE_BYTES, toTransmissorEnvironment } from './certificates';
 import { municipalitySearchTerm } from './municipality-search';

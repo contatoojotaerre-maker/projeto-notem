@@ -104,7 +104,7 @@ const fiscalConstraintMap: Record<string, { campo: string; mensagem: string }> =
 const fiscalTriggerMap: [RegExp, string][] = [[/E0713/, 'tributos_aproximados'], [/alíquota do ISS/i, 'aliquota_iss_simples'], [/série/i, 'serie_dps']];
 /** Maps a database refusal on company_fiscal_settings to the contract field; never returns "corpo". */
 export function fiscalDbDetail(e: { code?: string; message: string }): { campo: string; mensagem: string } | null {
-  if (e.code === '23514') { const name = Object.keys(fiscalConstraintMap).sort((a, b) => b.length - a.length).find(k => e.message.includes(k)); return name ? fiscalConstraintMap[name] : null; }
+  if (e.code === '23514') { const name = Object.keys(fiscalConstraintMap).sort((a, b) => b.length - a.length).find(k => e.message.includes(`"${k}"`)); return name ? fiscalConstraintMap[name] : null; }
   if (e.code === 'P0001') { const hit = fiscalTriggerMap.find(([re]) => re.test(e.message)); return hit ? { campo: hit[1], mensagem: e.message } : null; }
   return null;
 }
