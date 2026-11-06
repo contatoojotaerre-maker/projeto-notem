@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { ApiFailure, bodyHash, certificateOut, companyCreate, companyIn, computeReadiness, expiryMilestone, fiscalIn, fiscalOut, fiscalToDb, idempotencyKey, page, pageParams, serviceOut, serviceToDb } from '@/lib/api-contract';
+import { ApiFailure, bodyHash, certificateOut, companyCreate, companyIn, companyOut, computeReadiness, expiryMilestone, fiscalDbDetail, fiscalIn, fiscalOut, fiscalToDb, idempotencyKey, page, pageParams, serviceOut, serviceToDb } from '@/lib/api-contract';
 import { logBody } from '@/lib/api.server';
 import { sanitizeBody } from '@/lib/integrations';
 import { decodeCertificate } from '@/lib/api-companies.server';
@@ -13,6 +13,21 @@ describe('configuração fiscal pela API', () => {
     const db = fiscalToDb(v, ids, 1);
     expect([db.simples_nacional_option, db.simples_nacional_regime, db.special_tax_regime, db.approx_taxes_mode, db.approx_simples_percent]).toEqual([3, 1, 9, 'percent_simples', 6]);
     expect(fiscalOut({ ...db, dps_series: 1 }).serie_dps).toBe('00001');
+  });
+  it('aceita o corpo exato do teste externo (ME/EPP, percentual_simples "6.00", ISS null)', () => {
+    const body = { simples_nacional: 'me_epp', regime_apuracao_simples: 'dentro_do_simples', regime_especial: 'nenhum', tributos_aproximados: { modo: 'percentual_simples', percentual_simples: '6.00' }, aliquota_iss_simples: null };
+    const db = fiscalToDb(fiscalIn.parse(body), ids, null);
+    expect([db.approx_simples_percent, db.approx_federal_percent, db.approx_state_percent, db.approx_municipal_percent, db.simples_iss_withholding_percent]).toEqual([6, null, null, null, null]);
+    expect(fiscalOut({ ...db, dps_series: 1 }).tributos_aproximados.percentual_simples).toBe('6.00');
+  });
+  it('recusa do banco aponta o campo do contrato, nunca "corpo"', () => {
+    expect(fiscalDbDetail({ code: '23514', message: 'new row for relation "company_fiscal_settings" violates check constraint "company_fiscal_settings_check1"' })?.campo).toBe('tributos_aproximados');
+    expect(fiscalDbDetail({ code: '23514', message: 'violates check constraint "company_fiscal_settings_check"' })?.campo).toBe('regime_apuracao_simples');
+    expect(fiscalDbDetail({ code: 'P0001', message: 'Informe a alíquota do ISS entre 1,80% e 9,99%, com até duas casas decimais.' })?.campo).toBe('aliquota_iss_simples');
+  });
+  it('textos vazios da empresa saem como null', () => {
+    const out = companyOut({ municipal_registration: '', trade_name: '', email: '', phone: '', complement: '' } as never);
+    expect([out.inscricao_municipal, out.nome_fantasia, out.email, out.telefone, out.endereco.complemento]).toEqual([null, null, null, null, null]);
   });
   it('E0713: não optante não pode usar nao_informar', () => {
     const v = fiscalIn.parse({ simples_nacional: 'nao_optante', regime_especial: 'nenhum', tributos_aproximados: { modo: 'nao_informar' } });

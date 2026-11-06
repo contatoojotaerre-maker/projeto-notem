@@ -53,8 +53,8 @@ export const companyCreate = z.object({ ...companyBase, endereco: address }).str
 export const companyPatch = z.object({ ...companyBase, endereco: address.partial().strict() }).partial().strict();
 export type CompanyRow = { id: string; external_id: string | null; cnpj: string; legal_name: string; trade_name: string; municipal_registration: string; email: string; phone: string; postal_code: string; street: string; number: string; complement: string; district: string; municipality_ibge_code: string; state: string; active: boolean; created_at: string; updated_at: string; municipalities?: { name: string } | null };
 export function companyOut(c: CompanyRow) {
-  return { id: c.id, id_externo: c.external_id, cnpj: c.cnpj, razao_social: c.legal_name, nome_fantasia: c.trade_name, inscricao_municipal: c.municipal_registration, email: c.email, telefone: c.phone,
-    endereco: { cep: c.postal_code, logradouro: c.street, numero: c.number, complemento: c.complement || null, bairro: c.district, codigo_municipio: c.municipality_ibge_code, municipio: c.municipalities?.name ?? null, uf: c.state },
+  return { id: c.id, id_externo: c.external_id, cnpj: c.cnpj, razao_social: c.legal_name, nome_fantasia: c.trade_name || null, inscricao_municipal: c.municipal_registration || null, email: c.email || null, telefone: c.phone || null,
+    endereco: { cep: c.postal_code || null, logradouro: c.street || null, numero: c.number || null, complemento: c.complement || null, bairro: c.district || null, codigo_municipio: c.municipality_ibge_code, municipio: c.municipalities?.name ?? null, uf: c.state || null },
     ativa: c.active, criada_em: isoBr(c.created_at), atualizada_em: isoBr(c.updated_at) };
 }
 export function companyIn(v: z.infer<typeof companyPatch>) {
@@ -87,6 +87,26 @@ export function fiscalToDb(v: z.infer<typeof fiscalIn>, ids: { company_id: strin
   const r = fiscalSchema.safeParse(row);
   if (!r.success) throw fail(422, 'REGRA_DE_NEGOCIO', zodDetails(r.error, fiscalFieldMap));
   return r.data;
+}
+const fiscalConstraintMap: Record<string, { campo: string; mensagem: string }> = {
+  company_fiscal_settings_check: { campo: 'regime_apuracao_simples', mensagem: 'Informe o regime de apuração apenas para ME/EPP (obrigatório nesse caso).' },
+  company_fiscal_settings_check1: { campo: 'tributos_aproximados', mensagem: 'Os percentuais não combinam com o modo escolhido: percentual_simples exige só percentual_simples (MEI ou ME/EPP); percentual_por_esfera exige federal, estadual e municipal; nao_informar não aceita percentuais.' },
+  company_fiscal_settings_approx_simples_percent_check: { campo: 'tributos_aproximados.percentual_simples', mensagem: 'Informe um percentual entre 0 e 100.' },
+  company_fiscal_settings_approx_federal_percent_check: { campo: 'tributos_aproximados.federal', mensagem: 'Informe um percentual entre 0 e 100.' },
+  company_fiscal_settings_approx_state_percent_check: { campo: 'tributos_aproximados.estadual', mensagem: 'Informe um percentual entre 0 e 100.' },
+  company_fiscal_settings_approx_municipal_percent_check: { campo: 'tributos_aproximados.municipal', mensagem: 'Informe um percentual entre 0 e 100.' },
+  company_fiscal_settings_approx_taxes_mode_check: { campo: 'tributos_aproximados.modo', mensagem: 'Modo de tributos aproximados inválido.' },
+  company_fiscal_settings_simples_nacional_option_check: { campo: 'simples_nacional', mensagem: 'Opção do Simples Nacional inválida.' },
+  company_fiscal_settings_simples_nacional_regime_check: { campo: 'regime_apuracao_simples', mensagem: 'Regime de apuração inválido.' },
+  company_fiscal_settings_special_tax_regime_check: { campo: 'regime_especial', mensagem: 'Regime especial inválido.' },
+  company_fiscal_settings_dps_series_check: { campo: 'serie_dps', mensagem: 'A série DPS deve estar entre 00001 e 49999.' },
+};
+const fiscalTriggerMap: [RegExp, string][] = [[/E0713/, 'tributos_aproximados'], [/alíquota do ISS/i, 'aliquota_iss_simples'], [/série/i, 'serie_dps']];
+/** Maps a database refusal on company_fiscal_settings to the contract field; never returns "corpo". */
+export function fiscalDbDetail(e: { code?: string; message: string }): { campo: string; mensagem: string } | null {
+  if (e.code === '23514') { const name = Object.keys(fiscalConstraintMap).sort((a, b) => b.length - a.length).find(k => e.message.includes(`"${k}"`)); return name ? fiscalConstraintMap[name] : null; }
+  if (e.code === 'P0001') { const hit = fiscalTriggerMap.find(([re]) => re.test(e.message)); return hit ? { campo: hit[1], mensagem: e.message } : null; }
+  return null;
 }
 export type FiscalRow = { simples_nacional_option: number; simples_nacional_regime: number | null; special_tax_regime: number; dps_series: number | null; approx_taxes_mode: string; approx_simples_percent: number | null; approx_federal_percent: number | null; approx_state_percent: number | null; approx_municipal_percent: number | null; simples_iss_withholding_percent: number | null };
 export function fiscalOut(s: FiscalRow) {
