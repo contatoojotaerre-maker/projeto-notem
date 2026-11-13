@@ -3,7 +3,7 @@
 ## Plano final para aprovação — cinco partes
 Nenhuma implementação, migração ou publicação será feita antes da aprovação. Nada dentro de `transmissor/` será criado, editado, movido ou apagado.
 
-**Fontes conferidas:** contrato de notas e LEIAME do transmissor v2 pelo anexo autorizado como fonte até a sincronização normalizar; convenções, empresas e webhooks do projeto; Anexo I e XSD **1.01**. A sincronização com a main continua não verificada; não é necessária para planejar com o anexo.
+**Fontes conferidas:** contrato de notas e LEIAME do transmissor v2 pelo anexo autorizado como fonte até a sincronização normalizar; convenções, empresas e webhooks do projeto; Anexo I e XSD **1.01**. Sincronização da main não verificada; o anexo permite planejar.
 
 ## Decisões incorporadas
 - **Identificador DPS:** CPF = 1, **CNPJ = 2**, com 45 caracteres, conforme o Anexo I. O XSD original permite DPS sem assinatura.
@@ -42,9 +42,9 @@ Nenhuma implementação, migração ou publicação será feita antes da aprova�
 
 ### Parte 3 — Emissão segura e idempotência
 - `POST /api/v1/notas` exige Idempotency-Key; validar pedido e prontidão pelo cálculo compartilhado antes de numerar.
-- Persistir a associação entre chave, hash e nota, com proteção concorrente e recuperação após interrupção; coordenar reserva e registro para que o número reservado fique vinculado ao pedido antes de nova tentativa. Uma reserva sem registro concluído pode deixar lacuna, mas nunca ser devolvida ou reutilizada. Não permitir duas emissões para o mesmo pedido nem reservar outro número na repetição.
+- Persistir a associação entre chave, hash e nota, com controle concorrente e recuperação; vincular a reserva ao pedido antes de nova tentativa. Falha entre reserva e registro deixa lacuna, nunca devolução/reutilização. Repetição não cria nova nota nem reserva outro número.
 - Reservar definitivamente, guardar nota e DPS sem assinatura para reenvio idêntico; registrar transições seguras na linha do tempo.
-- Chamar `/v1/nfse/emitir` com organização/empresa/envelope/ambiente, `dps_xml`, `algoritmo_assinatura: rsa-sha256` e `tempo_limite_segundos: 18`; preservar `dps_assinada` e interpretar `resposta.status`, `corpo_json`/`corpo_texto` ou `erro`. Limitar também a espera da chamada, sem prometer que autenticação/rede caberão exatamente em 20 segundos; ele assina e transmite. Auditar o uso do certificado sem material secreto.
+- Chamar `/v1/nfse/emitir` com organização/empresa/envelope/ambiente, `dps_xml`, `algoritmo_assinatura: rsa-sha256` e `tempo_limite_segundos: 18`; preservar `dps_assinada` e interpretar `resposta.status`, `corpo_json`/`corpo_texto` ou `erro`. Limitar a espera total; autenticação/rede podem exceder os cerca de 20 segundos; ele assina e transmite. Auditar o uso do certificado sem material secreto.
 - Tratar 201 autorizado, 400 rejeitado, 403 certificado, 500/timeout/conexão após envio em verificação, conforme o brief e o contrato, com erros por campo e nota_id.
 - Só reenviar diretamente quando houver evidência contratual de que não houve envio; falha ambígua vai para verificação para evitar duplicação. Uma conexão interrompida com o transmissor não prova que ele não enviou ao governo.
 - Persistir transição e intenção de webhook de forma atômica ou recuperável, com deduplicação; `nota.autorizada`/`nota.rejeitada` recebem o objeto completo da nota e respeitam organização, integração, ambiente e empresa.
@@ -65,15 +65,14 @@ Nenhuma implementação, migração ou publicação será feita antes da aprova�
 - Atualizar `openapi.yaml`, `notas.md`, `webhooks.md`, convenções quando necessário, documento do agendador e exemplos de eventos de nota/curl.
 - Registrar decisões estruturais no AGENTS.md; publicar somente após implementação aprovada e validações, para o teste real do proprietário.
 
-## Detalhes técnicos e validação
-- Código de produção: módulos TypeScript separados para esquemas, montador XML, leitura XML, persistência/transições, cliente do transmissor e verificações; rotas usam o núcleo `apiRoute` existente.
-- Produção usa biblioteca XML JavaScript compatível com o ambiente hospedado (proposta: `fast-xml-parser`, com entidades externas recusadas). Não executar ferramentas nativas de validação XSD no servidor.
-- Testes XSD: **Python lxml/libxml2**, disponível no ambiente de testes, chamado pelo conjunto de testes local; usar somente os arquivos da pasta 1.01 do ZIP oficial e resolver includes/imports localmente, sem rede. Guardar o teste no projeto.
-- Testes concretos: Id/CNPJ=2; limites/séries/números; ambiente; datas; escape; tomador ausente/PF/PJ/estrangeiro; alíquota permitida/proibida; E0713; decimais sem arredondamento binário; XML inválido rejeitado pelo XSD.
-- Emissão com transmissor simulado: 201/400/403/500, timeout, falha comprovadamente anterior ao envio, resposta ambígua, corpo diferente com mesma chave, concorrência, repetição em processamento/verificação e mesmo número/DPS após 503.
-- Rotina: chave encontrada, consulta XML, 404 antes/depois de 15 minutos, conexão falhando e transição/webhook sem duplicação.
-- Banco com reversão: grants/RLS, isolamento entre organizações, unicidade por escopo, número nunca devolvido, exclusão com histórico e proteção concorrente quando houver conexão de teste adequada.
-- Não considerar testes simulados como prova de emissão real. Teste real com A1 e primeira nota em produção será feito pelo proprietário; interface autenticada permanecerá “não verificada” se não houver sessão de teste disponível.
+## Detalhes técnicos e testes
+- Módulos separados de esquemas, montagem/leitura XML, persistência/transições, transmissor e verificação; API usa `apiRoute`. Produção: fast-xml-parser sem DTD/entidades externas, nenhum validador nativo.
+- Testes XSD: Python lxml/libxml2, usando só 1.01 do ZIP oficial, includes/imports locais sem rede; manter teste no projeto.
+- Montador: Id/CNPJ=2, série/número sem perda, ambiente, fuso, caracteres especiais, tomador ausente/PF/PJ/estrangeiro, regras pAliq e E0713, valores decimais exatos; XML inválido deve falhar.
+- Transmissor simulado: 201/400/403/500, timeout, falha comprovadamente anterior ao envio e ambiguidade; idempotência com conteúdo diferente, concorrência, repetição durante processamento/verificação e mesmo número/DPS após 503.
+- Verificação: chave+XML, 404 antes/depois de 15 minutos, conexão falhando, transição e webhook sem duplicação.
+- Banco com reversão: grants/RLS, isolamento, unicidade por escopo, reserva definitiva e exclusão com notas. Concorrência real depende de conexão de teste adequada.
+- Emissão real não é comprovada por simulação. Sem sessão de teste, telas autenticadas serão declaradas “não verificadas”.
 
 ## Entregas e critério de conclusão
 Cada parte termina com testes correspondentes e documentação atualizada. Ao final: tabelas e rotas, três DPS sem assinatura validadas pelo XSD, painel somente leitura, consultas automáticas, eventos de nota e publicação. Não emitir nota real nem modificar transmissor/ durante os testes; a primeira emissão real em produção é feita pelo proprietário com seu script.
