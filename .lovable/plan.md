@@ -19,8 +19,8 @@ CNPJ = **2** no Id DPS; repetição durante processamento/verificação = **202 
 
 ### Parte 1 — Contratos, persistência e tomadores
 - Fechar a matriz pedido → campos da DPS → resposta da nota → resultados do transmissor com os contratos já lidos. Resolver empresa/serviço por id ou id_externo e tomador inline/id/id_externo; recusar alternativas simultâneas e referências de outra empresa/organização.
-- Criar `invoices`, `invoice_events` e `company_customers`, sem notas de demonstração. Notas guardam snapshots de tomador, empresa/configuração necessária e serviço para não mudar com edições posteriores.
-- Guardar estados públicos separados dos controles internos de envio, tentativas e verificações; definir estados reservados de cancelamento apenas conforme o contrato.
+- Criar invoices, invoice_events e company_customers. Copiar tomador/serviço/configuração na emissão; sem notas fictícias.
+- Separar situação pública do controle de envio/verificação; cancelamento reservado conforme contrato.
 - Notas: `external_id` único por organização; tomadores: `external_id` único por empresa. Vínculos compostos garantem empresa e integração da mesma organização.
 - RLS organizacional, concessões explícitas em cada tabela; escrita de notas e eventos somente pelo servidor. Tomadores: API autorizada e painel somente leitura nesta etapa.
 - Reutilizar a reserva definitiva existente, com exclusão de empresa passando a conferir também a existência de notas em ambos os ambientes.
@@ -43,11 +43,11 @@ CNPJ = **2** no Id DPS; repetição durante processamento/verificação = **202 
 - Chamar `/v1/nfse/emitir` com organização/empresa/envelope/ambiente, `dps_xml`, `algoritmo_assinatura: rsa-sha256` e `tempo_limite_segundos: 18`; preservar `dps_assinada` e interpretar `resposta.status`, `corpo_json`/`corpo_texto` ou `erro`. Limitar a espera total; autenticação/rede podem exceder os cerca de 20 segundos; ele assina e transmite. Auditar o uso do certificado sem material secreto.
 - Tratar 201 autorizado, 400 rejeitado, 403 certificado, 500/timeout/conexão após envio em verificação, conforme o brief e o contrato, com erros por campo e nota_id.
 - Só reenviar diretamente quando houver evidência contratual de que não houve envio; falha ambígua vai para verificação para evitar duplicação. Uma conexão interrompida com o transmissor não prova que ele não enviou ao governo.
-- Persistir transição e intenção de webhook de forma atômica ou recuperável, com deduplicação; `nota.autorizada`/`nota.rejeitada` recebem o objeto completo da nota e respeitam organização, integração, ambiente e empresa.
+- Transição e webhook atômicos/recuperáveis, sem duplicação; nota.autorizada/rejeitada com nota completa e escopo correto.
 - Primeira entrega de webhook pela API em segundo plano quando disponível; sem isso, fila persistida para o agendador, sem erro nem perda.
 
 ### Parte 4 — Verificação e consultas
-- Reutilizar a chamada OIDC existente a cada minuto, preservando o processamento de webhooks; lotes limitados e leases impedem dois ciclos consultarem a mesma nota simultaneamente.
+- Agendador OIDC existente a cada minuto, preservando webhooks; lotes limitados e leases contra consultas concorrentes.
 - Consultar DPS após mais de 1 minuto em verificação; chave encontrada → consultar NFS-e → autorizar e emitir evento uma única vez.
 - 404: repetir; após 15 minutos sem geração, rejeitar com “O governo não gerou esta nota”. Falhas de conexão não contam como prova de ausência.
 - GET lista/detalhe/XML com filtros `empresa_id`, `empresa_id_externo`, `situacao`, `id_externo`, `tomador_documento`, `emitida_de`, `emitida_ate` e paginação por cursor; XML somente autorizado, demais casos 404.
@@ -70,6 +70,6 @@ CNPJ = **2** no Id DPS; repetição durante processamento/verificação = **202 
 - Emissão real não é comprovada por simulação. Sem sessão de teste, telas autenticadas serão declaradas “não verificadas”.
 
 ## Entregas e critério de conclusão
-Cada parte termina com testes correspondentes e documentação atualizada. Ao final: tabelas e rotas, três DPS sem assinatura validadas pelo XSD, painel somente leitura, consultas automáticas, eventos de nota e publicação. Não emitir nota real nem modificar transmissor/ durante os testes; a primeira emissão real em produção é feita pelo proprietário com seu script.
+Cada parte entrega testes/documentação. Ao final: rotas, três DPS validadas, painel de leitura, verificações/webhooks e publicação. Primeira emissão real pelo proprietário; transmissor/ intocado.
 
 **A aprovação inclui os cinco complementos de contrato acima.** Se algum não for aceito, revisar esse trecho antes da implementação. O estrangeiro é um tipo de tomador, não implica automaticamente serviço de exportação; operações que precisem de grupos fiscais não contemplados em E1 serão recusadas previamente com campo e motivo específicos.
