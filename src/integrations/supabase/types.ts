@@ -1852,6 +1852,10 @@ export type Database = {
     }
     Functions: {
       accept_invitation: { Args: { invitation_id: string }; Returns: string }
+      approximate_tax_rule_error: {
+        Args: { _mode: string; _option: number }
+        Returns: string
+      }
       claim_webhook_deliveries: {
         Args: { _event?: string; _limit?: number }
         Returns: {
