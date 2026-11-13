@@ -7,6 +7,8 @@ Leia antes `convencoes.md` e `empresas.md`. Cancelamento e substituição terão
 - Antes de enviar ao governo, a notem confere se a empresa está **pronta para emitir** (`/empresas/{id}/situacao`). Se não estiver: `422 EMPRESA_NAO_PRONTA`, com as pendências em `detalhes`. Nada é enviado nem numerado.
 - `Idempotency-Key` é **obrigatório** em `POST /notas`. Reenviar a mesma chave (ex.: após queda de conexão) **nunca** gera uma segunda nota.
 - Exceção à janela genérica de 24 horas: a associação chave/hash/nota é duradoura por integração e ambiente. A chave associada a uma nota não pode ser reutilizada para outra. Mesmo conteúdo durante processamento/verificação responde `202` com a nota atual; conteúdo diferente responde `409 IDEMPOTENCIA_CONFLITO`. Após conclusão, a repetição preserva o resultado da emissão.
+- E0202: CPF/CNPJ do tomador igual ao do prestador é recusado antes de numerar: "O tomador não pode ser a própria empresa emitente" (`422 REGRA_DE_NEGOCIO`, campo `tomador.documento`). Aplica-se a tomador informado e cadastrado.
+- E0710/E0712/E0713: configuração incompatível com a matriz de `empresas.md` é incompleta, sem reescrita automática; recusar antes de numerar com a mensagem da regra.
 - A numeração (série e número da DPS) é feita pela notem. Um número usado nunca é reaproveitado, mesmo se a nota for rejeitada.
 
 ## 1. Emitir nota — `POST /notas`
@@ -52,7 +54,7 @@ Leia antes `convencoes.md` e `empresas.md`. Cancelamento e substituição terão
 | `descricao` | opcional; padrão = descrição padrão do serviço. Até 2.000 caracteres |
 | `tomador` **ou** `tomador_id` **ou** `tomador_id_externo` | opcional, mas recomendado. Alguns municípios e operações (ex.: cancelamento) exigem tomador identificado |
 | `valores.servico` | obrigatório, maior que zero |
-| `valores.desconto_*` | opcionais; padrão `"0.00"` |
+| `valores.desconto_*` | opcionais; padrão `"0.00"`. E0431/E0432: zero é omitido na DPS; só valores positivos são enviados. Sem ambos, omitir todo `vDescCondIncond`. Descontos não podem superar o serviço |
 | `retencao_iss` | opcional; substitui a retenção padrão do serviço (`nao_retido`, `retido_tomador`, `retido_intermediario`) |
 | `aliquota_iss_simples` | opcional; substitui a da configuração fiscal. Usada **somente** quando há retenção e a empresa é ME/EPP no Simples |
 | `local_prestacao.codigo_municipio` | opcional; padrão = município da empresa |
