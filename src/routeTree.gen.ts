@@ -37,6 +37,8 @@ import { Route as ApiV1EmpresasIdServicosIndexRouteImport } from './routes/api/v
 import { Route as ApiV1EmpresasIdServicosServicoIdRouteImport } from './routes/api/v1/empresas/$id/servicos/$servicoId'
 import { Route as ApiV1EmpresasIdSituacaoIndexRouteImport } from './routes/api/v1/empresas/$id/situacao/index'
 import { Route as ApiV1EmpresasIdSituacaoVerificarMunicipioRouteImport } from './routes/api/v1/empresas/$id/situacao/verificar-municipio'
+import { Route as ApiV1EmpresasIdTomadoresIndexRouteImport } from './routes/api/v1/empresas/$id/tomadores/index'
+import { Route as ApiV1EmpresasIdTomadoresCustomerIdRouteImport } from './routes/api/v1/empresas/$id/tomadores/$customerId'
 
 const IndexRoute = IndexRouteImport.update({
   id: '/',
@@ -193,6 +195,18 @@ const ApiV1EmpresasIdSituacaoVerificarMunicipioRoute =
     path: '/api/v1/empresas/$id/situacao/verificar-municipio',
     getParentRoute: () => rootRouteImport,
   } as any)
+const ApiV1EmpresasIdTomadoresIndexRoute =
+  ApiV1EmpresasIdTomadoresIndexRouteImport.update({
+    id: '/api/v1/empresas/$id/tomadores/',
+    path: '/api/v1/empresas/$id/tomadores/',
+    getParentRoute: () => rootRouteImport,
+  } as any)
+const ApiV1EmpresasIdTomadoresCustomerIdRoute =
+  ApiV1EmpresasIdTomadoresCustomerIdRouteImport.update({
+    id: '/api/v1/empresas/$id/tomadores/$customerId',
+    path: '/api/v1/empresas/$id/tomadores/$customerId',
+    getParentRoute: () => rootRouteImport,
+  } as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
@@ -220,8 +234,10 @@ export interface FileRoutesByFullPath {
   '/api/v1/empresas/$id/': typeof ApiV1EmpresasIdIndexRoute
   '/api/v1/empresas/$id/servicos/$servicoId': typeof ApiV1EmpresasIdServicosServicoIdRoute
   '/api/v1/empresas/$id/situacao/verificar-municipio': typeof ApiV1EmpresasIdSituacaoVerificarMunicipioRoute
+  '/api/v1/empresas/$id/tomadores/$customerId': typeof ApiV1EmpresasIdTomadoresCustomerIdRoute
   '/api/v1/empresas/$id/servicos/': typeof ApiV1EmpresasIdServicosIndexRoute
   '/api/v1/empresas/$id/situacao/': typeof ApiV1EmpresasIdSituacaoIndexRoute
+  '/api/v1/empresas/$id/tomadores/': typeof ApiV1EmpresasIdTomadoresIndexRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
@@ -249,8 +265,10 @@ export interface FileRoutesByTo {
   '/api/v1/empresas/$id': typeof ApiV1EmpresasIdIndexRoute
   '/api/v1/empresas/$id/servicos/$servicoId': typeof ApiV1EmpresasIdServicosServicoIdRoute
   '/api/v1/empresas/$id/situacao/verificar-municipio': typeof ApiV1EmpresasIdSituacaoVerificarMunicipioRoute
+  '/api/v1/empresas/$id/tomadores/$customerId': typeof ApiV1EmpresasIdTomadoresCustomerIdRoute
   '/api/v1/empresas/$id/servicos': typeof ApiV1EmpresasIdServicosIndexRoute
   '/api/v1/empresas/$id/situacao': typeof ApiV1EmpresasIdSituacaoIndexRoute
+  '/api/v1/empresas/$id/tomadores': typeof ApiV1EmpresasIdTomadoresIndexRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -280,8 +298,10 @@ export interface FileRoutesById {
   '/api/v1/empresas/$id/': typeof ApiV1EmpresasIdIndexRoute
   '/api/v1/empresas/$id/servicos/$servicoId': typeof ApiV1EmpresasIdServicosServicoIdRoute
   '/api/v1/empresas/$id/situacao/verificar-municipio': typeof ApiV1EmpresasIdSituacaoVerificarMunicipioRoute
+  '/api/v1/empresas/$id/tomadores/$customerId': typeof ApiV1EmpresasIdTomadoresCustomerIdRoute
   '/api/v1/empresas/$id/servicos/': typeof ApiV1EmpresasIdServicosIndexRoute
   '/api/v1/empresas/$id/situacao/': typeof ApiV1EmpresasIdSituacaoIndexRoute
+  '/api/v1/empresas/$id/tomadores/': typeof ApiV1EmpresasIdTomadoresIndexRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -311,8 +331,10 @@ export interface FileRouteTypes {
     | '/api/v1/empresas/$id/'
     | '/api/v1/empresas/$id/servicos/$servicoId'
     | '/api/v1/empresas/$id/situacao/verificar-municipio'
+    | '/api/v1/empresas/$id/tomadores/$customerId'
     | '/api/v1/empresas/$id/servicos/'
     | '/api/v1/empresas/$id/situacao/'
+    | '/api/v1/empresas/$id/tomadores/'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
@@ -340,8 +362,10 @@ export interface FileRouteTypes {
     | '/api/v1/empresas/$id'
     | '/api/v1/empresas/$id/servicos/$servicoId'
     | '/api/v1/empresas/$id/situacao/verificar-municipio'
+    | '/api/v1/empresas/$id/tomadores/$customerId'
     | '/api/v1/empresas/$id/servicos'
     | '/api/v1/empresas/$id/situacao'
+    | '/api/v1/empresas/$id/tomadores'
   id:
     | '__root__'
     | '/'
@@ -370,8 +394,10 @@ export interface FileRouteTypes {
     | '/api/v1/empresas/$id/'
     | '/api/v1/empresas/$id/servicos/$servicoId'
     | '/api/v1/empresas/$id/situacao/verificar-municipio'
+    | '/api/v1/empresas/$id/tomadores/$customerId'
     | '/api/v1/empresas/$id/servicos/'
     | '/api/v1/empresas/$id/situacao/'
+    | '/api/v1/empresas/$id/tomadores/'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -392,8 +418,10 @@ export interface RootRouteChildren {
   ApiV1EmpresasIdIndexRoute: typeof ApiV1EmpresasIdIndexRoute
   ApiV1EmpresasIdServicosServicoIdRoute: typeof ApiV1EmpresasIdServicosServicoIdRoute
   ApiV1EmpresasIdSituacaoVerificarMunicipioRoute: typeof ApiV1EmpresasIdSituacaoVerificarMunicipioRoute
+  ApiV1EmpresasIdTomadoresCustomerIdRoute: typeof ApiV1EmpresasIdTomadoresCustomerIdRoute
   ApiV1EmpresasIdServicosIndexRoute: typeof ApiV1EmpresasIdServicosIndexRoute
   ApiV1EmpresasIdSituacaoIndexRoute: typeof ApiV1EmpresasIdSituacaoIndexRoute
+  ApiV1EmpresasIdTomadoresIndexRoute: typeof ApiV1EmpresasIdTomadoresIndexRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -594,6 +622,20 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ApiV1EmpresasIdSituacaoVerificarMunicipioRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/api/v1/empresas/$id/tomadores/': {
+      id: '/api/v1/empresas/$id/tomadores/'
+      path: '/api/v1/empresas/$id/tomadores'
+      fullPath: '/api/v1/empresas/$id/tomadores/'
+      preLoaderRoute: typeof ApiV1EmpresasIdTomadoresIndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/v1/empresas/$id/tomadores/$customerId': {
+      id: '/api/v1/empresas/$id/tomadores/$customerId'
+      path: '/api/v1/empresas/$id/tomadores/$customerId'
+      fullPath: '/api/v1/empresas/$id/tomadores/$customerId'
+      preLoaderRoute: typeof ApiV1EmpresasIdTomadoresCustomerIdRouteImport
+      parentRoute: typeof rootRouteImport
+    }
   }
 }
 
@@ -649,8 +691,11 @@ const rootRouteChildren: RootRouteChildren = {
   ApiV1EmpresasIdServicosServicoIdRoute: ApiV1EmpresasIdServicosServicoIdRoute,
   ApiV1EmpresasIdSituacaoVerificarMunicipioRoute:
     ApiV1EmpresasIdSituacaoVerificarMunicipioRoute,
+  ApiV1EmpresasIdTomadoresCustomerIdRoute:
+    ApiV1EmpresasIdTomadoresCustomerIdRoute,
   ApiV1EmpresasIdServicosIndexRoute: ApiV1EmpresasIdServicosIndexRoute,
   ApiV1EmpresasIdSituacaoIndexRoute: ApiV1EmpresasIdSituacaoIndexRoute,
+  ApiV1EmpresasIdTomadoresIndexRoute: ApiV1EmpresasIdTomadoresIndexRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
