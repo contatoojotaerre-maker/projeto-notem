@@ -3,14 +3,10 @@
 ## Plano final para aprovação — cinco partes
 Nenhuma implementação, migração ou publicação será feita antes da aprovação. Nada dentro de `transmissor/` será criado, editado, movido ou apagado.
 
-**Fontes conferidas:** contrato de notas e LEIAME do transmissor v2 pelo anexo autorizado como fonte até a sincronização normalizar; convenções, empresas e webhooks do projeto; Anexo I e XSD **1.01**. Sincronização da main não verificada; o anexo permite planejar.
+**Fontes:** contratos notas/transmissor v2 pelo anexo autorizado; convenções, empresas, webhooks e Anexo I/XSD **1.01**. Sincronização da main não verificada.
 
 ## Decisões incorporadas
-- **Identificador DPS:** CPF = 1, **CNPJ = 2**, com 45 caracteres, conforme o Anexo I. O XSD original permite DPS sem assinatura.
-- **Idempotência específica de POST /notas:** repetição durante processamento/verificação devolve **202 com o estado atual da nota**, não 409; corpo diferente continua 409. Outras rotas mantêm seu comportamento.
-- **Não enviada comprovadamente:** apenas falha DNS/conexão recusada antes de chegar ao transmissor, 401/403 Google antes do serviço ou validação própria do transmissor (4xx com código). Qualquer falha ambígua vai para verificação; nunca recebe outro número.
-- **Ferramentas aprovadas:** fast-xml-parser com entidades externas recusadas em produção; Python lxml para validar XSD nos testes.
-- **Exclusão de empresa:** passa a conferir notas, além da numeração usada.
+CNPJ = **2** no Id DPS; repetição durante processamento/verificação = **202 com a nota atual**, corpo diferente = 409; falhas ambíguas = verificação. Só considerar não enviada em DNS/conexão recusada antes do transmissor, 401/403 Google antes do serviço ou 4xx de validação própria com código. fast-xml-parser sem entidades externas e lxml nos testes aprovados. Exclusão de empresa confere também notas.
 
 ## Complementos do contrato propostos nesta aprovação
 1. **Endereço estrangeiro:** o contrato oferece país/cidade/endereço livre/código postal, mas o XSD exige também estado/província/região e logradouro/número/bairro. Proposta: acrescentar `estado_provincia_regiao`, `logradouro`, `numero`, `bairro` e `complemento` opcional ao endereço estrangeiro; manter `endereco_livre` e usá-lo como logradouro quando este não vier. Quando houver endereço, exigir os dados oficiais faltantes, sem inventar “S/N”, bairro ou província. Sem endereço, omitir o grupo opcional. Documentar e testar antes de numerar.
@@ -59,11 +55,10 @@ Nenhuma implementação, migração ou publicação será feita antes da aprova�
 - Consulta pública: procurar fonte oficial confiável; se não confirmada, `links.consulta_publica = null`.
 
 ### Parte 5 — Painel, documentação e publicação
-- Menu Notas somente leitura: filtros por empresa, situação, período e ambiente atual; detalhe com resumo, tomador, valores, rejeições em português e linha do tempo.
-- Detalhes técnicos e download de XML com autorização organizacional; nova aba Tomadores por empresa, lista e detalhe. Developer/viewer somente leem.
-- Preservar identidade visual, navegação e domínio oficial. Cada nova página recebe título e descrição próprios.
-- Atualizar `openapi.yaml`, `notas.md`, `webhooks.md`, convenções quando necessário, documento do agendador e exemplos de eventos de nota/curl.
-- Registrar decisões estruturais no AGENTS.md; publicar somente após implementação aprovada e validações, para o teste real do proprietário.
+- Notas somente leitura: filtros empresa/situação/período/ambiente; resumo, tomador, valores, rejeições em português e linha do tempo. Detalhes técnicos e download XML protegidos por organização.
+- Aba Tomadores por empresa, lista/detalhe; developer/viewer somente leitura. Preservar marca e domínio oficial; novas páginas com metadados próprios.
+- Atualizar openapi, notas, webhooks (objeto completo sem XML/PDF), convenções, agendador e exemplos curl; decisões estruturais no AGENTS.md.
+- Publicar após aprovação e testes; emissão real pelo proprietário.
 
 ## Detalhes técnicos e testes
 - Módulos separados de esquemas, montagem/leitura XML, persistência/transições, transmissor e verificação; API usa `apiRoute`. Produção: fast-xml-parser sem DTD/entidades externas, nenhum validador nativo.
