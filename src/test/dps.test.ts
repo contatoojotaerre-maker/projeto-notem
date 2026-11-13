@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import { execFileSync } from 'node:child_process';
-import { mkdtempSync, writeFileSync, rmSync } from 'node:fs';
+import { mkdtempSync, writeFileSync, readFileSync, rmSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { buildDps, dpsIdentifier } from '../lib/dps';
@@ -8,9 +8,21 @@ import { readAuthorizedNfse } from '../lib/nfse-xml';
 import { fixture, examples } from './dps-fixtures';
 describe('DPS E1', () => {
   it('CNPJ usa tipo 2 e identificador de 45 caracteres', () => { const id = dpsIdentifier('4212254', '11222333000181', 1, '999999999999999'); expect(id).toBe('DPS421225421122233300018100001999999999999999'); expect(id).toHaveLength(45); });
-  it('XSD original aponta somente incompatibilidade oficial da série nos exemplos e variações', () => {
+  it('valida exemplos e variações com apenas o defeito literal ^/$ da série corrigido em memória', () => {
     const folder = mkdtempSync(join(tmpdir(), 'dps-')); const variations = Object.values(examples()); const absent = fixture(); absent.customer = null; variations.push(absent); const withheld = fixture(); withheld.service.withholding = 2; withheld.fiscal.withheldRate = '2.00'; variations.push(withheld); const none = fixture(); none.fiscal.approximate = { mode: 'none' }; variations.push(none);
-    try { const files = variations.map((v, i) => { const p = join(folder, `${i}.xml`); writeFileSync(p, buildDps(v).xml); return p; }); expect(execFileSync('python3', ['src/test/validate-dps-xsd.py', '--known-series-issue', ...files], { encoding: 'utf8' })).toContain('BLOQUEADO pelo padrão oficial'); expect(() => execFileSync('python3', ['src/test/validate-dps-xsd.py', ...files], { stdio: 'pipe' })).toThrow(); const p = join(folder, 'invalid.xml'); writeFileSync(p, buildDps(fixture()).xml.replace('<tpAmb>2</tpAmb>', '<tpAmb>9</tpAmb>')); expect(() => execFileSync('python3', ['src/test/validate-dps-xsd.py', '--known-series-issue', p], { stdio: 'pipe' })).toThrow(); } finally { rmSync(folder, { recursive: true, force: true }); }
+    const archive = 'docs/referencias/esquemas/nfse-esquemas_xsd-v1-01-20260209.zip'; const original = readFileSync(archive);
+    try {
+      const files = variations.map((v, i) => { const p = join(folder, `${i}.xml`); writeFileSync(p, buildDps(v).xml); return p; });
+      const saved = Object.keys(examples()).map(name => `docs/exemplos/dps/${name}.xml`);
+      const result = execFileSync('python3', ['src/test/validate-dps-xsd.py', ...files, ...saved], { encoding: 'utf8' });
+      expect(result.match(/XSD 1.01 válido/g)).toHaveLength(files.length + 3);
+      expect(readFileSync(archive).equals(original)).toBe(true);
+      expect(() => execFileSync('python3', ['src/test/validate-dps-xsd.py', '--official', ...files], { stdio: 'pipe' })).toThrow();
+      for (const [name, xml] of [['environment', buildDps(fixture()).xml.replace('<tpAmb>2</tpAmb>', '<tpAmb>9</tpAmb>')], ['series', buildDps(fixture()).xml.replace('<serie>1</serie>', '<serie>ABC</serie>')]]) {
+        const p = join(folder, `${name}.xml`); writeFileSync(p, xml ?? '');
+        expect(() => execFileSync('python3', ['src/test/validate-dps-xsd.py', p], { stdio: 'pipe' })).toThrow();
+      }
+    } finally { rmSync(folder, { recursive: true, force: true }); }
   });
   it('E0713 não optante recusa none e percentual Simples', () => { for (const mode of ['none', 'percent_simples'] as const) { const v = fixture(); v.fiscal.simples = 1; v.fiscal.regime = null; v.fiscal.approximate.mode = mode; expect(() => buildDps(v)).toThrow('E0713'); } });
   it('E0621 exige alíquota com retenção', () => { const v = fixture(); v.service.withholding = 2; expect(() => buildDps(v)).toThrow('E0621'); });
