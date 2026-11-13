@@ -2,8 +2,8 @@
 ## Etapa E1 — Emissão e tomadores (planejamento, sem implementação)
 - [x] Ler contratos de notas e transmissor v2 pelo anexo autorizado como fonte até a sincronização normalizar; sem editar transmissor/.
 - [x] Plano aprovado em cinco partes com complementos; PDF usa PDF_EM_PREPARACAO (503), mensagem “PDF em preparação”.
-- [ ] Parte 1: banco, tomadores e docs/api/notas.md com complementos aprovados.
-- [ ] Parte 2: montador/leitura XML, testes XSD e três exemplos em docs/exemplos/dps/ no repositório.
+- [x] Parte 1: banco/rotas de tomadores, notas.md/openapi com complementos; chamadas autenticadas externas não verificadas.
+- [ ] Parte 2: montador/leitura e três exemplos gravados; 170 testes passaram. XSD estrito bloqueado por padrão oficial TSSerieDPS com ^/$ (único erro nos três XML). Aguardar conferência externa e confirmar chegada ao GitHub.
 - [ ] Parte 3 e seguintes — bloqueadas até conferência externa dos três XML e liberação expressa do proprietário; parar obrigatoriamente após Parte 2.
 
 ## Fase 3A.2 — Webhooks e ajustes de Integrações

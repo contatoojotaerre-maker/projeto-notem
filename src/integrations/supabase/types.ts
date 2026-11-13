@@ -408,6 +408,77 @@ export type Database = {
           },
         ]
       }
+      company_customers: {
+        Row: {
+          change_origin: Database["public"]["Enums"]["change_origin"]
+          changed_by_integration_id: string | null
+          company_id: string
+          created_at: string
+          created_by: string
+          customer_data: Json
+          external_id: string | null
+          id: string
+          organization_id: string
+          updated_at: string
+          updated_by: string
+        }
+        Insert: {
+          change_origin?: Database["public"]["Enums"]["change_origin"]
+          changed_by_integration_id?: string | null
+          company_id: string
+          created_at?: string
+          created_by: string
+          customer_data: Json
+          external_id?: string | null
+          id?: string
+          organization_id: string
+          updated_at?: string
+          updated_by: string
+        }
+        Update: {
+          change_origin?: Database["public"]["Enums"]["change_origin"]
+          changed_by_integration_id?: string | null
+          company_id?: string
+          created_at?: string
+          created_by?: string
+          customer_data?: Json
+          external_id?: string | null
+          id?: string
+          organization_id?: string
+          updated_at?: string
+          updated_by?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "company_customers_changed_by_integration_id_fkey"
+            columns: ["changed_by_integration_id"]
+            isOneToOne: false
+            referencedRelation: "integrations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "company_customers_company_id_organization_id_fkey"
+            columns: ["company_id", "organization_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id", "organization_id"]
+          },
+          {
+            foreignKeyName: "company_customers_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "company_customers_updated_by_fkey"
+            columns: ["updated_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       company_fiscal_settings: {
         Row: {
           approx_federal_percent: number | null
@@ -906,6 +977,248 @@ export type Database = {
             columns: ["organization_id"]
             isOneToOne: false
             referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      invoice_events: {
+        Row: {
+          created_at: string
+          details: Json
+          id: string
+          invoice_id: string
+          organization_id: string
+          type: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          details?: Json
+          id?: string
+          invoice_id: string
+          organization_id: string
+          type: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          details?: Json
+          id?: string
+          invoice_id?: string
+          organization_id?: string
+          type?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "invoice_events_invoice_id_organization_id_fkey"
+            columns: ["invoice_id", "organization_id"]
+            isOneToOne: false
+            referencedRelation: "invoices"
+            referencedColumns: ["id", "organization_id"]
+          },
+        ]
+      }
+      invoices: {
+        Row: {
+          access_key: string | null
+          authorized_at: string | null
+          authorized_nfse_xml: string | null
+          change_origin: Database["public"]["Enums"]["change_origin"]
+          claim_token: string | null
+          company_id: string
+          competence: string
+          complementary_information: string | null
+          created_at: string
+          created_by: string
+          customer_snapshot: Json | null
+          description: string
+          dispatch_state: string
+          dps_id: string
+          dps_number: number
+          dps_series: number
+          emitted_at: string
+          environment: Database["public"]["Enums"]["environment"]
+          external_id: string | null
+          fiscal_snapshot: Json
+          government_errors: Json
+          government_values: Json | null
+          id: string
+          idempotency_key: string | null
+          integration_id: string | null
+          last_attempt_at: string | null
+          lease_until: string | null
+          manifestation: Json | null
+          next_verification_at: string | null
+          nfse_number: string | null
+          organization_id: string
+          provider_snapshot: Json
+          request_hash: string | null
+          restrictions: Json
+          sent_values: Json
+          service_location: Json
+          service_profile_id: string | null
+          service_snapshot: Json
+          signed_dps_xml: string | null
+          status: string
+          substituted_by_invoice_id: string | null
+          substitutes_invoice_id: string | null
+          unsigned_dps_xml: string
+          updated_at: string
+          updated_by: string
+          verification_started_at: string | null
+        }
+        Insert: {
+          access_key?: string | null
+          authorized_at?: string | null
+          authorized_nfse_xml?: string | null
+          change_origin?: Database["public"]["Enums"]["change_origin"]
+          claim_token?: string | null
+          company_id: string
+          competence: string
+          complementary_information?: string | null
+          created_at?: string
+          created_by: string
+          customer_snapshot?: Json | null
+          description: string
+          dispatch_state?: string
+          dps_id: string
+          dps_number: number
+          dps_series: number
+          emitted_at: string
+          environment: Database["public"]["Enums"]["environment"]
+          external_id?: string | null
+          fiscal_snapshot: Json
+          government_errors?: Json
+          government_values?: Json | null
+          id?: string
+          idempotency_key?: string | null
+          integration_id?: string | null
+          last_attempt_at?: string | null
+          lease_until?: string | null
+          manifestation?: Json | null
+          next_verification_at?: string | null
+          nfse_number?: string | null
+          organization_id: string
+          provider_snapshot: Json
+          request_hash?: string | null
+          restrictions?: Json
+          sent_values: Json
+          service_location: Json
+          service_profile_id?: string | null
+          service_snapshot: Json
+          signed_dps_xml?: string | null
+          status?: string
+          substituted_by_invoice_id?: string | null
+          substitutes_invoice_id?: string | null
+          unsigned_dps_xml: string
+          updated_at?: string
+          updated_by: string
+          verification_started_at?: string | null
+        }
+        Update: {
+          access_key?: string | null
+          authorized_at?: string | null
+          authorized_nfse_xml?: string | null
+          change_origin?: Database["public"]["Enums"]["change_origin"]
+          claim_token?: string | null
+          company_id?: string
+          competence?: string
+          complementary_information?: string | null
+          created_at?: string
+          created_by?: string
+          customer_snapshot?: Json | null
+          description?: string
+          dispatch_state?: string
+          dps_id?: string
+          dps_number?: number
+          dps_series?: number
+          emitted_at?: string
+          environment?: Database["public"]["Enums"]["environment"]
+          external_id?: string | null
+          fiscal_snapshot?: Json
+          government_errors?: Json
+          government_values?: Json | null
+          id?: string
+          idempotency_key?: string | null
+          integration_id?: string | null
+          last_attempt_at?: string | null
+          lease_until?: string | null
+          manifestation?: Json | null
+          next_verification_at?: string | null
+          nfse_number?: string | null
+          organization_id?: string
+          provider_snapshot?: Json
+          request_hash?: string | null
+          restrictions?: Json
+          sent_values?: Json
+          service_location?: Json
+          service_profile_id?: string | null
+          service_snapshot?: Json
+          signed_dps_xml?: string | null
+          status?: string
+          substituted_by_invoice_id?: string | null
+          substitutes_invoice_id?: string | null
+          unsigned_dps_xml?: string
+          updated_at?: string
+          updated_by?: string
+          verification_started_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "invoices_company_id_organization_id_fkey"
+            columns: ["company_id", "organization_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id", "organization_id"]
+          },
+          {
+            foreignKeyName: "invoices_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "invoices_integration_id_organization_id_fkey"
+            columns: ["integration_id", "organization_id"]
+            isOneToOne: false
+            referencedRelation: "integrations"
+            referencedColumns: ["id", "organization_id"]
+          },
+          {
+            foreignKeyName: "invoices_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "invoices_service_profile_id_fkey"
+            columns: ["service_profile_id"]
+            isOneToOne: false
+            referencedRelation: "company_service_profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "invoices_substituted_by_invoice_id_fkey"
+            columns: ["substituted_by_invoice_id"]
+            isOneToOne: false
+            referencedRelation: "invoices"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "invoices_substitutes_invoice_id_fkey"
+            columns: ["substitutes_invoice_id"]
+            isOneToOne: false
+            referencedRelation: "invoices"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "invoices_updated_by_fkey"
+            columns: ["updated_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
             referencedColumns: ["id"]
           },
         ]

@@ -18,6 +18,61 @@ tags:
   - name: Catálogos
     description: Catálogos oficiais somente leitura
 paths:
+  /empresas/{id}/tomadores:
+    parameters: [{ $ref: "#/components/parameters/EmpresaId" }]
+    get:
+      tags: [Empresas]
+      summary: Lista tomadores da empresa
+      parameters:
+        - { $ref: "#/components/parameters/Limite" }
+        - { $ref: "#/components/parameters/Cursor" }
+        - { name: documento, in: query, schema: { type: string } }
+        - { name: id_externo, in: query, schema: { type: string } }
+        - { name: busca, in: query, schema: { type: string } }
+      responses:
+        "200": { description: Lista paginada, content: { application/json: { schema: { type: object, properties: { dados: { type: array, items: { $ref: "#/components/schemas/TomadorE1" } }, proximo_cursor: { type: [string, "null"] } } } } } }
+        "404": { $ref: "#/components/responses/Erro" }
+    post:
+      tags: [Empresas]
+      summary: Cadastra tomador (id_externo único por empresa)
+      parameters: [{ $ref: "#/components/parameters/IdempotencyKey" }]
+      requestBody: { required: true, content: { application/json: { schema: { $ref: "#/components/schemas/TomadorE1" } } } }
+      responses:
+        "201": { description: Tomador criado, content: { application/json: { schema: { $ref: "#/components/schemas/TomadorE1" } } } }
+        "400": { $ref: "#/components/responses/Erro" }
+        "409": { description: ID_EXTERNO_DUPLICADO por empresa ou IDEMPOTENCIA_CONFLITO }
+  /empresas/{id}/tomadores/{tomador_id}:
+    parameters:
+      - { $ref: "#/components/parameters/EmpresaId" }
+      - { name: tomador_id, in: path, required: true, schema: { type: string, format: uuid } }
+    get:
+      tags: [Empresas]
+      summary: Consulta tomador
+      responses:
+        "200": { description: Tomador, content: { application/json: { schema: { $ref: "#/components/schemas/TomadorE1" } } } }
+        "404": { $ref: "#/components/responses/Erro" }
+    patch:
+      tags: [Empresas]
+      summary: Altera campos enviados do tomador
+      parameters: [{ $ref: "#/components/parameters/IdempotencyKey" }]
+      requestBody: { required: true, content: { application/json: { schema: { $ref: "#/components/schemas/TomadorAlteracaoE1" } } } }
+      responses:
+        "200": { description: Tomador alterado, content: { application/json: { schema: { $ref: "#/components/schemas/TomadorE1" } } } }
+        "404": { $ref: "#/components/responses/Erro" }
+        "409": { description: ID_EXTERNO_DUPLICADO por empresa ou IDEMPOTENCIA_CONFLITO }
+  /notas/{id}/pdf:
+    get:
+      summary: PDF em preparação (reservado para E1 Parte 3+)
+      description: Rota ainda não implementada nas Partes 1 e 2. Não gera PDF provisório.
+      parameters: [{ name: id, in: path, required: true, schema: { type: string, format: uuid } }]
+      responses:
+        "503":
+          description: PDF_EM_PREPARACAO — PDF em preparação
+          headers: { X-Request-Id: { $ref: "#/components/headers/XRequestId" } }
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Erro" }
+              example: { erro: { codigo: PDF_EM_PREPARACAO, mensagem: PDF em preparação, detalhes: [], codigo_governo: null, mensagem_governo: null }, id_requisicao: req_exemplo }
   /status:
     get:
       tags: [Geral]
@@ -244,6 +299,41 @@ components:
       in: query
       schema: { type: string }
   schemas:
+    TomadorE1:
+      type: object
+      required: [tipo, nome]
+      properties:
+        id: { type: string, format: uuid, readOnly: true }
+        id_externo: { type: [string, "null"], maxLength: 100, description: Único por empresa }
+        tipo: { type: string, enum: [pj, pf, estrangeiro] }
+        nome: { type: string, minLength: 1, maxLength: 150 }
+        documento: { type: [string, "null"], description: CPF/CNPJ com dígitos válidos }
+        nif: { type: [string, "null"], maxLength: 40 }
+        motivo_sem_nif: { type: [string, "null"], enum: [dispensado, nao_exigido, null] }
+        email: { type: [string, "null"] }
+        telefone: { type: [string, "null"] }
+        inscricao_municipal: { type: [string, "null"], maxLength: 15 }
+        endereco:
+          type: [object, "null"]
+          description: Nacional exige CEP/logradouro/número/bairro/IBGE. Exterior exige país/cidade/código postal/província/logradouro ou endereço livre/número/bairro. Complemento opcional.
+          properties:
+            cep: { type: string, pattern: '^[0-9]{8}$' }
+            codigo_municipio: { type: string, pattern: '^[0-9]{7}$' }
+            pais: { type: string, pattern: '^[A-Z]{2}$' }
+            cidade: { type: string }
+            codigo_postal: { type: string }
+            estado_provincia_regiao: { type: string }
+            logradouro: { type: string }
+            endereco_livre: { type: string }
+            numero: { type: string }
+            bairro: { type: string }
+            complemento: { type: [string, "null"] }
+        criada_em: { type: string, format: date-time, readOnly: true }
+        atualizada_em: { type: string, format: date-time, readOnly: true }
+    TomadorAlteracaoE1:
+      type: object
+      description: Campos opcionais de TomadorE1; resultado após mesclar com o cadastro deve ser válido.
+      additionalProperties: true
     Ambiente:
       type: string
       enum: [homologacao, producao]
