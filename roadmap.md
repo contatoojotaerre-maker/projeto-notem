@@ -1,7 +1,10 @@
 # notem — Fase 1
 ## Etapa E1 — Emissão e tomadores (planejamento, sem implementação)
 - [x] Ler contratos de notas e transmissor v2 pelo anexo autorizado como fonte até a sincronização normalizar; sem editar transmissor/.
-- [ ] Finalizar e aprovar plano de cinco partes, com CNPJ = 2, repetição 202/estado atual, envio ambíguo em verificação, lxml/fast-xml-parser e exclusão com histórico de notas.
+- [x] Plano aprovado em cinco partes com complementos; PDF usa PDF_EM_PREPARACAO (503), mensagem “PDF em preparação”.
+- [ ] Parte 1: banco, tomadores e docs/api/notas.md com complementos aprovados.
+- [ ] Parte 2: montador/leitura XML, testes XSD e três exemplos em docs/exemplos/dps/ no repositório.
+- [ ] Parte 3 e seguintes — bloqueadas até conferência externa dos três XML e liberação expressa do proprietário; parar obrigatoriamente após Parte 2.
 
 ## Fase 3A.2 — Webhooks e ajustes de Integrações
 - [x] Correção pós-auditoria: teste direto com resultado na tela, eventos reais em fila sem waitUntil, mensagens em português, registro resumido do agendador, chave de autorização, revelar segredo, filtro por empresa, exemplo e docs.
