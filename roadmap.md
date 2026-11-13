@@ -4,7 +4,9 @@
 - [x] Plano aprovado em cinco partes com complementos; PDF usa PDF_EM_PREPARACAO (503), mensagem “PDF em preparação”.
 - [x] Parte 1: banco/rotas de tomadores, notas.md/openapi com complementos; chamadas autenticadas externas não verificadas.
 - [x] Parte 2: três XML passam sem erros no XSD com somente TSSerieDPS corrigido em memória; ZIP intacto e 10 testes DPS passaram. Exemplos entregues no chat.
-- [ ] Conferência externa dos XML e sincronização GitHub — proprietário relata parada; checkout local sem conflitos, estado remoto não disponível.
+- [x] Primeira conferência externa: três XML passaram no XSD com correção em memória; proprietário identificou E0431/E0432, E0710/E0712/E0713 e E0202.
+- [ ] Correções pré-Parte 3: descontos zero omitidos, matriz de tributos em tela/API/banco/DPS, legados incompletos sem reescrita, tomador distinto antes de numerar, testes e documentação.
+- [ ] Regenerar e entregar os três XML no chat para nova conferência externa; sincronização GitHub permanece não verificada.
 - [ ] Parte 3 e seguintes — bloqueadas até conferência externa dos três XML e liberação expressa do proprietário; parar obrigatoriamente após Parte 2.
 
 ## Fase 3A.2 — Webhooks e ajustes de Integrações
