@@ -10,8 +10,7 @@
 <!-- LOVABLE:END -->
 
 ## Application architecture
-- DPS issuance must use reserveValidatedDps before number allocation: reject self-recipient and invalid approximate-tax matrix, and omit zero discounts, preventing avoidable business rejections without consuming numbers.
-- DPS tests fix only TSSerieDPS ^/$ literals in memory (official defect); ZIP stays intact. XML rejects DTD/entities and keeps decimal strings.
+- Fiscal XML and pre-numbering rules live in `src/lib/AGENTS.md`; tests keep the official ZIP intact.
 - Webhook dispatch runs on Cloudflare Workers: enforce HTTPS, no URL credentials, public IPv4/IPv6 and DNS checks before each attempt, and no redirects. Per the owner's accepted network model, do not pin destination IPs or introduce a separate egress service; DNS preflight is not a rebinding-proof connection guarantee.
 - Google Cloud Scheduler wakes the database-backed webhook processor once per minute through an OIDC-protected /api/public/ callback; do not use Inngest. All delivery and three-day failure state remains in PostgreSQL.
 - Webhook secrets use server-only AES-GCM envelopes bound to endpoint IDs; a shared sender preserves raw event bodies, signs attempts, and uses database leases for immediate and scheduled delivery.
