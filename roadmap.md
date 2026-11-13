@@ -5,8 +5,8 @@
 - [x] Parte 1: banco/rotas de tomadores, notas.md/openapi com complementos; chamadas autenticadas externas não verificadas.
 - [x] Parte 2: três XML passam sem erros no XSD com somente TSSerieDPS corrigido em memória; ZIP intacto e 10 testes DPS passaram. Exemplos entregues no chat.
 - [x] Primeira conferência externa: três XML passaram no XSD com correção em memória; proprietário identificou E0431/E0432, E0710/E0712/E0713 e E0202.
-- [ ] Correções pré-Parte 3: descontos zero omitidos, matriz de tributos em tela/API/banco/DPS, legados incompletos sem reescrita, tomador distinto antes de numerar, testes e documentação.
-- [ ] Regenerar e entregar os três XML no chat para nova conferência externa; sincronização GitHub permanece não verificada.
+- [x] Correções pré-Parte 3: descontos zero omitidos, matriz de tributos em tela/API/banco/DPS, legados incompletos sem reescrita, tomador distinto na validação pré-numeração, testes e documentação. 193 testes passaram; nove combinações no banco e legado sem consumo de número validados com rollback. Tela autenticada/API com chave não verificadas (Supabase externo).
+- [x] Regenerar três XML: todos passaram no XSD com correção isolada em memória; entregar completos no chat para nova conferência. Sincronização GitHub permanece não verificada.
 - [ ] Parte 3 e seguintes — bloqueadas até conferência externa dos três XML e liberação expressa do proprietário; parar obrigatoriamente após Parte 2.
 
 ## Fase 3A.2 — Webhooks e ajustes de Integrações

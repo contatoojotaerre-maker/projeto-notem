@@ -38,6 +38,10 @@ export const searchFiscalCatalog = createServerFn({method:'POST'}).middleware([r
 export const reserveDpsNumber = createServerFn({method:'POST'}).middleware([requireSupabaseAuth]).inputValidator(fiscalIds.extend({series:seriesSchema,environment:z.enum(['production','sandbox'])})).handler(async({context,data})=>{
  const [admin,role,company]=await Promise.all([context.supabase.rpc('is_platform_admin'),context.supabase.rpc('has_org_role',{org_id:data.organization_id,roles:['owner','admin']}),context.supabase.from('companies').select('id').eq('id',data.company_id).eq('organization_id',data.organization_id).single()]);
  if(admin.error||role.error||company.error||(!admin.data&&!role.data))throw new Error('Acesso não autorizado.');
+ const settings=await context.supabase.from('company_fiscal_settings').select('*').eq('company_id',data.company_id).eq('organization_id',data.organization_id).maybeSingle();
+ if(settings.error||!settings.data)throw new Error('Configuração fiscal incompleta.');
+ const validated=fiscalSchema.safeParse(settings.data);
+ if(!validated.success)throw new Error(validated.error.issues[0]?.message??'Configuração fiscal incompleta.');
  const {supabaseAdmin}=await import('@/integrations/supabase/client.server');
  const r=await supabaseAdmin.rpc('reserve_dps_number',{_company_id:data.company_id,_organization_id:data.organization_id,_series:data.series,_environment:data.environment,_requested_by:context.userId});
  if(r.error)throw new Error('Não foi possível reservar o número DPS. Confira a série ou o limite da numeração.');
