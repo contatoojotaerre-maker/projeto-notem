@@ -1,7 +1,7 @@
 # Emissão de NFS-e — etapa E1
 
 ## Plano final para aprovação — cinco partes
-Nenhuma implementação, migração ou publicação será feita antes da aprovação. Nada dentro de `transmissor/` será criado, editado, movido ou apagado.
+Aguardar aprovação antes de implementar/publicar; nenhuma alteração em transmissor/.
 
 **Fontes:** contratos notas/transmissor v2 pelo anexo autorizado; convenções, empresas, webhooks e Anexo I/XSD **1.01**. Sincronização da main não verificada.
 
