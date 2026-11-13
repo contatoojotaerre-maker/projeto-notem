@@ -1,6 +1,6 @@
 # Emissão de NFS-e — etapa E1
 
-## Plano final para aprovação — cinco partes
+## Plano para aprovação — cinco partes
 Aguardar aprovação antes de implementar/publicar; nenhuma alteração em transmissor/.
 
 **Fontes:** contratos notas/transmissor v2 pelo anexo autorizado; convenções, empresas, webhooks e Anexo I/XSD **1.01**. Sincronização da main não verificada.
