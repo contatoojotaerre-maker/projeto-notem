@@ -1,6 +1,7 @@
 import { z } from 'zod';
 import { customerSchema, type Customer } from './customers';
 import { isValidCnpj } from './notem';
+import { approximateTaxRuleError } from './fiscal';
 
 export const fiscalDecimal = z.string().regex(/^\d{1,15}\.\d{2}$/, 'Use texto decimal com duas casas.');
 export function decimalUnits(value: string) { return BigInt(fiscalDecimal.parse(value).replace('.', '')); }
@@ -29,6 +30,7 @@ function customerXml(c: Customer) {
   return group('toma', document + tag('IM', c.inscricao_municipal) + tag('xNome', c.nome) + address + tag('fone', c.telefone) + tag('email', c.email));
 }
 export function buildDps(input: DpsInput) {
+  validateDpsBeforeNumbering(input);
   const { provider: p, fiscal: f, service: s } = input;
   const id = dpsIdentifier(p.municipality, p.cnpj, input.series, input.number);
   if (!/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}-03:00$/.test(input.emittedAt) || !Number.isFinite(Date.parse(input.emittedAt)) || !/^\d{4}-\d{2}-\d{2}$/.test(input.competence) || !Number.isFinite(Date.parse(input.competence)) || input.competence > input.emittedAt.slice(0, 10)) throw new Error('Competência ou data de emissão inválida.');
@@ -41,14 +43,28 @@ export function buildDps(input: DpsInput) {
   const rateRequired = f.simples === 3 && f.regime === 1 && s.withholding !== 1;
   let rate = ''; if (rateRequired) { if (!f.withheldRate) throw new Error('Informe alíquota do ISS para ME/EPP com retenção (E0621).'); const v = percent(f.withheldRate); if (Number(v) < 1.8 || Number(v) > 9.99) throw new Error('Alíquota deve estar entre 1,80 e 9,99.'); rate = tag('pAliq', v); }
   const a = f.approximate; let approximate = '';
-  if (f.simples === 1 && a.mode !== 'percent_by_sphere') throw new Error('Não optante exige percentuais por esfera (E0713).');
+
   if (a.mode === 'percent_simples') { if (!a.simples || a.federal != null || a.state != null || a.municipal != null) throw new Error('Confira o percentual do Simples.'); approximate = tag('pTotTribSN', percent(a.simples)); }
   else if (a.mode === 'percent_by_sphere') { if (a.simples != null || a.federal == null || a.state == null || a.municipal == null) throw new Error('Informe os três percentuais por esfera.'); approximate = group('pTotTrib', tag('pTotTribFed', percent(a.federal)) + tag('pTotTribEst', percent(a.state)) + tag('pTotTribMun', percent(a.municipal))); }
   else { if ([a.simples, a.federal, a.state, a.municipal].some(v => v != null)) throw new Error('Não informar não aceita percentuais.'); approximate = tag('indTotTrib', 0); }
   const customer = input.customer ? customerXml(customerSchema.parse(input.customer)) : '';
   const prest = group('prest', tag('CNPJ', p.cnpj) + tag('IM', p.municipalRegistration) + tag('fone', p.phone) + tag('email', p.email) + group('regTrib', tag('opSimpNac', f.simples) + (f.simples === 3 ? tag('regApTribSN', f.regime) : '') + tag('regEspTrib', f.special)));
   const service = group('serv', group('locPrest', tag('cLocPrestacao', s.municipality || p.municipality)) + group('cServ', tag('cTribNac', s.code) + tag('cTribMun', s.municipalCode) + tag('xDescServ', s.description) + tag('cNBS', s.nbs)) + (input.complementary ? group('infoCompl', tag('xInfComp', input.complementary)) : ''));
-  const values = group('valores', group('vServPrest', tag('vServ', input.values.service)) + group('vDescCondIncond', tag('vDescIncond', unconditional) + tag('vDescCond', conditional)) + group('trib', group('tribMun', tag('tribISSQN', s.taxation) + tag('tpImunidade', s.immunity) + tag('tpRetISSQN', s.withholding) + rate) + group('totTrib', approximate)));
+  // E0431/E0432: only strictly positive discounts may be informed.
+  const discounts=(decimalUnits(unconditional)>0n?tag('vDescIncond',unconditional):'')+(decimalUnits(conditional)>0n?tag('vDescCond',conditional):'');
+  const values = group('valores', group('vServPrest', tag('vServ', input.values.service)) + (discounts?group('vDescCondIncond',discounts):'') + group('trib', group('tribMun', tag('tribISSQN', s.taxation) + tag('tpImunidade', s.immunity) + tag('tpRetISSQN', s.withholding) + rate) + group('totTrib', approximate)));
   const body = tag('tpAmb', input.environment === 'production' ? 1 : 2) + tag('dhEmi', input.emittedAt) + tag('verAplic', 'notem-1.0') + tag('serie', input.series) + tag('nDPS', input.number) + tag('dCompet', input.competence) + tag('tpEmit', 1) + tag('cLocEmi', p.municipality) + prest + customer + service + values;
   return { id, xml: `<?xml version="1.0" encoding="UTF-8"?><DPS xmlns="http://www.sped.fazenda.gov.br/nfse" versao="1.01"><infDPS Id="${id}">${body}</infDPS></DPS>` };
+}
+/** Mandatory preflight before definitive numbering; Part 3 must use this boundary. */
+export function validateDpsBeforeNumbering(input: Pick<DpsInput,'provider'|'customer'|'fiscal'>): void {
+ const c=input.customer;
+ if(c&&(c.tipo==='pj'||c.tipo==='pf')&&c.documento?.replace(/\D/g,'')===input.provider.cnpj.replace(/\D/g,'')) throw new Error('O tomador não pode ser a própria empresa emitente');
+ const error=approximateTaxRuleError(input.fiscal.simples,input.fiscal.approximate.mode);
+ if(error) throw new Error(error);
+}
+/** Full assembly preflight with a placeholder: rejection never calls the number allocator. */
+export async function reserveValidatedDps(input: Omit<DpsInput,'number'>, reserve:()=>Promise<string>) {
+ buildDps({...input,number:'1'});
+ return reserve();
 }
