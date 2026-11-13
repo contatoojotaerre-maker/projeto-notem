@@ -11,11 +11,14 @@ Gerados pelo montador de src/lib/dps.ts. Tipo de inscrição CNPJ = 2; versão 1
 **Os três XML NÃO passam integralmente no XSD original.** Único erro reportado:
 `Element '{http://www.sped.fazenda.gov.br/nfse}serie': [facet 'pattern'] The value '1' is not accepted by the pattern '^0{0,4}\d{1,5}$'.`
 
-O padrão TSSerieDPS no ZIP oficial contém âncoras ^/$, que não têm semântica de âncora em expressões regulares XML Schema. O esquema não foi alterado e nenhum caractere artificial foi colocado na série. Demais campos não produziram erros nessa execução. Isso não equivale a aprovação do XML completo.
+O padrão TSSerieDPS no ZIP oficial contém ^/$ como caracteres literais, não âncoras: defeito do esquema oficial. Por autorização do proprietário, o teste corrige **apenas** esse padrão para `0{0,4}\d{1,5}` em uma cópia em memória. O ZIP oficial e o conteúdo dos XML permanecem intactos.
 
 Reprodução estrita (deve falhar):
+`python3 src/test/validate-dps-xsd.py --official docs/exemplos/dps/simples-pj.xml docs/exemplos/dps/nao-optante-pf.xml docs/exemplos/dps/estrangeiro.xml`
+
+Validação completa com a correção isolada em memória (os três devem passar sem erros):
 `python3 src/test/validate-dps-xsd.py docs/exemplos/dps/simples-pj.xml docs/exemplos/dps/nao-optante-pf.xml docs/exemplos/dps/estrangeiro.xml`
 
-Teste diagnóstico `--known-series-issue` aceita apenas esse erro conhecido e falha se surgir qualquer outro. Não substitui a validação estrita nem muda o XSD.
+Nenhum erro de validação é ignorado. Os testes verificam o ZIP intacto e a recusa de ambiente/série inválidos.
 
 **Parte 3 bloqueada** até conferência externa e liberação do proprietário. Sincronização/presença dos arquivos no GitHub precisa ser confirmada; gravação local não comprova sincronização.
