@@ -9,7 +9,7 @@ import { fixture, examples } from './dps-fixtures';
 describe('DPS E1', () => {
   it('CNPJ usa tipo 2 e identificador de 45 caracteres', () => { const id = dpsIdentifier('4212254', '11222333000181', 1, '999999999999999'); expect(id).toBe('DPS421225421122233300018100001999999999999999'); expect(id).toHaveLength(45); });
   it('valida exemplos e variações com apenas o defeito literal ^/$ da série corrigido em memória', () => {
-    const folder = mkdtempSync(join(tmpdir(), 'dps-')); const variations = Object.values(examples()); const absent = fixture(); absent.customer = null; variations.push(absent); const withheld = fixture(); withheld.service.withholding = 2; withheld.fiscal.withheldRate = '2.00'; variations.push(withheld); const none = fixture(); none.fiscal.approximate = { mode: 'none' }; variations.push(none);
+    const folder = mkdtempSync(join(tmpdir(), 'dps-')); const variations = Object.values(examples()); const absent = fixture(); absent.customer = null; variations.push(absent); const withheld = fixture(); withheld.service.withholding = 2; withheld.fiscal.withheldRate = '2.00'; variations.push(withheld); const none = fixture(); none.fiscal.simples=2; none.fiscal.regime=null; none.fiscal.approximate = { mode: 'none' }; variations.push(none);
     const archive = 'docs/referencias/esquemas/nfse-esquemas_xsd-v1-01-20260209.zip'; const original = readFileSync(archive);
     try {
       const files = variations.map((v, i) => { const p = join(folder, `${i}.xml`); writeFileSync(p, buildDps(v).xml); return p; });

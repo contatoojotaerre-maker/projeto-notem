@@ -90,7 +90,7 @@ export function fiscalToDb(v: z.infer<typeof fiscalIn>, ids: { company_id: strin
 }
 const fiscalConstraintMap: Record<string, { campo: string; mensagem: string }> = {
   company_fiscal_settings_check: { campo: 'regime_apuracao_simples', mensagem: 'Informe o regime de apuração apenas para ME/EPP (obrigatório nesse caso).' },
-  company_fiscal_settings_check1: { campo: 'tributos_aproximados', mensagem: 'Os percentuais não combinam com o modo escolhido: percentual_simples exige só percentual_simples (MEI ou ME/EPP); percentual_por_esfera exige federal, estadual e municipal; nao_informar não aceita percentuais.' },
+  company_fiscal_settings_check1: { campo: 'tributos_aproximados', mensagem: 'Os percentuais não combinam com o modo escolhido: percentual_simples exige só percentual_simples (somente ME/EPP); percentual_por_esfera exige federal, estadual e municipal; nao_informar é exclusivo de MEI e não aceita percentuais.' },
   company_fiscal_settings_approx_simples_percent_check: { campo: 'tributos_aproximados.percentual_simples', mensagem: 'Informe um percentual entre 0 e 100.' },
   company_fiscal_settings_approx_federal_percent_check: { campo: 'tributos_aproximados.federal', mensagem: 'Informe um percentual entre 0 e 100.' },
   company_fiscal_settings_approx_state_percent_check: { campo: 'tributos_aproximados.estadual', mensagem: 'Informe um percentual entre 0 e 100.' },
@@ -101,7 +101,7 @@ const fiscalConstraintMap: Record<string, { campo: string; mensagem: string }> =
   company_fiscal_settings_special_tax_regime_check: { campo: 'regime_especial', mensagem: 'Regime especial inválido.' },
   company_fiscal_settings_dps_series_check: { campo: 'serie_dps', mensagem: 'A série DPS deve estar entre 00001 e 49999.' },
 };
-const fiscalTriggerMap: [RegExp, string][] = [[/E0713/, 'tributos_aproximados'], [/alíquota do ISS/i, 'aliquota_iss_simples'], [/série/i, 'serie_dps']];
+const fiscalTriggerMap: [RegExp, string][] = [[/E071[023]/, 'tributos_aproximados.modo'], [/alíquota do ISS/i, 'aliquota_iss_simples'], [/série/i, 'serie_dps']];
 /** Maps a database refusal on company_fiscal_settings to the contract field; never returns "corpo". */
 export function fiscalDbDetail(e: { code?: string; message: string }): { campo: string; mensagem: string } | null {
   if (e.code === '23514') { const name = Object.keys(fiscalConstraintMap).sort((a, b) => b.length - a.length).find(k => e.message.includes(`"${k}"`)); return name ? fiscalConstraintMap[name] ?? null : null; }
@@ -158,7 +158,9 @@ export type ReadinessItem = { item: string; ok: boolean | null; mensagem: string
 const dateBr = (v: string) => new Date(v).toLocaleDateString('pt-BR', { timeZone: 'America/Sao_Paulo' });
 export function computeReadiness(env: Env, i: ReadinessInput, now = Date.now()) {
   const cert = i.certificates.find(c => validReadinessCertificate(c, i.company.cnpj, now));
-  const fiscalOk = i.settings !== null && fiscalSchema.safeParse(i.settings).success;
+  const fiscalParsed=i.settings!==null?fiscalSchema.safeParse(i.settings):null;
+  const fiscalOk=fiscalParsed?.success===true;
+  const fiscalError=fiscalParsed&&!fiscalParsed.success?fiscalParsed.error.issues.find(x=>/E071[023]/.test(x.message))?.message:null;
   const active = i.services.filter(s => s.active).length;
   let municipio: ReadinessItem;
   const q = i.lastQuery;
@@ -172,7 +174,7 @@ export function computeReadiness(env: Env, i: ReadinessInput, now = Date.now()) 
   const itens: ReadinessItem[] = [
     { item: 'empresa_ativa', ok: i.company.active, mensagem: i.company.active ? 'Empresa ativa.' : 'Empresa desativada.' },
     { item: 'certificado', ok: !!cert, mensagem: cert ? `Certificado válido até ${dateBr(cert.valid_until)}.` : 'Nenhum certificado válido para o CNPJ da empresa.' },
-    { item: 'configuracao_fiscal', ok: fiscalOk, mensagem: fiscalOk ? 'Configuração fiscal completa.' : 'Configuração fiscal pendente ou incompleta.' },
+    { item: 'configuracao_fiscal', ok: fiscalOk, mensagem: fiscalOk ? 'Configuração fiscal completa.' : fiscalError ? `Configuração fiscal incompleta. ${fiscalError}` : 'Configuração fiscal pendente ou incompleta.' },
     { item: 'servico_ativo', ok: active > 0, mensagem: active > 0 ? `${active} ${active === 1 ? 'serviço ativo' : 'serviços ativos'}.` : 'Nenhum serviço ativo.' },
     municipio,
   ];

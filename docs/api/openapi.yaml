@@ -170,7 +170,7 @@ paths:
         "200": { description: Configuração gravada, content: { application/json: { schema: { $ref: "#/components/schemas/ConfiguracaoFiscal" } } } }
         "400": { $ref: "#/components/responses/Erro" }
         "404": { $ref: "#/components/responses/Erro" }
-        "422": { description: "REGRA_DE_NEGOCIO com detalhes por campo (ex.: E0713, alíquota do ISS no Simples)", content: { application/json: { schema: { $ref: "#/components/schemas/Erro" } } } }
+        "422": { description: "REGRA_DE_NEGOCIO com detalhes por campo (ex.: E0710/E0712/E0713, alíquota do ISS no Simples)", content: { application/json: { schema: { $ref: "#/components/schemas/Erro" } } } }
   /empresas/{id}/certificado:
     parameters: [{ $ref: "#/components/parameters/EmpresaId" }]
     get:
@@ -417,6 +417,13 @@ components:
             criada_em: { type: string, format: date-time }
             atualizada_em: { type: string, format: date-time }
     ConfiguracaoFiscal:
+      description: |
+        Matriz obrigatória: nao_optante aceita somente percentual_por_esfera (E0713);
+        mei aceita percentual_por_esfera ou nao_informar, nunca percentual_simples (E0710);
+        me_epp aceita percentual_simples ou percentual_por_esfera, nunca nao_informar (E0712).
+        Por esfera exige federal/estadual/municipal; zero é permitido. Ausentes são null.
+        Legados incompatíveis não são reescritos, ficam com configuração fiscal incompleta
+        e bloqueiam emissão antes de numerar com mensagem da regra.
       type: object
       required: [simples_nacional, regime_especial, tributos_aproximados]
       properties:
@@ -464,6 +471,7 @@ components:
         indicador_operacao_ibscbs: { type: [string, "null"] }
         numero_beneficio_municipal: { type: [string, "null"] }
     Situacao:
+      description: Configurações fiscais legadas incompatíveis com E0710/E0712/E0713 deixam configuracao_fiscal pendente, com mensagem da regra; não são reescritas.
       type: object
       properties:
         ambiente: { $ref: "#/components/schemas/Ambiente" }
