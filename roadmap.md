@@ -1,4 +1,8 @@
 # notem — Fase 1
+## Etapa E1 — Emissão e tomadores (planejamento, sem implementação)
+- [ ] Ler docs/api/notas.md e transmissor/LEIAME.md v2 — arquivos da main ainda não disponíveis nesta cópia; sincronização depende da integração Git do projeto.
+- [ ] Finalizar e aprovar o plano em partes, incluindo divergência do identificador DPS (Anexo I: CNPJ = 2).
+
 ## Fase 3A.2 — Webhooks e ajustes de Integrações
 - [x] Correção pós-auditoria: teste direto com resultado na tela, eventos reais em fila sem waitUntil, mensagens em português, registro resumido do agendador, chave de autorização, revelar segredo, filtro por empresa, exemplo e docs.
 - [x] Teste publicado: webhook.teste entregue ao webhook.site (HTTP 200, 598 ms) pelo agendador; ciclo registrado com resumo.
