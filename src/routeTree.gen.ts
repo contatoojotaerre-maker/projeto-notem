@@ -31,6 +31,7 @@ import { Route as AuthenticatedOOrgSlugEmpresasCompanyIdRouteImport } from './ro
 import { Route as AuthenticatedOOrgSlugEmpresasNovaRouteImport } from './routes/_authenticated/o/$orgSlug/empresas/nova'
 import { Route as AuthenticatedOOrgSlugIntegracoesIndexRouteImport } from './routes/_authenticated/o/$orgSlug/integracoes/index'
 import { Route as AuthenticatedOOrgSlugIntegracoesIntegrationIdRouteImport } from './routes/_authenticated/o/$orgSlug/integracoes/$integrationId'
+import { Route as AuthenticatedOOrgSlugNotasInvoiceIdRouteImport } from './routes/_authenticated/o/$orgSlug/notas/$invoiceId'
 import { Route as ApiV1EmpresasIdIndexRouteImport } from './routes/api/v1/empresas/$id/index'
 import { Route as ApiV1EmpresasIdCertificadoRouteImport } from './routes/api/v1/empresas/$id/certificado'
 import { Route as ApiV1EmpresasIdConfiguracaoFiscalRouteImport } from './routes/api/v1/empresas/$id/configuracao-fiscal'
@@ -163,6 +164,12 @@ const AuthenticatedOOrgSlugIntegracoesIntegrationIdRoute =
     path: '/o/$orgSlug/integracoes/$integrationId',
     getParentRoute: () => AuthenticatedRouteRoute,
   } as any)
+const AuthenticatedOOrgSlugNotasInvoiceIdRoute =
+  AuthenticatedOOrgSlugNotasInvoiceIdRouteImport.update({
+    id: '/o/$orgSlug/notas/$invoiceId',
+    path: '/o/$orgSlug/notas/$invoiceId',
+    getParentRoute: () => AuthenticatedRouteRoute,
+  } as any)
 const ApiV1EmpresasIdIndexRoute = ApiV1EmpresasIdIndexRouteImport.update({
   id: '/api/v1/empresas/$id/',
   path: '/api/v1/empresas/$id/',
@@ -253,6 +260,7 @@ export interface FileRoutesByFullPath {
   '/o/$orgSlug/empresas/$companyId': typeof AuthenticatedOOrgSlugEmpresasCompanyIdRoute
   '/o/$orgSlug/empresas/nova': typeof AuthenticatedOOrgSlugEmpresasNovaRoute
   '/o/$orgSlug/integracoes/$integrationId': typeof AuthenticatedOOrgSlugIntegracoesIntegrationIdRoute
+  '/o/$orgSlug/notas/$invoiceId': typeof AuthenticatedOOrgSlugNotasInvoiceIdRoute
   '/api/v1/empresas/$id/certificado': typeof ApiV1EmpresasIdCertificadoRoute
   '/api/v1/empresas/$id/configuracao-fiscal': typeof ApiV1EmpresasIdConfiguracaoFiscalRoute
   '/api/v1/notas/$invoiceId/pdf': typeof ApiV1NotasInvoiceIdPdfRoute
@@ -288,6 +296,7 @@ export interface FileRoutesByTo {
   '/o/$orgSlug/empresas/$companyId': typeof AuthenticatedOOrgSlugEmpresasCompanyIdRoute
   '/o/$orgSlug/empresas/nova': typeof AuthenticatedOOrgSlugEmpresasNovaRoute
   '/o/$orgSlug/integracoes/$integrationId': typeof AuthenticatedOOrgSlugIntegracoesIntegrationIdRoute
+  '/o/$orgSlug/notas/$invoiceId': typeof AuthenticatedOOrgSlugNotasInvoiceIdRoute
   '/api/v1/empresas/$id/certificado': typeof ApiV1EmpresasIdCertificadoRoute
   '/api/v1/empresas/$id/configuracao-fiscal': typeof ApiV1EmpresasIdConfiguracaoFiscalRoute
   '/api/v1/notas/$invoiceId/pdf': typeof ApiV1NotasInvoiceIdPdfRoute
@@ -325,6 +334,7 @@ export interface FileRoutesById {
   '/_authenticated/o/$orgSlug/empresas/$companyId': typeof AuthenticatedOOrgSlugEmpresasCompanyIdRoute
   '/_authenticated/o/$orgSlug/empresas/nova': typeof AuthenticatedOOrgSlugEmpresasNovaRoute
   '/_authenticated/o/$orgSlug/integracoes/$integrationId': typeof AuthenticatedOOrgSlugIntegracoesIntegrationIdRoute
+  '/_authenticated/o/$orgSlug/notas/$invoiceId': typeof AuthenticatedOOrgSlugNotasInvoiceIdRoute
   '/api/v1/empresas/$id/certificado': typeof ApiV1EmpresasIdCertificadoRoute
   '/api/v1/empresas/$id/configuracao-fiscal': typeof ApiV1EmpresasIdConfiguracaoFiscalRoute
   '/api/v1/notas/$invoiceId/pdf': typeof ApiV1NotasInvoiceIdPdfRoute
@@ -362,6 +372,7 @@ export interface FileRouteTypes {
     | '/o/$orgSlug/empresas/$companyId'
     | '/o/$orgSlug/empresas/nova'
     | '/o/$orgSlug/integracoes/$integrationId'
+    | '/o/$orgSlug/notas/$invoiceId'
     | '/api/v1/empresas/$id/certificado'
     | '/api/v1/empresas/$id/configuracao-fiscal'
     | '/api/v1/notas/$invoiceId/pdf'
@@ -397,6 +408,7 @@ export interface FileRouteTypes {
     | '/o/$orgSlug/empresas/$companyId'
     | '/o/$orgSlug/empresas/nova'
     | '/o/$orgSlug/integracoes/$integrationId'
+    | '/o/$orgSlug/notas/$invoiceId'
     | '/api/v1/empresas/$id/certificado'
     | '/api/v1/empresas/$id/configuracao-fiscal'
     | '/api/v1/notas/$invoiceId/pdf'
@@ -433,6 +445,7 @@ export interface FileRouteTypes {
     | '/_authenticated/o/$orgSlug/empresas/$companyId'
     | '/_authenticated/o/$orgSlug/empresas/nova'
     | '/_authenticated/o/$orgSlug/integracoes/$integrationId'
+    | '/_authenticated/o/$orgSlug/notas/$invoiceId'
     | '/api/v1/empresas/$id/certificado'
     | '/api/v1/empresas/$id/configuracao-fiscal'
     | '/api/v1/notas/$invoiceId/pdf'
@@ -633,6 +646,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedOOrgSlugIntegracoesIntegrationIdRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
+    '/_authenticated/o/$orgSlug/notas/$invoiceId': {
+      id: '/_authenticated/o/$orgSlug/notas/$invoiceId'
+      path: '/o/$orgSlug/notas/$invoiceId'
+      fullPath: '/o/$orgSlug/notas/$invoiceId'
+      preLoaderRoute: typeof AuthenticatedOOrgSlugNotasInvoiceIdRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
     '/api/v1/empresas/$id/': {
       id: '/api/v1/empresas/$id/'
       path: '/api/v1/empresas/$id'
@@ -728,6 +748,7 @@ interface AuthenticatedRouteRouteChildren {
   AuthenticatedOOrgSlugEmpresasCompanyIdRoute: typeof AuthenticatedOOrgSlugEmpresasCompanyIdRoute
   AuthenticatedOOrgSlugEmpresasNovaRoute: typeof AuthenticatedOOrgSlugEmpresasNovaRoute
   AuthenticatedOOrgSlugIntegracoesIntegrationIdRoute: typeof AuthenticatedOOrgSlugIntegracoesIntegrationIdRoute
+  AuthenticatedOOrgSlugNotasInvoiceIdRoute: typeof AuthenticatedOOrgSlugNotasInvoiceIdRoute
   AuthenticatedOOrgSlugEmpresasIndexRoute: typeof AuthenticatedOOrgSlugEmpresasIndexRoute
   AuthenticatedOOrgSlugIntegracoesIndexRoute: typeof AuthenticatedOOrgSlugIntegracoesIndexRoute
 }
@@ -743,6 +764,8 @@ const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
     AuthenticatedOOrgSlugEmpresasNovaRoute,
   AuthenticatedOOrgSlugIntegracoesIntegrationIdRoute:
     AuthenticatedOOrgSlugIntegracoesIntegrationIdRoute,
+  AuthenticatedOOrgSlugNotasInvoiceIdRoute:
+    AuthenticatedOOrgSlugNotasInvoiceIdRoute,
   AuthenticatedOOrgSlugEmpresasIndexRoute:
     AuthenticatedOOrgSlugEmpresasIndexRoute,
   AuthenticatedOOrgSlugIntegracoesIndexRoute:
