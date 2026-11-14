@@ -88,9 +88,9 @@ Durante a troca de segredo, a notem pode enviar duas assinaturas (`v1=...,v1=...
 | `nota.autorizada` | Nota autorizada pelo governo (inclusive após "em verificação") |
 | `nota.rejeitada` | Emissão rejeitada pelo governo |
 | `nota.cancelada` | Cancelamento concluído |
-| `nota.cancelamento_em_analise` | Cancelamento enviado para análise da prefeitura |
+| `nota.cancelamento_em_analise` | Pedido de análise fiscal do cancelamento registrado; a prefeitura decide |
 | `nota.cancelamento_indeferido` | Prefeitura indeferiu o cancelamento |
-| `nota.substituida` | Nota substituída por outra |
+| `nota.substituida` | Nota original substituída: a substituta foi autorizada |
 | `nota.cancelada_prefeitura` | Prefeitura cancelou a nota por ofício |
 | `nota.bloqueada_prefeitura` | Prefeitura bloqueou ações sobre a nota |
 | `nota.manifestacao` | Tomador (ou outro ator) confirmou ou rejeitou a nota |
@@ -203,7 +203,7 @@ Valores fictícios para demonstrar o formato; mensagens governamentais são ilus
     "servico": {
       "servico_id": "00000000-0000-4000-8000-000000000301",
       "codigo_servico": "140101",
-      "descricao": "Vistoria veicular — placa ABC1D23"
+      "descricao": "Vistoria veicular - placa ABC1D23"
     },
     "valores": {
       "servico": "150.00",
@@ -223,6 +223,8 @@ Valores fictícios para demonstrar o formato; mensagens governamentais são ilus
     "erros_governo": [],
     "substitui_nota_id": null,
     "substituida_por_nota_id": null,
+    "operacao_pendente": null,
+    "cancelamento": null,
     "links": {
       "xml": "https://app.notemfiscal.com.br/api/v1/notas/00000000-0000-4000-8000-000000000101/xml",
       "pdf": "https://app.notemfiscal.com.br/api/v1/notas/00000000-0000-4000-8000-000000000101/pdf",
@@ -267,7 +269,7 @@ Valores fictícios para demonstrar o formato; mensagens governamentais são ilus
     "servico": {
       "servico_id": "00000000-0000-4000-8000-000000000301",
       "codigo_servico": "140101",
-      "descricao": "Vistoria veicular — placa ABC1D23"
+      "descricao": "Vistoria veicular - placa ABC1D23"
     },
     "valores": {
       "servico": "150.00",
@@ -296,6 +298,8 @@ Valores fictícios para demonstrar o formato; mensagens governamentais são ilus
     ],
     "substitui_nota_id": null,
     "substituida_por_nota_id": null,
+    "operacao_pendente": null,
+    "cancelamento": null,
     "links": {
       "xml": "https://app.notemfiscal.com.br/api/v1/notas/00000000-0000-4000-8000-000000000101/xml",
       "pdf": "https://app.notemfiscal.com.br/api/v1/notas/00000000-0000-4000-8000-000000000101/pdf",
@@ -306,3 +310,222 @@ Valores fictícios para demonstrar o formato; mensagens governamentais são ilus
   }
 }
 ```
+
+### Exemplo completo: `nota.cancelada`
+Enviado quando o governo registra o cancelamento, inclusive quando a notem confirma um cancelamento feito fora dela (`cancelamento.registrado_fora_da_notem: true`). Valores fictícios.
+```json
+{
+  "id": "evt_33333333333333333333333333333333",
+  "tipo": "nota.cancelada",
+  "criado_em": "2026-11-13T09:20:41-03:00",
+  "ambiente": "producao",
+  "organizacao_id": "00000000-0000-4000-8000-000000000401",
+  "integracao_id": "00000000-0000-4000-8000-000000000501",
+  "dados": {
+    "id": "00000000-0000-4000-8000-000000000101",
+    "id_externo": "OS-55821",
+    "empresa_id": "00000000-0000-4000-8000-000000000201",
+    "ambiente": "producao",
+    "situacao": "cancelada",
+    "restricoes": [],
+    "manifestacao": null,
+    "numero": "123",
+    "chave_acesso": "42122542211222333000181000000000012326110000000001",
+    "serie_dps": "00900",
+    "numero_dps": "57",
+    "competencia": "2026-11-12",
+    "emitida_em": "2026-11-12T10:15:03-03:00",
+    "autorizada_em": "2026-11-12T10:15:05-03:00",
+    "tomador": {
+      "tipo": "pj",
+      "documento": "99888777000166",
+      "nome": "Cliente Exemplo LTDA"
+    },
+    "servico": {
+      "servico_id": "00000000-0000-4000-8000-000000000301",
+      "codigo_servico": "140101",
+      "descricao": "Vistoria veicular - placa ABC1D23"
+    },
+    "valores": {
+      "servico": "150.00",
+      "desconto_incondicionado": "0.00",
+      "desconto_condicionado": "0.00",
+      "base_calculo": "150.00",
+      "aliquota_iss": null,
+      "valor_iss": null,
+      "iss_retido": false,
+      "valor_liquido": "150.00"
+    },
+    "local_prestacao": {
+      "codigo_municipio": "4212254",
+      "municipio": "Passo de Torres",
+      "uf": "SC"
+    },
+    "erros_governo": [],
+    "substitui_nota_id": null,
+    "substituida_por_nota_id": null,
+    "operacao_pendente": null,
+    "cancelamento": {
+      "tipo": "cancelamento",
+      "motivo": "erro_emissao",
+      "justificativa": "Valor do serviço informado incorretamente.",
+      "solicitado_em": "2026-11-13T09:20:38-03:00",
+      "registrado_em": "2026-11-13T09:20:40-03:00",
+      "situacao": "cancelado",
+      "pode_solicitar_analise": false,
+      "registrado_fora_da_notem": false,
+      "erros_governo": []
+    },
+    "links": {
+      "xml": "https://app.notemfiscal.com.br/api/v1/notas/00000000-0000-4000-8000-000000000101/xml",
+      "pdf": "https://app.notemfiscal.com.br/api/v1/notas/00000000-0000-4000-8000-000000000101/pdf",
+      "consulta_publica": "https://www.nfse.gov.br/ConsultaPublica?tpc=1&chave=42122542211222333000181000000000012326110000000001"
+    },
+    "criada_em": "2026-11-12T10:15:03-03:00",
+    "atualizada_em": "2026-11-13T09:20:41-03:00"
+  }
+}
+```
+
+### Exemplo completo: `nota.cancelamento_em_analise`
+Enviado quando o pedido de análise fiscal do cancelamento é registrado. Valores fictícios.
+```json
+{
+  "id": "evt_44444444444444444444444444444444",
+  "tipo": "nota.cancelamento_em_analise",
+  "criado_em": "2026-11-20T15:02:11-03:00",
+  "ambiente": "producao",
+  "organizacao_id": "00000000-0000-4000-8000-000000000401",
+  "integracao_id": "00000000-0000-4000-8000-000000000501",
+  "dados": {
+    "id": "00000000-0000-4000-8000-000000000101",
+    "id_externo": "OS-55821",
+    "empresa_id": "00000000-0000-4000-8000-000000000201",
+    "ambiente": "producao",
+    "situacao": "cancelamento_em_analise",
+    "restricoes": [],
+    "manifestacao": null,
+    "numero": "123",
+    "chave_acesso": "42122542211222333000181000000000012326110000000001",
+    "serie_dps": "00900",
+    "numero_dps": "57",
+    "competencia": "2026-11-12",
+    "emitida_em": "2026-11-12T10:15:03-03:00",
+    "autorizada_em": "2026-11-12T10:15:05-03:00",
+    "tomador": {
+      "tipo": "pj",
+      "documento": "99888777000166",
+      "nome": "Cliente Exemplo LTDA"
+    },
+    "servico": {
+      "servico_id": "00000000-0000-4000-8000-000000000301",
+      "codigo_servico": "140101",
+      "descricao": "Vistoria veicular - placa ABC1D23"
+    },
+    "valores": {
+      "servico": "150.00",
+      "desconto_incondicionado": "0.00",
+      "desconto_condicionado": "0.00",
+      "base_calculo": "150.00",
+      "aliquota_iss": null,
+      "valor_iss": null,
+      "iss_retido": false,
+      "valor_liquido": "150.00"
+    },
+    "local_prestacao": {
+      "codigo_municipio": "4212254",
+      "municipio": "Passo de Torres",
+      "uf": "SC"
+    },
+    "erros_governo": [],
+    "substitui_nota_id": null,
+    "substituida_por_nota_id": null,
+    "operacao_pendente": null,
+    "cancelamento": {
+      "tipo": "analise_cancelamento",
+      "motivo": "servico_nao_prestado",
+      "justificativa": "Serviço não prestado; prazo de cancelamento expirado.",
+      "solicitado_em": "2026-11-20T15:02:08-03:00",
+      "registrado_em": "2026-11-20T15:02:10-03:00",
+      "situacao": "em_analise",
+      "pode_solicitar_analise": false,
+      "registrado_fora_da_notem": false,
+      "erros_governo": []
+    },
+    "links": {
+      "xml": "https://app.notemfiscal.com.br/api/v1/notas/00000000-0000-4000-8000-000000000101/xml",
+      "pdf": "https://app.notemfiscal.com.br/api/v1/notas/00000000-0000-4000-8000-000000000101/pdf",
+      "consulta_publica": "https://www.nfse.gov.br/ConsultaPublica?tpc=1&chave=42122542211222333000181000000000012326110000000001"
+    },
+    "criada_em": "2026-11-12T10:15:03-03:00",
+    "atualizada_em": "2026-11-20T15:02:11-03:00"
+  }
+}
+```
+
+### Exemplo completo: `nota.substituida`
+Enviado para a nota **original** quando a substituta é autorizada (a substituta gera `nota.autorizada`, com `substitui_nota_id`). Valores fictícios.
+```json
+{
+  "id": "evt_55555555555555555555555555555555",
+  "tipo": "nota.substituida",
+  "criado_em": "2026-11-14T11:00:07-03:00",
+  "ambiente": "producao",
+  "organizacao_id": "00000000-0000-4000-8000-000000000401",
+  "integracao_id": "00000000-0000-4000-8000-000000000501",
+  "dados": {
+    "id": "00000000-0000-4000-8000-000000000101",
+    "id_externo": "OS-55821",
+    "empresa_id": "00000000-0000-4000-8000-000000000201",
+    "ambiente": "producao",
+    "situacao": "substituida",
+    "restricoes": [],
+    "manifestacao": null,
+    "numero": "123",
+    "chave_acesso": "42122542211222333000181000000000012326110000000001",
+    "serie_dps": "00900",
+    "numero_dps": "57",
+    "competencia": "2026-11-12",
+    "emitida_em": "2026-11-12T10:15:03-03:00",
+    "autorizada_em": "2026-11-12T10:15:05-03:00",
+    "tomador": {
+      "tipo": "pj",
+      "documento": "99888777000166",
+      "nome": "Cliente Exemplo LTDA"
+    },
+    "servico": {
+      "servico_id": "00000000-0000-4000-8000-000000000301",
+      "codigo_servico": "140101",
+      "descricao": "Vistoria veicular - placa ABC1D23"
+    },
+    "valores": {
+      "servico": "150.00",
+      "desconto_incondicionado": "0.00",
+      "desconto_condicionado": "0.00",
+      "base_calculo": "150.00",
+      "aliquota_iss": null,
+      "valor_iss": null,
+      "iss_retido": false,
+      "valor_liquido": "150.00"
+    },
+    "local_prestacao": {
+      "codigo_municipio": "4212254",
+      "municipio": "Passo de Torres",
+      "uf": "SC"
+    },
+    "erros_governo": [],
+    "substitui_nota_id": null,
+    "substituida_por_nota_id": "00000000-0000-4000-8000-000000000102",
+    "operacao_pendente": null,
+    "cancelamento": null,
+    "links": {
+      "xml": "https://app.notemfiscal.com.br/api/v1/notas/00000000-0000-4000-8000-000000000101/xml",
+      "pdf": "https://app.notemfiscal.com.br/api/v1/notas/00000000-0000-4000-8000-000000000101/pdf",
+      "consulta_publica": "https://www.nfse.gov.br/ConsultaPublica?tpc=1&chave=42122542211222333000181000000000012326110000000001"
+    },
+    "criada_em": "2026-11-12T10:15:03-03:00",
+    "atualizada_em": "2026-11-14T11:00:07-03:00"
+  }
+}
+```
+
