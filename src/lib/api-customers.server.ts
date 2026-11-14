@@ -2,6 +2,7 @@ import type { Json } from '@/integrations/supabase/types';
 import { customerCreate, customerSchema, customerOutput } from './customers';
 import { fail, parseBody, pageParams, page, isoBr } from './api-contract';
 import { loadCompany, type ApiCtx } from './api.server';
+import { normalizeCustomerText } from './fiscal-text';
 
 async function catalog(ctx: ApiCtx, data: ReturnType<typeof customerSchema.parse>) {
   const e = data.endereco; if (!e) return;
@@ -24,7 +25,9 @@ export async function saveCustomer(ctx: ApiCtx, patch = false) {
   const c = await loadCompany(ctx); const prior = patch ? await find(ctx) : null;
   const raw = parseBody(customerCreate, ctx.body); const { id_externo, ...fields } = raw;
   const old = prior ? customerSchema.parse(prior.customer_data) : null;
-  const data = parseBody(customerSchema, old ? { ...old, ...fields, ...(fields['endereco'] && typeof fields['endereco'] === 'object' ? { endereco: { ...old.endereco, ...fields['endereco'] } } : {}) } : fields); await catalog(ctx, data);
+  const merged = structuredClone(old ? { ...old, ...fields, ...(fields['endereco'] && typeof fields['endereco'] === 'object' ? { endereco: { ...old.endereco, ...fields['endereco'] } } : {}) } : fields);
+  const textIssues = normalizeCustomerText(merged, '');
+  const data = parseBody(customerSchema, merged); if (textIssues.length) throw fail(422, 'REGRA_DE_NEGOCIO', textIssues); await catalog(ctx, data);
   const values = { customer_data: data as Json, external_id: id_externo === undefined ? prior?.external_id ?? null : id_externo, updated_by: ctx.actor, changed_by_integration_id: ctx.integration_id, change_origin: 'api' as const };
   const r = prior ? await ctx.db.from('company_customers').update(values).eq('id', prior.id).eq('company_id', c.id).eq('organization_id', ctx.organization_id).select().single() : await ctx.db.from('company_customers').insert({ ...values, company_id: c.id, organization_id: ctx.organization_id, created_by: ctx.actor }).select().single();
   if (r.error) { if (r.error.code === '23505') throw fail(409, 'ID_EXTERNO_DUPLICADO', [{ campo: 'id_externo', mensagem: 'Já existe um tomador com este id_externo nesta empresa.' }]); throw new Error('CUSTOMER_WRITE_FAILED'); } return { status: prior ? 200 : 201, body: output(r.data) };
