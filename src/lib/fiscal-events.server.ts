@@ -19,7 +19,7 @@ export const alreadyRegisteredCodes = ['E0840', 'E0802', 'E1805'];
 export const eventBody = z.object({ motivo: z.enum(['erro_emissao', 'servico_nao_prestado', 'outros']), justificativa: z.string().max(2000) }).strict();
 type EventReply = { evento_assinado?: string; resposta?: GovernmentReply };
 type Outcome = { event: FiscalEvent; invoice: Invoice };
-type Patch = { status: 'not_sent' | 'verifying' | 'registered' | 'rejected' | 'not_registered'; signed_xml?: string; event_xml?: string; government_response?: Json; government_errors?: Json; can_request_analysis?: boolean; registered_outside?: boolean; registered_at?: string };
+type Patch = { status: 'not_sent' | 'verifying' | 'registered' | 'rejected' | 'not_registered'; signed_xml?: string; event_xml?: string; government_response?: Json; government_errors?: Json; can_request_analysis?: boolean; registered_outside?: boolean; registered_at?: string | undefined };
 
 const reasonByCode = Object.fromEntries(Object.entries(cancelReasons).map(([k, v]) => [v, k])) as Record<string, CancelReason>;
 const tagValue = (xml: string, name: string) => xml.match(new RegExp(`<${name}>([^<]*)</${name}>`))?.[1] ?? null;
