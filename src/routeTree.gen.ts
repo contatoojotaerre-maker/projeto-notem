@@ -25,6 +25,7 @@ import { Route as ApiV1CatalogosMunicipiosRouteImport } from './routes/api/v1/ca
 import { Route as ApiV1CatalogosNbsRouteImport } from './routes/api/v1/catalogos/nbs'
 import { Route as ApiV1CatalogosServicosRouteImport } from './routes/api/v1/catalogos/servicos'
 import { Route as ApiV1EmpresasIndexRouteImport } from './routes/api/v1/empresas/index'
+import { Route as ApiV1NotasIndexRouteImport } from './routes/api/v1/notas/index'
 import { Route as AuthenticatedOOrgSlugEmpresasIndexRouteImport } from './routes/_authenticated/o/$orgSlug/empresas/index'
 import { Route as AuthenticatedOOrgSlugEmpresasCompanyIdRouteImport } from './routes/_authenticated/o/$orgSlug/empresas/$companyId'
 import { Route as AuthenticatedOOrgSlugEmpresasNovaRouteImport } from './routes/_authenticated/o/$orgSlug/empresas/nova'
@@ -33,6 +34,9 @@ import { Route as AuthenticatedOOrgSlugIntegracoesIntegrationIdRouteImport } fro
 import { Route as ApiV1EmpresasIdIndexRouteImport } from './routes/api/v1/empresas/$id/index'
 import { Route as ApiV1EmpresasIdCertificadoRouteImport } from './routes/api/v1/empresas/$id/certificado'
 import { Route as ApiV1EmpresasIdConfiguracaoFiscalRouteImport } from './routes/api/v1/empresas/$id/configuracao-fiscal'
+import { Route as ApiV1NotasInvoiceIdIndexRouteImport } from './routes/api/v1/notas/$invoiceId/index'
+import { Route as ApiV1NotasInvoiceIdPdfRouteImport } from './routes/api/v1/notas/$invoiceId/pdf'
+import { Route as ApiV1NotasInvoiceIdXmlRouteImport } from './routes/api/v1/notas/$invoiceId/xml'
 import { Route as ApiV1EmpresasIdServicosIndexRouteImport } from './routes/api/v1/empresas/$id/servicos/index'
 import { Route as ApiV1EmpresasIdServicosServicoIdRouteImport } from './routes/api/v1/empresas/$id/servicos/$servicoId'
 import { Route as ApiV1EmpresasIdSituacaoIndexRouteImport } from './routes/api/v1/empresas/$id/situacao/index'
@@ -124,6 +128,11 @@ const ApiV1EmpresasIndexRoute = ApiV1EmpresasIndexRouteImport.update({
   path: '/api/v1/empresas/',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ApiV1NotasIndexRoute = ApiV1NotasIndexRouteImport.update({
+  id: '/api/v1/notas/',
+  path: '/api/v1/notas/',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const AuthenticatedOOrgSlugEmpresasIndexRoute =
   AuthenticatedOOrgSlugEmpresasIndexRouteImport.update({
     id: '/o/$orgSlug/empresas/',
@@ -171,6 +180,22 @@ const ApiV1EmpresasIdConfiguracaoFiscalRoute =
     path: '/api/v1/empresas/$id/configuracao-fiscal',
     getParentRoute: () => rootRouteImport,
   } as any)
+const ApiV1NotasInvoiceIdIndexRoute =
+  ApiV1NotasInvoiceIdIndexRouteImport.update({
+    id: '/api/v1/notas/$invoiceId/',
+    path: '/api/v1/notas/$invoiceId/',
+    getParentRoute: () => rootRouteImport,
+  } as any)
+const ApiV1NotasInvoiceIdPdfRoute = ApiV1NotasInvoiceIdPdfRouteImport.update({
+  id: '/api/v1/notas/$invoiceId/pdf',
+  path: '/api/v1/notas/$invoiceId/pdf',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ApiV1NotasInvoiceIdXmlRoute = ApiV1NotasInvoiceIdXmlRouteImport.update({
+  id: '/api/v1/notas/$invoiceId/xml',
+  path: '/api/v1/notas/$invoiceId/xml',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const ApiV1EmpresasIdServicosIndexRoute =
   ApiV1EmpresasIdServicosIndexRouteImport.update({
     id: '/api/v1/empresas/$id/servicos/',
@@ -224,14 +249,18 @@ export interface FileRoutesByFullPath {
   '/api/v1/catalogos/nbs': typeof ApiV1CatalogosNbsRoute
   '/api/v1/catalogos/servicos': typeof ApiV1CatalogosServicosRoute
   '/api/v1/empresas/': typeof ApiV1EmpresasIndexRoute
+  '/api/v1/notas/': typeof ApiV1NotasIndexRoute
   '/o/$orgSlug/empresas/$companyId': typeof AuthenticatedOOrgSlugEmpresasCompanyIdRoute
   '/o/$orgSlug/empresas/nova': typeof AuthenticatedOOrgSlugEmpresasNovaRoute
   '/o/$orgSlug/integracoes/$integrationId': typeof AuthenticatedOOrgSlugIntegracoesIntegrationIdRoute
   '/api/v1/empresas/$id/certificado': typeof ApiV1EmpresasIdCertificadoRoute
   '/api/v1/empresas/$id/configuracao-fiscal': typeof ApiV1EmpresasIdConfiguracaoFiscalRoute
+  '/api/v1/notas/$invoiceId/pdf': typeof ApiV1NotasInvoiceIdPdfRoute
+  '/api/v1/notas/$invoiceId/xml': typeof ApiV1NotasInvoiceIdXmlRoute
   '/o/$orgSlug/empresas/': typeof AuthenticatedOOrgSlugEmpresasIndexRoute
   '/o/$orgSlug/integracoes/': typeof AuthenticatedOOrgSlugIntegracoesIndexRoute
   '/api/v1/empresas/$id/': typeof ApiV1EmpresasIdIndexRoute
+  '/api/v1/notas/$invoiceId/': typeof ApiV1NotasInvoiceIdIndexRoute
   '/api/v1/empresas/$id/servicos/$servicoId': typeof ApiV1EmpresasIdServicosServicoIdRoute
   '/api/v1/empresas/$id/situacao/verificar-municipio': typeof ApiV1EmpresasIdSituacaoVerificarMunicipioRoute
   '/api/v1/empresas/$id/tomadores/$customerId': typeof ApiV1EmpresasIdTomadoresCustomerIdRoute
@@ -255,14 +284,18 @@ export interface FileRoutesByTo {
   '/api/v1/catalogos/nbs': typeof ApiV1CatalogosNbsRoute
   '/api/v1/catalogos/servicos': typeof ApiV1CatalogosServicosRoute
   '/api/v1/empresas': typeof ApiV1EmpresasIndexRoute
+  '/api/v1/notas': typeof ApiV1NotasIndexRoute
   '/o/$orgSlug/empresas/$companyId': typeof AuthenticatedOOrgSlugEmpresasCompanyIdRoute
   '/o/$orgSlug/empresas/nova': typeof AuthenticatedOOrgSlugEmpresasNovaRoute
   '/o/$orgSlug/integracoes/$integrationId': typeof AuthenticatedOOrgSlugIntegracoesIntegrationIdRoute
   '/api/v1/empresas/$id/certificado': typeof ApiV1EmpresasIdCertificadoRoute
   '/api/v1/empresas/$id/configuracao-fiscal': typeof ApiV1EmpresasIdConfiguracaoFiscalRoute
+  '/api/v1/notas/$invoiceId/pdf': typeof ApiV1NotasInvoiceIdPdfRoute
+  '/api/v1/notas/$invoiceId/xml': typeof ApiV1NotasInvoiceIdXmlRoute
   '/o/$orgSlug/empresas': typeof AuthenticatedOOrgSlugEmpresasIndexRoute
   '/o/$orgSlug/integracoes': typeof AuthenticatedOOrgSlugIntegracoesIndexRoute
   '/api/v1/empresas/$id': typeof ApiV1EmpresasIdIndexRoute
+  '/api/v1/notas/$invoiceId': typeof ApiV1NotasInvoiceIdIndexRoute
   '/api/v1/empresas/$id/servicos/$servicoId': typeof ApiV1EmpresasIdServicosServicoIdRoute
   '/api/v1/empresas/$id/situacao/verificar-municipio': typeof ApiV1EmpresasIdSituacaoVerificarMunicipioRoute
   '/api/v1/empresas/$id/tomadores/$customerId': typeof ApiV1EmpresasIdTomadoresCustomerIdRoute
@@ -288,14 +321,18 @@ export interface FileRoutesById {
   '/api/v1/catalogos/nbs': typeof ApiV1CatalogosNbsRoute
   '/api/v1/catalogos/servicos': typeof ApiV1CatalogosServicosRoute
   '/api/v1/empresas/': typeof ApiV1EmpresasIndexRoute
+  '/api/v1/notas/': typeof ApiV1NotasIndexRoute
   '/_authenticated/o/$orgSlug/empresas/$companyId': typeof AuthenticatedOOrgSlugEmpresasCompanyIdRoute
   '/_authenticated/o/$orgSlug/empresas/nova': typeof AuthenticatedOOrgSlugEmpresasNovaRoute
   '/_authenticated/o/$orgSlug/integracoes/$integrationId': typeof AuthenticatedOOrgSlugIntegracoesIntegrationIdRoute
   '/api/v1/empresas/$id/certificado': typeof ApiV1EmpresasIdCertificadoRoute
   '/api/v1/empresas/$id/configuracao-fiscal': typeof ApiV1EmpresasIdConfiguracaoFiscalRoute
+  '/api/v1/notas/$invoiceId/pdf': typeof ApiV1NotasInvoiceIdPdfRoute
+  '/api/v1/notas/$invoiceId/xml': typeof ApiV1NotasInvoiceIdXmlRoute
   '/_authenticated/o/$orgSlug/empresas/': typeof AuthenticatedOOrgSlugEmpresasIndexRoute
   '/_authenticated/o/$orgSlug/integracoes/': typeof AuthenticatedOOrgSlugIntegracoesIndexRoute
   '/api/v1/empresas/$id/': typeof ApiV1EmpresasIdIndexRoute
+  '/api/v1/notas/$invoiceId/': typeof ApiV1NotasInvoiceIdIndexRoute
   '/api/v1/empresas/$id/servicos/$servicoId': typeof ApiV1EmpresasIdServicosServicoIdRoute
   '/api/v1/empresas/$id/situacao/verificar-municipio': typeof ApiV1EmpresasIdSituacaoVerificarMunicipioRoute
   '/api/v1/empresas/$id/tomadores/$customerId': typeof ApiV1EmpresasIdTomadoresCustomerIdRoute
@@ -321,14 +358,18 @@ export interface FileRouteTypes {
     | '/api/v1/catalogos/nbs'
     | '/api/v1/catalogos/servicos'
     | '/api/v1/empresas/'
+    | '/api/v1/notas/'
     | '/o/$orgSlug/empresas/$companyId'
     | '/o/$orgSlug/empresas/nova'
     | '/o/$orgSlug/integracoes/$integrationId'
     | '/api/v1/empresas/$id/certificado'
     | '/api/v1/empresas/$id/configuracao-fiscal'
+    | '/api/v1/notas/$invoiceId/pdf'
+    | '/api/v1/notas/$invoiceId/xml'
     | '/o/$orgSlug/empresas/'
     | '/o/$orgSlug/integracoes/'
     | '/api/v1/empresas/$id/'
+    | '/api/v1/notas/$invoiceId/'
     | '/api/v1/empresas/$id/servicos/$servicoId'
     | '/api/v1/empresas/$id/situacao/verificar-municipio'
     | '/api/v1/empresas/$id/tomadores/$customerId'
@@ -352,14 +393,18 @@ export interface FileRouteTypes {
     | '/api/v1/catalogos/nbs'
     | '/api/v1/catalogos/servicos'
     | '/api/v1/empresas'
+    | '/api/v1/notas'
     | '/o/$orgSlug/empresas/$companyId'
     | '/o/$orgSlug/empresas/nova'
     | '/o/$orgSlug/integracoes/$integrationId'
     | '/api/v1/empresas/$id/certificado'
     | '/api/v1/empresas/$id/configuracao-fiscal'
+    | '/api/v1/notas/$invoiceId/pdf'
+    | '/api/v1/notas/$invoiceId/xml'
     | '/o/$orgSlug/empresas'
     | '/o/$orgSlug/integracoes'
     | '/api/v1/empresas/$id'
+    | '/api/v1/notas/$invoiceId'
     | '/api/v1/empresas/$id/servicos/$servicoId'
     | '/api/v1/empresas/$id/situacao/verificar-municipio'
     | '/api/v1/empresas/$id/tomadores/$customerId'
@@ -384,14 +429,18 @@ export interface FileRouteTypes {
     | '/api/v1/catalogos/nbs'
     | '/api/v1/catalogos/servicos'
     | '/api/v1/empresas/'
+    | '/api/v1/notas/'
     | '/_authenticated/o/$orgSlug/empresas/$companyId'
     | '/_authenticated/o/$orgSlug/empresas/nova'
     | '/_authenticated/o/$orgSlug/integracoes/$integrationId'
     | '/api/v1/empresas/$id/certificado'
     | '/api/v1/empresas/$id/configuracao-fiscal'
+    | '/api/v1/notas/$invoiceId/pdf'
+    | '/api/v1/notas/$invoiceId/xml'
     | '/_authenticated/o/$orgSlug/empresas/'
     | '/_authenticated/o/$orgSlug/integracoes/'
     | '/api/v1/empresas/$id/'
+    | '/api/v1/notas/$invoiceId/'
     | '/api/v1/empresas/$id/servicos/$servicoId'
     | '/api/v1/empresas/$id/situacao/verificar-municipio'
     | '/api/v1/empresas/$id/tomadores/$customerId'
@@ -413,9 +462,13 @@ export interface RootRouteChildren {
   ApiV1CatalogosNbsRoute: typeof ApiV1CatalogosNbsRoute
   ApiV1CatalogosServicosRoute: typeof ApiV1CatalogosServicosRoute
   ApiV1EmpresasIndexRoute: typeof ApiV1EmpresasIndexRoute
+  ApiV1NotasIndexRoute: typeof ApiV1NotasIndexRoute
   ApiV1EmpresasIdCertificadoRoute: typeof ApiV1EmpresasIdCertificadoRoute
   ApiV1EmpresasIdConfiguracaoFiscalRoute: typeof ApiV1EmpresasIdConfiguracaoFiscalRoute
+  ApiV1NotasInvoiceIdPdfRoute: typeof ApiV1NotasInvoiceIdPdfRoute
+  ApiV1NotasInvoiceIdXmlRoute: typeof ApiV1NotasInvoiceIdXmlRoute
   ApiV1EmpresasIdIndexRoute: typeof ApiV1EmpresasIdIndexRoute
+  ApiV1NotasInvoiceIdIndexRoute: typeof ApiV1NotasInvoiceIdIndexRoute
   ApiV1EmpresasIdServicosServicoIdRoute: typeof ApiV1EmpresasIdServicosServicoIdRoute
   ApiV1EmpresasIdSituacaoVerificarMunicipioRoute: typeof ApiV1EmpresasIdSituacaoVerificarMunicipioRoute
   ApiV1EmpresasIdTomadoresCustomerIdRoute: typeof ApiV1EmpresasIdTomadoresCustomerIdRoute
@@ -538,6 +591,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ApiV1EmpresasIndexRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/api/v1/notas/': {
+      id: '/api/v1/notas/'
+      path: '/api/v1/notas'
+      fullPath: '/api/v1/notas/'
+      preLoaderRoute: typeof ApiV1NotasIndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/_authenticated/o/$orgSlug/empresas/': {
       id: '/_authenticated/o/$orgSlug/empresas/'
       path: '/o/$orgSlug/empresas'
@@ -592,6 +652,27 @@ declare module '@tanstack/react-router' {
       path: '/api/v1/empresas/$id/configuracao-fiscal'
       fullPath: '/api/v1/empresas/$id/configuracao-fiscal'
       preLoaderRoute: typeof ApiV1EmpresasIdConfiguracaoFiscalRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/v1/notas/$invoiceId/': {
+      id: '/api/v1/notas/$invoiceId/'
+      path: '/api/v1/notas/$invoiceId'
+      fullPath: '/api/v1/notas/$invoiceId/'
+      preLoaderRoute: typeof ApiV1NotasInvoiceIdIndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/v1/notas/$invoiceId/pdf': {
+      id: '/api/v1/notas/$invoiceId/pdf'
+      path: '/api/v1/notas/$invoiceId/pdf'
+      fullPath: '/api/v1/notas/$invoiceId/pdf'
+      preLoaderRoute: typeof ApiV1NotasInvoiceIdPdfRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/v1/notas/$invoiceId/xml': {
+      id: '/api/v1/notas/$invoiceId/xml'
+      path: '/api/v1/notas/$invoiceId/xml'
+      fullPath: '/api/v1/notas/$invoiceId/xml'
+      preLoaderRoute: typeof ApiV1NotasInvoiceIdXmlRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/api/v1/empresas/$id/servicos/': {
@@ -684,10 +765,14 @@ const rootRouteChildren: RootRouteChildren = {
   ApiV1CatalogosNbsRoute: ApiV1CatalogosNbsRoute,
   ApiV1CatalogosServicosRoute: ApiV1CatalogosServicosRoute,
   ApiV1EmpresasIndexRoute: ApiV1EmpresasIndexRoute,
+  ApiV1NotasIndexRoute: ApiV1NotasIndexRoute,
   ApiV1EmpresasIdCertificadoRoute: ApiV1EmpresasIdCertificadoRoute,
   ApiV1EmpresasIdConfiguracaoFiscalRoute:
     ApiV1EmpresasIdConfiguracaoFiscalRoute,
+  ApiV1NotasInvoiceIdPdfRoute: ApiV1NotasInvoiceIdPdfRoute,
+  ApiV1NotasInvoiceIdXmlRoute: ApiV1NotasInvoiceIdXmlRoute,
   ApiV1EmpresasIdIndexRoute: ApiV1EmpresasIdIndexRoute,
+  ApiV1NotasInvoiceIdIndexRoute: ApiV1NotasInvoiceIdIndexRoute,
   ApiV1EmpresasIdServicosServicoIdRoute: ApiV1EmpresasIdServicosServicoIdRoute,
   ApiV1EmpresasIdSituacaoVerificarMunicipioRoute:
     ApiV1EmpresasIdSituacaoVerificarMunicipioRoute,
