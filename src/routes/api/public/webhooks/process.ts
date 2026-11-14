@@ -11,8 +11,10 @@ export const Route = createFileRoute('/api/public/webhooks/process')({
     const { supabaseAdmin } = await import('@/integrations/supabase/client.server')
     const { processWebhookBatch, recordSchedulerRun } = await import('@/lib/webhooks.server')
     try {
-      const { processInvoiceVerifications } = await import('@/lib/invoices.server')
-      const invoices = await processInvoiceVerifications(supabaseAdmin)
+      const { processInvoiceVerifications,processExternalDps } = await import('@/lib/invoices.server')
+      const verification = await processInvoiceVerifications(supabaseAdmin)
+      const retries = await processExternalDps(supabaseAdmin)
+      const invoices = {reserved:verification.reserved+retries.reserved,completed:verification.completed+retries.completed,failed:verification.failed+retries.failed}
       try { const { runDailyRoutine } = await import('@/lib/readiness.server'); await runDailyRoutine(supabaseAdmin) } catch { console.error('DAILY_ROUTINE_FAILED') }
       const { results: _results, ...summary } = await processWebhookBatch(supabaseAdmin, master)
       await recordSchedulerRun(supabaseAdmin, {...summary,reserved:summary.reserved+invoices.reserved,completed:summary.completed+invoices.completed,failed:summary.failed+invoices.failed}, null)
