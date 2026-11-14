@@ -16,11 +16,18 @@ export const Route = createFileRoute('/api/public/webhooks/process')({
       const retries = await processExternalDps(supabaseAdmin)
       const { processFiscalEventVerifications } = await import('@/lib/fiscal-events.server')
       const events = await processFiscalEventVerifications(supabaseAdmin)
-      const invoices = {reserved:verification.reserved+retries.reserved+events.reserved,completed:verification.completed+retries.completed+events.completed,failed:verification.failed+retries.failed+events.failed}
+      const adn = { reserved: 0, imported: 0, failed: 0, emitted: 0 }
+      try {
+        const { processAdnSync, reconcileRefusedCancellations, flushNfseEventWebhooks } = await import('@/lib/adn-sync.server')
+        try { await reconcileRefusedCancellations(supabaseAdmin) } catch { console.error('ADN_RECONCILE_FAILED') }
+        try { Object.assign(adn, await processAdnSync(supabaseAdmin)) } catch { console.error('ADN_SYNC_FAILED') }
+        adn.emitted = (await flushNfseEventWebhooks(supabaseAdmin)).emitted
+      } catch { console.error('ADN_STEP_FAILED') }
+      const invoices = {reserved:verification.reserved+retries.reserved+events.reserved+adn.reserved,completed:verification.completed+retries.completed+events.completed,failed:verification.failed+retries.failed+events.failed+adn.failed}
       try { const { runDailyRoutine } = await import('@/lib/readiness.server'); await runDailyRoutine(supabaseAdmin) } catch { console.error('DAILY_ROUTINE_FAILED') }
       const { results: _results, ...summary } = await processWebhookBatch(supabaseAdmin, master)
       await recordSchedulerRun(supabaseAdmin, {...summary,reserved:summary.reserved+invoices.reserved,completed:summary.completed+invoices.completed,failed:summary.failed+invoices.failed}, null)
-      return Response.json({...summary,invoices}, { headers: { 'Cache-Control': 'no-store' } })
+      return Response.json({...summary,invoices,adn:{imported:adn.imported,emitted:adn.emitted}}, { headers: { 'Cache-Control': 'no-store' } })
     } catch (e) {
       const code = e instanceof Error && /^[A-Z_]+$/.test(e.message) ? e.message : 'PROCESSAMENTO_FALHOU'
       console.error('WEBHOOK_SCHEDULER_FAILED', code)
