@@ -31,8 +31,11 @@ class MemorySchemas(etree.Resolver):
         return self.resolve_string(sources[name], context, base_url='memory:///' + name)
 
 parser.resolvers.add(MemorySchemas())
-schema = etree.XMLSchema(etree.fromstring(sources['DPS_v1.01.xsd'], parser,
-                                         base_url='memory:///DPS_v1.01.xsd'))
+# --schema=pedRegEvento validates event requests; the default root is the DPS.
+root = next((a.split('=', 1)[1] for a in sys.argv[1:] if a.startswith('--schema=')), 'DPS') + '_v1.01.xsd'
+if root not in ('DPS_v1.01.xsd', 'pedRegEvento_v1.01.xsd'):
+    raise RuntimeError('Esquema não suportado: ' + root)
+schema = etree.XMLSchema(etree.fromstring(sources[root], parser, base_url='memory:///' + root))
 for file in [arg for arg in sys.argv[1:] if not arg.startswith('--')]:
     # Separate parser: the in-memory schema resolver is not used for XML input.
     document = etree.parse(file, etree.XMLParser(resolve_entities=False, no_network=True, load_dtd=False))
