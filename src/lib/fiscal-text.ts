@@ -36,7 +36,7 @@ export function normalizeFields(target: Record<string, unknown> | null | undefin
   for (const f of fields) {
     const v = target[f]; if (typeof v !== 'string') continue;
     const m = multiline.includes(f); const n = normalizeFiscalText(v, m);
-    target[f] = n === '' && v !== '' ? null : n;
+    target[f] = n;
     if (!fiscalTextAccepted(n, m)) issues.push({ campo: prefix + f, mensagem: FISCAL_TEXT_MESSAGE });
   }
   return issues;
