@@ -7,7 +7,7 @@ export function parseDanfse(xml:string){
  const r=new XMLParser({ignoreAttributes:false,removeNSPrefix:true,parseTagValue:false,parseAttributeValue:false,processEntities:false}).parse(xml);
  const n=r.NFSe?.infNFSe;
  if(!n||!/^NFS\d{50}$/.test(n['@_Id']??'')||!n.DPS?.infDPS||!xml.includes('http://www.sped.fazenda.gov.br/nfse'))throw new Error('XML autorizado incompleto.');
- return n as Record<string, any>;
+ return n;
 }
 export const text=(v:unknown)=>v===undefined||v===null||v===''?'-':String(v);
 export const money=(v:unknown)=>v===undefined||v===null||v===''?'-':`R$ ${Number(v).toLocaleString('pt-BR',{minimumFractionDigits:2,maximumFractionDigits:2})}`;
