@@ -2,6 +2,7 @@ import { z } from 'zod';
 import { customerSchema, type Customer } from './customers';
 import { isValidCnpj } from './notem';
 import { approximateTaxRuleError, specialTaxRuleError } from './fiscal';
+import { FISCAL_TEXT_MESSAGE, fiscalTextAccepted } from './fiscal-text';
 import { accessKeyIssuer, justificationError, substitutionReasons, type SubstitutionReason } from './fiscal-events';
 
 export const fiscalDecimal = z.string().regex(/^\d{1,15}\.\d{2}$/, 'Use texto decimal com duas casas.');
@@ -57,6 +58,8 @@ export function buildDps(input: DpsInput) {
   const values = group('valores', group('vServPrest', tag('vServ', input.values.service)) + (discounts?group('vDescCondIncond',discounts):'') + group('trib', group('tribMun', tag('tribISSQN', s.taxation) + tag('tpImunidade', s.immunity) + tag('tpRetISSQN', s.withholding) + rate) + group('totTrib', approximate)));
   const substitution = input.substitution ? substitutionXml(input.substitution, p) : '';
   const body = tag('tpAmb', input.environment === 'production' ? 1 : 2) + tag('dhEmi', input.emittedAt) + tag('verAplic', 'notem-1.0') + tag('serie', input.series) + tag('nDPS', input.number) + tag('dCompet', input.competence) + tag('tpEmit', 1) + tag('cLocEmi', p.municipality) + substitution + prest + customer + service + values;
+  // Final guard: TSString accepts only U+0020–U+00FF; only xDescServ may carry line breaks.
+  if (!fiscalTextAccepted(body.replace(/<xDescServ>[^<]*<\/xDescServ>/, m => m.replace(/\n/g, ' ')))) throw new Error(`Texto da DPS ${FISCAL_TEXT_MESSAGE}.`);
   return { id, xml: `<?xml version="1.0" encoding="UTF-8"?><DPS xmlns="http://www.sped.fazenda.gov.br/nfse" versao="1.01"><infDPS Id="${id}">${body}</infDPS></DPS>` };
 }
 /** E0042: the replaced key must carry the same municipality, CNPJ type (2) and CNPJ as this DPS. */

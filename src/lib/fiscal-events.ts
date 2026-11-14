@@ -1,6 +1,7 @@
 // Builder for NFS-e "pedido de registro de evento" (pedRegEvento v1.01), unsigned.
 // The transmissor only signs and sends; content is the notem's responsibility.
 import { isValidCnpj } from './notem';
+import { FISCAL_TEXT_MESSAGE, fiscalTextAccepted } from './fiscal-text';
 
 export const cancelReasons = { erro_emissao: '1', servico_nao_prestado: '2', outros: '9' } as const;
 export const substitutionReasons = { desenquadramento_simples: '01', enquadramento_simples: '02', inclusao_imunidade_isencao: '03', exclusao_imunidade_isencao: '04', rejeicao_tomador_intermediario: '05', outros: '99' } as const;
@@ -50,6 +51,7 @@ export function buildFiscalEvent(input: FiscalEventInput) {
   if (!/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}-03:00$/.test(input.occurredAt) || !Number.isFinite(Date.parse(input.occurredAt))) throw new Error('Data e hora do evento inválida.');
   const reason = cancelReasons[input.reason]; if (!reason) throw new Error('Motivo inválido.');
   const error = justificationError(input.justification); if (error) throw new Error(error);
+  if (!fiscalTextAccepted(input.justification)) throw new Error(`A justificativa ${FISCAL_TEXT_MESSAGE}.`);
   const body = `<tpAmb>${input.environment === 'production' ? 1 : 2}</tpAmb><verAplic>notem-1.0</verAplic><dhEvento>${input.occurredAt}</dhEvento><CNPJAutor>${input.authorCnpj}</CNPJAutor><chNFSe>${input.accessKey}</chNFSe><e${input.code}><xDesc>${escapeXml(descriptions[input.code])}</xDesc><cMotivo>${reason}</cMotivo><xMotivo>${escapeXml(input.justification)}</xMotivo></e${input.code}>`;
   return { id, xml: `<?xml version="1.0" encoding="UTF-8"?><pedRegEvento xmlns="http://www.sped.fazenda.gov.br/nfse" versao="1.01"><infPedReg Id="${id}">${body}</infPedReg></pedRegEvento>` };
 }
