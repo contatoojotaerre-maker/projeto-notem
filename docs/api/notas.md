@@ -146,7 +146,7 @@ Valores de ISS (`aliquota_iss`, `valor_iss`) vêm da nota autorizada pelo govern
 | `GET /notas` | Lista paginada. Filtros: `empresa_id`, `empresa_id_externo`, `situacao`, `id_externo`, `tomador_documento`, `emitida_de`, `emitida_ate` |
 | `GET /notas/{id}` | Nota completa |
 | `GET /notas/{id}/xml` | XML oficial da NFS-e autorizada (`application/xml`) |
-| `GET /notas/{id}/pdf` | E1: `503 PDF_EM_PREPARACAO`, mensagem "PDF em preparação", envelope JSON de erro; não gera PDF provisório. DANFSe oficial em PDF fica para E2 |
+| `GET /notas/{id}/pdf` | `200 application/pdf`, DANFSe v2.0 em A4, sob demanda; `404` sem XML autorizado ou fora de autorizada/cancelada/substituída (inclui cancelada pela prefeitura) |
 
 Os links `xml` e `pdf` exigem a chave da integração. O parceiro baixa e entrega ao seu cliente; a notem não envia a nota ao tomador.
 
@@ -170,7 +170,7 @@ Todos os eventos `nota.*` trazem em `dados` o **objeto `nota` completo** (seçã
 - Grupo IBS/CBS: entra em fase própria, antes de 01/01/2027 (obrigatório para todos a partir dessa data).
 
 ## Implementação por etapas
-Partes 1–5: API de tomadores, montagem/leitura XML, emissão idempotente, consulta automática e painel somente leitura. PDF responde `503 PDF_EM_PREPARACAO`. Cancelamento/substituição e IBS/CBS continuam fora da E1.
+Partes 1–5: API de tomadores, montagem/leitura XML, emissão idempotente, consulta automática e painel somente leitura. E2 adiciona DANFSe sob demanda. Operações de cancelamento/substituição e emissão IBS/CBS continuam fora desta etapa.
 O identificador DPS usa tipo de inscrição **2 para CNPJ**, conforme o Anexo I v1.01. Série e número são definitivos. Tomador estrangeiro não implica exportação: operações que exijam grupos fiscais fora de E1 serão recusadas antes da reserva, sem omitir dados obrigatórios.
 
 ## Consulta automática e segurança de repetição
@@ -178,7 +178,17 @@ O identificador DPS usa tipo de inscrição **2 para CNPJ**, conforme o Anexo I 
 - Após um minuto, consulta o identificador DPS; com chave encontrada, consulta o XML da NFS-e. Somente `404` depois de 15 minutos desde o início da tentativa permite rejeitar como **“O governo não gerou esta nota”**. Erro de conexão ou XML não confirmado permanece em verificação.
 - Falhas comprovadas de autenticação do Google ou validação própria anterior à transmissão permitem repetir a mesma DPS/número. Timeout e demais falhas ambíguas nunca autorizam retransmissão automática.
 - Autorização/rejeição e criação dos webhooks são confirmadas na mesma operação do banco. Sem execução em segundo plano, os eventos ficam na fila durável do agendador.
-- `consulta_publica` permanece `null`: formato oficial não confirmado nas referências disponíveis. XML/PDF exigem chave; outra organização ou ambiente responde `404`.
+- `consulta_publica`: `https://www.nfse.gov.br/ConsultaPublica?tpc=1&chave={chave_acesso}` quando existe chave válida; caso contrário `null`. XML/PDF exigem chave; outra organização ou ambiente responde `404`.
+
+## DANFSe v2.0 (E2)
+PDF gerado somente a partir do XML autorizado armazenado, sem completar dados pelos cadastros atuais; ausentes = `-`. Situação atual determina marca d'água CANCELADA/SUBSTITUÍDA. Homologação mostra NFS-e SEM VALIDADE JURÍDICA. Não há PDF persistido nem cache definitivo. A opção `imprimir_canhoto_danfse` da configuração fiscal é false por padrão.
+O QR e o objeto nota usam a mesma URL de consulta pública. PIS/COFINS de apuração própria aparece apenas até competência 31/12/2026. Informações complementares preservam os tributos aproximados informados no XML. Sem valores IBS/CBS, os respectivos campos permanecem `-`.
+
+## Numeração e DPS existente (E0014)
+Novas séries automáticas começam em 900 e avançam até 49999 por CNPJ; séries e contadores existentes são preservados.
+Somente resposta explícita de envio HTTP 400 contendo exclusivamente E0014 permite salto. O número é registrado como usado externamente, nunca reaproveitado. A mesma nota, Idempotency-Key e dados congelados recebem o próximo número, com nova DPS assinada pelo transmissor existente.
+Até cinco saltos além do envio inicial (máximo seis envios com números diferentes), com contador persistente e histórico de cada número/identificador/XML/resposta. Repetir a chave não reinicia o limite. Não há webhook de rejeição intermediária.
+Se a espera da API estiver acabando, retorna 202 e continua no agendador. Respostas ambíguas, conexões interrompidas e DPS encontrada na consulta nunca autorizam salto: consultam o número atual. Outros códigos, ou erros mistos, seguem rejeição normal. Limite ou numeração esgotada termina em rejeição com orientação em português.
 
 ## Orientações para rejeições confirmadas no Anexo I
 | Código | Orientação prática |

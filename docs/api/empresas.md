@@ -82,7 +82,8 @@ Rotas para o sistema parceiro cadastrar e preparar as empresas emitentes, sem qu
 | `regime_especial` | `nenhum`, `ato_cooperado`, `estimativa`, `microempresa_municipal`, `notario_registrador`, `profissional_autonomo`, `sociedade_profissionais`, `outros` |
 | `tributos_aproximados.modo` | `percentual_simples` (somente ME/EPP), `percentual_por_esfera` (todos), `nao_informar` (somente MEI) |
 | `aliquota_iss_simples` | opcional; só `me_epp` + `dentro_do_simples`; mínimo `"1.80"`. Usada apenas em notas com ISS retido |
-| `serie_dps` | somente leitura; atribuída automaticamente (00001 a 49999) |
+| `serie_dps` | somente leitura; novas atribuições automáticas desde 00900 até 49999; existentes preservadas |
+| `imprimir_canhoto_danfse` | booleano opcional; padrão false; ausente no PUT preserva a preferência atual |
 
 Erro de combinação inválida: `422 REGRA_DE_NEGOCIO` com `detalhes` por campo, incluindo `tributos_aproximados.modo` e a mensagem da regra.
 

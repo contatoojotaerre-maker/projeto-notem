@@ -3,6 +3,7 @@ import type { DB } from './api.server';
 import { callTransmissor,TransmissorError } from './transmissor.server';
 import { readAuthorizedNfse } from './nfse-xml';
 import { governmentErrors,invoiceOut,verificationDecision,type Invoice,type Transmission,type GovernmentReply } from './invoices';
+import { explicitExternalDps } from './external-dps';
 
 async function payload(db:DB,i:Invoice){
  const r=await db.from('company_certificate_material').select('key_version,nonce,data').eq('company_id',i.company_id).eq('organization_id',i.organization_id).maybeSingle();
@@ -42,13 +43,20 @@ export async function applyGovernmentReply(db:DB,i:Invoice,res:Transmission,requ
 }
 /** A timeout/network failure is ambiguous: never assume the fiscal request was not sent. */
 export function definitelyNotSent(e:unknown){return e instanceof TransmissorError&&(e.code==='CREDENCIAL'||(e.status!==undefined&&[400,422].includes(e.status)&&['DPS_INVALIDA','ENVELOPE_INVALIDO','REQUISICAO_INVALIDA','AUDITORIA_INDISPONIVEL'].includes(e.code)));}
-export async function sendInvoice(db:DB,i:Invoice,request?:Request){
+export async function sendInvoice(db:DB,i:Invoice,request?:Request,deadline=Date.now()+20000):Promise<Invoice>{
  const claim=await db.rpc('claim_invoice_dispatch',{_id:i.id,_org:i.organization_id});if(claim.error)throw new Error('INVOICE_CLAIM_FAILED');const claimed=claim.data?.[0];if(!claimed){const r=await db.from('invoices').select('*').eq('id',i.id).eq('organization_id',i.organization_id).single();if(r.error)throw new Error('INVOICE_READ_FAILED');return r.data;}
  let res:Transmission;
- try{const base=await payload(db,claimed);res=await callTransmissor<Transmission>('/v1/nfse/emitir',{...base,dps_xml:claimed.unsigned_dps_xml,tempo_limite_segundos:18});}
+ try{const base=await payload(db,claimed);res=await callTransmissor<Transmission>('/v1/nfse/emitir',{...base,dps_xml:claimed.unsigned_dps_xml,tempo_limite_segundos:Math.max(1,Math.min(18,Math.floor((deadline-Date.now())/1000)))});}
  catch(e){return persistInvoiceResult(db,claimed,{status:definitelyNotSent(e)?'processing':'verifying',dispatch_state:definitelyNotSent(e)?'not_sent':'uncertain',message:definitelyNotSent(e)?'Envio não realizado. Tente novamente com a mesma Idempotency-Key.':'Aguardando confirmação do governo.'},definitelyNotSent(e)?'not_sent':'verifying',request);}
+ if(explicitExternalDps(res.resposta??{})&&claimed.claim_token){
+  const retry=await db.rpc('retry_external_dps',{_id:claimed.id,_org:claimed.organization_id,_token:claimed.claim_token,_response:res.resposta as Json,...res.dps_assinada?{_signed:res.dps_assinada}:{}});
+  if(retry.error)throw new Error('EXTERNAL_DPS_RETRY_FAILED');
+  if(retry.data&&retry.data.dps_id!==claimed.dps_id){if(deadline-Date.now()>3000)return sendInvoice(db,retry.data,request,deadline);return retry.data;}
+  if(!retry.data){const current=await db.from('invoices').select('*').eq('id',claimed.id).eq('organization_id',claimed.organization_id).single();if(current.error)throw new Error('INVOICE_READ_FAILED');return current.data;}
+ }
  return applyGovernmentReply(db,claimed,res,request);
 }
+export async function processExternalDps(db:DB){const rows=await db.rpc('pending_external_dps',{_limit:5});if(rows.error)throw new Error('EXTERNAL_DPS_QUEUE_FAILED');let completed=0,failed=0;for(const i of rows.data??[]){try{const n=await sendInvoice(db,i);if(['authorized','rejected'].includes(n.status))completed++;}catch{failed++;}}return {reserved:rows.data?.length??0,completed,failed};}
 export async function processInvoiceVerifications(db:DB,now=Date.now()){
  const claims=await db.rpc('claim_invoice_verifications',{_limit:5});if(claims.error)throw new Error('INVOICE_VERIFICATION_CLAIM_FAILED');let completed=0,failed=0;
  for(const i of claims.data??[]){

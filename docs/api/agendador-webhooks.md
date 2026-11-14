@@ -15,6 +15,7 @@ Não faz parte da API v1 nem aceita chaves de integração.
 Sem OIDC: 401. Com OIDC Google real: 200; diagnóstico `req_0c386b1ec9a046cc90ee0bb33f2c11cf` registrado após retorno através de `waitUntil`.
 
 ## Processamento
+E2: o callback também continua até cinco notas com salto E0014 confirmado e envio pendente; usa o mesmo claim exclusivo da emissão. Nunca reenvia notas com transmissão ambígua. O resumo de notas soma continuações E0014 e consultas.
 O mesmo callback consulta até 5 notas por ciclo em verificação (ou envios interrompidos), sem reenviar a DPS. Após `404` persistente por 15 minutos, registra “O governo não gerou esta nota”. Erros de conexão permanecem para o próximo ciclo. O resumo inclui `invoices: {reserved, completed, failed}`. A tarefa existente e sua autenticação OIDC não mudam; use timeout de 300 segundos para lotes com consultas fiscais.
 A rota definitiva aguarda o processamento de até 10 entregas vencidas por chamada, em grupos de até 3, e executa a verificação de três dias. Retorna 200 com contagens `reserved`, `completed`, `failed`, `disabled` e resumo separado de notas; falhas internas retornam 503 para permitir retry do Scheduler. Configure timeout da tarefa de 300 segundos. O banco guarda todo o estado, usa leases de reserva e protege chamadas concorrentes. Eventos reais usam `waitUntil` apenas nas rotas da API; o botão de teste aguarda envio direto e o agendador recupera pendências e leases expirados. O registro seletivo soma o trabalho de entregas e consultas fiscais.
 

@@ -984,6 +984,66 @@ export type Database = {
           },
         ]
       }
+      invoice_dps_attempts: {
+        Row: {
+          created_at: string
+          disposition: string
+          dps_id: string
+          government_response: Json
+          id: string
+          invoice_id: string
+          number: number
+          organization_id: string
+          series: number
+          signed_xml: string | null
+          unsigned_xml: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          disposition: string
+          dps_id: string
+          government_response: Json
+          id?: string
+          invoice_id: string
+          number: number
+          organization_id: string
+          series: number
+          signed_xml?: string | null
+          unsigned_xml: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          disposition?: string
+          dps_id?: string
+          government_response?: Json
+          id?: string
+          invoice_id?: string
+          number?: number
+          organization_id?: string
+          series?: number
+          signed_xml?: string | null
+          unsigned_xml?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "invoice_dps_attempts_invoice_id_fkey"
+            columns: ["invoice_id"]
+            isOneToOne: false
+            referencedRelation: "invoices"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "invoice_dps_attempts_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       invoice_events: {
         Row: {
           created_at: string
@@ -1043,6 +1103,7 @@ export type Database = {
           emitted_at: string
           environment: Database["public"]["Enums"]["environment"]
           external_id: string | null
+          external_number_retries: number
           fiscal_snapshot: Json
           government_errors: Json
           government_values: Json | null
@@ -1091,6 +1152,7 @@ export type Database = {
           emitted_at: string
           environment: Database["public"]["Enums"]["environment"]
           external_id?: string | null
+          external_number_retries?: number
           fiscal_snapshot: Json
           government_errors?: Json
           government_values?: Json | null
@@ -1139,6 +1201,7 @@ export type Database = {
           emitted_at?: string
           environment?: Database["public"]["Enums"]["environment"]
           external_id?: string | null
+          external_number_retries?: number
           fiscal_snapshot?: Json
           government_errors?: Json
           government_values?: Json | null
@@ -1881,6 +1944,7 @@ export type Database = {
           emitted_at: string
           environment: Database["public"]["Enums"]["environment"]
           external_id: string | null
+          external_number_retries: number
           fiscal_snapshot: Json
           government_errors: Json
           government_values: Json | null
@@ -1938,6 +2002,7 @@ export type Database = {
           emitted_at: string
           environment: Database["public"]["Enums"]["environment"]
           external_id: string | null
+          external_number_retries: number
           fiscal_snapshot: Json
           government_errors: Json
           government_values: Json | null
@@ -2028,6 +2093,7 @@ export type Database = {
           emitted_at: string
           environment: Database["public"]["Enums"]["environment"]
           external_id: string | null
+          external_number_retries: number
           fiscal_snapshot: Json
           government_errors: Json
           government_values: Json | null
@@ -2109,6 +2175,7 @@ export type Database = {
           emitted_at: string
           environment: Database["public"]["Enums"]["environment"]
           external_id: string | null
+          external_number_retries: number
           fiscal_snapshot: Json
           government_errors: Json
           government_values: Json | null
@@ -2205,6 +2272,64 @@ export type Database = {
           user_id: string
         }[]
       }
+      pending_external_dps: {
+        Args: { _limit?: number }
+        Returns: {
+          access_key: string | null
+          authorized_at: string | null
+          authorized_nfse_xml: string | null
+          change_origin: Database["public"]["Enums"]["change_origin"]
+          claim_token: string | null
+          company_id: string
+          competence: string
+          complementary_information: string | null
+          created_at: string
+          created_by: string
+          customer_snapshot: Json | null
+          description: string
+          dispatch_state: string
+          dps_id: string
+          dps_number: number
+          dps_series: number
+          emitted_at: string
+          environment: Database["public"]["Enums"]["environment"]
+          external_id: string | null
+          external_number_retries: number
+          fiscal_snapshot: Json
+          government_errors: Json
+          government_values: Json | null
+          id: string
+          idempotency_key: string | null
+          integration_id: string | null
+          last_attempt_at: string | null
+          lease_until: string | null
+          manifestation: Json | null
+          next_verification_at: string | null
+          nfse_number: string | null
+          organization_id: string
+          provider_snapshot: Json
+          request_hash: string | null
+          restrictions: Json
+          sent_values: Json
+          service_location: Json
+          service_profile_id: string | null
+          service_snapshot: Json
+          signed_dps_xml: string | null
+          status: string
+          substituted_by_invoice_id: string | null
+          substitutes_invoice_id: string | null
+          unsigned_dps_xml: string
+          updated_at: string
+          updated_by: string
+          verification_started_at: string | null
+        }[]
+        SetofOptions: {
+          from: "*"
+          to: "invoices"
+          isOneToOne: false
+          isSetofReturn: true
+        }
+      }
       pending_invitations: {
         Args: never
         Returns: {
@@ -2245,6 +2370,70 @@ export type Database = {
           _series: number
         }
         Returns: string
+      }
+      retry_external_dps: {
+        Args: {
+          _id: string
+          _org: string
+          _response: Json
+          _signed?: string
+          _token: string
+        }
+        Returns: {
+          access_key: string | null
+          authorized_at: string | null
+          authorized_nfse_xml: string | null
+          change_origin: Database["public"]["Enums"]["change_origin"]
+          claim_token: string | null
+          company_id: string
+          competence: string
+          complementary_information: string | null
+          created_at: string
+          created_by: string
+          customer_snapshot: Json | null
+          description: string
+          dispatch_state: string
+          dps_id: string
+          dps_number: number
+          dps_series: number
+          emitted_at: string
+          environment: Database["public"]["Enums"]["environment"]
+          external_id: string | null
+          external_number_retries: number
+          fiscal_snapshot: Json
+          government_errors: Json
+          government_values: Json | null
+          id: string
+          idempotency_key: string | null
+          integration_id: string | null
+          last_attempt_at: string | null
+          lease_until: string | null
+          manifestation: Json | null
+          next_verification_at: string | null
+          nfse_number: string | null
+          organization_id: string
+          provider_snapshot: Json
+          request_hash: string | null
+          restrictions: Json
+          sent_values: Json
+          service_location: Json
+          service_profile_id: string | null
+          service_snapshot: Json
+          signed_dps_xml: string | null
+          status: string
+          substituted_by_invoice_id: string | null
+          substitutes_invoice_id: string | null
+          unsigned_dps_xml: string
+          updated_at: string
+          updated_by: string
+          verification_started_at: string | null
+        }
+        SetofOptions: {
+          from: "*"
+          to: "invoices"
+          isOneToOne: true
+          isSetofReturn: false
+        }
       }
       search_fiscal_catalog: {
         Args: { _catalog: string; _search: string }
