@@ -1082,11 +1082,140 @@ export type Database = {
           },
         ]
       }
+      invoice_fiscal_events: {
+        Row: {
+          can_request_analysis: boolean
+          claim_token: string | null
+          code: string
+          company_id: string
+          created_at: string
+          environment: Database["public"]["Enums"]["environment"]
+          event_xml: string | null
+          government_errors: Json
+          government_response: Json | null
+          id: string
+          idempotency_key: string
+          integration_id: string | null
+          invoice_id: string
+          justification: string
+          lease_until: string | null
+          next_verification_at: string | null
+          organization_id: string
+          origin: Database["public"]["Enums"]["change_origin"]
+          reason: string
+          registered_at: string | null
+          registered_outside: boolean
+          request_hash: string
+          request_id: string
+          requested_by: string
+          sequence: number
+          signed_xml: string | null
+          status: string
+          unsigned_xml: string
+          updated_at: string
+          verification_started_at: string | null
+        }
+        Insert: {
+          can_request_analysis?: boolean
+          claim_token?: string | null
+          code: string
+          company_id: string
+          created_at?: string
+          environment: Database["public"]["Enums"]["environment"]
+          event_xml?: string | null
+          government_errors?: Json
+          government_response?: Json | null
+          id?: string
+          idempotency_key: string
+          integration_id?: string | null
+          invoice_id: string
+          justification: string
+          lease_until?: string | null
+          next_verification_at?: string | null
+          organization_id: string
+          origin: Database["public"]["Enums"]["change_origin"]
+          reason: string
+          registered_at?: string | null
+          registered_outside?: boolean
+          request_hash: string
+          request_id: string
+          requested_by: string
+          sequence?: number
+          signed_xml?: string | null
+          status?: string
+          unsigned_xml: string
+          updated_at?: string
+          verification_started_at?: string | null
+        }
+        Update: {
+          can_request_analysis?: boolean
+          claim_token?: string | null
+          code?: string
+          company_id?: string
+          created_at?: string
+          environment?: Database["public"]["Enums"]["environment"]
+          event_xml?: string | null
+          government_errors?: Json
+          government_response?: Json | null
+          id?: string
+          idempotency_key?: string
+          integration_id?: string | null
+          invoice_id?: string
+          justification?: string
+          lease_until?: string | null
+          next_verification_at?: string | null
+          organization_id?: string
+          origin?: Database["public"]["Enums"]["change_origin"]
+          reason?: string
+          registered_at?: string | null
+          registered_outside?: boolean
+          request_hash?: string
+          request_id?: string
+          requested_by?: string
+          sequence?: number
+          signed_xml?: string | null
+          status?: string
+          unsigned_xml?: string
+          updated_at?: string
+          verification_started_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "invoice_fiscal_events_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "invoice_fiscal_events_integration_id_fkey"
+            columns: ["integration_id"]
+            isOneToOne: false
+            referencedRelation: "integrations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "invoice_fiscal_events_invoice_id_organization_id_fkey"
+            columns: ["invoice_id", "organization_id"]
+            isOneToOne: false
+            referencedRelation: "invoices"
+            referencedColumns: ["id", "organization_id"]
+          },
+          {
+            foreignKeyName: "invoice_fiscal_events_requested_by_fkey"
+            columns: ["requested_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       invoices: {
         Row: {
           access_key: string | null
           authorized_at: string | null
           authorized_nfse_xml: string | null
+          cancellation: Json | null
           change_origin: Database["public"]["Enums"]["change_origin"]
           claim_token: string | null
           company_id: string
@@ -1116,6 +1245,7 @@ export type Database = {
           next_verification_at: string | null
           nfse_number: string | null
           organization_id: string
+          pending_operation: Json | null
           provider_snapshot: Json
           request_hash: string | null
           restrictions: Json
@@ -1136,6 +1266,7 @@ export type Database = {
           access_key?: string | null
           authorized_at?: string | null
           authorized_nfse_xml?: string | null
+          cancellation?: Json | null
           change_origin?: Database["public"]["Enums"]["change_origin"]
           claim_token?: string | null
           company_id: string
@@ -1165,6 +1296,7 @@ export type Database = {
           next_verification_at?: string | null
           nfse_number?: string | null
           organization_id: string
+          pending_operation?: Json | null
           provider_snapshot: Json
           request_hash?: string | null
           restrictions?: Json
@@ -1185,6 +1317,7 @@ export type Database = {
           access_key?: string | null
           authorized_at?: string | null
           authorized_nfse_xml?: string | null
+          cancellation?: Json | null
           change_origin?: Database["public"]["Enums"]["change_origin"]
           claim_token?: string | null
           company_id?: string
@@ -1214,6 +1347,7 @@ export type Database = {
           next_verification_at?: string | null
           nfse_number?: string | null
           organization_id?: string
+          pending_operation?: Json | null
           provider_snapshot?: Json
           request_hash?: string | null
           restrictions?: Json
@@ -1922,12 +2056,99 @@ export type Database = {
         Args: { _mode: string; _option: number }
         Returns: string
       }
+      can_issue_fiscal_change: {
+        Args: { _org: string; _user: string }
+        Returns: boolean
+      }
+      claim_fiscal_event_dispatch: {
+        Args: { _id: string; _org: string }
+        Returns: {
+          can_request_analysis: boolean
+          claim_token: string | null
+          code: string
+          company_id: string
+          created_at: string
+          environment: Database["public"]["Enums"]["environment"]
+          event_xml: string | null
+          government_errors: Json
+          government_response: Json | null
+          id: string
+          idempotency_key: string
+          integration_id: string | null
+          invoice_id: string
+          justification: string
+          lease_until: string | null
+          next_verification_at: string | null
+          organization_id: string
+          origin: Database["public"]["Enums"]["change_origin"]
+          reason: string
+          registered_at: string | null
+          registered_outside: boolean
+          request_hash: string
+          request_id: string
+          requested_by: string
+          sequence: number
+          signed_xml: string | null
+          status: string
+          unsigned_xml: string
+          updated_at: string
+          verification_started_at: string | null
+        }[]
+        SetofOptions: {
+          from: "*"
+          to: "invoice_fiscal_events"
+          isOneToOne: false
+          isSetofReturn: true
+        }
+      }
+      claim_fiscal_event_verifications: {
+        Args: { _limit?: number }
+        Returns: {
+          can_request_analysis: boolean
+          claim_token: string | null
+          code: string
+          company_id: string
+          created_at: string
+          environment: Database["public"]["Enums"]["environment"]
+          event_xml: string | null
+          government_errors: Json
+          government_response: Json | null
+          id: string
+          idempotency_key: string
+          integration_id: string | null
+          invoice_id: string
+          justification: string
+          lease_until: string | null
+          next_verification_at: string | null
+          organization_id: string
+          origin: Database["public"]["Enums"]["change_origin"]
+          reason: string
+          registered_at: string | null
+          registered_outside: boolean
+          request_hash: string
+          request_id: string
+          requested_by: string
+          sequence: number
+          signed_xml: string | null
+          status: string
+          unsigned_xml: string
+          updated_at: string
+          verification_started_at: string | null
+        }[]
+        SetofOptions: {
+          from: "*"
+          to: "invoice_fiscal_events"
+          isOneToOne: false
+          isSetofReturn: true
+        }
+      }
       claim_invoice_dispatch: {
         Args: { _id: string; _org: string }
         Returns: {
           access_key: string | null
           authorized_at: string | null
           authorized_nfse_xml: string | null
+          cancellation: Json | null
           change_origin: Database["public"]["Enums"]["change_origin"]
           claim_token: string | null
           company_id: string
@@ -1957,6 +2178,7 @@ export type Database = {
           next_verification_at: string | null
           nfse_number: string | null
           organization_id: string
+          pending_operation: Json | null
           provider_snapshot: Json
           request_hash: string | null
           restrictions: Json
@@ -1986,6 +2208,7 @@ export type Database = {
           access_key: string | null
           authorized_at: string | null
           authorized_nfse_xml: string | null
+          cancellation: Json | null
           change_origin: Database["public"]["Enums"]["change_origin"]
           claim_token: string | null
           company_id: string
@@ -2015,6 +2238,7 @@ export type Database = {
           next_verification_at: string | null
           nfse_number: string | null
           organization_id: string
+          pending_operation: Json | null
           provider_snapshot: Json
           request_hash: string | null
           restrictions: Json
@@ -2067,6 +2291,7 @@ export type Database = {
           isSetofReturn: true
         }
       }
+      create_fiscal_event_request: { Args: { _payload: Json }; Returns: Json }
       create_integration: {
         Args: { _actor: string; _org: string; _payload: Json }
         Returns: string
@@ -2077,6 +2302,7 @@ export type Database = {
           access_key: string | null
           authorized_at: string | null
           authorized_nfse_xml: string | null
+          cancellation: Json | null
           change_origin: Database["public"]["Enums"]["change_origin"]
           claim_token: string | null
           company_id: string
@@ -2106,6 +2332,7 @@ export type Database = {
           next_verification_at: string | null
           nfse_number: string | null
           organization_id: string
+          pending_operation: Json | null
           provider_snapshot: Json
           request_hash: string | null
           restrictions: Json
@@ -2147,18 +2374,70 @@ export type Database = {
         }
         Returns: number
       }
+      finish_fiscal_event: {
+        Args: {
+          _id: string
+          _invoice: Json
+          _message: string
+          _nota: Json
+          _patch: Json
+          _timeline: string
+          _token: string
+          _webhook?: string
+        }
+        Returns: {
+          can_request_analysis: boolean
+          claim_token: string | null
+          code: string
+          company_id: string
+          created_at: string
+          environment: Database["public"]["Enums"]["environment"]
+          event_xml: string | null
+          government_errors: Json
+          government_response: Json | null
+          id: string
+          idempotency_key: string
+          integration_id: string | null
+          invoice_id: string
+          justification: string
+          lease_until: string | null
+          next_verification_at: string | null
+          organization_id: string
+          origin: Database["public"]["Enums"]["change_origin"]
+          reason: string
+          registered_at: string | null
+          registered_outside: boolean
+          request_hash: string
+          request_id: string
+          requested_by: string
+          sequence: number
+          signed_xml: string | null
+          status: string
+          unsigned_xml: string
+          updated_at: string
+          verification_started_at: string | null
+        }
+        SetofOptions: {
+          from: "*"
+          to: "invoice_fiscal_events"
+          isOneToOne: true
+          isSetofReturn: false
+        }
+      }
       finish_invoice_attempt: {
         Args: {
           _event: string
           _id: string
           _nota: Json
           _patch: Json
+          _substituted_nota?: Json
           _token: string
         }
         Returns: {
           access_key: string | null
           authorized_at: string | null
           authorized_nfse_xml: string | null
+          cancellation: Json | null
           change_origin: Database["public"]["Enums"]["change_origin"]
           claim_token: string | null
           company_id: string
@@ -2188,6 +2467,7 @@ export type Database = {
           next_verification_at: string | null
           nfse_number: string | null
           organization_id: string
+          pending_operation: Json | null
           provider_snapshot: Json
           request_hash: string | null
           restrictions: Json
@@ -2278,6 +2558,7 @@ export type Database = {
           access_key: string | null
           authorized_at: string | null
           authorized_nfse_xml: string | null
+          cancellation: Json | null
           change_origin: Database["public"]["Enums"]["change_origin"]
           claim_token: string | null
           company_id: string
@@ -2307,6 +2588,7 @@ export type Database = {
           next_verification_at: string | null
           nfse_number: string | null
           organization_id: string
+          pending_operation: Json | null
           provider_snapshot: Json
           request_hash: string | null
           restrictions: Json
@@ -2383,6 +2665,7 @@ export type Database = {
           access_key: string | null
           authorized_at: string | null
           authorized_nfse_xml: string | null
+          cancellation: Json | null
           change_origin: Database["public"]["Enums"]["change_origin"]
           claim_token: string | null
           company_id: string
@@ -2412,6 +2695,7 @@ export type Database = {
           next_verification_at: string | null
           nfse_number: string | null
           organization_id: string
+          pending_operation: Json | null
           provider_snapshot: Json
           request_hash: string | null
           restrictions: Json
