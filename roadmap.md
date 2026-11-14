@@ -1,4 +1,12 @@
 # notem — Fase 1
+## Fase 5 — Cancelamento, análise fiscal e substituição
+- [x] Plano aprovado com ajustes; transmissor/ intocado.
+- [x] Parte 1: montador de eventos e101101/e101103 e grupo subst, testes XSD (268 testes OK), exemplos em docs/exemplos/eventos/.
+- [ ] Aguardando conferência externa dos três XML pelo proprietário antes da Parte 2.
+- [ ] Parte 2: banco/fluxo fiscal, incluindo reconciliação E0840 (consultar 101101/1; encontrado → cancelada, "Cancelamento registrado fora da notem", nota.cancelada; senão recusa normal).
+- [ ] Parte 3: API e documentação.
+- [ ] Parte 4: painel, testes e publicação; testes publicados consideram a nota real Group Jota NFS-e nº 11 (série 900, DPS 1).
+
 ## Auditoria da documentação API
 - [x] Separar contrato público e notas internas, corrigir textos e incluir exemplos completos de webhooks.
 - [x] OpenAPI 3.1.0 válido — 0 erros (openapi-spec-validator 0.7.2); 256 testes passaram, incluindo especificação inválida de controle. Informar arquivos alterados/criados/movidos; API sem mudanças e sem publicação nesta auditoria.
