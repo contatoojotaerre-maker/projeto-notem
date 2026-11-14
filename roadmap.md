@@ -1,5 +1,6 @@
 # notem — Fase 1
 ## Etapa E2 — DANFSe e proteção de numeração
+- [ ] Ajustar máscaras e localidades, três reduções IBS/CBS e quebra entre palavras; regenerar PNGs base/homologação, conferir e publicar.
 - [x] Plano E2 aprovado: seguir ordem proposta; transmissor/ intocado.
 - [x] Gerador DANFSe, preferência de canhoto e sete exemplos PNG em docs/exemplos/danfse/ e Files para entrega no chat; QR decodificado.
 - [x] Downloads API/painel, links e documentação; API PDF testada com fixture real em memória. Painel autenticado não verificado (Supabase externo).
