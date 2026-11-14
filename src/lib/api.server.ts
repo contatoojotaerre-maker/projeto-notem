@@ -54,8 +54,8 @@ export function apiRoute(handlers: Partial<Record<'GET' | 'POST' | 'PATCH' | 'PU
         raw = await request.text(); if (new TextEncoder().encode(raw).length > MAX_BODY) throw fail(400, 'REQUISICAO_INVALIDA', [{ campo: 'corpo', mensagem: 'Corpo maior que 200 KB.' }]);
         try { requestBody = raw ? JSON.parse(raw) : {}; } catch { throw fail(400, 'REQUISICAO_INVALIDA', [{ campo: 'corpo', mensagem: 'JSON inválido.' }]); }
       }
-      // Issuance has a durable key/hash/nota association in create_invoice_request, not the 24-hour cache.
-      const invoiceIssuance=request.method==='POST'&&url.pathname.replace(/\/$/,'')==='/api/v1/notas';
+      // Issuance, substitution and fiscal events keep a durable key/hash association in the database, not the 24-hour cache.
+      const invoiceIssuance=request.method==='POST'&&/^\/api\/v1\/notas(\/[^/]+\/(cancelar|solicitar-analise-cancelamento|substituir))?$/.test(url.pathname.replace(/\/$/,''));
       const key = MUTATING.has(request.method)&&!invoiceIssuance ? idempotencyKey(request.headers.get('idempotency-key')) : null;
       const hash = key ? await bodyHash(request.method, url.pathname, raw) : '';
       if (key) {

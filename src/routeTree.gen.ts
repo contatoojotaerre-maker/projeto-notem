@@ -36,7 +36,10 @@ import { Route as ApiV1EmpresasIdIndexRouteImport } from './routes/api/v1/empres
 import { Route as ApiV1EmpresasIdCertificadoRouteImport } from './routes/api/v1/empresas/$id/certificado'
 import { Route as ApiV1EmpresasIdConfiguracaoFiscalRouteImport } from './routes/api/v1/empresas/$id/configuracao-fiscal'
 import { Route as ApiV1NotasInvoiceIdIndexRouteImport } from './routes/api/v1/notas/$invoiceId/index'
+import { Route as ApiV1NotasInvoiceIdCancelarRouteImport } from './routes/api/v1/notas/$invoiceId/cancelar'
 import { Route as ApiV1NotasInvoiceIdPdfRouteImport } from './routes/api/v1/notas/$invoiceId/pdf'
+import { Route as ApiV1NotasInvoiceIdSolicitarAnaliseCancelamentoRouteImport } from './routes/api/v1/notas/$invoiceId/solicitar-analise-cancelamento'
+import { Route as ApiV1NotasInvoiceIdSubstituirRouteImport } from './routes/api/v1/notas/$invoiceId/substituir'
 import { Route as ApiV1NotasInvoiceIdXmlRouteImport } from './routes/api/v1/notas/$invoiceId/xml'
 import { Route as ApiV1EmpresasIdServicosIndexRouteImport } from './routes/api/v1/empresas/$id/servicos/index'
 import { Route as ApiV1EmpresasIdServicosServicoIdRouteImport } from './routes/api/v1/empresas/$id/servicos/$servicoId'
@@ -44,6 +47,7 @@ import { Route as ApiV1EmpresasIdSituacaoIndexRouteImport } from './routes/api/v
 import { Route as ApiV1EmpresasIdSituacaoVerificarMunicipioRouteImport } from './routes/api/v1/empresas/$id/situacao/verificar-municipio'
 import { Route as ApiV1EmpresasIdTomadoresIndexRouteImport } from './routes/api/v1/empresas/$id/tomadores/index'
 import { Route as ApiV1EmpresasIdTomadoresCustomerIdRouteImport } from './routes/api/v1/empresas/$id/tomadores/$customerId'
+import { Route as ApiV1NotasInvoiceIdEventosCodigoXmlRouteImport } from './routes/api/v1/notas/$invoiceId/eventos/$codigo/xml'
 
 const IndexRoute = IndexRouteImport.update({
   id: '/',
@@ -193,11 +197,29 @@ const ApiV1NotasInvoiceIdIndexRoute =
     path: '/api/v1/notas/$invoiceId/',
     getParentRoute: () => rootRouteImport,
   } as any)
+const ApiV1NotasInvoiceIdCancelarRoute =
+  ApiV1NotasInvoiceIdCancelarRouteImport.update({
+    id: '/api/v1/notas/$invoiceId/cancelar',
+    path: '/api/v1/notas/$invoiceId/cancelar',
+    getParentRoute: () => rootRouteImport,
+  } as any)
 const ApiV1NotasInvoiceIdPdfRoute = ApiV1NotasInvoiceIdPdfRouteImport.update({
   id: '/api/v1/notas/$invoiceId/pdf',
   path: '/api/v1/notas/$invoiceId/pdf',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ApiV1NotasInvoiceIdSolicitarAnaliseCancelamentoRoute =
+  ApiV1NotasInvoiceIdSolicitarAnaliseCancelamentoRouteImport.update({
+    id: '/api/v1/notas/$invoiceId/solicitar-analise-cancelamento',
+    path: '/api/v1/notas/$invoiceId/solicitar-analise-cancelamento',
+    getParentRoute: () => rootRouteImport,
+  } as any)
+const ApiV1NotasInvoiceIdSubstituirRoute =
+  ApiV1NotasInvoiceIdSubstituirRouteImport.update({
+    id: '/api/v1/notas/$invoiceId/substituir',
+    path: '/api/v1/notas/$invoiceId/substituir',
+    getParentRoute: () => rootRouteImport,
+  } as any)
 const ApiV1NotasInvoiceIdXmlRoute = ApiV1NotasInvoiceIdXmlRouteImport.update({
   id: '/api/v1/notas/$invoiceId/xml',
   path: '/api/v1/notas/$invoiceId/xml',
@@ -239,6 +261,12 @@ const ApiV1EmpresasIdTomadoresCustomerIdRoute =
     path: '/api/v1/empresas/$id/tomadores/$customerId',
     getParentRoute: () => rootRouteImport,
   } as any)
+const ApiV1NotasInvoiceIdEventosCodigoXmlRoute =
+  ApiV1NotasInvoiceIdEventosCodigoXmlRouteImport.update({
+    id: '/api/v1/notas/$invoiceId/eventos/$codigo/xml',
+    path: '/api/v1/notas/$invoiceId/eventos/$codigo/xml',
+    getParentRoute: () => rootRouteImport,
+  } as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
@@ -263,7 +291,10 @@ export interface FileRoutesByFullPath {
   '/o/$orgSlug/notas/$invoiceId': typeof AuthenticatedOOrgSlugNotasInvoiceIdRoute
   '/api/v1/empresas/$id/certificado': typeof ApiV1EmpresasIdCertificadoRoute
   '/api/v1/empresas/$id/configuracao-fiscal': typeof ApiV1EmpresasIdConfiguracaoFiscalRoute
+  '/api/v1/notas/$invoiceId/cancelar': typeof ApiV1NotasInvoiceIdCancelarRoute
   '/api/v1/notas/$invoiceId/pdf': typeof ApiV1NotasInvoiceIdPdfRoute
+  '/api/v1/notas/$invoiceId/solicitar-analise-cancelamento': typeof ApiV1NotasInvoiceIdSolicitarAnaliseCancelamentoRoute
+  '/api/v1/notas/$invoiceId/substituir': typeof ApiV1NotasInvoiceIdSubstituirRoute
   '/api/v1/notas/$invoiceId/xml': typeof ApiV1NotasInvoiceIdXmlRoute
   '/o/$orgSlug/empresas/': typeof AuthenticatedOOrgSlugEmpresasIndexRoute
   '/o/$orgSlug/integracoes/': typeof AuthenticatedOOrgSlugIntegracoesIndexRoute
@@ -275,6 +306,7 @@ export interface FileRoutesByFullPath {
   '/api/v1/empresas/$id/servicos/': typeof ApiV1EmpresasIdServicosIndexRoute
   '/api/v1/empresas/$id/situacao/': typeof ApiV1EmpresasIdSituacaoIndexRoute
   '/api/v1/empresas/$id/tomadores/': typeof ApiV1EmpresasIdTomadoresIndexRoute
+  '/api/v1/notas/$invoiceId/eventos/$codigo/xml': typeof ApiV1NotasInvoiceIdEventosCodigoXmlRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
@@ -299,7 +331,10 @@ export interface FileRoutesByTo {
   '/o/$orgSlug/notas/$invoiceId': typeof AuthenticatedOOrgSlugNotasInvoiceIdRoute
   '/api/v1/empresas/$id/certificado': typeof ApiV1EmpresasIdCertificadoRoute
   '/api/v1/empresas/$id/configuracao-fiscal': typeof ApiV1EmpresasIdConfiguracaoFiscalRoute
+  '/api/v1/notas/$invoiceId/cancelar': typeof ApiV1NotasInvoiceIdCancelarRoute
   '/api/v1/notas/$invoiceId/pdf': typeof ApiV1NotasInvoiceIdPdfRoute
+  '/api/v1/notas/$invoiceId/solicitar-analise-cancelamento': typeof ApiV1NotasInvoiceIdSolicitarAnaliseCancelamentoRoute
+  '/api/v1/notas/$invoiceId/substituir': typeof ApiV1NotasInvoiceIdSubstituirRoute
   '/api/v1/notas/$invoiceId/xml': typeof ApiV1NotasInvoiceIdXmlRoute
   '/o/$orgSlug/empresas': typeof AuthenticatedOOrgSlugEmpresasIndexRoute
   '/o/$orgSlug/integracoes': typeof AuthenticatedOOrgSlugIntegracoesIndexRoute
@@ -311,6 +346,7 @@ export interface FileRoutesByTo {
   '/api/v1/empresas/$id/servicos': typeof ApiV1EmpresasIdServicosIndexRoute
   '/api/v1/empresas/$id/situacao': typeof ApiV1EmpresasIdSituacaoIndexRoute
   '/api/v1/empresas/$id/tomadores': typeof ApiV1EmpresasIdTomadoresIndexRoute
+  '/api/v1/notas/$invoiceId/eventos/$codigo/xml': typeof ApiV1NotasInvoiceIdEventosCodigoXmlRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -337,7 +373,10 @@ export interface FileRoutesById {
   '/_authenticated/o/$orgSlug/notas/$invoiceId': typeof AuthenticatedOOrgSlugNotasInvoiceIdRoute
   '/api/v1/empresas/$id/certificado': typeof ApiV1EmpresasIdCertificadoRoute
   '/api/v1/empresas/$id/configuracao-fiscal': typeof ApiV1EmpresasIdConfiguracaoFiscalRoute
+  '/api/v1/notas/$invoiceId/cancelar': typeof ApiV1NotasInvoiceIdCancelarRoute
   '/api/v1/notas/$invoiceId/pdf': typeof ApiV1NotasInvoiceIdPdfRoute
+  '/api/v1/notas/$invoiceId/solicitar-analise-cancelamento': typeof ApiV1NotasInvoiceIdSolicitarAnaliseCancelamentoRoute
+  '/api/v1/notas/$invoiceId/substituir': typeof ApiV1NotasInvoiceIdSubstituirRoute
   '/api/v1/notas/$invoiceId/xml': typeof ApiV1NotasInvoiceIdXmlRoute
   '/_authenticated/o/$orgSlug/empresas/': typeof AuthenticatedOOrgSlugEmpresasIndexRoute
   '/_authenticated/o/$orgSlug/integracoes/': typeof AuthenticatedOOrgSlugIntegracoesIndexRoute
@@ -349,6 +388,7 @@ export interface FileRoutesById {
   '/api/v1/empresas/$id/servicos/': typeof ApiV1EmpresasIdServicosIndexRoute
   '/api/v1/empresas/$id/situacao/': typeof ApiV1EmpresasIdSituacaoIndexRoute
   '/api/v1/empresas/$id/tomadores/': typeof ApiV1EmpresasIdTomadoresIndexRoute
+  '/api/v1/notas/$invoiceId/eventos/$codigo/xml': typeof ApiV1NotasInvoiceIdEventosCodigoXmlRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -375,7 +415,10 @@ export interface FileRouteTypes {
     | '/o/$orgSlug/notas/$invoiceId'
     | '/api/v1/empresas/$id/certificado'
     | '/api/v1/empresas/$id/configuracao-fiscal'
+    | '/api/v1/notas/$invoiceId/cancelar'
     | '/api/v1/notas/$invoiceId/pdf'
+    | '/api/v1/notas/$invoiceId/solicitar-analise-cancelamento'
+    | '/api/v1/notas/$invoiceId/substituir'
     | '/api/v1/notas/$invoiceId/xml'
     | '/o/$orgSlug/empresas/'
     | '/o/$orgSlug/integracoes/'
@@ -387,6 +430,7 @@ export interface FileRouteTypes {
     | '/api/v1/empresas/$id/servicos/'
     | '/api/v1/empresas/$id/situacao/'
     | '/api/v1/empresas/$id/tomadores/'
+    | '/api/v1/notas/$invoiceId/eventos/$codigo/xml'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
@@ -411,7 +455,10 @@ export interface FileRouteTypes {
     | '/o/$orgSlug/notas/$invoiceId'
     | '/api/v1/empresas/$id/certificado'
     | '/api/v1/empresas/$id/configuracao-fiscal'
+    | '/api/v1/notas/$invoiceId/cancelar'
     | '/api/v1/notas/$invoiceId/pdf'
+    | '/api/v1/notas/$invoiceId/solicitar-analise-cancelamento'
+    | '/api/v1/notas/$invoiceId/substituir'
     | '/api/v1/notas/$invoiceId/xml'
     | '/o/$orgSlug/empresas'
     | '/o/$orgSlug/integracoes'
@@ -423,6 +470,7 @@ export interface FileRouteTypes {
     | '/api/v1/empresas/$id/servicos'
     | '/api/v1/empresas/$id/situacao'
     | '/api/v1/empresas/$id/tomadores'
+    | '/api/v1/notas/$invoiceId/eventos/$codigo/xml'
   id:
     | '__root__'
     | '/'
@@ -448,7 +496,10 @@ export interface FileRouteTypes {
     | '/_authenticated/o/$orgSlug/notas/$invoiceId'
     | '/api/v1/empresas/$id/certificado'
     | '/api/v1/empresas/$id/configuracao-fiscal'
+    | '/api/v1/notas/$invoiceId/cancelar'
     | '/api/v1/notas/$invoiceId/pdf'
+    | '/api/v1/notas/$invoiceId/solicitar-analise-cancelamento'
+    | '/api/v1/notas/$invoiceId/substituir'
     | '/api/v1/notas/$invoiceId/xml'
     | '/_authenticated/o/$orgSlug/empresas/'
     | '/_authenticated/o/$orgSlug/integracoes/'
@@ -460,6 +511,7 @@ export interface FileRouteTypes {
     | '/api/v1/empresas/$id/servicos/'
     | '/api/v1/empresas/$id/situacao/'
     | '/api/v1/empresas/$id/tomadores/'
+    | '/api/v1/notas/$invoiceId/eventos/$codigo/xml'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -478,7 +530,10 @@ export interface RootRouteChildren {
   ApiV1NotasIndexRoute: typeof ApiV1NotasIndexRoute
   ApiV1EmpresasIdCertificadoRoute: typeof ApiV1EmpresasIdCertificadoRoute
   ApiV1EmpresasIdConfiguracaoFiscalRoute: typeof ApiV1EmpresasIdConfiguracaoFiscalRoute
+  ApiV1NotasInvoiceIdCancelarRoute: typeof ApiV1NotasInvoiceIdCancelarRoute
   ApiV1NotasInvoiceIdPdfRoute: typeof ApiV1NotasInvoiceIdPdfRoute
+  ApiV1NotasInvoiceIdSolicitarAnaliseCancelamentoRoute: typeof ApiV1NotasInvoiceIdSolicitarAnaliseCancelamentoRoute
+  ApiV1NotasInvoiceIdSubstituirRoute: typeof ApiV1NotasInvoiceIdSubstituirRoute
   ApiV1NotasInvoiceIdXmlRoute: typeof ApiV1NotasInvoiceIdXmlRoute
   ApiV1EmpresasIdIndexRoute: typeof ApiV1EmpresasIdIndexRoute
   ApiV1NotasInvoiceIdIndexRoute: typeof ApiV1NotasInvoiceIdIndexRoute
@@ -488,6 +543,7 @@ export interface RootRouteChildren {
   ApiV1EmpresasIdServicosIndexRoute: typeof ApiV1EmpresasIdServicosIndexRoute
   ApiV1EmpresasIdSituacaoIndexRoute: typeof ApiV1EmpresasIdSituacaoIndexRoute
   ApiV1EmpresasIdTomadoresIndexRoute: typeof ApiV1EmpresasIdTomadoresIndexRoute
+  ApiV1NotasInvoiceIdEventosCodigoXmlRoute: typeof ApiV1NotasInvoiceIdEventosCodigoXmlRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -681,11 +737,32 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ApiV1NotasInvoiceIdIndexRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/api/v1/notas/$invoiceId/cancelar': {
+      id: '/api/v1/notas/$invoiceId/cancelar'
+      path: '/api/v1/notas/$invoiceId/cancelar'
+      fullPath: '/api/v1/notas/$invoiceId/cancelar'
+      preLoaderRoute: typeof ApiV1NotasInvoiceIdCancelarRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/api/v1/notas/$invoiceId/pdf': {
       id: '/api/v1/notas/$invoiceId/pdf'
       path: '/api/v1/notas/$invoiceId/pdf'
       fullPath: '/api/v1/notas/$invoiceId/pdf'
       preLoaderRoute: typeof ApiV1NotasInvoiceIdPdfRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/v1/notas/$invoiceId/solicitar-analise-cancelamento': {
+      id: '/api/v1/notas/$invoiceId/solicitar-analise-cancelamento'
+      path: '/api/v1/notas/$invoiceId/solicitar-analise-cancelamento'
+      fullPath: '/api/v1/notas/$invoiceId/solicitar-analise-cancelamento'
+      preLoaderRoute: typeof ApiV1NotasInvoiceIdSolicitarAnaliseCancelamentoRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/v1/notas/$invoiceId/substituir': {
+      id: '/api/v1/notas/$invoiceId/substituir'
+      path: '/api/v1/notas/$invoiceId/substituir'
+      fullPath: '/api/v1/notas/$invoiceId/substituir'
+      preLoaderRoute: typeof ApiV1NotasInvoiceIdSubstituirRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/api/v1/notas/$invoiceId/xml': {
@@ -735,6 +812,13 @@ declare module '@tanstack/react-router' {
       path: '/api/v1/empresas/$id/tomadores/$customerId'
       fullPath: '/api/v1/empresas/$id/tomadores/$customerId'
       preLoaderRoute: typeof ApiV1EmpresasIdTomadoresCustomerIdRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/v1/notas/$invoiceId/eventos/$codigo/xml': {
+      id: '/api/v1/notas/$invoiceId/eventos/$codigo/xml'
+      path: '/api/v1/notas/$invoiceId/eventos/$codigo/xml'
+      fullPath: '/api/v1/notas/$invoiceId/eventos/$codigo/xml'
+      preLoaderRoute: typeof ApiV1NotasInvoiceIdEventosCodigoXmlRouteImport
       parentRoute: typeof rootRouteImport
     }
   }
@@ -792,7 +876,11 @@ const rootRouteChildren: RootRouteChildren = {
   ApiV1EmpresasIdCertificadoRoute: ApiV1EmpresasIdCertificadoRoute,
   ApiV1EmpresasIdConfiguracaoFiscalRoute:
     ApiV1EmpresasIdConfiguracaoFiscalRoute,
+  ApiV1NotasInvoiceIdCancelarRoute: ApiV1NotasInvoiceIdCancelarRoute,
   ApiV1NotasInvoiceIdPdfRoute: ApiV1NotasInvoiceIdPdfRoute,
+  ApiV1NotasInvoiceIdSolicitarAnaliseCancelamentoRoute:
+    ApiV1NotasInvoiceIdSolicitarAnaliseCancelamentoRoute,
+  ApiV1NotasInvoiceIdSubstituirRoute: ApiV1NotasInvoiceIdSubstituirRoute,
   ApiV1NotasInvoiceIdXmlRoute: ApiV1NotasInvoiceIdXmlRoute,
   ApiV1EmpresasIdIndexRoute: ApiV1EmpresasIdIndexRoute,
   ApiV1NotasInvoiceIdIndexRoute: ApiV1NotasInvoiceIdIndexRoute,
@@ -804,6 +892,8 @@ const rootRouteChildren: RootRouteChildren = {
   ApiV1EmpresasIdServicosIndexRoute: ApiV1EmpresasIdServicosIndexRoute,
   ApiV1EmpresasIdSituacaoIndexRoute: ApiV1EmpresasIdSituacaoIndexRoute,
   ApiV1EmpresasIdTomadoresIndexRoute: ApiV1EmpresasIdTomadoresIndexRoute,
+  ApiV1NotasInvoiceIdEventosCodigoXmlRoute:
+    ApiV1NotasInvoiceIdEventosCodigoXmlRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
