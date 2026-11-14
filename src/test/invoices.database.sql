@@ -49,7 +49,7 @@ BEGIN
   PERFORM public.finish_invoice_attempt(n.id,lease.claim_token,'{"status":"verifying","dispatch_state":"uncertain"}'::jsonb,'{}'::jsonb,'verifying');
   IF (SELECT status FROM public.invoices WHERE id=n.id)<>'verifying' THEN RAISE EXCEPTION 'TEST_FAIL_verification'; END IF;
   IF EXISTS(SELECT 1 FROM public.invoices WHERE id=n.id AND organization_id=gen_random_uuid()) OR EXISTS(SELECT 1 FROM public.invoices WHERE id=n.id AND environment='production') THEN RAISE EXCEPTION 'TEST_FAIL_scope'; END IF;
-  IF has_function_privilege('authenticated','public.create_invoice_request(jsonb)','EXECUTE') OR has_function_privilege('authenticated','public.finish_invoice_attempt(uuid,uuid,jsonb,jsonb,text)','EXECUTE') OR has_table_privilege('authenticated','public.invoices','INSERT') THEN RAISE EXCEPTION 'TEST_FAIL_grants'; END IF;
+  IF has_function_privilege('authenticated','public.create_invoice_request(jsonb)','EXECUTE') OR has_function_privilege('authenticated','public.finish_invoice_attempt(uuid,uuid,jsonb,jsonb,text,jsonb)','EXECUTE') OR has_table_privilege('authenticated','public.invoices','INSERT') THEN RAISE EXCEPTION 'TEST_FAIL_grants'; END IF;
   RAISE EXCEPTION USING ERRCODE='ZX001',MESSAGE='Invoice assertions passed; rollback';
  EXCEPTION WHEN SQLSTATE 'ZX001' THEN NULL; END;
  IF EXISTS(SELECT 1 FROM public.invoices WHERE id=n.id) OR EXISTS(SELECT 1 FROM public.company_service_profiles WHERE id=p.id) THEN RAISE EXCEPTION 'TEST_FAIL_rollback'; END IF;
