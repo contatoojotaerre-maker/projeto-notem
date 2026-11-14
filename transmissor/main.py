@@ -1,4 +1,4 @@
-"""notem-transmissor v2.
+"""notem-transmissor v3.
 
 Serviço isolado da notem. Responsabilidades (e somente estas):
   1. Validar um certificado A1 recebido e devolvê-lo TRANCADO (envelope AES-256-GCM).
@@ -227,7 +227,7 @@ def tratar_erro(e: ErroNegocio):
 # ---------------------------------------------------------------- rotas
 @app.get("/")
 def raiz():
-    return jsonify({"servico": "notem-transmissor", "versao": "2", "status": "ok"})
+    return jsonify({"servico": "notem-transmissor", "versao": "3", "status": "ok"})
 
 
 @app.post("/v1/certificados/preparar")
@@ -314,33 +314,32 @@ def _digest(dados: bytes, alg) -> str:
     return base64.b64encode(h.finalize()).decode()
 
 
-def assinar_dps(xml: bytes, chave, cert, algoritmo: str = "rsa-sha256") -> bytes:
-    """Assinatura XMLDSig envelopada do elemento infDPS (Reference URI=#Id), inserida como último filho de DPS."""
+def assinar_xml(xml: bytes, chave, cert, raiz_esperada: str, filho_assinado: str, algoritmo: str = "rsa-sha256") -> bytes:
+    """Assinatura XMLDSig envelopada do elemento `filho_assinado` (Reference URI=#Id), inserida como último filho da raiz."""
     if algoritmo not in ALGORITMOS:
         raise ErroNegocio("REQUISICAO_INVALIDA", "Algoritmo de assinatura não suportado.", 400)
     uri_assin, uri_digest, alg = ALGORITMOS[algoritmo]
+    erro_codigo = "DPS_INVALIDA" if raiz_esperada == "DPS" else "EVENTO_INVALIDO"
     parser = etree.XMLParser(remove_blank_text=False, resolve_entities=False, no_network=True)
     try:
         raiz = etree.fromstring(xml, parser)
     except etree.XMLSyntaxError:
-        raise ErroNegocio("DPS_INVALIDA", "O XML da DPS não é válido.", 422)
-    if etree.QName(raiz).localname != "DPS":
-        raise ErroNegocio("DPS_INVALIDA", "O elemento raiz deve ser DPS.", 422)
-    inf = next((e for e in raiz if isinstance(e.tag, str) and etree.QName(e).localname == "infDPS"), None)
+        raise ErroNegocio(erro_codigo, "O XML não é válido.", 422)
+    if etree.QName(raiz).localname != raiz_esperada:
+        raise ErroNegocio(erro_codigo, f"O elemento raiz deve ser {raiz_esperada}.", 422)
+    inf = next((e for e in raiz if isinstance(e.tag, str) and etree.QName(e).localname == filho_assinado), None)
     if inf is None or not inf.get("Id"):
-        raise ErroNegocio("DPS_INVALIDA", "infDPS com atributo Id não encontrado.", 422)
+        raise ErroNegocio(erro_codigo, f"{filho_assinado} com atributo Id não encontrado.", 422)
     if any(etree.QName(e).localname == "Signature" for e in raiz if isinstance(e.tag, str)):
-        raise ErroNegocio("DPS_INVALIDA", "A DPS já contém assinatura.", 422)
-    id_dps = inf.get("Id")
+        raise ErroNegocio(erro_codigo, "O XML já contém assinatura.", 422)
+    ident = inf.get("Id")
 
     digest = _digest(c14n(inf), alg)
-
-    E = lambda tag, **attrs: etree.Element("{%s}%s" % (NS_DSIG, tag), nsmap={None: NS_DSIG} if tag == "Signature" else None, **attrs)
-    sig = E("Signature")
+    sig = etree.Element("{%s}Signature" % NS_DSIG, nsmap={None: NS_DSIG})
     si = etree.SubElement(sig, "{%s}SignedInfo" % NS_DSIG)
     etree.SubElement(si, "{%s}CanonicalizationMethod" % NS_DSIG, Algorithm=C14N)
     etree.SubElement(si, "{%s}SignatureMethod" % NS_DSIG, Algorithm=uri_assin)
-    ref = etree.SubElement(si, "{%s}Reference" % NS_DSIG, URI="#" + id_dps)
+    ref = etree.SubElement(si, "{%s}Reference" % NS_DSIG, URI="#" + ident)
     trs = etree.SubElement(ref, "{%s}Transforms" % NS_DSIG)
     etree.SubElement(trs, "{%s}Transform" % NS_DSIG, Algorithm=ENVELOPED)
     etree.SubElement(trs, "{%s}Transform" % NS_DSIG, Algorithm=C14N)
@@ -351,10 +350,12 @@ def assinar_dps(xml: bytes, chave, cert, algoritmo: str = "rsa-sha256") -> bytes
     x5 = etree.SubElement(ki, "{%s}X509Data" % NS_DSIG)
     etree.SubElement(x5, "{%s}X509Certificate" % NS_DSIG).text = base64.b64encode(cert.public_bytes(Encoding.DER)).decode()
     raiz.append(sig)
-
-    si_c14n = c14n(si)
-    sv.text = base64.b64encode(chave.sign(si_c14n, padding.PKCS1v15(), alg())).decode()
+    sv.text = base64.b64encode(chave.sign(c14n(si), padding.PKCS1v15(), alg())).decode()
     return b'<?xml version="1.0" encoding="UTF-8"?>' + etree.tostring(raiz, encoding="UTF-8", xml_declaration=False)
+
+
+def assinar_dps(xml: bytes, chave, cert, algoritmo: str = "rsa-sha256") -> bytes:
+    return assinar_xml(xml, chave, cert, "DPS", "infDPS", algoritmo)
 
 
 def gzip_b64(dados: bytes) -> str:
@@ -431,4 +432,48 @@ def consultar_nfse():
     _, empresa_id, (chave, cert, cadeia) = abrir_envelope(corpo)
     resposta = requisicao_mtls("GET", f"{BASES_SEFIN[ambiente]}/nfse/{chave_acesso}", chave, cert, cadeia, timeout=20)
     log("nfse_consultar", empresa_id=empresa_id, ambiente=ambiente, status=resposta.get("status"), erro=resposta.get("erro"))
+    return jsonify({"ok": True, "ambiente": ambiente, "resposta": interpretar(resposta)})
+
+
+TIPO_EVENTO_RE = re.compile(r"\d{6}")
+
+
+@app.post("/v1/nfse/evento")
+def registrar_evento():
+    """Assina o pedido de registro de evento (pedRegEvento, montado pela notem) e envia a POST {Sefin}/nfse/{chave}/eventos.
+    Usado para cancelamento (e101101) e solicitação de análise fiscal (e101103). Não altera o conteúdo."""
+    corpo = request.get_json(silent=True) or {}
+    ambiente = exigir_ambiente(corpo)
+    chave_acesso = exigir(corpo, "chave_acesso", re.compile(r"\d{50}"))
+    evento_xml = exigir(corpo, "evento_xml", maximo=200_000).encode("utf-8")
+    algoritmo = corpo.get("algoritmo_assinatura") or "rsa-sha256"
+    _, empresa_id, (chave, cert, cadeia) = abrir_envelope(corpo)
+    assinado = assinar_xml(evento_xml, chave, cert, "pedRegEvento", "infPedReg", algoritmo)
+    # o Id do pedido deve referenciar a mesma chave informada na rota
+    raiz = etree.fromstring(assinado)
+    inf = next(e for e in raiz if isinstance(e.tag, str) and etree.QName(e).localname == "infPedReg")
+    if not inf.get("Id", "").startswith("PRE" + chave_acesso):
+        raise ErroNegocio("EVENTO_INVALIDO", "O Id do pedido não corresponde à chave de acesso informada.", 422)
+    timeout = min(float(corpo.get("tempo_limite_segundos") or 18), 25)
+    resposta = requisicao_mtls(
+        "POST", f"{BASES_SEFIN[ambiente]}/nfse/{chave_acesso}/eventos", chave, cert, cadeia,
+        corpo_json={"pedidoRegistroEventoXmlGZipB64": gzip_b64(assinado)}, timeout=timeout,
+    )
+    log("nfse_evento", empresa_id=empresa_id, ambiente=ambiente, status=resposta.get("status"),
+        erro=resposta.get("erro"), ms=resposta.get("ms"))
+    return jsonify({"ok": True, "ambiente": ambiente, "evento_assinado": assinado.decode("utf-8"),
+                    "resposta": interpretar(resposta)})
+
+
+@app.post("/v1/nfse/evento/consultar")
+def consultar_evento():
+    """GET {Sefin}/nfse/{chave}/eventos/{tipoEvento}/{numSeqEvento} — confirma um evento após falha/tempo esgotado."""
+    corpo = request.get_json(silent=True) or {}
+    ambiente = exigir_ambiente(corpo)
+    chave_acesso = exigir(corpo, "chave_acesso", re.compile(r"\d{50}"))
+    tipo = exigir(corpo, "tipo_evento", TIPO_EVENTO_RE)
+    seq = exigir(corpo, "num_seq_evento", re.compile(r"\d{1,3}"))
+    _, empresa_id, (chave, cert, cadeia) = abrir_envelope(corpo)
+    resposta = requisicao_mtls("GET", f"{BASES_SEFIN[ambiente]}/nfse/{chave_acesso}/eventos/{tipo}/{seq}", chave, cert, cadeia, timeout=20)
+    log("nfse_evento_consultar", empresa_id=empresa_id, ambiente=ambiente, status=resposta.get("status"), erro=resposta.get("erro"))
     return jsonify({"ok": True, "ambiente": ambiente, "resposta": interpretar(resposta)})
