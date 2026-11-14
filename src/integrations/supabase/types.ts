@@ -14,6 +14,93 @@ export type Database = {
   }
   public: {
     Tables: {
+      adn_distributions: {
+        Row: {
+          access_key: string | null
+          cnpj: string
+          created_at: string
+          document_type: string | null
+          environment: Database["public"]["Enums"]["environment"]
+          event_type: string | null
+          generated_at: string | null
+          nsu: number
+        }
+        Insert: {
+          access_key?: string | null
+          cnpj: string
+          created_at?: string
+          document_type?: string | null
+          environment: Database["public"]["Enums"]["environment"]
+          event_type?: string | null
+          generated_at?: string | null
+          nsu: number
+        }
+        Update: {
+          access_key?: string | null
+          cnpj?: string
+          created_at?: string
+          document_type?: string | null
+          environment?: Database["public"]["Enums"]["environment"]
+          event_type?: string | null
+          generated_at?: string | null
+          nsu?: number
+        }
+        Relationships: []
+      }
+      adn_sync_cursors: {
+        Row: {
+          claim_token: string | null
+          cnpj: string
+          created_at: string
+          documents_imported: number
+          environment: Database["public"]["Enums"]["environment"]
+          failures: number
+          last_error: string | null
+          last_error_code: string | null
+          last_query_at: string | null
+          last_success_at: string | null
+          lease_until: string | null
+          next_nsu: number
+          next_query_at: string
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          claim_token?: string | null
+          cnpj: string
+          created_at?: string
+          documents_imported?: number
+          environment: Database["public"]["Enums"]["environment"]
+          failures?: number
+          last_error?: string | null
+          last_error_code?: string | null
+          last_query_at?: string | null
+          last_success_at?: string | null
+          lease_until?: string | null
+          next_nsu?: number
+          next_query_at?: string
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          claim_token?: string | null
+          cnpj?: string
+          created_at?: string
+          documents_imported?: number
+          environment?: Database["public"]["Enums"]["environment"]
+          failures?: number
+          last_error?: string | null
+          last_error_code?: string | null
+          last_query_at?: string | null
+          last_success_at?: string | null
+          lease_until?: string | null
+          next_nsu?: number
+          next_query_at?: string
+          status?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       api_idempotency_keys: {
         Row: {
           body_hash: string
@@ -1515,6 +1602,205 @@ export type Database = {
         }
         Relationships: []
       }
+      nfse_document_events: {
+        Row: {
+          access_key: string
+          adn_type: string | null
+          applied_at: string | null
+          author_document: string | null
+          code: string
+          created_at: string
+          environment: Database["public"]["Enums"]["environment"]
+          event_at: string | null
+          id: string
+          invoice_id: string | null
+          processed_at: string | null
+          reason_code: string | null
+          reason_text: string | null
+          requested_by_notem: boolean
+          sequence: number
+          source: string
+          substitute_key: string | null
+          webhook_emitted_at: string | null
+          webhook_type: string | null
+          xml: string
+        }
+        Insert: {
+          access_key: string
+          adn_type?: string | null
+          applied_at?: string | null
+          author_document?: string | null
+          code: string
+          created_at?: string
+          environment: Database["public"]["Enums"]["environment"]
+          event_at?: string | null
+          id?: string
+          invoice_id?: string | null
+          processed_at?: string | null
+          reason_code?: string | null
+          reason_text?: string | null
+          requested_by_notem?: boolean
+          sequence?: number
+          source: string
+          substitute_key?: string | null
+          webhook_emitted_at?: string | null
+          webhook_type?: string | null
+          xml: string
+        }
+        Update: {
+          access_key?: string
+          adn_type?: string | null
+          applied_at?: string | null
+          author_document?: string | null
+          code?: string
+          created_at?: string
+          environment?: Database["public"]["Enums"]["environment"]
+          event_at?: string | null
+          id?: string
+          invoice_id?: string | null
+          processed_at?: string | null
+          reason_code?: string | null
+          reason_text?: string | null
+          requested_by_notem?: boolean
+          sequence?: number
+          source?: string
+          substitute_key?: string | null
+          webhook_emitted_at?: string | null
+          webhook_type?: string | null
+          xml?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "nfse_document_events_invoice_id_fkey"
+            columns: ["invoice_id"]
+            isOneToOne: false
+            referencedRelation: "invoices"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      nfse_documents: {
+        Row: {
+          access_key: string
+          authorized_at: string | null
+          cancellation: Json | null
+          competence: string | null
+          created_at: string
+          dps_id: string | null
+          dps_number: string | null
+          dps_series: string | null
+          environment: Database["public"]["Enums"]["environment"]
+          first_nsu: number | null
+          id: string
+          intermediary_document: string | null
+          intermediary_name: string | null
+          invoice_id: string | null
+          issued_at: string | null
+          manifestation: Json | null
+          nfse_number: string | null
+          provider_cnpj: string | null
+          provider_name: string | null
+          restrictions: Json
+          status: string
+          substituted_by_key: string | null
+          substitutes_key: string | null
+          summary: Json
+          taker_document: string | null
+          taker_name: string | null
+          updated_at: string
+          xml: string
+        }
+        Insert: {
+          access_key: string
+          authorized_at?: string | null
+          cancellation?: Json | null
+          competence?: string | null
+          created_at?: string
+          dps_id?: string | null
+          dps_number?: string | null
+          dps_series?: string | null
+          environment: Database["public"]["Enums"]["environment"]
+          first_nsu?: number | null
+          id?: string
+          intermediary_document?: string | null
+          intermediary_name?: string | null
+          invoice_id?: string | null
+          issued_at?: string | null
+          manifestation?: Json | null
+          nfse_number?: string | null
+          provider_cnpj?: string | null
+          provider_name?: string | null
+          restrictions?: Json
+          status?: string
+          substituted_by_key?: string | null
+          substitutes_key?: string | null
+          summary?: Json
+          taker_document?: string | null
+          taker_name?: string | null
+          updated_at?: string
+          xml: string
+        }
+        Update: {
+          access_key?: string
+          authorized_at?: string | null
+          cancellation?: Json | null
+          competence?: string | null
+          created_at?: string
+          dps_id?: string | null
+          dps_number?: string | null
+          dps_series?: string | null
+          environment?: Database["public"]["Enums"]["environment"]
+          first_nsu?: number | null
+          id?: string
+          intermediary_document?: string | null
+          intermediary_name?: string | null
+          invoice_id?: string | null
+          issued_at?: string | null
+          manifestation?: Json | null
+          nfse_number?: string | null
+          provider_cnpj?: string | null
+          provider_name?: string | null
+          restrictions?: Json
+          status?: string
+          substituted_by_key?: string | null
+          substitutes_key?: string | null
+          summary?: Json
+          taker_document?: string | null
+          taker_name?: string | null
+          updated_at?: string
+          xml?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "nfse_documents_invoice_id_fkey"
+            columns: ["invoice_id"]
+            isOneToOne: false
+            referencedRelation: "invoices"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      nfse_key_refreshes: {
+        Row: {
+          access_key: string
+          environment: Database["public"]["Enums"]["environment"]
+          last_requested_at: string
+          purpose: string
+        }
+        Insert: {
+          access_key: string
+          environment: Database["public"]["Enums"]["environment"]
+          last_requested_at?: string
+          purpose: string
+        }
+        Update: {
+          access_key?: string
+          environment?: Database["public"]["Enums"]["environment"]
+          last_requested_at?: string
+          purpose?: string
+        }
+        Relationships: []
+      }
       organization_members: {
         Row: {
           created_at: string
@@ -2052,6 +2338,7 @@ export type Database = {
     }
     Functions: {
       accept_invitation: { Args: { invitation_id: string }; Returns: string }
+      apply_nfse_event: { Args: { _id: string }; Returns: string }
       approximate_tax_rule_error: {
         Args: { _mode: string; _option: number }
         Returns: string
@@ -2059,6 +2346,28 @@ export type Database = {
       can_issue_fiscal_change: {
         Args: { _org: string; _user: string }
         Returns: boolean
+      }
+      can_view_nfse_document: {
+        Args: {
+          _intermediary: string
+          _invoice: string
+          _provider: string
+          _taker: string
+        }
+        Returns: boolean
+      }
+      claim_adn_cursors: {
+        Args: { _cnpj?: string; _limit: number }
+        Returns: {
+          actor: string
+          claim_token: string
+          cnpj: string
+          company_id: string
+          environment: Database["public"]["Enums"]["environment"]
+          failures: number
+          next_nsu: number
+          organization_id: string
+        }[]
       }
       claim_fiscal_event_dispatch: {
         Args: { _id: string; _org: string }
@@ -2361,6 +2670,10 @@ export type Database = {
         Returns: string
       }
       disable_failing_webhooks: { Args: never; Returns: number }
+      emit_nfse_event_webhook: {
+        Args: { _event: string; _nota: Json }
+        Returns: number
+      }
       emit_webhook_event: {
         Args: {
           _body: string
@@ -2373,6 +2686,16 @@ export type Database = {
           _type: string
         }
         Returns: number
+      }
+      finish_adn_batch: {
+        Args: {
+          _cnpj: string
+          _env: Database["public"]["Enums"]["environment"]
+          _items: Json
+          _patch: Json
+          _token: string
+        }
+        Returns: Json
       }
       finish_fiscal_event: {
         Args: {
@@ -2541,6 +2864,10 @@ export type Database = {
         Returns: string
       }
       normalize_municipality_name: { Args: { value: string }; Returns: string }
+      org_proven_cnpj: {
+        Args: { _cnpj: string; _org: string }
+        Returns: boolean
+      }
       organization_team: {
         Args: { org_id: string }
         Returns: {
@@ -2748,6 +3075,39 @@ export type Database = {
           _regime: number
           _special: number
           _taxation?: number
+        }
+        Returns: string
+      }
+      store_nfse_document: {
+        Args: {
+          _d: Json
+          _env: Database["public"]["Enums"]["environment"]
+          _nsu: number
+        }
+        Returns: string
+      }
+      store_nfse_event: {
+        Args: {
+          _e: Json
+          _env: Database["public"]["Enums"]["environment"]
+          _source: string
+        }
+        Returns: string
+      }
+      store_nfse_events: {
+        Args: {
+          _env: Database["public"]["Enums"]["environment"]
+          _items: Json
+          _source: string
+        }
+        Returns: Json
+      }
+      touch_nfse_refresh: {
+        Args: {
+          _env: Database["public"]["Enums"]["environment"]
+          _interval: string
+          _key: string
+          _purpose: string
         }
         Returns: string
       }
