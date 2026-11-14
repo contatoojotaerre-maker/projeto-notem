@@ -1,10 +1,12 @@
 # notem — Fase 1
 ## Etapa E2 — DANFSe e proteção de numeração
 - [x] Plano E2 aprovado: seguir ordem proposta; transmissor/ intocado.
-- [ ] Gerador DANFSe, preferência de canhoto e exemplos PNG em docs/exemplos/danfse/ e no chat.
-- [ ] Downloads API/painel, links e documentação.
-- [ ] Séries automáticas desde 900 e saltos duráveis E0014.
-- [ ] Testes, comparação visual e publicação ao final.
+- [x] Gerador DANFSe, preferência de canhoto e sete exemplos PNG em docs/exemplos/danfse/ e Files para entrega no chat; QR decodificado.
+- [x] Downloads API/painel, links e documentação; API PDF testada com fixture real em memória. Painel autenticado não verificado (Supabase externo).
+- [x] Séries automáticas desde 900 e saltos duráveis E0014; teste DB com rollback passou, cinco saltos e seis históricos, grants corrigidos e conferidos.
+- [x] Testes locais (253 completos + teste adicional PDF API), sete PNGs inspecionados; build OK; scan sem críticos (seis informativos).
+- [ ] Solicitar publicação E2 ao finalizar.
+- [ ] PDF de nota autorizada real e emissão A1/continuação E0014 hospedada — banco sem notas, sem sessão externa disponível; depende do teste do proprietário.
 
 ## Etapa E1 — Emissão e tomadores
 - [x] Ler contratos de notas e transmissor v2 pelo anexo autorizado como fonte até a sincronização normalizar; sem editar transmissor/.
