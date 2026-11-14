@@ -45,7 +45,7 @@ export async function applyGovernmentReply(db:DB,i:Invoice,res:Transmission,requ
  return persistInvoiceResult(db,i,{...signed,status:'verifying',dispatch_state:'uncertain',message:'Aguardando confirmação do governo; não envie com outra chave.'},'verifying',request);
 }
 /** A timeout/network failure is ambiguous: never assume the fiscal request was not sent. */
-export function definitelyNotSent(e:unknown){return e instanceof TransmissorError&&(e.code==='CREDENCIAL'||(e.status!==undefined&&[400,422].includes(e.status)&&['DPS_INVALIDA','ENVELOPE_INVALIDO','REQUISICAO_INVALIDA','AUDITORIA_INDISPONIVEL'].includes(e.code)));}
+export function definitelyNotSent(e:unknown){return e instanceof TransmissorError&&(e.code==='CREDENCIAL'||(e.status!==undefined&&[400,422].includes(e.status)&&['DPS_INVALIDA','EVENTO_INVALIDO','ENVELOPE_INVALIDO','REQUISICAO_INVALIDA','AUDITORIA_INDISPONIVEL'].includes(e.code)));}
 export async function sendInvoice(db:DB,i:Invoice,request?:Request,deadline=Date.now()+20000):Promise<Invoice>{
  const claim=await db.rpc('claim_invoice_dispatch',{_id:i.id,_org:i.organization_id});if(claim.error)throw new Error('INVOICE_CLAIM_FAILED');const claimed=claim.data?.[0];if(!claimed){const r=await db.from('invoices').select('*').eq('id',i.id).eq('organization_id',i.organization_id).single();if(r.error)throw new Error('INVOICE_READ_FAILED');return r.data;}
  let res:Transmission;
