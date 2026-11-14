@@ -5,10 +5,11 @@ import { readAuthorizedNfse } from './nfse-xml';
 import { governmentErrors,invoiceOut,verificationDecision,type Invoice,type Transmission,type GovernmentReply } from './invoices';
 import { explicitExternalDps } from './external-dps';
 
-async function payload(db:DB,i:Invoice){
+async function payload(db:DB,i:Invoice){return transmissorPayload(db,i,'assinatura/transmissão ou consulta da nota '+i.id);}
+export async function transmissorPayload(db:DB,i:Pick<Invoice,'id'|'company_id'|'organization_id'|'created_by'|'environment'>,purpose:string,actor=i.created_by){
  const r=await db.from('company_certificate_material').select('key_version,nonce,data').eq('company_id',i.company_id).eq('organization_id',i.organization_id).maybeSingle();
  if(r.error||!r.data)throw new TransmissorError('ENVELOPE_INVALIDO',422);
- const audit=await db.from('certificate_audit_events').insert({company_id:i.company_id,organization_id:i.organization_id,user_id:i.created_by,action:'used',purpose:'assinatura/transmissão ou consulta da nota '+i.id,environment:i.environment,result:'solicitado'});
+ const audit=await db.from('certificate_audit_events').insert({company_id:i.company_id,organization_id:i.organization_id,user_id:actor,action:'used',purpose,environment:i.environment,result:'solicitado'});
  if(audit.error)throw new TransmissorError('AUDITORIA_INDISPONIVEL',422);
  return {organizacao_id:i.organization_id,empresa_id:i.company_id,ambiente:i.environment==='sandbox'?'homologacao':'producao',envelope:{versao_chave:r.data.key_version,nonce:r.data.nonce,dados:r.data.data}};
 }
@@ -16,7 +17,9 @@ type Patch=Partial<Invoice>&{message?:string};
 export async function persistInvoiceResult(db:DB,i:Invoice,patch:Patch,event:string,request?:Request){
  if(!i.claim_token)throw new Error('INVOICE_LEASE_MISSING');
  const next={...i,...patch,updated_at:new Date().toISOString()};
- const r=await db.rpc('finish_invoice_attempt',{_id:i.id,_token:i.claim_token,_patch:patch as Json,_nota:invoiceOut(next) as Json,_event:event});
+ let substituted:Json|undefined;
+ if(next.status==='authorized'&&i.substitutes_invoice_id){const o=await db.from('invoices').select('*').eq('id',i.substitutes_invoice_id).eq('organization_id',i.organization_id).maybeSingle();if(o.error)throw new Error('INVOICE_READ_FAILED');if(o.data)substituted=invoiceOut({...o.data,status:'substituted',substituted_by_invoice_id:i.id,pending_operation:null,updated_at:next.updated_at}) as Json;}
+ const r=await db.rpc('finish_invoice_attempt',{_id:i.id,_token:i.claim_token,_patch:patch as Json,_nota:invoiceOut(next) as Json,_event:event,...substituted?{_substituted_nota:substituted}:{}});
  if(r.error)throw new Error('INVOICE_FINISH_FAILED');
  if(!r.data){const current=await db.from('invoices').select('*').eq('id',i.id).eq('organization_id',i.organization_id).single();if(current.error)throw new Error('INVOICE_READ_FAILED');return current.data;}
  if(request&&['authorized','rejected'].includes(r.data.status)){
