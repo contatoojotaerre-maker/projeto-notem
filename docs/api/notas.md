@@ -9,6 +9,8 @@ Leia antes `convencoes.md` e `empresas.md`. Cancelamento e substituição terão
 - Exceção à janela genérica de 24 horas: a associação chave/hash/nota é duradoura por integração e ambiente. A chave associada a uma nota não pode ser reutilizada para outra. Mesmo conteúdo durante processamento/verificação responde `202` com a nota atual; conteúdo diferente responde `409 IDEMPOTENCIA_CONFLITO`. Após conclusão, a repetição preserva o resultado da emissão.
 - E0202: CPF/CNPJ do tomador igual ao do prestador é recusado antes de numerar: "O tomador não pode ser a própria empresa emitente" (`422 REGRA_DE_NEGOCIO`, campo `tomador.documento`). Aplica-se a tomador informado e cadastrado.
 - E0710/E0712/E0713: configuração incompatível com a matriz de `empresas.md` é incompleta, sem reescrita automática; recusar antes de numerar com a mensagem da regra.
+- E0174/E0175: regime especial deve ser `nenhum` para MEI ou ME/EPP com apuração dentro do Simples. E0172: também para serviço com imunidade, exportação ou não incidência. Configurações antigas são preservadas, avisadas no painel e consideradas incompletas; recusar antes de numerar.
+- E0204/E0237: ISS retido pelo tomador exige CPF/CNPJ e endereço nacional completo (CEP, município IBGE, logradouro, número e bairro). A validação usa o cadastro copiado ou o tomador informado, antes da numeração.
 - A numeração (série e número da DPS) é feita pela notem. Um número usado nunca é reaproveitado, mesmo se a nota for rejeitada.
 
 ## 1. Emitir nota — `POST /notas`
@@ -168,6 +170,26 @@ Todos os eventos `nota.*` trazem em `dados` o **objeto `nota` completo** (seçã
 - Grupo IBS/CBS: entra em fase própria, antes de 01/01/2027 (obrigatório para todos a partir dessa data).
 
 ## Implementação por etapas
-Partes 1–2: persistência, API de tomadores e montagem/leitura XML. Emissão/consulta de notas e PDF ainda não estão disponíveis; o código PDF_EM_PREPARACAO está reservado/documentado para a rota da etapa seguinte.
+Partes 1–5: API de tomadores, montagem/leitura XML, emissão idempotente, consulta automática e painel somente leitura. PDF responde `503 PDF_EM_PREPARACAO`. Cancelamento/substituição e IBS/CBS continuam fora da E1.
 O identificador DPS usa tipo de inscrição **2 para CNPJ**, conforme o Anexo I v1.01. Série e número são definitivos. Tomador estrangeiro não implica exportação: operações que exijam grupos fiscais fora de E1 serão recusadas antes da reserva, sem omitir dados obrigatórios.
+
+## Consulta automática e segurança de repetição
+- O agendador existente consulta lotes limitados de notas em verificação, com reservas temporárias no banco para impedir concorrência. Tentativas interrompidas após o início do envio também entram em consulta.
+- Após um minuto, consulta o identificador DPS; com chave encontrada, consulta o XML da NFS-e. Somente `404` depois de 15 minutos desde o início da tentativa permite rejeitar como **“O governo não gerou esta nota”**. Erro de conexão ou XML não confirmado permanece em verificação.
+- Falhas comprovadas de autenticação do Google ou validação própria anterior à transmissão permitem repetir a mesma DPS/número. Timeout e demais falhas ambíguas nunca autorizam retransmissão automática.
+- Autorização/rejeição e criação dos webhooks são confirmadas na mesma operação do banco. Sem execução em segundo plano, os eventos ficam na fila durável do agendador.
+- `consulta_publica` permanece `null`: formato oficial não confirmado nas referências disponíveis. XML/PDF exigem chave; outra organização ou ambiente responde `404`.
+
+## Orientações para rejeições confirmadas no Anexo I
+| Código | Orientação prática |
+|---|---|
+| E0116 | Informar a inscrição municipal registrada pela prefeitura no CNC; confirmar o cadastro municipal |
+| E0120 | Não informar inscrição municipal quando não houver cadastro complementar no CNC; conferir com a prefeitura |
+| E0160 | Conferir situação no Simples na Receita e configuração fiscal na competência da nota |
+| E0240 | Conferir se o CEP existe e pertence ao município do tomador |
+| E0190 / E0207 | Conferir CNPJ/CPF do tomador e existência na Receita na competência |
+| E0008 | Conferir data/hora de emissão e relógio; não pode ser posterior ao processamento pelo governo |
+| E0015 | Competência não pode ser posterior à emissão |
+| E0714 | Conferir certificado e assinatura da DPS no transmissor |
+Os detalhes preservam código, mensagem e complemento originais do governo; a explicação em português não os substitui.
 

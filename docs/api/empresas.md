@@ -97,6 +97,10 @@ Por esfera exige federal, estadual e municipal (zero é permitido); percentual d
 
 Configurações antigas incompatíveis não são alteradas automaticamente. O painel mostra aviso da regra, `/situacao` retorna `configuracao_fiscal` pendente, com mensagem de **configuração fiscal incompleta**, e a emissão será recusada antes de reservar qualquer número.
 
+### Regime especial — E0174, E0175 e E0172
+`regime_especial` deve ser `nenhum` quando a empresa é `mei`, quando é `me_epp` com `dentro_do_simples` ou quando possui serviço ativo de `imunidade`, `exportacao` ou `nao_incidencia`. A configuração e o cadastro/edição de serviços validam a combinação; a emissão repete a validação antes da numeração. Dados antigos permanecem intactos, com aviso e configuração fiscal incompleta na situação. Para corrigir, escolha explicitamente `nenhum` e salve.
+Na emissão com `retido_tomador`, o tomador precisa de CPF/CNPJ válido e endereço nacional completo (E0204/E0237); não basta o nome ou NIF estrangeiro.
+
 ## 3. Certificado digital (A1)
 
 `POST /empresas/{id}/certificado` — envia ou substitui:

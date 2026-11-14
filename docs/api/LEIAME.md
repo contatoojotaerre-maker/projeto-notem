@@ -8,6 +8,8 @@ Esta pasta é a **fonte da verdade** da API pública da notem. A página públic
 | `glossario.md` | Termos e nomenclatura usados na API |
 | `openapi.yaml` | Especificação técnica (OpenAPI 3.1), atualizada a cada rota criada |
 | `webhooks.md` | Contrato das mensagens, assinaturas e reenvios de webhooks |
+| `empresas.md` | Cadastro, configuração fiscal, certificados e preparação de empresas |
+| `notas.md` | Emissão e consulta da NFS-e, tomadores, rejeições e PDF em preparação |
 | `agendador-webhooks.md` | Chamada técnica protegida do Google Cloud Scheduler, fora da API v1 |
 
 ## Regra de manutenção

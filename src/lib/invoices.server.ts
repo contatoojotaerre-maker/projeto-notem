@@ -29,7 +29,7 @@ export async function applyGovernmentReply(db:DB,i:Invoice,res:Transmission,requ
  const reply=res.resposta??{};const signed=res.dps_assinada?{signed_dps_xml:res.dps_assinada}:{};
  const xml=reply.corpo_json?.['nfseXml'];
  if(reply.status===201&&typeof xml==='string'){
-  try{const n=readAuthorizedNfse(xml);const key=reply.corpo_json?.['chaveAcesso'];if(key&&key!==n.accessKey)throw new Error('KEY_MISMATCH');return await persistInvoiceResult(db,i,{...signed,status:'authorized',dispatch_state:'completed',authorized_nfse_xml:xml,access_key:n.accessKey,nfse_number:n.number,authorized_at:n.authorizedAt,government_values:{base:n.base,rate:n.rate,iss:n.iss,net:n.net,withheld:n.withheld},message:'Nota autorizada pelo governo.'},'authorized',request);}catch(e){console.error('INVOICE_XML_RECONCILIATION_REQUIRED',i.id);}
+  try{const p=i.provider_snapshot as {cnpj?:string};const n=readAuthorizedNfse(xml,{dpsId:i.dps_id,environment:i.environment,cnpj:p?.cnpj??''});const key=reply.corpo_json?.['chaveAcesso'];if(key&&key!==n.accessKey)throw new Error('KEY_MISMATCH');return await persistInvoiceResult(db,i,{...signed,status:'authorized',dispatch_state:'completed',authorized_nfse_xml:xml,access_key:n.accessKey,nfse_number:n.number,authorized_at:n.authorizedAt,government_values:{base:n.base,rate:n.rate,iss:n.iss,net:n.net,withheld:n.withheld},message:'Nota autorizada pelo governo.'},'authorized',request);}catch(e){console.error('INVOICE_XML_RECONCILIATION_REQUIRED',i.id);}
  }
  if(reply.status===400||reply.status===403){
   let errors=governmentErrors(reply,i.id);
