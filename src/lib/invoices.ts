@@ -11,6 +11,7 @@ export const invoiceStatuses:Record<string,string>={processing:'processando',ver
 export const invoiceLabels:Record<string,string>={processing:'Processando',verifying:'Em verificação',authorized:'Autorizada',rejected:'Rejeitada',cancellation_pending:'Cancelamento em análise',cancelled:'Cancelada',substituted:'Substituída',cancelled_by_authority:'Cancelada pela prefeitura'};
 export const invoiceEventLabels:Record<string,string>={created:'Nota criada',sent:'DPS enviada',authorized:'Nota autorizada',rejected:'Nota rejeitada',verifying:'Aguardando confirmação do governo',verified:'Nota confirmada por consulta',not_sent:'Envio não realizado; aguardando repetição com a mesma chave'};
 export const rejectionGuidance:Record<string,{campo:string;mensagem:string}>={
+ E0014:{campo:'numero_dps',mensagem:'O governo informou que esta DPS já existe. O limite de cinco saltos foi atingido ou a numeração está esgotada. Confira a série e o histórico antes de emitir novamente.'},
  E0116:{campo:'empresa.inscricao_municipal',mensagem:'Informe a inscrição municipal cadastrada pela prefeitura no CNC. Confirme o cadastro municipal antes de tentar novamente.'},
  E0120:{campo:'empresa.inscricao_municipal',mensagem:'A inscrição municipal não deve ser informada: não há cadastro complementar da prefeitura no CNC. Confira o cadastro e remova a inscrição quando não exigida.'},
  E0160:{campo:'configuracao_fiscal.simples_nacional',mensagem:'A situação no Simples diverge do cadastro da Receita na competência da nota. Confira a configuração fiscal e a data de competência.'},

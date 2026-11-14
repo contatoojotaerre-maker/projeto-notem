@@ -49,7 +49,7 @@ export async function sendInvoice(db:DB,i:Invoice,request?:Request,deadline=Date
  try{const base=await payload(db,claimed);res=await callTransmissor<Transmission>('/v1/nfse/emitir',{...base,dps_xml:claimed.unsigned_dps_xml,tempo_limite_segundos:Math.max(1,Math.min(18,Math.floor((deadline-Date.now())/1000)))});}
  catch(e){return persistInvoiceResult(db,claimed,{status:definitelyNotSent(e)?'processing':'verifying',dispatch_state:definitelyNotSent(e)?'not_sent':'uncertain',message:definitelyNotSent(e)?'Envio não realizado. Tente novamente com a mesma Idempotency-Key.':'Aguardando confirmação do governo.'},definitelyNotSent(e)?'not_sent':'verifying',request);}
  if(explicitExternalDps(res.resposta??{})&&claimed.claim_token){
-  const retry=await db.rpc('retry_external_dps',{_id:claimed.id,_org:claimed.organization_id,_token:claimed.claim_token,_response:res.resposta as Json,_signed:res.dps_assinada??undefined});
+  const retry=await db.rpc('retry_external_dps',{_id:claimed.id,_org:claimed.organization_id,_token:claimed.claim_token,_response:res.resposta as Json,...res.dps_assinada?{_signed:res.dps_assinada}:{}});
   if(retry.error)throw new Error('EXTERNAL_DPS_RETRY_FAILED');
   if(retry.data&&retry.data.dps_id!==claimed.dps_id){if(deadline-Date.now()>3000)return sendInvoice(db,retry.data,request,deadline);return retry.data;}
   if(!retry.data){const current=await db.from('invoices').select('*').eq('id',claimed.id).eq('organization_id',claimed.organization_id).single();if(current.error)throw new Error('INVOICE_READ_FAILED');return current.data;}
