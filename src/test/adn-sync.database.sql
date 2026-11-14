@@ -152,3 +152,21 @@ BEGIN
  IF EXISTS (SELECT 1 FROM public.invoices WHERE id IN (a.id,b.id,c.id)) OR EXISTS (SELECT 1 FROM public.nfse_documents WHERE access_key IN (ka,ke,kr,kx,kn)) OR EXISTS (SELECT 1 FROM auth.users WHERE id=uid) THEN RAISE EXCEPTION 'TEST_FAIL_rollback'; END IF;
  RAISE NOTICE 'ADN_DB_TESTS_OK';
 END $test$;
+
+-- Event applied to a notem invoice before its official copy arrives: the copy mirrors the invoice state (rollback-only).
+DO $test2$
+DECLARE t public.invoices; a public.invoices; k text; BEGIN
+ SELECT * INTO t FROM public.invoices WHERE access_key IS NOT NULL ORDER BY created_at LIMIT 1;
+ BEGIN
+  k := left(t.access_key,23)||'7777777777770'||right(t.access_key,14);
+  a:=t; a.id:=gen_random_uuid(); a.status:='authorized'; a.dps_number:=999999999999970; a.dps_id:=left(t.dps_id,30)||lpad('999999999999970',15,'0'); a.access_key:=k; a.external_id:=NULL; a.idempotency_key:=NULL; a.nfse_number:='M1'; a.cancellation:=NULL; a.restrictions:='[]'; a.manifestation:=NULL;
+  INSERT INTO public.invoices SELECT (a).*;
+  PERFORM public.store_nfse_event(a.environment, jsonb_build_object('access_key',k,'code','101101','sequence',1,'processed_at','2026-11-14T12:00:00Z','xml','<evento/>'), 'adn_eventos');
+  IF (SELECT status FROM public.invoices WHERE id=a.id)<>'cancelled' THEN RAISE EXCEPTION 'TEST_FAIL_invoice_cancelled'; END IF;
+  PERFORM public.store_nfse_document(a.environment, jsonb_build_object('access_key',k,'provider_cnpj','00000000000000','xml','<NFSe/>'), 1);
+  IF (SELECT status||'|'||(cancellation->>'situacao') FROM public.nfse_documents WHERE access_key=k)<>'cancelled|cancelado' THEN RAISE EXCEPTION 'TEST_FAIL_copy_mirrors_invoice'; END IF;
+  IF public.store_nfse_event(a.environment, jsonb_build_object('access_key',k,'code','101101','sequence',1,'xml','<evento/>'), 'adn_dfe')<>'duplicate' THEN RAISE EXCEPTION 'TEST_FAIL_dup'; END IF;
+  RAISE EXCEPTION USING ERRCODE='ZX001', MESSAGE='rollback';
+ EXCEPTION WHEN SQLSTATE 'ZX001' THEN NULL; END;
+ RAISE NOTICE 'ADN_DB_TESTS_2_OK';
+END $test2$;
