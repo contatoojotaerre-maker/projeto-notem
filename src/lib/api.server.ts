@@ -83,10 +83,11 @@ export function apiRoute(handlers: Partial<Record<'GET' | 'POST' | 'PATCH' | 'PU
     }
     const out = new Headers({ 'X-Request-Id': requestId, 'Cache-Control': 'no-store', ...headers });
     if (replayed) out.set('Idempotent-Replayed', 'true');
-    const persist = async () => { try { const errorCode = status >= 400 ? (body as { erro?: { codigo?: string } })?.erro?.codigo ?? null : null; const r = await db.from('api_request_logs').insert({ id: requestId, ...(identity ?? {}), company_id: companyId, method: request.method, path: url.pathname, status_code: status, error_code: errorCode, duration_ms: Math.round(performance.now() - started), request_body: logBody(url.pathname, requestBody), response_body: body === undefined ? null : sanitizeBody(body) }); if (r.error) console.error('API_LOG_FAILED', requestId); } catch { console.error('API_LOG_FAILED', requestId); } };
+    const persist = async () => { try { const errorCode = status >= 400 ? (body as { erro?: { codigo?: string } })?.erro?.codigo ?? null : null; const r = await db.from('api_request_logs').insert({ id: requestId, ...(identity ?? {}), company_id: companyId, method: request.method, path: url.pathname, status_code: status, error_code: errorCode, duration_ms: Math.round(performance.now() - started), request_body: logBody(url.pathname, requestBody), response_body: body === undefined||body instanceof Uint8Array ? null : sanitizeBody(body) }); if (r.error) console.error('API_LOG_FAILED', requestId); } catch { console.error('API_LOG_FAILED', requestId); } };
     background(persist());
     if (pending.length) await Promise.all(pending);
     if (body === undefined || status === 204) return new Response(null, { status, headers: out });
+    if(body instanceof Uint8Array)return new Response(new Blob([new Uint8Array(body)],{type:out.get('Content-Type')??'application/octet-stream'}),{status,headers:out});
     if(out.get('Content-Type')?.startsWith('application/xml')&&typeof body==='string')return new Response(body,{status,headers:out});
     out.set('Content-Type', 'application/json; charset=utf-8');
     return new Response(JSON.stringify(body), { status, headers: out });

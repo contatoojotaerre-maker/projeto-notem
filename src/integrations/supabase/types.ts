@@ -494,6 +494,7 @@ export type Database = {
           created_by: string
           dps_series: number
           organization_id: string
+          print_danfse_receipt: boolean
           simples_iss_withholding_percent: number | null
           simples_nacional_option: number
           simples_nacional_regime: number | null
@@ -515,6 +516,7 @@ export type Database = {
           created_by: string
           dps_series: number
           organization_id: string
+          print_danfse_receipt?: boolean
           simples_iss_withholding_percent?: number | null
           simples_nacional_option: number
           simples_nacional_regime?: number | null
@@ -536,6 +538,7 @@ export type Database = {
           created_by?: string
           dps_series?: number
           organization_id?: string
+          print_danfse_receipt?: boolean
           simples_iss_withholding_percent?: number | null
           simples_nacional_option?: number
           simples_nacional_regime?: number | null

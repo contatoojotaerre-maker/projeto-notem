@@ -65,8 +65,8 @@ export async function getFiscal(ctx: ApiCtx): Promise<ApiResult> {
 }
 export async function putFiscal(ctx: ApiCtx): Promise<ApiResult> {
   const c = await loadCompany(ctx); const v = parseBody(fiscalIn, ctx.body);
-  const current = await ctx.db.from('company_fiscal_settings').select('dps_series').eq('company_id', c.id).maybeSingle(); if (current.error) throw new Error('FISCAL_READ_FAILED');
-  const { dps_series: _ignored, company_id, organization_id, ...fields } = fiscalToDb(v, { company_id: c.id, organization_id: ctx.organization_id }, current.data?.dps_series ?? null);
+  const current = await ctx.db.from('company_fiscal_settings').select('dps_series,print_danfse_receipt').eq('company_id', c.id).maybeSingle(); if (current.error) throw new Error('FISCAL_READ_FAILED');
+  const { dps_series: _ignored, company_id, organization_id, ...fields } = fiscalToDb(v, { company_id: c.id, organization_id: ctx.organization_id }, current.data?.dps_series ?? null,current.data?.print_danfse_receipt??false);
   const profiles=await ctx.db.from('company_service_profiles').select('iss_taxation').eq('company_id',c.id).eq('organization_id',ctx.organization_id).eq('active',true);
   if(profiles.error)throw new Error('FISCAL_READ_FAILED');for(const p of profiles.data??[]){const error=specialTaxRuleError(fields.simples_nacional_option,fields.simples_nacional_regime,fields.special_tax_regime,p.iss_taxation);if(error)throw fail(422,'REGRA_DE_NEGOCIO',[{campo:'regime_especial',mensagem:error}]);}
   const r = current.data

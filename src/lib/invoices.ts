@@ -4,6 +4,7 @@ import { customerSchema } from './customers';
 import { fiscalDecimal } from './dps';
 import { API_BASE } from './app-url';
 import { envLabel, isoBr } from './api-contract';
+import { publicNfseUrl } from './danfse';
 
 export type Invoice = Database['public']['Tables']['invoices']['Row'];
 export const invoiceStatuses:Record<string,string>={processing:'processando',verifying:'em_verificacao',authorized:'autorizada',rejected:'rejeitada',cancellation_pending:'cancelamento_em_analise',cancelled:'cancelada',substituted:'substituida',cancelled_by_authority:'cancelada_prefeitura'};
@@ -37,7 +38,7 @@ export type InvoiceRequest=z.infer<typeof invoiceRequest>;
 export function invoiceOut(i:Invoice){
  const obj=(v:unknown)=>v&&typeof v==='object'&&!Array.isArray(v)?v as Record<string,Json|undefined>:{};
  const sent=obj(i.sent_values),gov=obj(i.government_values),service=obj(i.service_snapshot);
- return {id:i.id,id_externo:i.external_id,empresa_id:i.company_id,ambiente:envLabel(i.environment),situacao:invoiceStatuses[i.status]??'processando',restricoes:i.restrictions,manifestacao:i.manifestation,numero:i.nfse_number,chave_acesso:i.access_key,serie_dps:String(i.dps_series).padStart(5,'0'),numero_dps:String(i.dps_number),competencia:i.competence,emitida_em:isoBr(i.emitted_at),autorizada_em:isoBr(i.authorized_at),tomador:i.customer_snapshot,servico:{servico_id:i.service_profile_id,codigo_servico:service['service_code'],descricao:i.description},valores:{...sent,base_calculo:gov['base']??null,aliquota_iss:gov['rate']??null,valor_iss:gov['iss']??null,valor_liquido:gov['net']??null,iss_retido:typeof gov['withheld']==='boolean'?gov['withheld']:service['withholding']!==1},local_prestacao:i.service_location,erros_governo:i.government_errors,substitui_nota_id:i.substitutes_invoice_id,substituida_por_nota_id:i.substituted_by_invoice_id,links:{xml:`${API_BASE}/notas/${i.id}/xml`,pdf:`${API_BASE}/notas/${i.id}/pdf`,consulta_publica:null},criada_em:isoBr(i.created_at),atualizada_em:isoBr(i.updated_at)};
+ return {id:i.id,id_externo:i.external_id,empresa_id:i.company_id,ambiente:envLabel(i.environment),situacao:invoiceStatuses[i.status]??'processando',restricoes:i.restrictions,manifestacao:i.manifestation,numero:i.nfse_number,chave_acesso:i.access_key,serie_dps:String(i.dps_series).padStart(5,'0'),numero_dps:String(i.dps_number),competencia:i.competence,emitida_em:isoBr(i.emitted_at),autorizada_em:isoBr(i.authorized_at),tomador:i.customer_snapshot,servico:{servico_id:i.service_profile_id,codigo_servico:service['service_code'],descricao:i.description},valores:{...sent,base_calculo:gov['base']??null,aliquota_iss:gov['rate']??null,valor_iss:gov['iss']??null,valor_liquido:gov['net']??null,iss_retido:typeof gov['withheld']==='boolean'?gov['withheld']:service['withholding']!==1},local_prestacao:i.service_location,erros_governo:i.government_errors,substitui_nota_id:i.substitutes_invoice_id,substituida_por_nota_id:i.substituted_by_invoice_id,links:{xml:`${API_BASE}/notas/${i.id}/xml`,pdf:`${API_BASE}/notas/${i.id}/pdf`,consulta_publica:i.access_key?publicNfseUrl(i.access_key):null},criada_em:isoBr(i.created_at),atualizada_em:isoBr(i.updated_at)};
 }
 export type GovernmentReply={status?:number;erro?:string;ms?:number;corpo_json?:Record<string,unknown>;corpo_texto?:string};
 export type Transmission={dps_assinada?:string;resposta?:GovernmentReply};

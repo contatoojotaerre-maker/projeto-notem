@@ -17,6 +17,7 @@ export function specialTaxRuleError(option:number,regime:number|null,special:num
 }
 export const seriesSchema = z.number().int().min(1).max(49999);
 export const fiscalSchema = fiscalIds.extend({
+  print_danfse_receipt: z.boolean().default(false),
   simples_nacional_option: z.number().int().min(1).max(3), simples_nacional_regime: z.number().int().min(1).max(3).nullable(),
   special_tax_regime: z.number().refine(v => [0,1,2,3,4,5,6,9].includes(v)), dps_series: seriesSchema.nullable(),
   approx_taxes_mode: z.enum(['percent_simples','percent_by_sphere','none']), approx_simples_percent: percent,
