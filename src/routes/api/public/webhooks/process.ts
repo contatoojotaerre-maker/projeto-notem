@@ -15,7 +15,7 @@ export const Route = createFileRoute('/api/public/webhooks/process')({
       const invoices = await processInvoiceVerifications(supabaseAdmin)
       try { const { runDailyRoutine } = await import('@/lib/readiness.server'); await runDailyRoutine(supabaseAdmin) } catch { console.error('DAILY_ROUTINE_FAILED') }
       const { results: _results, ...summary } = await processWebhookBatch(supabaseAdmin, master)
-      await recordSchedulerRun(supabaseAdmin, summary, null)
+      await recordSchedulerRun(supabaseAdmin, {...summary,reserved:summary.reserved+invoices.reserved,completed:summary.completed+invoices.completed,failed:summary.failed+invoices.failed}, null)
       return Response.json({...summary,invoices}, { headers: { 'Cache-Control': 'no-store' } })
     } catch (e) {
       const code = e instanceof Error && /^[A-Z_]+$/.test(e.message) ? e.message : 'PROCESSAMENTO_FALHOU'

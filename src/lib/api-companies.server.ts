@@ -67,6 +67,8 @@ export async function putFiscal(ctx: ApiCtx): Promise<ApiResult> {
   const c = await loadCompany(ctx); const v = parseBody(fiscalIn, ctx.body);
   const current = await ctx.db.from('company_fiscal_settings').select('dps_series').eq('company_id', c.id).maybeSingle(); if (current.error) throw new Error('FISCAL_READ_FAILED');
   const { dps_series: _ignored, company_id, organization_id, ...fields } = fiscalToDb(v, { company_id: c.id, organization_id: ctx.organization_id }, current.data?.dps_series ?? null);
+  const profiles=await ctx.db.from('company_service_profiles').select('iss_taxation').eq('company_id',c.id).eq('organization_id',ctx.organization_id).eq('active',true);
+  if(profiles.error)throw new Error('FISCAL_READ_FAILED');for(const p of profiles.data??[]){const error=specialTaxRuleError(fields.simples_nacional_option,fields.simples_nacional_regime,fields.special_tax_regime,p.iss_taxation);if(error)throw fail(422,'REGRA_DE_NEGOCIO',[{campo:'regime_especial',mensagem:error}]);}
   const r = current.data
     ? await ctx.db.from('company_fiscal_settings').update({ ...fields, ...apiAudit(ctx) } as never).eq('company_id', company_id).eq('organization_id', organization_id).select('*').single()
     : await ctx.db.from('company_fiscal_settings').insert({ ...fields, company_id, organization_id, cnpj: '', dps_series: null as unknown as number, created_by: ctx.actor, ...apiAudit(ctx) } as never).select('*').single();
