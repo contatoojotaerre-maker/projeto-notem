@@ -46,7 +46,7 @@ paths:
         A chave/hash/nota é duradoura por integração e ambiente, sem expiração em 24 horas.
         Repetição em processamento/verificação retorna 202 com a nota atual; conteúdo diferente retorna 409.
         Falha comprovada anterior ao envio permite repetir a mesma DPS/número. Ambiguidade vai para consulta.
-        O transmissor aguarda o governo por 18 segundos. PDF não está disponível na E1.
+        O transmissor aguarda o governo por até 18 segundos. E0014 explícita permite até cinco saltos duráveis; ambiguidades somente consultam.
       parameters:
         - name: Idempotency-Key
           in: header
@@ -125,17 +125,16 @@ paths:
   /notas/{id}/pdf:
     get:
       tags: [Notas]
-      summary: PDF em preparação
-      description: Exige chave e nota do mesmo ambiente/organização; responde 503 PDF_EM_PREPARACAO. Não gera PDF provisório.
+      summary: Baixa DANFSe v2.0 em PDF
+      description: Gerado do XML autorizado e situação atual; autorizada, cancelada, cancelada_prefeitura ou substituida. Canhoto opcional; mesma organização e ambiente da chave.
       parameters: [{ name: id, in: path, required: true, schema: { type: string, format: uuid } }]
       responses:
-        "503":
-          description: PDF_EM_PREPARACAO — PDF em preparação
-          headers: { X-Request-Id: { $ref: "#/components/headers/XRequestId" } }
-          content:
-            application/json:
-              schema: { $ref: "#/components/schemas/Erro" }
-              example: { erro: { codigo: PDF_EM_PREPARACAO, mensagem: PDF em preparação, detalhes: [], codigo_governo: null, mensagem_governo: null }, id_requisicao: req_exemplo }
+        "200":
+          description: DANFSe A4 em página única
+          headers: { X-Request-Id: { $ref: "#/components/headers/XRequestId" }, Content-Disposition: { schema: { type: string } } }
+          content: { application/pdf: { schema: { type: string, format: binary } } }
+        "401": { $ref: "#/components/responses/AutenticacaoInvalida" }
+        "404": { $ref: "#/components/responses/Erro" }
   /status:
     get:
       tags: [Geral]
@@ -574,7 +573,8 @@ components:
             estadual: { oneOf: [{ $ref: "#/components/schemas/Percentual" }, { type: "null" }] }
             municipal: { oneOf: [{ $ref: "#/components/schemas/Percentual" }, { type: "null" }] }
         aliquota_iss_simples: { oneOf: [{ $ref: "#/components/schemas/Percentual" }, { type: "null" }] }
-        serie_dps: { type: [string, "null"], readOnly: true, examples: ["00001"] }
+        imprimir_canhoto_danfse: { type: boolean, default: false, description: "Ausente no PUT preserva valor atual" }
+        serie_dps: { type: [string, "null"], readOnly: true, examples: ["00900"] }
     Certificado:
       type: object
       properties:
