@@ -1,7 +1,7 @@
 # notem — Fase 1
 ## Auditoria da documentação API
-- [ ] Separar contrato público e notas internas, corrigir textos e incluir exemplos completos de webhooks.
-- [ ] Validar OpenAPI 3.1 com teste automático e informar arquivos alterados/criados/movidos; API sem mudanças.
+- [x] Separar contrato público e notas internas, corrigir textos e incluir exemplos completos de webhooks.
+- [x] OpenAPI 3.1.0 válido — 0 erros (openapi-spec-validator 0.7.2); 256 testes passaram, incluindo especificação inválida de controle. Informar arquivos alterados/criados/movidos; API sem mudanças e sem publicação nesta auditoria.
 
 ## Etapa E2 — DANFSe e proteção de numeração
 - [x] Máscaras e localidades, três reduções IBS/CBS e quebra entre palavras ajustadas; PNGs base/homologação regenerados e inspecionados, 254 testes passaram e build OK; publicação solicitada ao encerrar (conclusão não verificada).
