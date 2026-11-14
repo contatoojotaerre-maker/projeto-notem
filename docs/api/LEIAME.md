@@ -10,6 +10,7 @@ Documentação oficial para integrar sistemas parceiros à API da notem.
 | `webhooks.md` | Contrato das mensagens, assinaturas e reenvios de webhooks |
 | `empresas.md` | Cadastro, configuração fiscal, certificados e preparação de empresas |
 | `notas.md` | Emissão e consulta da NFS-e, tomadores, rejeições e DANFSe em PDF |
+| `cancelamento.md` | Cancelamento, análise fiscal do cancelamento e substituição de NFS-e |
 
 ## Endereços
 Endereço oficial: `https://app.notemfiscal.com.br/api/v1`.

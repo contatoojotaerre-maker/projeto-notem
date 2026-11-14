@@ -80,6 +80,85 @@ paths:
         "200": { description: "XML sem alterações", headers: { X-Request-Id: { $ref: "#/components/headers/XRequestId" } }, content: { application/xml: { schema: { type: string } } } }
         "401": { $ref: "#/components/responses/AutenticacaoInvalida" }
         "404": { $ref: "#/components/responses/Erro" }
+  /notas/{id}/cancelar:
+    parameters: [{ name: id, in: path, required: true, schema: { type: string, format: uuid } }]
+    post:
+      tags: [Notas]
+      summary: Cancela NFS-e autorizada (evento 101101)
+      description: |
+        Somente nota autorizada do ambiente da chave e sem outro pedido em andamento. Idempotency-Key obrigatória e associada de forma duradoura ao pedido.
+        Recusas por prazo, valor, tomador não identificado ou tributos recolhidos trazem pode_solicitar_analise true.
+        Se o governo indicar cancelamento já existente, a notem confirma o evento e, encontrado, a nota fica cancelada ("Cancelamento registrado fora da notem").
+      parameters:
+        - name: Idempotency-Key
+          in: header
+          required: true
+          schema: { type: string, minLength: 1, maxLength: 100 }
+      requestBody: { required: true, content: { application/json: { schema: { $ref: "#/components/schemas/PedidoCancelamento" } } } }
+      responses:
+        "200": { description: "Cancelamento registrado; nota com situacao cancelada", headers: { X-Request-Id: { $ref: "#/components/headers/XRequestId" } }, content: { application/json: { schema: { $ref: "#/components/schemas/Nota" } } } }
+        "202": { description: "Aguardando confirmação do governo; nota segue autorizada com operacao_pendente", headers: { X-Request-Id: { $ref: "#/components/headers/XRequestId" } }, content: { application/json: { schema: { $ref: "#/components/schemas/Nota" } } } }
+        "400": { $ref: "#/components/responses/Erro" }
+        "401": { $ref: "#/components/responses/AutenticacaoInvalida" }
+        "404": { $ref: "#/components/responses/Erro" }
+        "409": { description: "CONFLITO (nota não autorizada, pedido ou substituição em andamento) ou IDEMPOTENCIA_CONFLITO", content: { application/json: { schema: { $ref: "#/components/schemas/Erro" } } } }
+        "422": { description: "REGRA_DE_NEGOCIO (justificativa, certificado), EMPRESA_NAO_PRONTA ou REJEITADO_GOVERNO", content: { application/json: { schema: { $ref: "#/components/schemas/Erro" } } } }
+        "503": { $ref: "#/components/responses/Erro" }
+  /notas/{id}/solicitar-analise-cancelamento:
+    parameters: [{ name: id, in: path, required: true, schema: { type: string, format: uuid } }]
+    post:
+      tags: [Notas]
+      summary: Solicita análise fiscal do cancelamento à prefeitura (evento 101103)
+      description: "Mesmas regras e respostas do cancelamento. Registrado o pedido, a nota fica cancelamento_em_analise até a decisão da prefeitura."
+      parameters:
+        - name: Idempotency-Key
+          in: header
+          required: true
+          schema: { type: string, minLength: 1, maxLength: 100 }
+      requestBody: { required: true, content: { application/json: { schema: { $ref: "#/components/schemas/PedidoCancelamento" } } } }
+      responses:
+        "200": { description: "Pedido registrado; nota com situacao cancelamento_em_analise", headers: { X-Request-Id: { $ref: "#/components/headers/XRequestId" } }, content: { application/json: { schema: { $ref: "#/components/schemas/Nota" } } } }
+        "202": { description: "Aguardando confirmação do governo", headers: { X-Request-Id: { $ref: "#/components/headers/XRequestId" } }, content: { application/json: { schema: { $ref: "#/components/schemas/Nota" } } } }
+        "400": { $ref: "#/components/responses/Erro" }
+        "401": { $ref: "#/components/responses/AutenticacaoInvalida" }
+        "404": { $ref: "#/components/responses/Erro" }
+        "409": { $ref: "#/components/responses/Erro" }
+        "422": { $ref: "#/components/responses/Erro" }
+        "503": { $ref: "#/components/responses/Erro" }
+  /notas/{id}/substituir:
+    parameters: [{ name: id, in: path, required: true, schema: { type: string, format: uuid } }]
+    post:
+      tags: [Notas]
+      summary: Emite nota substituta (grupo subst)
+      description: |
+        Campos não enviados vêm da nota original; a empresa é sempre a da original. Validações de emissão e E0060/E0061 ocorrem antes de numerar.
+        A original só fica substituida quando a nova é autorizada; rejeitada a nova, a original não muda. Respostas iguais a POST /notas.
+      parameters:
+        - name: Idempotency-Key
+          in: header
+          required: true
+          schema: { type: string, minLength: 1, maxLength: 100 }
+      requestBody: { required: true, content: { application/json: { schema: { $ref: "#/components/schemas/PedidoSubstituicao" } } } }
+      responses:
+        "201": { description: "Nota substituta autorizada", headers: { X-Request-Id: { $ref: "#/components/headers/XRequestId" } }, content: { application/json: { schema: { $ref: "#/components/schemas/Nota" } } } }
+        "202": { description: "Nota substituta em processamento ou verificação", headers: { X-Request-Id: { $ref: "#/components/headers/XRequestId" } }, content: { application/json: { schema: { $ref: "#/components/schemas/Nota" } } } }
+        "400": { $ref: "#/components/responses/Erro" }
+        "401": { $ref: "#/components/responses/AutenticacaoInvalida" }
+        "404": { $ref: "#/components/responses/Erro" }
+        "409": { description: "CONFLITO (original não autorizada, pedido ou substituição em andamento) ou IDEMPOTENCIA_CONFLITO", content: { application/json: { schema: { $ref: "#/components/schemas/Erro" } } } }
+        "422": { description: "REGRA_DE_NEGOCIO (inclui E0042, E0060, E0061, justificativa), EMPRESA_NAO_PRONTA ou REJEITADO_GOVERNO", content: { application/json: { schema: { $ref: "#/components/schemas/Erro" } } } }
+        "503": { $ref: "#/components/responses/Erro" }
+  /notas/{id}/eventos/{codigo}/xml:
+    parameters:
+      - { name: id, in: path, required: true, schema: { type: string, format: uuid } }
+      - { name: codigo, in: path, required: true, schema: { type: string, enum: ["101101", "101103"] } }
+    get:
+      tags: [Notas]
+      summary: Baixa o XML oficial de um evento registrado
+      responses:
+        "200": { description: "XML do evento sem alterações", headers: { X-Request-Id: { $ref: "#/components/headers/XRequestId" } }, content: { application/xml: { schema: { type: string } } } }
+        "401": { $ref: "#/components/responses/AutenticacaoInvalida" }
+        "404": { $ref: "#/components/responses/Erro" }
   /empresas/{id}/tomadores:
     parameters: [{ $ref: "#/components/parameters/EmpresaId" }]
     get:
@@ -344,7 +423,7 @@ components:
       name: Idempotency-Key
       in: header
       required: false
-      description: "Chave de idempotência (até 100 caracteres) aceita em POST, PATCH, PUT e DELETE; vale 24 h por integração e ambiente, exceto POST /notas (associação duradoura à nota). Mesmo conteúdo devolve a mesma resposta (cabeçalho Idempotent-Replayed true); conteúdo diferente devolve 409 IDEMPOTENCIA_CONFLITO. Obrigatória em emissão, cancelamento e substituição."
+      description: "Chave de idempotência (até 100 caracteres) aceita em POST, PATCH, PUT e DELETE; vale 24 h por integração e ambiente, exceto emissão, cancelamento, análise e substituição de notas (associação duradoura ao pedido). Mesmo conteúdo devolve a mesma resposta (cabeçalho Idempotent-Replayed true); conteúdo diferente devolve 409 IDEMPOTENCIA_CONFLITO. Obrigatória em emissão, cancelamento e substituição."
       schema: { type: string, maxLength: 100 }
     Limite:
       name: limite
@@ -365,7 +444,7 @@ components:
       type: object
       additionalProperties: false
       required: [valores]
-      description: "Exatamente um seletor de empresa e um de serviço; no máximo um seletor de tomador. CPF/CNPJ/endereço nacional completos exigidos com retenção pelo tomador (E0204/E0237). E0202 e regras fiscais verificadas antes de numerar."
+      description: "Textos são normalizados antes de validar e o texto normalizado é o enviado ao governo; caracteres sem equivalente retornam 422 (contém caracteres não aceitos pela NFS-e). Exatamente um seletor de empresa e um de serviço; no máximo um seletor de tomador. CPF/CNPJ/endereço nacional completos exigidos com retenção pelo tomador (E0204/E0237). E0202 e regras fiscais verificadas antes de numerar."
       properties:
         empresa_id: { type: string, format: uuid }
         empresa_id_externo: { type: string, minLength: 1, maxLength: 100 }
@@ -423,9 +502,56 @@ components:
         erros_governo: { type: array, items: { type: object } }
         substitui_nota_id: { type: [string, "null"], format: uuid }
         substituida_por_nota_id: { type: [string, "null"], format: uuid }
+        operacao_pendente:
+          type: [object, "null"]
+          description: "Pedido aguardando confirmação do governo; null quando não houver"
+          properties:
+            tipo: { type: string, enum: [cancelamento, analise_cancelamento] }
+            estado: { type: string, enum: [em_verificacao] }
+            desde: { type: [string, "null"], format: date-time }
+        cancelamento:
+          type: [object, "null"]
+          description: "Último pedido de cancelamento ou análise fiscal; null quando nunca houve"
+          properties:
+            tipo: { type: string, enum: [cancelamento, analise_cancelamento] }
+            motivo: { type: string, enum: [erro_emissao, servico_nao_prestado, outros] }
+            justificativa: { type: string }
+            solicitado_em: { type: [string, "null"], format: date-time }
+            registrado_em: { type: [string, "null"], format: date-time }
+            situacao: { type: string, enum: [em_verificacao, cancelado, em_analise, recusado, nao_registrado, nao_enviado] }
+            pode_solicitar_analise: { type: boolean }
+            registrado_fora_da_notem: { type: boolean }
+            erros_governo: { type: array, items: { type: object } }
         links: { type: object, properties: { xml: { type: string, format: uri }, pdf: { type: string, format: uri }, consulta_publica: { type: [string, "null"], description: "https://www.nfse.gov.br/ConsultaPublica?tpc=1&chave={chave_acesso}; null somente sem chave válida" } } }
         criada_em: { type: string, format: date-time }
         atualizada_em: { type: string, format: date-time }
+    PedidoCancelamento:
+      type: object
+      additionalProperties: false
+      required: [motivo, justificativa]
+      properties:
+        motivo: { type: string, enum: [erro_emissao, servico_nao_prestado, outros] }
+        justificativa: { type: string, description: "15 a 255 caracteres após a normalização de texto (convencoes.md)" }
+    PedidoSubstituicao:
+      type: object
+      required: [motivo, justificativa]
+      description: "Campos de NotaEntrada são opcionais; os não enviados vêm da nota original. empresa_id, se enviado, deve ser o da original."
+      properties:
+        motivo: { type: string, enum: [desenquadramento_simples, enquadramento_simples, inclusao_imunidade_isencao, exclusao_imunidade_isencao, rejeicao_tomador_intermediario, outros] }
+        justificativa: { type: string, description: "15 a 255 caracteres após a normalização de texto" }
+        id_externo: { type: [string, "null"], maxLength: 100 }
+        servico_id: { type: string, format: uuid }
+        servico_id_externo: { type: string, maxLength: 100 }
+        competencia: { type: string, format: date }
+        descricao: { type: string, maxLength: 2000 }
+        tomador: { oneOf: [{ $ref: "#/components/schemas/Tomador" }, { type: "null" }] }
+        tomador_id: { type: string, format: uuid }
+        tomador_id_externo: { type: string, maxLength: 100 }
+        valores: { type: object }
+        retencao_iss: { type: [string, "null"], enum: [nao_retido, retido_tomador, retido_intermediario, null] }
+        aliquota_iss_simples: { oneOf: [{ $ref: "#/components/schemas/Percentual" }, { type: "null" }] }
+        local_prestacao: { type: [object, "null"], properties: { codigo_municipio: { $ref: "#/components/schemas/CodigoMunicipio" } } }
+        informacoes_complementares: { type: [string, "null"], maxLength: 2000 }
     Tomador:
       type: object
       required: [tipo, nome]
