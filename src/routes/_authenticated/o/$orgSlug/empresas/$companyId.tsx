@@ -16,6 +16,7 @@ import { CertificateTab,ReadinessTab } from '@/components/notem/certificate-tabs
 import { canUseCertificate } from '@/lib/certificates';
 import { fiscalQuery } from '@/lib/fiscal.queries';
 import { FiscalTab,ServicesTab } from '@/components/notem/fiscal-tabs';
+import { CustomersTab } from '@/components/notem/invoice-views';
 const companyQuery=(id:string,organization_id:string)=>queryOptions({queryKey:['company',id,organization_id],queryFn:()=>getCompany({data:{id,organization_id}})});
 export const Route=createFileRoute('/_authenticated/o/$orgSlug/empresas/$companyId')({head:()=>pageHead('Dados e configuração fiscal da empresa'),loader:async({context,params})=>{const w=await context.queryClient.ensureQueryData(workspaceQuery());const o=w.organizations.find(o=>o.slug===params.orgSlug);if(!o)throw new Error('Acesso não autorizado.');await Promise.all([context.queryClient.ensureQueryData(companyQuery(params.companyId,o.id)),context.queryClient.ensureQueryData(fiscalQuery(params.companyId,o.id))]);},component:CompanyDetail});
 function CompanyDetail(){const {orgSlug,companyId}=Route.useParams();const {organization,role,isAdmin}=useOrganization(orgSlug);if(!organization)return null;return <Detail id={companyId} organizationId={organization.id} slug={orgSlug} canEdit={canEditCompany(role,isAdmin)} canUse={canUseCertificate(role,isAdmin)} isAdmin={isAdmin}/>;}
