@@ -34,7 +34,7 @@ export async function applyGovernmentReply(db:DB,i:Invoice,res:Transmission,requ
  if(reply.status===400||reply.status===403){
   let errors=governmentErrors(reply,i.id);
   if(!errors.length)errors=[{campo:reply.status===403?'certificado':'nota',mensagem:reply.status===403?'O governo recusou o certificado da empresa. Confira sua validade e autorização para emitir.':'O governo rejeitou a nota. Confira os dados enviados e os detalhes originais.',codigo_governo:String(reply.status),mensagem_governo:'Rejeição informada pelo governo.',complemento:null,nota_id:i.id}];
-  const result=await persistInvoiceResult(db,i,{...signed,status:'rejected',dispatch_state:'completed',government_errors:errors as Json,message:errors[0]?.mensagem},'rejected',request);
+  const result=await persistInvoiceResult(db,i,{...signed,status:'rejected',dispatch_state:'completed',government_errors:errors as Json,message:errors[0]?.mensagem??'Nota rejeitada.'},'rejected',request);
   if(reply.status===403){const {refreshReadiness}=await import('./readiness.server');await refreshReadiness(db,i.company_id);}
   return result;
  }
