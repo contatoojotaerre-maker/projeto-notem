@@ -1,6 +1,10 @@
 # notem — Fase 1
 ## Etapa E2 — DANFSe e proteção de numeração
-- [ ] Plano de PDF conforme modelo oficial e proteção E0014 — aguarda aprovação; nenhuma implementação iniciada, transmissor/ intocado.
+- [x] Plano E2 aprovado: seguir ordem proposta; transmissor/ intocado.
+- [ ] Gerador DANFSe, preferência de canhoto e exemplos PNG em docs/exemplos/danfse/ e no chat.
+- [ ] Downloads API/painel, links e documentação.
+- [ ] Séries automáticas desde 900 e saltos duráveis E0014.
+- [ ] Testes, comparação visual e publicação ao final.
 
 ## Etapa E1 — Emissão e tomadores
 - [x] Ler contratos de notas e transmissor v2 pelo anexo autorizado como fonte até a sincronização normalizar; sem editar transmissor/.
