@@ -11,8 +11,8 @@
 - [x] Validações pré-reserva E0172/E0174/E0175, E0204/E0237; legados preservados e incompletos; traduções do Anexo I e testes.
 - [x] Parte 3: emissão idempotente duradoura, número/nota atômicos, persistência anterior à transmissão, resultados e webhooks atômicos.
 - [x] Parte 4: consulta automática com leases, 404 por 15 minutos e reconciliação sem reenvio ambíguo.
-- [x] Parte 5: consultas API/XML/PDF, painel somente leitura e tomadores, mensagens de rejeição, documentação; 233 testes passaram, XSD dos três XML válido, testes DB com rollback aprovados, build OK.
-- [ ] Publicar E1 e confirmar disponibilidade externa das novas rotas.
+- [x] Parte 5: consultas API/XML/PDF, painel somente leitura e tomadores, mensagens de rejeição, documentação; 238 testes passaram, XSD dos três XML válido, testes DB com rollback aprovados, build OK.
+- [x] Publicação E1 solicitada para https://app.notemfiscal.com.br; confirmação externa das novas rotas pendente.
 - [ ] Emissão real com chave/A1 e painel autenticado — depende do teste externo do proprietário (Supabase externo sem sessão gerenciada); não verificado.
 
 ## Fase 3A.2 — Webhooks e ajustes de Integrações
