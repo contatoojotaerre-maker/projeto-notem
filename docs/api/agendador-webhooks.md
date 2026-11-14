@@ -15,6 +15,7 @@ Não faz parte da API v1 nem aceita chaves de integração.
 Sem OIDC: 401. Com OIDC Google real: 200; diagnóstico `req_0c386b1ec9a046cc90ee0bb33f2c11cf` registrado após retorno através de `waitUntil`.
 
 ## Processamento
+O mesmo callback consulta até 5 notas por ciclo em verificação (ou envios interrompidos), sem reenviar a DPS. Após `404` persistente por 15 minutos, registra “O governo não gerou esta nota”. Erros de conexão permanecem para o próximo ciclo. O resumo inclui `invoices: {reserved, completed, failed}`. A tarefa existente e sua autenticação OIDC não mudam; use timeout de 300 segundos para lotes com consultas fiscais.
 A rota definitiva aguarda o processamento de até 10 entregas vencidas por chamada, em grupos de até 3, e executa a verificação de três dias. Retorna 200 com contagens `reserved`, `completed`, `disabled`; falhas internas retornam 503 para permitir retry do Scheduler. Configure timeout da tarefa de 120 segundos. O banco guarda todo o estado, usa leases de reserva e protege chamadas concorrentes. As primeiras tentativas são iniciadas pelo painel via `waitUntil`; o agendador recupera pendências e leases expirados.
 
 Reenvios podem começar até cerca de um minuto após seu vencimento, além do tempo de processamento; backlog pode adicionar atraso. A tarefa deve permanecer ativa mesmo sem entregas, conforme a decisão de frequência do projeto. A tarefa é criada pelo proprietário, não pelo painel.
