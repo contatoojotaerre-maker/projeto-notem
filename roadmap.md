@@ -2,7 +2,8 @@
 ## Fase 5 — Cancelamento, análise fiscal e substituição
 - [x] Plano aprovado com ajustes; transmissor/ intocado.
 - [x] Parte 1: montador de eventos e101101/e101103 e grupo subst, testes XSD (268 testes OK), exemplos em docs/exemplos/eventos/.
-- [ ] Aguardando conferência externa dos três XML pelo proprietário antes da Parte 2.
+- [x] Conferência externa dos três XML aprovada pelo proprietário.
+- [ ] Normalização de texto NFS-e (travessões, aspas, reticências, espaços, quebras) em todos os campos da DPS e eventos; 422 "contém caracteres não aceitos pela NFS-e" antes de numerar/enviar; texto normalizado gravado; convencoes.md; testes com textos colados.
 - [ ] Parte 2: banco/fluxo fiscal, incluindo reconciliação E0840 (consultar 101101/1; encontrado → cancelada, "Cancelamento registrado fora da notem", nota.cancelada; senão recusa normal).
 - [ ] Parte 3: API e documentação.
 - [ ] Parte 4: painel, testes e publicação; testes publicados consideram a nota real Group Jota NFS-e nº 11 (série 900, DPS 1).
