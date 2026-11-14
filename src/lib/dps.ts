@@ -1,7 +1,7 @@
 import { z } from 'zod';
 import { customerSchema, type Customer } from './customers';
 import { isValidCnpj } from './notem';
-import { approximateTaxRuleError } from './fiscal';
+import { approximateTaxRuleError, specialTaxRuleError } from './fiscal';
 
 export const fiscalDecimal = z.string().regex(/^\d{1,15}\.\d{2}$/, 'Use texto decimal com duas casas.');
 export function decimalUnits(value: string) { return BigInt(fiscalDecimal.parse(value).replace('.', '')); }
@@ -57,11 +57,18 @@ export function buildDps(input: DpsInput) {
   return { id, xml: `<?xml version="1.0" encoding="UTF-8"?><DPS xmlns="http://www.sped.fazenda.gov.br/nfse" versao="1.01"><infDPS Id="${id}">${body}</infDPS></DPS>` };
 }
 /** Mandatory preflight before definitive numbering; Part 3 must use this boundary. */
-export function validateDpsBeforeNumbering(input: Pick<DpsInput,'provider'|'customer'|'fiscal'>): void {
+export function validateDpsBeforeNumbering(input: Pick<DpsInput,'provider'|'customer'|'fiscal'> & {service?:DpsInput['service']}): void {
  const c=input.customer;
  if(c&&(c.tipo==='pj'||c.tipo==='pf')&&c.documento?.replace(/\D/g,'')===input.provider.cnpj.replace(/\D/g,'')) throw new Error('O tomador não pode ser a própria empresa emitente');
  const error=approximateTaxRuleError(input.fiscal.simples,input.fiscal.approximate.mode);
  if(error) throw new Error(error);
+ const special=specialTaxRuleError(input.fiscal.simples,input.fiscal.regime,input.fiscal.special,input.service?.taxation);
+ if(special)throw new Error(special);
+ if(input.service?.withholding===2){
+  if(!c||(c.tipo!=='pj'&&c.tipo!=='pf')||!c.documento)throw new Error('ISS retido pelo tomador exige CPF ou CNPJ identificado (E0204).');
+  const e=c.endereco;
+  if(!e||!e.cep||!e.codigo_municipio||!e.logradouro?.trim()||!e.numero?.trim()||!e.bairro?.trim()||e.pais)throw new Error('ISS retido pelo tomador exige endereço nacional completo (E0237).');
+ }
 }
 /** Full assembly preflight with a placeholder: rejection never calls the number allocator. */
 export async function reserveValidatedDps(input: Omit<DpsInput,'number'>, reserve:()=>Promise<string>) {

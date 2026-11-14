@@ -37,7 +37,7 @@ async function identityToken(audience: string, sa: { client_email: string; priva
   return body.id_token;
 }
 
-export async function callTransmissor<T>(path: '/v1/certificados/preparar' | '/v1/municipios/convenio', payload: unknown): Promise<T> {
+export async function callTransmissor<T>(path: '/v1/certificados/preparar' | '/v1/municipios/convenio' | '/v1/nfse/emitir' | '/v1/dps/consultar' | '/v1/nfse/consultar', payload: unknown): Promise<T> {
   const { url, sa } = config();
   const token = await identityToken(url, sa);
   let res: Response;

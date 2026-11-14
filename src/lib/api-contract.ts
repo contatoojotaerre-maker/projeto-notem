@@ -1,7 +1,7 @@
 // Pure, client-safe translation between the public API v1 contract (Portuguese, readable values)
 // and the current database codes. Shared by API routes, the panel and tests.
 import { z } from 'zod';
-import { fiscalSchema, validReadinessCertificate } from './fiscal';
+import { fiscalSchema, specialTaxRuleError, validReadinessCertificate } from './fiscal';
 import { agreementUnavailableMessage, certificateSituation } from './certificates';
 import { isValidCnpj, digits } from './notem';
 
@@ -101,7 +101,7 @@ const fiscalConstraintMap: Record<string, { campo: string; mensagem: string }> =
   company_fiscal_settings_special_tax_regime_check: { campo: 'regime_especial', mensagem: 'Regime especial inválido.' },
   company_fiscal_settings_dps_series_check: { campo: 'serie_dps', mensagem: 'A série DPS deve estar entre 00001 e 49999.' },
 };
-const fiscalTriggerMap: [RegExp, string][] = [[/E071[023]/, 'tributos_aproximados.modo'], [/alíquota do ISS/i, 'aliquota_iss_simples'], [/série/i, 'serie_dps']];
+const fiscalTriggerMap: [RegExp, string][] = [[/E017[245]/, 'regime_especial'], [/E071[023]/, 'tributos_aproximados.modo'], [/alíquota do ISS/i, 'aliquota_iss_simples'], [/série/i, 'serie_dps']];
 /** Maps a database refusal on company_fiscal_settings to the contract field; never returns "corpo". */
 export function fiscalDbDetail(e: { code?: string; message: string }): { campo: string; mensagem: string } | null {
   if (e.code === '23514') { const name = Object.keys(fiscalConstraintMap).sort((a, b) => b.length - a.length).find(k => e.message.includes(`"${k}"`)); return name ? fiscalConstraintMap[name] ?? null : null; }
@@ -153,14 +153,15 @@ export function expiryMilestone(validUntil: string, now = Date.now()): '30' | '1
 }
 
 // ---------- Readiness ----------
-export type ReadinessInput = { company: { active: boolean; cnpj: string }; certificates: { status: string; cnpj: string; valid_from: string; valid_until: string }[]; settings: Record<string, unknown> | null; services: { active: boolean }[]; lastQuery: { created_at: string; http_status: number | null; response_body: string | null; error_code: string | null } | null };
+export type ReadinessInput = { company: { active: boolean; cnpj: string }; certificates: { status: string; cnpj: string; valid_from: string; valid_until: string }[]; settings: Record<string, unknown> | null; services: { active: boolean;iss_taxation?:number }[]; lastQuery: { created_at: string; http_status: number | null; response_body: string | null; error_code: string | null } | null };
 export type ReadinessItem = { item: string; ok: boolean | null; mensagem: string; verificado_em?: string | null };
 const dateBr = (v: string) => new Date(v).toLocaleDateString('pt-BR', { timeZone: 'America/Sao_Paulo' });
 export function computeReadiness(env: Env, i: ReadinessInput, now = Date.now()) {
   const cert = i.certificates.find(c => validReadinessCertificate(c, i.company.cnpj, now));
   const fiscalParsed=i.settings!==null?fiscalSchema.safeParse(i.settings):null;
-  const fiscalOk=fiscalParsed?.success===true;
-  const fiscalError=fiscalParsed&&!fiscalParsed.success?fiscalParsed.error.issues.find(x=>/E071[023]/.test(x.message))?.message:null;
+  const serviceRule=i.settings?i.services.filter(s=>s.active).map(s=>specialTaxRuleError(Number(i.settings?.['simples_nacional_option']),i.settings?.['simples_nacional_regime'] as number|null,Number(i.settings?.['special_tax_regime']),s.iss_taxation)).find(Boolean):null;
+  const fiscalOk=fiscalParsed?.success===true&&!serviceRule;
+  const fiscalError=serviceRule||(fiscalParsed&&!fiscalParsed.success?fiscalParsed.error.issues.find(x=>/E071[023]|E017[245]/.test(x.message))?.message:null);
   const active = i.services.filter(s => s.active).length;
   let municipio: ReadinessItem;
   const q = i.lastQuery;
