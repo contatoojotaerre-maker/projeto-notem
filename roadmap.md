@@ -107,3 +107,8 @@
 - [x] Documentação (openapi, convencoes, empresas, webhooks, glossario) e testes de regras.
 - [ ] Verificação externa com chave de homologação — feita pelo usuário.
 - [ ] Testes de banco do papel developer e da exclusão com dados reais — não executados.
+
+## Fase 7 — Sincronização com o ADN
+- [ ] Parte 1: banco (cursor, distribuição, documentos, eventos, visibilidade com prova de posse), leitura XML, sincronização por NSU, eventos, reconciliação pela chave, testes; publicar e relatar primeira sincronização Group Jota (nota nº 11). PAUSA.
+- [ ] Parte 2: API (origem, filtro, notas recebidas, sincronização só do ambiente da chave), docs e OpenAPI; aviso nota.desbloqueada_prefeitura em webhooks.md e grupo nota.*.
+- [ ] Parte 3: painel (selo/filtro, abas Sincronização e Notas recebidas, Atualizar com o governo), testes e publicação.
