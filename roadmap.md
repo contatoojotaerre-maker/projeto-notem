@@ -3,10 +3,11 @@
 - [x] Plano aprovado com ajustes; transmissor/ intocado.
 - [x] Parte 1: montador de eventos e101101/e101103 e grupo subst, testes XSD (268 testes OK), exemplos em docs/exemplos/eventos/.
 - [x] Conferência externa dos três XML aprovada pelo proprietário.
-- [ ] Normalização de texto NFS-e (travessões, aspas, reticências, espaços, quebras) em todos os campos da DPS e eventos; 422 "contém caracteres não aceitos pela NFS-e" antes de numerar/enviar; texto normalizado gravado; convencoes.md; testes com textos colados.
-- [ ] Parte 2: banco/fluxo fiscal, incluindo reconciliação E0840 (consultar 101101/1; encontrado → cancelada, "Cancelamento registrado fora da notem", nota.cancelada; senão recusa normal).
-- [ ] Parte 3: API e documentação.
-- [ ] Parte 4: painel, testes e publicação; testes publicados consideram a nota real Group Jota NFS-e nº 11 (série 900, DPS 1).
+- [x] Normalização de texto NFS-e (travessões, aspas, reticências, espaços, quebras) em todos os campos da DPS e eventos; 422 "contém caracteres não aceitos pela NFS-e" antes de numerar/enviar; texto normalizado gravado; convencoes.md; testes com textos colados.
+- [x] Parte 2: banco/fluxo fiscal, reconciliação E0840, verificação sem reenvio e substituição atômica; testes de banco com desfazimento passaram.
+- [x] Parte 3: rotas cancelar/solicitar-analise-cancelamento/substituir/eventos XML; cancelamento.md, notas.md, webhooks.md, convencoes.md e OpenAPI 3.1 válido.
+- [x] Parte 4: painel (cancelar, análise, substituir, aviso de pendência, XML do evento) e testes automatizados.
+- [ ] Teste real de cancelamento/substituição no governo e tela autenticada — dependem de autorização explícita para ação fiscal real (nota nº 11) ou de nota de homologação, e de sessão de teste no painel.
 
 ## Auditoria da documentação API
 - [x] Separar contrato público e notas internas, corrigir textos e incluir exemplos completos de webhooks.
