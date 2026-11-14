@@ -3,7 +3,9 @@ import { requireSupabaseAuth } from '@/integrations/supabase/auth-middleware';
 import { z } from 'zod';
 import { invoiceOut } from './invoices';
 import type { Json } from '@/integrations/supabase/types';
-type Rpc = { rpc: (fn: 'is_platform_admin' | 'has_org_role', args?: Record<string, unknown>) => PromiseLike<{ data: unknown; error: unknown }> };
+import type { SupabaseClient } from '@supabase/supabase-js';
+import type { Database } from '@/integrations/supabase/types';
+type Rpc = SupabaseClient<Database>;
 /** Owner, admin, operator or platform administrator; the database checks again before writing. */
 async function canIssueFiscalChange(supabase: Rpc, organization_id: string) { const [admin, role] = await Promise.all([supabase.rpc('is_platform_admin'), supabase.rpc('has_org_role', { org_id: organization_id, roles: ['owner', 'admin', 'operator'] })]); return admin.data === true || role.data === true; }
 type PanelResult = { ok: true; status: string; invoice_id: string } | { ok: false; mensagem: string; detalhes: { campo: string; mensagem: string }[] };
