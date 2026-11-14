@@ -383,6 +383,12 @@ def interpretar(resposta: dict) -> dict:
                 dados[campo.replace("GZipB64", "")] = gunzip_b64(dados.pop(campo))
             except Exception:  # noqa: BLE001
                 pass
+    # Consulta de evento (GET /nfse/{chave}/eventos/{tipo}/{seq}): o governo devolve eventos[].arquivoXml
+    # (base64 + gzip). Mantém o campo original e acrescenta "xml" já decodificado.
+    if isinstance(dados, dict) and isinstance(dados.get("eventos"), list):
+        for ev in dados["eventos"]:
+            if isinstance(ev, dict) and isinstance(ev.get("arquivoXml"), str):
+                ev["xml"] = decodificar_arquivo(ev["arquivoXml"])
     saida["corpo_json"] = dados
     return saida
 
@@ -472,6 +478,8 @@ def consultar_evento():
     ambiente = exigir_ambiente(corpo)
     chave_acesso = exigir(corpo, "chave_acesso", re.compile(r"\d{50}"))
     tipo = exigir(corpo, "tipo_evento", TIPO_EVENTO_RE)
+    if isinstance(corpo.get("num_seq_evento"), int):
+        corpo["num_seq_evento"] = str(corpo["num_seq_evento"])
     seq = exigir(corpo, "num_seq_evento", re.compile(r"\d{1,3}"))
     _, empresa_id, (chave, cert, cadeia) = abrir_envelope(corpo)
     resposta = requisicao_mtls("GET", f"{BASES_SEFIN[ambiente]}/nfse/{chave_acesso}/eventos/{tipo}/{seq}", chave, cert, cadeia, timeout=20)
