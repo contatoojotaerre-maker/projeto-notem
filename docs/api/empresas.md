@@ -1,4 +1,4 @@
-# API da notem — Empresas (fase 3B)
+# API da notem — Empresas
 
 Rotas para o sistema parceiro cadastrar e preparar as empresas emitentes, sem que o cliente final acesse a notem. Leia antes `convencoes.md`.
 
@@ -52,7 +52,7 @@ Rotas para o sistema parceiro cadastrar e preparar as empresas emitentes, sem qu
 
 **Desativar × excluir**
 - **Desativar** (`PATCH ativa: false`): bloqueia novas emissões, mantém todo o histórico; pode ser reativada.
-- **Excluir** (`DELETE`): só é permitido se a empresa **nunca reservou número de DPS e não tem notas** em nenhum ambiente (enquanto a emissão não existe, é verificada a numeração DPS). Remove a empresa, seus serviços e o certificado guardado. Caso contrário: `409 EMPRESA_POSSUI_HISTORICO` — use desativar. (Notas fiscais precisam ser guardadas, e a numeração já usada no governo não pode ser reaproveitada.)
+- **Excluir** (`DELETE`): só é permitido se a empresa **nunca reservou número de DPS e não tem notas** em nenhum ambiente. Remove a empresa, seus serviços e o certificado guardado. Caso contrário: `409 EMPRESA_POSSUI_HISTORICO` — use desativar. (Notas fiscais precisam ser guardadas, e a numeração já usada no governo não pode ser reaproveitada.)
 
 ## 2. Configuração fiscal
 
@@ -71,7 +71,7 @@ Rotas para o sistema parceiro cadastrar e preparar as empresas emitentes, sem qu
     "municipal": null
   },
   "aliquota_iss_simples": null,
-  "serie_dps": "00001"
+  "serie_dps": "00900"
 }
 ```
 

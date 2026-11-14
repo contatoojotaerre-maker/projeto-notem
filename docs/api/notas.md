@@ -1,12 +1,12 @@
 # API da notem — Notas (emissão e consulta)
 
-Leia antes `convencoes.md` e `empresas.md`. Cancelamento e substituição terão documento próprio na fase seguinte.
+Leia antes `convencoes.md` e `empresas.md`. Cancelamento e substituição não estão disponíveis nesta versão.
 
 ## Regras gerais
 - A nota é emitida no **ambiente da chave**: homologação (sem validade fiscal) ou produção.
 - Antes de enviar ao governo, a notem confere se a empresa está **pronta para emitir** (`/empresas/{id}/situacao`). Se não estiver: `422 EMPRESA_NAO_PRONTA`, com as pendências em `detalhes`. Nada é enviado nem numerado.
 - `Idempotency-Key` é **obrigatório** em `POST /notas`. Reenviar a mesma chave (ex.: após queda de conexão) **nunca** gera uma segunda nota.
-- Exceção à janela genérica de 24 horas: a associação chave/hash/nota é duradoura por integração e ambiente. A chave associada a uma nota não pode ser reutilizada para outra. Mesmo conteúdo durante processamento/verificação responde `202` com a nota atual; conteúdo diferente responde `409 IDEMPOTENCIA_CONFLITO`. Após conclusão, a repetição preserva o resultado da emissão.
+- Exceção à janela genérica de 24 horas: a associação entre a chave e a nota é permanente por integração e ambiente. A chave associada a uma nota não pode ser reutilizada para outra. Mesmo conteúdo durante processamento/verificação responde `202` com a nota atual; conteúdo diferente responde `409 IDEMPOTENCIA_CONFLITO`. Após conclusão, a repetição preserva o resultado da emissão.
 - E0202: CPF/CNPJ do tomador igual ao do prestador é recusado antes de numerar: "O tomador não pode ser a própria empresa emitente" (`422 REGRA_DE_NEGOCIO`, campo `tomador.documento`). Aplica-se a tomador informado e cadastrado.
 - E0710/E0712/E0713: configuração incompatível com a matriz de `empresas.md` é incompleta, sem reescrita automática; recusar antes de numerar com a mensagem da regra.
 - E0174/E0175: regime especial deve ser `nenhum` para MEI ou ME/EPP com apuração dentro do Simples. E0172: também para serviço com imunidade, exportação ou não incidência. Configurações antigas são preservadas, avisadas no painel e consideradas incompletas; recusar antes de numerar.
@@ -88,7 +88,7 @@ A notem envia ao governo e **aguarda o resultado por até cerca de 20 segundos**
 | Validação antes do envio | `422 REGRA_DE_NEGOCIO` / `EMPRESA_NAO_PRONTA` / `400` | nenhuma nota criada, nenhum número usado |
 | Governo fora do ar antes do envio | `503 GOVERNO_INDISPONIVEL` | nenhuma nota enviada; tente novamente com a mesma `Idempotency-Key` |
 
-Falha comprovadamente anterior ao envio: DNS/conexão recusada antes de chegar ao transmissor, 401/403 do Google antes do serviço ou 4xx de validação própria com código (ex.: DPS_INVALIDA, ENVELOPE_INVALIDO). A repetição usa a mesma DPS e número. Qualquer situação ambígua vai para verificação. 403 do governo, diferente do Google, rejeita por certificado e reavalia a empresa.
+Quando a notem confirma que o pedido não chegou ao serviço de emissão, repetir a mesma `Idempotency-Key` mantém a mesma DPS e número. Se houver dúvida sobre o envio, a nota fica em verificação para evitar duplicidade.
 
 Na rejeição, cada item de `erro.detalhes` mantém `campo`/`mensagem` e acrescenta `codigo_governo`, `mensagem_governo`, `complemento` e `nota_id`. Preservar mensagem original; tradução só quando confirmada pela tabela oficial. Nunca expor erro técnico interno.
 
@@ -104,7 +104,7 @@ Na rejeição, cada item de `erro.detalhes` mantém `campo`/`mensagem` e acresce
   "manifestacao": null,
   "numero": "123",
   "chave_acesso": "42122542211222333000181000000000012326110000000001",
-  "serie_dps": "00001",
+  "serie_dps": "00900",
   "numero_dps": "57",
   "competencia": "2026-11-12",
   "emitida_em": "2026-11-12T10:15:03-03:00",
@@ -128,7 +128,7 @@ Na rejeição, cada item de `erro.detalhes` mantém `campo`/`mensagem` e acresce
   "links": {
     "xml": "https://app.notemfiscal.com.br/api/v1/notas/UUID/xml",
     "pdf": "https://app.notemfiscal.com.br/api/v1/notas/UUID/pdf",
-    "consulta_publica": "link oficial do portal da NFS-e para esta chave"
+    "consulta_publica": "https://www.nfse.gov.br/ConsultaPublica?tpc=1&chave=42122542211222333000181000000000012326110000000001"
   },
   "criada_em": "2026-11-12T10:15:03-03:00",
   "atualizada_em": "2026-11-12T10:15:05-03:00"
@@ -165,30 +165,23 @@ Na emissão, `tomador_id` ou `tomador_id_externo` usa o cadastro; os dados são 
 Todos os eventos `nota.*` trazem em `dados` o **objeto `nota` completo** (seção 2), sem o conteúdo do XML/PDF (use os links).
 
 ## 6. Fora desta versão
-- Cancelamento e substituição (próxima fase).
+- Cancelamento e substituição.
 - Intermediário do serviço.
-- Grupo IBS/CBS: entra em fase própria, antes de 01/01/2027 (obrigatório para todos a partir dessa data).
+- Emissão com grupo IBS/CBS. Operações que exijam esse grupo não são aceitas nesta versão.
 
-## Implementação por etapas
-Partes 1–5: API de tomadores, montagem/leitura XML, emissão idempotente, consulta automática e painel somente leitura. E2 adiciona DANFSe sob demanda. Operações de cancelamento/substituição e emissão IBS/CBS continuam fora desta etapa.
-O identificador DPS usa tipo de inscrição **2 para CNPJ**, conforme o Anexo I v1.01. Série e número são definitivos. Tomador estrangeiro não implica exportação: operações que exijam grupos fiscais fora de E1 serão recusadas antes da reserva, sem omitir dados obrigatórios.
+## Confirmação automática e reenvio seguro
+- Notas em verificação são acompanhadas automaticamente, sem retransmitir pedidos de resultado incerto.
+- A confirmação começa após cerca de um minuto. Somente ausência confirmada pelo governo após 15 minutos permite rejeitar como **“O governo não gerou esta nota”**; falhas de conexão mantêm a verificação.
+- `consulta_publica`: `https://www.nfse.gov.br/ConsultaPublica?tpc=1&chave={chave_acesso}` quando existe chave válida; caso contrário `null`. XML/PDF exigem a chave da integração; outra organização ou ambiente recebe `404`.
 
-## Consulta automática e segurança de repetição
-- O agendador existente consulta lotes limitados de notas em verificação, com reservas temporárias no banco para impedir concorrência. Tentativas interrompidas após o início do envio também entram em consulta.
-- Após um minuto, consulta o identificador DPS; com chave encontrada, consulta o XML da NFS-e. Somente `404` depois de 15 minutos desde o início da tentativa permite rejeitar como **“O governo não gerou esta nota”**. Erro de conexão ou XML não confirmado permanece em verificação.
-- Falhas comprovadas de autenticação do Google ou validação própria anterior à transmissão permitem repetir a mesma DPS/número. Timeout e demais falhas ambíguas nunca autorizam retransmissão automática.
-- Autorização/rejeição e criação dos webhooks são confirmadas na mesma operação do banco. Sem execução em segundo plano, os eventos ficam na fila durável do agendador.
-- `consulta_publica`: `https://www.nfse.gov.br/ConsultaPublica?tpc=1&chave={chave_acesso}` quando existe chave válida; caso contrário `null`. XML/PDF exigem chave; outra organização ou ambiente responde `404`.
-
-## DANFSe v2.0 (E2)
-PDF gerado somente a partir do XML autorizado armazenado, sem completar dados pelos cadastros atuais; ausentes = `-`. Situação atual determina marca d'água CANCELADA/SUBSTITUÍDA. Homologação mostra NFS-e SEM VALIDADE JURÍDICA. Não há PDF persistido nem cache definitivo. A opção `imprimir_canhoto_danfse` da configuração fiscal é false por padrão.
-O QR e o objeto nota usam a mesma URL de consulta pública. PIS/COFINS de apuração própria aparece apenas até competência 31/12/2026. Informações complementares preservam os tributos aproximados informados no XML. Sem valores IBS/CBS, os respectivos campos permanecem `-`.
+## DANFSe v2.0
+O PDF representa somente os dados do XML autorizado, sem completar informações pelos cadastros atuais; ausentes aparecem como `-`. Notas canceladas ou substituídas mostram a marca correspondente; homologação mostra **NFS-e SEM VALIDADE JURÍDICA**. A opção `imprimir_canhoto_danfse` da configuração fiscal é `false` por padrão.
+O QR Code usa a mesma URL de consulta pública do objeto nota. PIS/COFINS de apuração própria aparece apenas até competência 31/12/2026. Os tributos aproximados são os informados no XML. Sem valores IBS/CBS, os campos permanecem `-`.
 
 ## Numeração e DPS existente (E0014)
-Novas séries automáticas começam em 900 e avançam até 49999 por CNPJ; séries e contadores existentes são preservados.
-Somente resposta explícita de envio HTTP 400 contendo exclusivamente E0014 permite salto. O número é registrado como usado externamente, nunca reaproveitado. A mesma nota, Idempotency-Key e dados congelados recebem o próximo número, com nova DPS assinada pelo transmissor existente.
-Até cinco saltos além do envio inicial (máximo seis envios com números diferentes), com contador persistente e histórico de cada número/identificador/XML/resposta. Repetir a chave não reinicia o limite. Não há webhook de rejeição intermediária.
-Se a espera da API estiver acabando, retorna 202 e continua no agendador. Respostas ambíguas, conexões interrompidas e DPS encontrada na consulta nunca autorizam salto: consultam o número atual. Outros códigos, ou erros mistos, seguem rejeição normal. Limite ou numeração esgotada termina em rejeição com orientação em português.
+Novas séries são atribuídas automaticamente a partir de **00900**, até 49999; séries e números existentes são preservados.
+Quando o governo rejeita o envio exclusivamente com E0014 (DPS já existente), a notem pode avançar até cinco números, além da tentativa inicial. Números recusados nunca são reaproveitados. O ID da nota, a `Idempotency-Key` e os dados do pedido permanecem iguais; repetir a chave não reinicia o limite.
+Não há webhook de rejeição intermediária. Se a confirmação demandar mais tempo, a API responde `202` e o parceiro acompanha a mesma nota por consulta ou webhook. Respostas incertas nunca permitem avançar o número; outros códigos ou rejeições combinadas seguem o tratamento normal. Ao esgotar o limite ou a numeração, a nota fica rejeitada com orientação nos detalhes.
 
 ## Orientações para rejeições confirmadas no Anexo I
 | Código | Orientação prática |
@@ -200,6 +193,6 @@ Se a espera da API estiver acabando, retorna 202 e continua no agendador. Respos
 | E0190 / E0207 | Conferir CNPJ/CPF do tomador e existência na Receita na competência |
 | E0008 | Conferir data/hora de emissão e relógio; não pode ser posterior ao processamento pelo governo |
 | E0015 | Competência não pode ser posterior à emissão |
-| E0714 | Conferir certificado e assinatura da DPS no transmissor |
+| E0714 | Conferir validade do certificado e os detalhes da assinatura recusada pelo governo |
 Os detalhes preservam código, mensagem e complemento originais do governo; a explicação em português não os substitui.
 

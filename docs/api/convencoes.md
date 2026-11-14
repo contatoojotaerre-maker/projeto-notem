@@ -72,7 +72,6 @@ Todo erro tem **sempre** o mesmo formato:
 | 400 | `REQUISICAO_INVALIDA` | formato ou campo inválido |
 | 401 | `AUTENTICACAO_INVALIDA` | chave ausente, inválida ou revogada |
 | 403 | `SEM_PERMISSAO` | a integração não pode fazer esta operação |
-| 403 | `EMPRESA_NAO_AUTORIZADA` | reservado (não usado: toda integração opera todas as empresas da organização) |
 | 404 | `NAO_ENCONTRADO` | recurso inexistente ou de outra organização |
 | 409 | `CONFLITO` | estado atual não permite a operação |
 | 409 | `IDEMPOTENCIA_CONFLITO` | mesma `Idempotency-Key` com conteúdo diferente |
@@ -88,9 +87,9 @@ Códigos específicos de cada rota (ex.: `CERTIFICADO_VENCIDO`) são documentado
 - Operações que criam, alteram ou excluem (`POST`, `PATCH`, `PUT`, `DELETE`) aceitam o cabeçalho `Idempotency-Key` (texto de até 100 caracteres, gerado pelo parceiro, ex.: um UUID).
 - **Obrigatório** em emissão, cancelamento e substituição de notas.
 - Repetir a mesma chave com o **mesmo conteúdo** devolve a **mesma resposta**, sem refazer a operação — inclusive após falha de rede. Com conteúdo diferente: `409 IDEMPOTENCIA_CONFLITO`.
-- A chave vale por 24 horas, por integração e ambiente. Depois disso pode ser reutilizada.
-- A resposta repetida traz o cabeçalho `Idempotent-Replayed: true`. Enquanto a primeira requisição ainda estiver em andamento, a repetição recebe `409 CONFLITO`. Respostas `5xx` não são guardadas, para que você possa tentar de novo com a mesma chave.
-- Implementado em todas as rotas de escrita da v1 (Fase 3B).
+- A chave vale por 24 horas, por integração e ambiente, exceto em `POST /notas`: a associação à nota é permanente e a chave não pode ser reutilizada para outra emissão.
+- A resposta repetida traz o cabeçalho `Idempotent-Replayed: true`. Enquanto a primeira requisição ainda estiver em andamento, a repetição recebe `409 CONFLITO`, exceto em `POST /notas`, que retorna `202` com a nota em processamento ou verificação. Respostas `5xx` não são guardadas, para que você possa tentar de novo com a mesma chave.
+- Disponível em todas as rotas de escrita da v1.
 
 ## 8. Listas e paginação
 - Parâmetros: `limite` (padrão 50, máximo 100) e `cursor` (o `proximo_cursor` recebido).
@@ -99,8 +98,8 @@ Códigos específicos de cada rota (ex.: `CERTIFICADO_VENCIDO`) são documentado
 - O `cursor` é opaco: não o monte nem o interprete.
 
 ## 9. Limites de uso
-- Na Fase 3A, nenhum limite de uso está ativo; a estrutura para 429 fica preparada.
-- Limite inicial por integração e ambiente (valor definido na publicação). Ao exceder: `429` com `Retry-After` em segundos.
+- Nenhum limite de uso está ativo no momento.
+- A verificação do município tem uma restrição específica: uma chamada por minuto por empresa e ambiente, conforme `empresas.md`; ao exceder, retorna `429` com `Retry-After` em segundos.
 
 ## 10. Webhooks (visão geral; detalhes em documento próprio)
 - A notem avisa o sistema parceiro sobre acontecimentos (ex.: `nota.autorizada`, `nota.cancelada`, `certificado.vencendo`).
@@ -113,4 +112,4 @@ Códigos específicos de cada rota (ex.: `CERTIFICADO_VENCIDO`) são documentado
 - Nunca envie a chave em parâmetros de URL.
 - Certificados digitais enviados pela API nunca são devolvidos em nenhuma resposta.
 
-Implementação inicial de webhooks: configuração e `webhook.teste` pelo painel; eventos fiscais reais entram nas próximas fases. A API v1 não tem endpoints de gerenciamento de webhooks. Rotas de empresas (Fase 3B): ver `empresas.md`. O agendador interno, separado do contrato v1, está documentado em `agendador-webhooks.md`.
+O cadastro e gerenciamento de webhooks são feitos pelo painel; a API v1 não tem rotas de gerenciamento de webhooks. Para empresas, consulte `empresas.md`; para emissão e consulta de notas, `notas.md`.

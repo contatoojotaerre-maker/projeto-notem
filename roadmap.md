@@ -1,4 +1,8 @@
 # notem — Fase 1
+## Auditoria da documentação API
+- [x] Separar contrato público e notas internas, corrigir textos e incluir exemplos completos de webhooks.
+- [x] OpenAPI 3.1.0 válido — 0 erros (openapi-spec-validator 0.7.2); 256 testes passaram, incluindo especificação inválida de controle. Informar arquivos alterados/criados/movidos; API sem mudanças e sem publicação nesta auditoria.
+
 ## Etapa E2 — DANFSe e proteção de numeração
 - [x] Máscaras e localidades, três reduções IBS/CBS e quebra entre palavras ajustadas; PNGs base/homologação regenerados e inspecionados, 254 testes passaram e build OK; publicação solicitada ao encerrar (conclusão não verificada).
 - [x] Plano E2 aprovado: seguir ordem proposta; transmissor/ intocado.
@@ -32,7 +36,7 @@
 - [x] Ler contrato docs/api/webhooks.md e convenções; preparar plano aprovado com Google Cloud Scheduler e DNS preflight sem IP pinning.
 - [x] Provar waitUntil e rota POST /api/public/webhooks/process com OIDC Google: 401 sem token; 200 com Google real e req_0c386b1ec9a046cc90ee0bb33f2c11cf confirmado no banco. URL/auth informadas; tarefa Google Cloud a cada minuto será criada pelo usuário.
 - [x] Aplicar plano aprovado: HTTPS/DNS sem IP pinning, quatro tabelas/RLS, motor de assinaturas/entregas, telas e docs. Testes de banco com rollback passaram (8 tentativas, reenvio, corpo preservado, sucesso limpa falha, desativação/alerta 3 dias, grants/RLS); 101 testes locais passaram.
-- [ ] Criar tarefa Google Cloud Scheduler a cada minuto — depende do proprietário; configuração em docs/api/agendador-webhooks.md.
+- [ ] Criar tarefa Google Cloud Scheduler a cada minuto — depende do proprietário; configuração em docs/interno/agendador-webhooks.md.
 - [ ] Validar cadastro, teste e leitura em tela autenticada com receptor real — Supabase externo sem sessão de teste gerenciada; navegador redirecionou para /entrar, sem erros.
 - [ ] Confirmar publicação definitiva e processamento OIDC externo — republicação solicitada; chamadas externas ainda serviram o diagnóstico anterior, não o motor definitivo.
 

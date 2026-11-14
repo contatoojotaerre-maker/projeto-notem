@@ -21,7 +21,7 @@
 | **Município de incidência** | Município onde o ISS é devido. |
 | **Convênio** | Adesão do município ao sistema nacional da NFS-e. Sem convênio ativo no ambiente, não é possível emitir para aquele município. |
 | **DPS** | Declaração de Prestação de Serviço: o pedido de emissão enviado ao governo. Aprovada, gera a NFS-e. |
-| **Série / número da DPS** | Identificação sequencial da DPS. A notem usa séries de 00001 a 49999, atribuídas automaticamente; números nunca se repetem. |
+| **Série / número da DPS** | Identificação sequencial da DPS. Séries atribuídas automaticamente a partir de 00900; faixa de aplicativo próprio: 00001 a 49999. Séries existentes são preservadas; números usados nunca são reaproveitados. |
 | **NFS-e** | Nota Fiscal de Serviço eletrônica autorizada pelo governo. |
 | **Chave de acesso da NFS-e** | Identificador oficial da nota, com 50 dígitos. |
 | **DANFSe** | Representação em PDF da NFS-e. |
