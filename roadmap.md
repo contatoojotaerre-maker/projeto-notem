@@ -1,4 +1,7 @@
 # notem — Fase 1
+## Etapa E2 — DANFSe e proteção de numeração
+- [ ] Plano de PDF conforme modelo oficial e proteção E0014 — aguarda aprovação; nenhuma implementação iniciada, transmissor/ intocado.
+
 ## Etapa E1 — Emissão e tomadores
 - [x] Ler contratos de notas e transmissor v2 pelo anexo autorizado como fonte até a sincronização normalizar; sem editar transmissor/.
 - [x] Plano aprovado em cinco partes com complementos; PDF usa PDF_EM_PREPARACAO (503), mensagem “PDF em preparação”.
