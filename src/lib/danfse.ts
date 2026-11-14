@@ -13,4 +13,4 @@ export const text=(v:unknown)=>v===undefined||v===null||v===''?'-':String(v);
 export const money=(v:unknown)=>v===undefined||v===null||v===''?'-':`R$ ${Number(v).toLocaleString('pt-BR',{minimumFractionDigits:2,maximumFractionDigits:2})}`;
 export const percent=(v:unknown)=>v===undefined||v===null||v===''?'-':`${Number(v).toLocaleString('pt-BR',{minimumFractionDigits:2,maximumFractionDigits:4})}%`;
 export function dateXml(v:unknown){const s=text(v);const m=s.match(/^(\d{4})-(\d{2})-(\d{2})(?:T(\d{2}:\d{2}:\d{2}))?/);return m?`${m[3]}/${m[2]}/${m[1]}${m[4]?' '+m[4]:''}`:'-';}
-export function mask(v:unknown){const s=text(v);return /^\d{14}$/.test(s)?s.replace(/^(\d{2})(\d{3})(\d{3})(\d{4})(\d{2})$/,'$1.$2.$3/$4-$5'):/^\d{11}$/.test(s)?s.replace(/^(\d{3})(\d{3})(\d{3})(\d{3})(\d{2})$/,'$1.$2.$3-$5'):/^\d{8}$/.test(s)?s.replace(/^(\d{5})(\d{3})$/,'$1-$2'):s;}
+export function mask(v:unknown){const s=text(v);return /^\d{14}$/.test(s)?s.replace(/^(\d{2})(\d{3})(\d{3})(\d{4})(\d{2})$/,'$1.$2.$3/$4-$5'):/^\d{11}$/.test(s)?s.replace(/^(\d{3})(\d{3})(\d{3})(\d{2})$/,'$1.$2.$3-$4'):/^\d{8}$/.test(s)?s.replace(/^(\d{5})(\d{3})$/,'$1-$2'):s;}
