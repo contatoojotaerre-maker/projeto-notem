@@ -1,4 +1,4 @@
-"""notem-transmissor v3.
+"""notem-transmissor v4.
 
 Serviço isolado da notem. Responsabilidades (e somente estas):
   1. Validar um certificado A1 recebido e devolvê-lo TRANCADO (envelope AES-256-GCM).
@@ -227,7 +227,7 @@ def tratar_erro(e: ErroNegocio):
 # ---------------------------------------------------------------- rotas
 @app.get("/")
 def raiz():
-    return jsonify({"servico": "notem-transmissor", "versao": "3", "status": "ok"})
+    return jsonify({"servico": "notem-transmissor", "versao": "4", "status": "ok"})
 
 
 @app.post("/v1/certificados/preparar")
@@ -477,3 +477,82 @@ def consultar_evento():
     resposta = requisicao_mtls("GET", f"{BASES_SEFIN[ambiente]}/nfse/{chave_acesso}/eventos/{tipo}/{seq}", chave, cert, cadeia, timeout=20)
     log("nfse_evento_consultar", empresa_id=empresa_id, ambiente=ambiente, status=resposta.get("status"), erro=resposta.get("erro"))
     return jsonify({"ok": True, "ambiente": ambiente, "resposta": interpretar(resposta)})
+
+
+# ---------------------------------------------------------------- ADN (distribuição para contribuintes)
+CNPJ_RE = re.compile(r"\d{14}")
+
+BASES_ADN_CONTRIB = {
+    "homologacao": "https://adn.producaorestrita.nfse.gov.br/contribuintes",
+    "producao": "https://adn.nfse.gov.br/contribuintes",
+}
+
+
+def decodificar_arquivo(texto):
+    """ArquivoXml do ADN: tenta gzip+base64, depois base64 simples, por fim devolve como veio."""
+    if not isinstance(texto, str) or not texto:
+        return texto
+    try:
+        bruto = base64.b64decode(texto, validate=True)
+    except (binascii.Error, ValueError):
+        return texto
+    try:
+        return gzip.decompress(bruto).decode("utf-8")
+    except OSError:
+        try:
+            return bruto.decode("utf-8")
+        except UnicodeDecodeError:
+            return texto
+
+
+def interpretar_adn(resposta: dict) -> dict:
+    saida = {k: v for k, v in resposta.items() if k != "corpo"}
+    corpo = resposta.get("corpo")
+    if corpo is None:
+        return saida
+    try:
+        dados = json.loads(corpo)
+    except ValueError:
+        saida["corpo_texto"] = corpo[:64 * 1024]
+        return saida
+    if isinstance(dados, dict):
+        for doc in dados.get("LoteDFe") or []:
+            if isinstance(doc, dict) and "ArquivoXml" in doc:
+                doc["Xml"] = decodificar_arquivo(doc.pop("ArquivoXml"))
+    saida["corpo_json"] = dados
+    return saida
+
+
+@app.post("/v1/adn/dfe")
+def adn_distribuicao():
+    """GET {ADN}/contribuintes/DFe/{NSU}?lote=true — documentos (NFS-e e eventos) do CNPJ a partir do NSU.
+    O XML de cada documento volta descompactado em LoteDFe[].Xml."""
+    corpo = request.get_json(silent=True) or {}
+    ambiente = exigir_ambiente(corpo)
+    nsu = corpo.get("nsu")
+    if not isinstance(nsu, int) or nsu < 0 or nsu > 10**15:
+        raise ErroNegocio("REQUISICAO_INVALIDA", "nsu deve ser um número inteiro maior ou igual a zero.", 400)
+    lote = corpo.get("lote", True) is not False
+    cnpj_consulta = corpo.get("cnpj_consulta")
+    if cnpj_consulta is not None and not CNPJ_RE.fullmatch(str(cnpj_consulta)):
+        raise ErroNegocio("REQUISICAO_INVALIDA", "cnpj_consulta deve ter 14 dígitos.", 400)
+    _, empresa_id, (chave, cert, cadeia) = abrir_envelope(corpo)
+    url = f"{BASES_ADN_CONTRIB[ambiente]}/DFe/{nsu}?lote={'true' if lote else 'false'}"
+    if cnpj_consulta:
+        url += f"&cnpjConsulta={cnpj_consulta}"
+    resposta = requisicao_mtls("GET", url, chave, cert, cadeia, timeout=30)
+    log("adn_dfe", empresa_id=empresa_id, ambiente=ambiente, nsu=nsu, status=resposta.get("status"),
+        erro=resposta.get("erro"), ms=resposta.get("ms"))
+    return jsonify({"ok": True, "ambiente": ambiente, "resposta": interpretar_adn(resposta)})
+
+
+@app.post("/v1/adn/eventos")
+def adn_eventos_por_chave():
+    """GET {ADN}/contribuintes/NFSe/{chave}/Eventos — todos os eventos vinculados à NFS-e (XML descompactado)."""
+    corpo = request.get_json(silent=True) or {}
+    ambiente = exigir_ambiente(corpo)
+    chave_acesso = exigir(corpo, "chave_acesso", re.compile(r"\d{50}"))
+    _, empresa_id, (chave, cert, cadeia) = abrir_envelope(corpo)
+    resposta = requisicao_mtls("GET", f"{BASES_ADN_CONTRIB[ambiente]}/NFSe/{chave_acesso}/Eventos", chave, cert, cadeia, timeout=30)
+    log("adn_eventos", empresa_id=empresa_id, ambiente=ambiente, status=resposta.get("status"), erro=resposta.get("erro"))
+    return jsonify({"ok": True, "ambiente": ambiente, "resposta": interpretar_adn(resposta)})

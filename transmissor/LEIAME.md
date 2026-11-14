@@ -1,4 +1,4 @@
-# notem-transmissor (v3)
+# notem-transmissor (v4)
 
 Serviço isolado da notem, publicado no Google Cloud Run (southamerica-east1).
 Responsabilidade exclusiva: comunicação fiscal — validar/trancar certificado A1, assinar documentos e conversar com o governo via mTLS (OpenSSL).
@@ -22,6 +22,11 @@ Todas recebem `organizacao_id`, `empresa_id` e `envelope` (exceto preparar), e `
 | `POST /v1/nfse/consultar` | Entrada: `chave_acesso` (50 dígitos). `GET {Sefin}/nfse/{chave}` |
 | `POST /v1/nfse/evento` | Entrada: `chave_acesso` e `evento_xml` (pedRegEvento v1.01 **sem assinatura**, com `infPedReg Id` = "PRE" + chave + tipo do evento), opcional `algoritmo_assinatura` e `tempo_limite_segundos`. Assina o `infPedReg` (mesmo padrão da DPS, assinatura como último filho de pedRegEvento) e envia a `POST {Sefin}/nfse/{chave}/eventos` com `pedidoRegistroEventoXmlGZipB64`. Recusa (`EVENTO_INVALIDO`) se o Id não corresponder à chave. Saída: `evento_assinado` e `resposta` (em `corpo_json`, `eventoXml` já descompactado) |
 | `POST /v1/nfse/evento/consultar` | Entrada: `chave_acesso`, `tipo_evento` (6 dígitos, ex.: 101101) e `num_seq_evento`. `GET {Sefin}/nfse/{chave}/eventos/{tipo}/{seq}` — confirma um evento após falha/tempo esgotado |
+
+| `POST /v1/adn/dfe` | Entrada: `nsu` (inteiro ≥ 0), opcional `lote` (padrão true) e `cnpj_consulta` (14 dígitos, mesmo CNPJ raiz do certificado). `GET {ADN}/contribuintes/DFe/{NSU}?lote=true` — documentos (NFS-e e eventos) do CNPJ a partir do NSU, em lotes. Em `corpo_json.LoteDFe[]` o campo `ArquivoXml` volta descompactado como `Xml`; demais campos como o ADN envia (`NSU`, `ChaveAcesso`, `TipoDocumento`, `TipoEvento`, `DataHoraGeracao`), além de `StatusProcessamento` (`DOCUMENTOS_LOCALIZADOS` / `NENHUM_DOCUMENTO_LOCALIZADO` / `REJEICAO`), `Alertas` e `Erros` |
+| `POST /v1/adn/eventos` | Entrada: `chave_acesso`. `GET {ADN}/contribuintes/NFSe/{chave}/Eventos` — todos os eventos da NFS-e (mesmo formato, XML descompactado) |
+
+ADN contribuintes: homologação `https://adn.producaorestrita.nfse.gov.br/contribuintes` · produção `https://adn.nfse.gov.br/contribuintes`. Respeitar o intervalo mínimo exigido pelo ADN entre consultas sem documentos novos (a notem controla a frequência; o transmissor não guarda estado).
 
 `resposta`: `{status, tipo_conteudo, ms, corpo_json | corpo_texto}` ou `{erro: TLS | TEMPO_ESGOTADO | CONEXAO, detalhe, ms}`.
 Em `corpo_json`, campos `nfseXmlGZipB64`/`eventoXmlGZipB64` já vêm descompactados como `nfseXml`/`eventoXml`.
