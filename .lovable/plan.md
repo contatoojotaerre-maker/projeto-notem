@@ -22,6 +22,7 @@ Sem alterações em `transmissor/`. Execução em 4 partes, com pausa após a Pa
 - Um único pedido ativo por nota: enquanto houver cancelamento em envio/verificação, análise pendente ou substituta em andamento, novos pedidos recebem 409.
 - **Cancelamento**: 201 com `eventoXml` → nota `cancelada`, XML guardado, linha do tempo e webhook `nota.cancelada`, tudo na mesma transação. Rejeição → 422 com detalhes e tradução; E0822/E0823/E0824/E0827 marcam `pode_solicitar_analise`.
 - **Tempo esgotado/conexão após o envio** → `operacao_pendente` em verificação; o agendador consulta `/v1/nfse/evento/consultar` (101101, sequência 1). Encontrado → cancelada. Não encontrado por 15 minutos (mesma regra da DPS) → pedido concluído como "não registrado", campo volta a null e a nota segue autorizada. Nunca reenvia sem consultar.
+- **Cancelamento já registrado fora da notem**: se a recusa indicar evento de cancelamento existente (E0840 ou equivalente), consultar 101101/sequência 1; encontrado → guardar XML oficial, nota `cancelada`, linha do tempo "Cancelamento registrado fora da notem" e `nota.cancelada`; não encontrado → recusa normal.
 - **Análise fiscal**: mesmo fluxo; sucesso → `cancelamento_em_analise` e webhook `nota.cancelamento_em_analise`.
 - **Substituição**: mesmo fluxo da emissão (validações antes de numerar, numeração definitiva, verificação, E0014). A nova nota nasce com `substitui_nota_id`; somente quando ela é autorizada a original vira `substituida` com `substituida_por_nota_id`, na mesma transação, com `nota.autorizada` (nova) e `nota.substituida` (original). Rejeitada a nova, a original não muda.
 - Webhooks sem duplicação (um aviso por nota e tipo de mudança).
@@ -46,5 +47,5 @@ Sem alterações em `transmissor/`. Execução em 4 partes, com pausa após a Pa
 - Publicação ao final.
 
 ## Limites que ficarão registrados
-- Cancelamento e substituição reais exigem certificado A1 e nota autorizada; o banco de produção ainda não tem notas, então o fluxo real não será verificado por mim.
+- Produção já tem uma nota real autorizada (Group Jota, NFS-e nº 11, série 900, DPS 1), considerada nos testes publicados; cancelar ou substituir essa nota tem efeito fiscal real e só será feito com sua autorização explícita.
 - Deferimento/indeferimento da análise e manifestações (confirmações) só serão conhecidos com a sincronização ADN (fase 7).
