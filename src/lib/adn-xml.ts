@@ -27,7 +27,7 @@ export function repairText(value: string | null): string | null {
 
 const b64bytes = (s: string) => Uint8Array.from(atob(s.replace(/\s+/g, '')), c => c.charCodeAt(0));
 async function gunzip(bytes: Uint8Array) {
-  const stream = new Blob([bytes]).stream().pipeThrough(new DecompressionStream('gzip'));
+  const stream = new Blob([new Uint8Array(bytes)]).stream().pipeThrough(new DecompressionStream('gzip'));
   return new Uint8Array(await new Response(stream).arrayBuffer());
 }
 /** Accepts plain XML, base64 XML, base64 gzip, or base64 of a base64-gzip string (as Sefin returns in arquivoXml). */
