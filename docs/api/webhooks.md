@@ -36,12 +36,12 @@ curl.exe -X POST 'https://seu-endereco.exemplo/webhook' `
 ```json
 {
   "id": "evt_8f3c2a1b...",
-  "tipo": "nota.autorizada",
+  "tipo": "webhook.teste",
   "criado_em": "2026-11-04T22:15:03-03:00",
   "ambiente": "homologacao",
   "organizacao_id": "UUID",
   "integracao_id": "UUID",
-  "dados": { }
+  "dados": {}
 }
 ```
 
@@ -104,14 +104,44 @@ Os campos de `dados` de cada evento são documentados junto com a rota correspon
 ### Dados dos eventos de empresa e certificado
 `empresa.situacao_alterada` — enviado uma única vez a cada mudança de `pronta_para_emitir` em um ambiente (após alteração pela API ou pelo painel, verificação do município ou vencimento do certificado):
 ```json
-"dados": { "empresa_id": "UUID", "id_externo": "ECV-1029", "cnpj": "11222333000181", "ambiente": "producao", "pronta_para_emitir": true, "pendencias": [] }
+{
+  "id": "evt_33333333333333333333333333333333",
+  "tipo": "empresa.situacao_alterada",
+  "criado_em": "2026-11-12T09:40:12-03:00",
+  "ambiente": "producao",
+  "organizacao_id": "00000000-0000-4000-8000-000000000401",
+  "integracao_id": "00000000-0000-4000-8000-000000000501",
+  "dados": {
+    "empresa_id": "00000000-0000-4000-8000-000000000201",
+    "id_externo": "ECV-1029",
+    "cnpj": "11222333000181",
+    "ambiente": "producao",
+    "pronta_para_emitir": true,
+    "pendencias": []
+  }
+}
 ```
 `pendencias`: itens de `GET /empresas/{id}/situacao` com `ok` diferente de `true` (`empresa_ativa`, `certificado`, `configuracao_fiscal`, `servico_ativo`, `municipio`).
 
 `certificado.vencendo` (30, 15, 7 e 1 dia antes) e `certificado.vencido` — verificados uma vez por dia; cada marco é avisado uma única vez por certificado, nos dois ambientes:
 ```json
-"dados": { "empresa_id": "UUID", "id_externo": "ECV-1029", "cnpj": "11222333000181", "valido_ate": "2027-01-10T00:00:00-03:00", "dias_para_vencer": 7 }
+{
+  "id": "evt_44444444444444444444444444444444",
+  "tipo": "certificado.vencendo",
+  "criado_em": "2027-01-03T06:00:00-03:00",
+  "ambiente": "producao",
+  "organizacao_id": "00000000-0000-4000-8000-000000000401",
+  "integracao_id": "00000000-0000-4000-8000-000000000501",
+  "dados": {
+    "empresa_id": "00000000-0000-4000-8000-000000000201",
+    "id_externo": "ECV-1029",
+    "cnpj": "11222333000181",
+    "valido_ate": "2027-01-10T00:00:00-03:00",
+    "dias_para_vencer": 7
+  }
+}
 ```
+Em `certificado.vencido`, o envelope é o mesmo, com `"tipo": "certificado.vencido"`.
 Esses eventos respeitam o filtro por empresa do endereço. Pela API, a primeira tentativa é imediata; alterações feitas no painel e a rotina diária são entregues pelo processamento automático (cerca de 1 minuto). Novos tipos podem ser adicionados sem aviso; ignore tipos que você não conhece.
 
 ## 7. Segurança
