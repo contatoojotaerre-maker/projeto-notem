@@ -4,8 +4,8 @@
 - [x] Gerador DANFSe, preferência de canhoto e sete exemplos PNG em docs/exemplos/danfse/ e Files para entrega no chat; QR decodificado.
 - [x] Downloads API/painel, links e documentação; API PDF testada com fixture real em memória. Painel autenticado não verificado (Supabase externo).
 - [x] Séries automáticas desde 900 e saltos duráveis E0014; teste DB com rollback passou, cinco saltos e seis históricos, grants corrigidos e conferidos.
-- [x] Testes locais (253 completos + teste adicional PDF API), sete PNGs inspecionados; build OK; scan sem críticos (seis informativos).
-- [ ] Solicitar publicação E2 ao finalizar.
+- [x] 254 testes locais, sete PNGs inspecionados; build OK; scan sem críticos (seis informativos).
+- [x] Solicitação de publicação E2 ao finalizar; confirmação do resultado pela ferramenta e produção separadas.
 - [ ] PDF de nota autorizada real e emissão A1/continuação E0014 hospedada — banco sem notas, sem sessão externa disponível; depende do teste do proprietário.
 
 ## Etapa E1 — Emissão e tomadores
