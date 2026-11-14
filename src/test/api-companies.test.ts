@@ -9,9 +9,9 @@ const code = (fn: () => unknown) => { try { fn(); } catch (e) { return e instanc
 
 describe('configuração fiscal pela API', () => {
   it('converte valores legíveis para os códigos do banco', () => {
-    const v = fiscalIn.parse({ simples_nacional: 'me_epp', regime_apuracao_simples: 'dentro_do_simples', regime_especial: 'outros', tributos_aproximados: { modo: 'percentual_simples', percentual_simples: '6.00' } });
+    const v = fiscalIn.parse({ simples_nacional: 'me_epp', regime_apuracao_simples: 'dentro_do_simples', regime_especial: 'nenhum', tributos_aproximados: { modo: 'percentual_simples', percentual_simples: '6.00' } });
     const db = fiscalToDb(v, ids, 1);
-    expect([db.simples_nacional_option, db.simples_nacional_regime, db.special_tax_regime, db.approx_taxes_mode, db.approx_simples_percent]).toEqual([3, 1, 9, 'percent_simples', 6]);
+    expect([db.simples_nacional_option, db.simples_nacional_regime, db.special_tax_regime, db.approx_taxes_mode, db.approx_simples_percent]).toEqual([3, 1, 0, 'percent_simples', 6]);
     expect(fiscalOut({ ...db, dps_series: 1 }).serie_dps).toBe('00001');
   });
   it('aceita o corpo exato do teste externo (ME/EPP, percentual_simples "6.00", ISS null)', () => {

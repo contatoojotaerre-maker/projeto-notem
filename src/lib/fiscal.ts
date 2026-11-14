@@ -8,6 +8,13 @@ export function approximateTaxRuleError(option: number, mode: string): string | 
  return null;
 }
 const percent = z.number().min(0).max(100).nullable();
+export function specialTaxRuleError(option:number,regime:number|null,special:number,taxation=1):string|null {
+ if(special===0)return null;
+ if(option===2)return 'Para MEI, o regime especial deve ser Nenhum (E0174).';
+ if(option===3&&regime===1)return 'Para ME/EPP com apuração dentro do Simples, o regime especial deve ser Nenhum (E0175).';
+ if([2,3,4].includes(taxation))return 'Para imunidade, exportação ou não incidência, o regime especial deve ser Nenhum (E0172).';
+ return null;
+}
 export const seriesSchema = z.number().int().min(1).max(49999);
 export const fiscalSchema = fiscalIds.extend({
   simples_nacional_option: z.number().int().min(1).max(3), simples_nacional_regime: z.number().int().min(1).max(3).nullable(),
@@ -16,6 +23,8 @@ export const fiscalSchema = fiscalIds.extend({
   approx_federal_percent: percent, approx_state_percent: percent, approx_municipal_percent: percent,
   simples_iss_withholding_percent: z.number().min(1.8, 'A alíquota do ISS deve ser pelo menos 1,80%.').max(9.99).refine(v => Math.abs(v * 100 - Math.round(v * 100)) < 1e-8, 'Use até duas casas decimais.').nullable().default(null),
 }).superRefine((v,ctx) => {
+  const specialError=specialTaxRuleError(v.simples_nacional_option,v.simples_nacional_regime,v.special_tax_regime);
+  if(specialError)ctx.addIssue({code:'custom',path:['special_tax_regime'],message:specialError});
   const ruleError=approximateTaxRuleError(v.simples_nacional_option,v.approx_taxes_mode);
   if(ruleError) ctx.addIssue({code:'custom',path:['approx_taxes_mode'],message:ruleError});
   if (v.simples_iss_withholding_percent !== null && (v.simples_nacional_option !== 3 || v.simples_nacional_regime !== 1)) ctx.addIssue({code:'custom',path:['simples_iss_withholding_percent'],message:'A alíquota do ISS no Simples só pode ser informada para ME/EPP com ISS dentro do Simples (DAS).'});

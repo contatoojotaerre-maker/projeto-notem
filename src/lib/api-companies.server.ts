@@ -1,7 +1,7 @@
 // Business handlers for /api/v1 empresas and catalogos. Organization always comes from the key.
 import { apiAudit, loadCompany, type ApiCtx, type ApiResult } from './api.server';
 import { certificateIn, certificateOut, companyCreate, companyIn, companyOut, companyPatch, fail, fiscalDbDetail, fiscalIn, fiscalOut, fiscalToDb, page, pageParams, parseBody, serviceCreate, serviceOut, servicePatch, serviceToDb, transmissorToContract, type CompanyRow, type FiscalRow, type ServiceRow } from './api-contract';
-import { CNPJ_LOCK_MESSAGE, validReadinessCertificate } from './fiscal';
+import { CNPJ_LOCK_MESSAGE, validReadinessCertificate,specialTaxRuleError } from './fiscal';
 import { AGREEMENT_COOLDOWN_MS, MAX_CERTIFICATE_BYTES, toTransmissorEnvironment } from './certificates';
 import { municipalitySearchTerm } from './municipality-search';
 
@@ -104,6 +104,7 @@ export async function postCertificate(ctx: ApiCtx): Promise<ApiResult> {
 // ---------- Serviços ----------
 const SERVICE_SELECT = '*, service_codes(description)';
 function serviceWriteError(e: { code?: string; message: string }): never {
+  if(/E017[245]/.test(e.message))throw fail(422,'REGRA_DE_NEGOCIO',[{campo:'tributacao_iss',mensagem:e.message}]);
   if (e.code === '23505') throw fail(409, 'ID_EXTERNO_DUPLICADO');
   if (e.code === '23503') throw fail(422, 'REGRA_DE_NEGOCIO', [{ campo: 'codigo_servico', mensagem: 'Use códigos existentes nos catálogos oficiais.' }]);
   if (e.code === '23514' || e.code === 'P0001') throw fail(422, 'REGRA_DE_NEGOCIO');

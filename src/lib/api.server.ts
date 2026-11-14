@@ -54,7 +54,9 @@ export function apiRoute(handlers: Partial<Record<'GET' | 'POST' | 'PATCH' | 'PU
         raw = await request.text(); if (new TextEncoder().encode(raw).length > MAX_BODY) throw fail(400, 'REQUISICAO_INVALIDA', [{ campo: 'corpo', mensagem: 'Corpo maior que 200 KB.' }]);
         try { requestBody = raw ? JSON.parse(raw) : {}; } catch { throw fail(400, 'REQUISICAO_INVALIDA', [{ campo: 'corpo', mensagem: 'JSON inválido.' }]); }
       }
-      const key = MUTATING.has(request.method) ? idempotencyKey(request.headers.get('idempotency-key')) : null;
+      // Issuance has a durable key/hash/nota association in create_invoice_request, not the 24-hour cache.
+      const invoiceIssuance=request.method==='POST'&&url.pathname.replace(/\/$/,'')==='/api/v1/notas';
+      const key = MUTATING.has(request.method)&&!invoiceIssuance ? idempotencyKey(request.headers.get('idempotency-key')) : null;
       const hash = key ? await bodyHash(request.method, url.pathname, raw) : '';
       if (key) {
         const scope = { integration_id: auth.integration!.id, environment: auth.env!, key };
@@ -85,6 +87,7 @@ export function apiRoute(handlers: Partial<Record<'GET' | 'POST' | 'PATCH' | 'PU
     background(persist());
     if (pending.length) await Promise.all(pending);
     if (body === undefined || status === 204) return new Response(null, { status, headers: out });
+    if(out.get('Content-Type')?.startsWith('application/xml')&&typeof body==='string')return new Response(body,{status,headers:out});
     out.set('Content-Type', 'application/json; charset=utf-8');
     return new Response(JSON.stringify(body), { status, headers: out });
   };
