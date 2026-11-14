@@ -137,8 +137,8 @@ describe('Substituição: regras antes de numerar', () => {
     expect(b).not.toHaveProperty('motivo'); expect(b).not.toHaveProperty('justificativa');
   });
   it('original não autorizada: 409; outra empresa: 422', async () => {
-    const f = db(); const ctx = apiIssueCtx(apiCtx(f.db, {}));
-    await expect(issueSubstitution(ctx, invoice({ status: 'substituted' }), { motivo: 'outros', justificativa: 'Correção da descrição do serviço.' }, 'k', 'h')).rejects.toMatchObject({ status: 409 });
+    const f = db({ invoices: null }); const ctx = apiIssueCtx(apiCtx(f.db, {}));
+    await expect(issueSubstitution(ctx, invoice({ status: 'substituted' }), { motivo: 'outros', justificativa: 'Correção da descrição do serviço.' }, 'k', 'h')).rejects.toMatchObject({ status: 409, code: 'CONFLITO' });
     await expect(issueSubstitution(ctx, invoice(), { motivo: 'outros', justificativa: 'Correção da descrição do serviço.', empresa_id: '10000000-0000-4000-8000-000000000099' }, 'k', 'h')).rejects.toMatchObject({ status: 422, details: [expect.objectContaining({ campo: 'empresa_id' })] });
   });
 });
