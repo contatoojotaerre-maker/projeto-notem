@@ -43,7 +43,7 @@ describe('Cancelamento: respostas do governo', () => {
   it('E0840 com evento encontrado: "Cancelamento registrado fora da notem"', async () => {
     const f = db(); vi.mocked(callTransmissor).mockResolvedValueOnce({ resposta: { status: 200, corpo_json: { eventoXml: officialXml() } } });
     await applyEventReply(f.db, event(), invoice(), { resposta: { status: 400, corpo_json: { erros: [{ codigo: 'E0840', descricao: 'Já existe evento' }] } } });
-    expect(vi.mocked(callTransmissor)).toHaveBeenCalledWith('/v1/nfse/evento/consultar', expect.objectContaining({ chave_acesso: exampleKey, tipo_evento: '101101', num_seq_evento: 1 }));
+    expect(vi.mocked(callTransmissor)).toHaveBeenCalledWith('/v1/nfse/evento/consultar', expect.objectContaining({ chave_acesso: exampleKey, tipo_evento: '101101', num_seq_evento: '1' }));
     const a = finish(f); expect(a._patch).toMatchObject({ status: 'registered', registered_outside: true, event_xml: officialXml() }); expect(a['_timeline']).toBe('cancellation_registered_outside'); expect(a['_message']).toBe('Cancelamento registrado fora da notem.'); expect(a['_webhook']).toBe('nota.cancelada');
     expect(a._invoice.cancellation).toMatchObject({ motivo: 'servico_nao_prestado', justificativa: 'Cancelado no Portal Nacional pelo prestador.', registrado_fora_da_notem: true });
   });
