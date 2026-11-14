@@ -7,7 +7,11 @@
 - [x] Primeira conferência externa: três XML passaram no XSD com correção em memória; proprietário identificou E0431/E0432, E0710/E0712/E0713 e E0202.
 - [x] Correções pré-Parte 3: descontos zero omitidos, matriz de tributos em tela/API/banco/DPS, legados incompletos sem reescrita, tomador distinto na validação pré-numeração, testes e documentação. 193 testes passaram; nove combinações no banco e legado sem consumo de número validados com rollback. Tela autenticada/API com chave não verificadas (Supabase externo).
 - [x] Regenerar três XML: todos passaram no XSD com correção isolada em memória; entregar completos no chat para nova conferência. Sincronização GitHub permanece não verificada.
-- [ ] Parte 3 e seguintes — bloqueadas até conferência externa dos três XML e liberação expressa do proprietário; parar obrigatoriamente após Parte 2.
+- [x] Segunda conferência externa: três XML aprovados em XSD/regras; Partes 3–5 liberadas em 14/11/2026.
+- [ ] Validações pré-reserva E0172/E0174/E0175, E0204/E0237; legados preservados e incompletos; traduções oficiais e testes.
+- [ ] Parte 3: emissão idempotente, persistência anterior à transmissão, resultados e webhooks.
+- [ ] Parte 4: consulta automática com leases, 404 por 15 minutos e reconciliação sem reenvio ambíguo.
+- [ ] Parte 5: consultas API/XML/PDF, painel somente leitura e tomadores, documentação, testes e publicação.
 
 ## Fase 3A.2 — Webhooks e ajustes de Integrações
 - [x] Correção pós-auditoria: teste direto com resultado na tela, eventos reais em fila sem waitUntil, mensagens em português, registro resumido do agendador, chave de autorização, revelar segredo, filtro por empresa, exemplo e docs.
