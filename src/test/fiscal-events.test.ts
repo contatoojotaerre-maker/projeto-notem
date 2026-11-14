@@ -52,7 +52,7 @@ describe('Grupo subst da DPS', () => {
     expect(xml.indexOf('</subst>')).toBeLessThan(xml.indexOf('<prest>'));
   });
   it('E0042: chave de outra empresa ou município é recusada', () => {
-    const other = substituteFixture(); other.provider.cnpj = '11444777000161'; expect(() => buildDps(other)).toThrow('E0042');
+    const other = substituteFixture(); other.provider.cnpj = '12345678000195'; expect(() => buildDps(other)).toThrow('E0042');
     const city = substituteFixture(); city.provider.municipality = '4205407'; expect(() => buildDps(city)).toThrow('E0042');
   });
   it('justificativa obrigatória mesmo fora do motivo 99', () => { const v = substituteFixture(); v.substitution!.reason = 'desenquadramento_simples'; v.substitution!.justification = 'curta'; expect(() => buildDps(v)).toThrow('15 a 255'); });
