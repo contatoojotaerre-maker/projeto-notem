@@ -2347,16 +2347,6 @@ export type Database = {
         Args: { _org: string; _user: string }
         Returns: boolean
       }
-      can_view_cnpj: { Args: { _cnpj: string }; Returns: boolean }
-      can_view_nfse_document: {
-        Args: {
-          _intermediary: string
-          _invoice: string
-          _provider: string
-          _taker: string
-        }
-        Returns: boolean
-      }
       claim_adn_cursors: {
         Args: { _cnpj?: string; _limit: number }
         Returns: {
