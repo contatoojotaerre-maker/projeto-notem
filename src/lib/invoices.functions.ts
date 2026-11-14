@@ -2,6 +2,33 @@ import { createServerFn } from '@tanstack/react-start';
 import { requireSupabaseAuth } from '@/integrations/supabase/auth-middleware';
 import { z } from 'zod';
 import { invoiceOut } from './invoices';
+import type { Json } from '@/integrations/supabase/types';
+type Rpc = { rpc: (fn: 'is_platform_admin' | 'has_org_role', args?: Record<string, unknown>) => PromiseLike<{ data: unknown; error: unknown }> };
+/** Owner, admin, operator or platform administrator; the database checks again before writing. */
+async function canIssueFiscalChange(supabase: Rpc, organization_id: string) { const [admin, role] = await Promise.all([supabase.rpc('is_platform_admin'), supabase.rpc('has_org_role', { org_id: organization_id, roles: ['owner', 'admin', 'operator'] })]); return admin.data === true || role.data === true; }
+type PanelResult = { ok: true; status: string; invoice_id: string } | { ok: false; mensagem: string; detalhes: { campo: string; mensagem: string }[] };
+async function panelOutcome(run: () => Promise<{ status: number; body?: unknown }>, fallbackId: string): Promise<PanelResult> {
+  const { ApiFailure } = await import('./api-contract');
+  try { const r = await run(); const body = (r.body ?? {}) as { id?: string; situacao?: string }; return { ok: true, status: r.status === 202 ? 'pending' : 'done', invoice_id: body.id ?? fallbackId }; }
+  catch (e) { if (e instanceof ApiFailure) return { ok: false, mensagem: e.userMessage, detalhes: e.details.map(d => ({ campo: String(d.campo), mensagem: String(d.mensagem) })) }; console.error('PANEL_FISCAL_CHANGE_FAILED'); return { ok: false, mensagem: 'Não foi possível concluir agora. Tente novamente; o pedido não será duplicado.', detalhes: [] }; }
+}
+const changeScope = z.object({ organization_id: z.string().uuid(), environment: z.enum(['sandbox', 'production']), id: z.string().uuid(), idempotency_key: z.string().uuid() });
+export const requestPanelFiscalEvent = createServerFn({ method: 'POST' }).middleware([requireSupabaseAuth]).inputValidator(changeScope.extend({ kind: z.enum(['cancel', 'analysis']), body: z.object({ motivo: z.string().max(40), justificativa: z.string().max(2000) }) })).handler(async ({ context, data }): Promise<PanelResult> => {
+  if (!await canIssueFiscalChange(context.supabase, data.organization_id)) return { ok: false, mensagem: 'Seu papel permite apenas visualizar esta nota.', detalhes: [] };
+  const { supabaseAdmin } = await import('@/integrations/supabase/client.server'); const { requestFiscalEvent, eventResponse } = await import('./fiscal-events.server'); const { bodyHash } = await import('./api-contract');
+  const hash = await bodyHash('POST', `panel:/notas/${data.id}/${data.kind}`, JSON.stringify(data.body));
+  return panelOutcome(async () => eventResponse(await requestFiscalEvent({ db: supabaseAdmin, organization_id: data.organization_id, environment: data.environment, invoice_id: data.id, integration_id: null, origin: 'panel', actor: context.userId, kind: data.kind, body: data.body, idempotency_key: data.idempotency_key, request_hash: hash })), data.id);
+});
+export const substitutePanelInvoice = createServerFn({ method: 'POST' }).middleware([requireSupabaseAuth]).inputValidator(changeScope.extend({ body: z.record(z.string(), z.unknown()) })).handler(async ({ context, data }): Promise<PanelResult> => {
+  if (!await canIssueFiscalChange(context.supabase, data.organization_id)) return { ok: false, mensagem: 'Seu papel permite apenas visualizar esta nota.', detalhes: [] };
+  const visible = await context.supabase.from('invoices').select('id').eq('id', data.id).eq('organization_id', data.organization_id).eq('environment', data.environment).maybeSingle();
+  if (visible.error || !visible.data) return { ok: false, mensagem: 'Nota não encontrada ou acesso não autorizado.', detalhes: [] };
+  const { supabaseAdmin } = await import('@/integrations/supabase/client.server'); const { issueSubstitution } = await import('./api-invoices.server'); const { bodyHash } = await import('./api-contract');
+  const original = await supabaseAdmin.from('invoices').select('*').eq('id', data.id).eq('organization_id', data.organization_id).eq('environment', data.environment).single();
+  if (original.error) return { ok: false, mensagem: 'Nota não encontrada ou acesso não autorizado.', detalhes: [] };
+  const hash = await bodyHash('POST', `panel:/notas/${data.id}/substituir`, JSON.stringify(data.body));
+  return panelOutcome(() => issueSubstitution({ db: supabaseAdmin, organization_id: data.organization_id, env: data.environment, integration_id: null, origin: 'panel', actor: context.userId, setCompany: () => {} }, original.data, data.body as Json, data.idempotency_key, hash), data.id);
+});
 const scope=z.object({organization_id:z.string().uuid(),environment:z.enum(['sandbox','production'])});
 export const getPanelInvoices=createServerFn({method:'POST'}).middleware([requireSupabaseAuth]).inputValidator(scope.extend({company_id:z.string().uuid().optional(),status:z.string().max(40).optional(),from:z.string().regex(/^\d{4}-\d{2}-\d{2}$/).optional(),to:z.string().regex(/^\d{4}-\d{2}-\d{2}$/).optional(),offset:z.number().int().min(0).default(0)})).handler(async({context,data})=>{
  let q=context.supabase.from('invoices').select('*').eq('organization_id',data.organization_id).eq('environment',data.environment);
@@ -12,7 +39,10 @@ export const getPanelInvoices=createServerFn({method:'POST'}).middleware([requir
 export const getPanelInvoice=createServerFn({method:'POST'}).middleware([requireSupabaseAuth]).inputValidator(scope.extend({id:z.string().uuid()})).handler(async({context,data})=>{
  const i=await context.supabase.from('invoices').select('*').eq('id',data.id).eq('organization_id',data.organization_id).eq('environment',data.environment).maybeSingle();if(i.error||!i.data)throw new Error('Nota não encontrada ou acesso não autorizado.');
  const events=await context.supabase.from('invoice_events').select('id,type,details,created_at').eq('invoice_id',data.id).eq('organization_id',data.organization_id).order('created_at').order('id');if(events.error)throw new Error('Não foi possível carregar o histórico.');
- return {nota:invoiceOut(i.data),status:i.data.status,events:events.data??[],technical:{dps_id:i.data.dps_id,unsigned:i.data.unsigned_dps_xml,signed:i.data.signed_dps_xml,xml:i.data.authorized_nfse_xml}};
+ const [fiscalEvents,manage,settings,profiles]=await Promise.all([context.supabase.from('invoice_fiscal_events').select('id,code,status,reason,created_at,registered_at,registered_outside,event_xml,unsigned_xml,signed_xml').eq('invoice_id',data.id).eq('organization_id',data.organization_id).order('created_at').order('id'),canIssueFiscalChange(context.supabase,data.organization_id),context.supabase.from('company_fiscal_settings').select('simples_nacional_option').eq('company_id',i.data.company_id).eq('organization_id',data.organization_id).maybeSingle(),context.supabase.from('company_service_profiles').select('id,name,service_code,municipal_tax_code').eq('company_id',i.data.company_id).eq('organization_id',data.organization_id).eq('active',true).order('name')]);
+ if(fiscalEvents.error||settings.error||profiles.error)throw new Error('Não foi possível carregar o histórico.');
+ const sent=(i.data.sent_values??{}) as Record<string,unknown>,service=(i.data.service_snapshot??{}) as Record<string,unknown>,loc=(i.data.service_location??{}) as Record<string,unknown>;
+ return {nota:invoiceOut(i.data),status:i.data.status,events:events.data??[],fiscalEvents:(fiscalEvents.data??[]).map(e=>({id:e.id,code:e.code,status:e.status,reason:e.reason,created_at:e.created_at,registered_at:e.registered_at,registered_outside:e.registered_outside,xml:e.event_xml,unsigned:e.unsigned_xml,signed:e.signed_xml})),canManage:manage,simples:settings.data?.simples_nacional_option??null,profiles:profiles.data??[],substitution:{service_profile_id:i.data.service_profile_id,competence:i.data.competence,description:i.data.description,complementary:i.data.complementary_information,service:String(sent['servico']??''),unconditional:String(sent['desconto_incondicionado']??'0.00'),conditional:String(sent['desconto_condicionado']??'0.00'),withholding:typeof service['withholding']==='number'?service['withholding']:1,location:typeof loc['codigo_municipio']==='string'?loc['codigo_municipio']:'',customer:i.data.customer_snapshot},technical:{dps_id:i.data.dps_id,unsigned:i.data.unsigned_dps_xml,signed:i.data.signed_dps_xml,xml:i.data.authorized_nfse_xml}};
 });
 export const getPanelInvoicePdf=createServerFn({method:'POST'}).middleware([requireSupabaseAuth]).inputValidator(scope.extend({id:z.string().uuid()})).handler(async({context,data})=>{
  const i=await context.supabase.from('invoices').select('authorized_nfse_xml,status,company_id,nfse_number').eq('id',data.id).eq('organization_id',data.organization_id).eq('environment',data.environment).maybeSingle();
