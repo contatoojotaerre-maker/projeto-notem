@@ -1,6 +1,6 @@
 # API da notem — Notas (emissão e consulta)
 
-Leia antes `convencoes.md` e `empresas.md`. Cancelamento e substituição não estão disponíveis nesta versão.
+Leia antes `convencoes.md` e `empresas.md`. Cancelamento, análise fiscal do cancelamento e substituição estão em `cancelamento.md`.
 
 ## Regras gerais
 - A nota é emitida no **ambiente da chave**: homologação (sem validade fiscal) ou produção.
@@ -11,6 +11,7 @@ Leia antes `convencoes.md` e `empresas.md`. Cancelamento e substituição não e
 - E0710/E0712/E0713: configuração incompatível com a matriz de `empresas.md` é incompleta, sem reescrita automática; recusar antes de numerar com a mensagem da regra.
 - E0174/E0175: regime especial deve ser `nenhum` para MEI ou ME/EPP com apuração dentro do Simples. E0172: também para serviço com imunidade, exportação ou não incidência. Configurações antigas são preservadas, avisadas no painel e consideradas incompletas; recusar antes de numerar.
 - E0204/E0237: ISS retido pelo tomador exige CPF/CNPJ e endereço nacional completo (CEP, município IBGE, logradouro, número e bairro). A validação usa o cadastro copiado ou o tomador informado, antes da numeração.
+- Textos (nomes, endereços, e-mail, descrição, informações complementares) são normalizados antes de validar, conforme `convencoes.md` (seção 4.1). A nota guarda e envia o texto já normalizado; caracteres sem equivalente retornam `422 REGRA_DE_NEGOCIO` com o campo e a mensagem "contém caracteres não aceitos pela NFS-e", antes de numerar.
 - A numeração (série e número da DPS) é feita pela notem. Um número usado nunca é reaproveitado, mesmo se a nota for rejeitada.
 
 ## 1. Emitir nota — `POST /notas`
@@ -22,7 +23,7 @@ Leia antes `convencoes.md` e `empresas.md`. Cancelamento e substituição não e
   "id_externo": "OS-55821",
   "servico_id": "UUID",
   "competencia": "2026-11-12",
-  "descricao": "Vistoria veicular — placa ABC1D23",
+  "descricao": "Vistoria veicular - placa ABC1D23",
   "tomador": {
     "tipo": "pj",
     "documento": "99888777000166",
@@ -110,7 +111,7 @@ Na rejeição, cada item de `erro.detalhes` mantém `campo`/`mensagem` e acresce
   "emitida_em": "2026-11-12T10:15:03-03:00",
   "autorizada_em": "2026-11-12T10:15:05-03:00",
   "tomador": { "tipo": "pj", "documento": "99888777000166", "nome": "Cliente Exemplo LTDA" },
-  "servico": { "servico_id": "UUID", "codigo_servico": "140101", "descricao": "Vistoria veicular — placa ABC1D23" },
+  "servico": { "servico_id": "UUID", "codigo_servico": "140101", "descricao": "Vistoria veicular - placa ABC1D23" },
   "valores": {
     "servico": "150.00",
     "desconto_incondicionado": "0.00",
@@ -125,6 +126,8 @@ Na rejeição, cada item de `erro.detalhes` mantém `campo`/`mensagem` e acresce
   "erros_governo": [],
   "substitui_nota_id": null,
   "substituida_por_nota_id": null,
+  "operacao_pendente": null,
+  "cancelamento": null,
   "links": {
     "xml": "https://app.notemfiscal.com.br/api/v1/notas/UUID/xml",
     "pdf": "https://app.notemfiscal.com.br/api/v1/notas/UUID/pdf",
@@ -138,6 +141,9 @@ Na rejeição, cada item de `erro.detalhes` mantém `campo`/`mensagem` e acresce
 **`situacao`**: `processando`, `em_verificacao`, `autorizada`, `rejeitada`, `cancelamento_em_analise`, `cancelada`, `substituida`, `cancelada_prefeitura`.
 **`restricoes`**: ações bloqueadas pela prefeitura (ex.: `["cancelamento"]`).
 **`manifestacao`**: `null` ou `{ "tipo": "confirmacao" | "rejeicao" | "confirmacao_tacita", "autor": "tomador" | "prestador" | "intermediario", "em": "...", "motivo": "..." }`.
+**`operacao_pendente`**: `null` ou `{ "tipo": "cancelamento" | "analise_cancelamento", "estado": "em_verificacao", "desde": "..." }` enquanto a notem aguarda a confirmação do governo; a `situacao` continua `autorizada` até a confirmação.
+**`cancelamento`**: `null` ou o último pedido de cancelamento/análise (detalhes em `cancelamento.md`).
+**`substitui_nota_id` / `substituida_por_nota_id`**: ligação entre a nota substituta e a original.
 Valores de ISS (`aliquota_iss`, `valor_iss`) vêm da nota autorizada pelo governo; ficam `null` quando não destacados (ex.: Simples Nacional sem retenção).
 
 ## 3. Consultar
@@ -146,6 +152,7 @@ Valores de ISS (`aliquota_iss`, `valor_iss`) vêm da nota autorizada pelo govern
 | `GET /notas` | Lista paginada. Filtros: `empresa_id`, `empresa_id_externo`, `situacao`, `id_externo`, `tomador_documento`, `emitida_de`, `emitida_ate` |
 | `GET /notas/{id}` | Nota completa |
 | `GET /notas/{id}/xml` | XML oficial da NFS-e autorizada (`application/xml`) |
+| `GET /notas/{id}/eventos/{codigo}/xml` | XML oficial do evento registrado (`101101` cancelamento, `101103` análise fiscal) |
 | `GET /notas/{id}/pdf` | `200 application/pdf`, DANFSe v2.0 em A4, sob demanda; `404` sem XML autorizado ou fora de autorizada/cancelada/substituída (inclui cancelada pela prefeitura) |
 
 Os links `xml` e `pdf` exigem a chave da integração. O parceiro baixa e entrega ao seu cliente; a notem não envia a nota ao tomador.
@@ -165,7 +172,6 @@ Na emissão, `tomador_id` ou `tomador_id_externo` usa o cadastro; os dados são 
 Todos os eventos `nota.*` trazem em `dados` o **objeto `nota` completo** (seção 2), sem o conteúdo do XML/PDF (use os links).
 
 ## 6. Fora desta versão
-- Cancelamento e substituição.
 - Intermediário do serviço.
 - Emissão com grupo IBS/CBS. Operações que exijam esse grupo não são aceitas nesta versão.
 

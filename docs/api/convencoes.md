@@ -39,6 +39,23 @@ Estas regras valem para **todas** as rotas. Em caso de dúvida, elas prevalecem 
 
 Valores monetários **nunca** são enviados como número (`150.0`), para evitar erros de arredondamento.
 
+### 4.1 Texto aceito pela NFS-e
+O padrão nacional aceita nos campos de texto somente letras, números e pontuação do conjunto Latin-1 (acentos do português incluídos). Vale para todos os textos da nota e dos eventos: nomes, endereços, e-mail, descrição do serviço, informações complementares e justificativas.
+
+Antes de validar, a notem ajusta automaticamente o texto colado de editores:
+
+| Recebido | Enviado ao governo |
+|---|---|
+| Travessões `—` `–` | `-` |
+| Aspas curvas `“ ” ‘ ’` | aspas retas `" '` |
+| Reticências `…` | `...` |
+| Espaços especiais (ex.: espaço não separável) | espaço comum |
+| Espaços repetidos | um espaço |
+| Espaços no início e no fim | removidos |
+| Quebras de linha | espaço; **mantidas somente na descrição do serviço** |
+
+A nota guarda e devolve o texto já ajustado, que é exatamente o enviado ao governo. O que não tem equivalente (por exemplo, emojis) é recusado antes de numerar ou enviar: `422 REGRA_DE_NEGOCIO`, com `campo` indicando onde está o caractere e `mensagem` "contém caracteres não aceitos pela NFS-e". Limites de tamanho valem para o texto já ajustado.
+
 ## 5. Respostas de sucesso
 | Situação | Status | Corpo |
 |---|---|---|
