@@ -9,8 +9,9 @@ BEGIN
  IF f.company_id IS NULL OR integ.id IS NULL THEN RAISE EXCEPTION 'Test requires fiscal settings and integration'; END IF;
  PERFORM set_config('request.jwt.claims',jsonb_build_object('sub',integ.created_by,'role','service_role')::text,true);
  SELECT next_number INTO before_n FROM public.dps_sequences WHERE company_id=f.company_id AND series=f.dps_series AND environment='sandbox';
+ UPDATE public.dps_sequences SET next_number=next_number+1 WHERE company_id=f.company_id AND series=f.dps_series AND environment='sandbox';
  INSERT INTO public.invoices(organization_id,company_id,integration_id,environment,dps_series,dps_number,dps_id,competence,provider_snapshot,fiscal_snapshot,service_snapshot,description,sent_values,service_location,emitted_at,unsigned_dps_xml,idempotency_key,request_hash,created_by,updated_by)
- VALUES(f.organization_id,f.company_id,integ.id,'sandbox',f.dps_series,before_n-1,'DPS'||repeat('8',42),current_date,'{}','{}','{}','Rollback E2','{}','{}',now(),'<DPS><nDPS>'||(before_n-1)||'</nDPS></DPS>','e2-test-'||gen_random_uuid(),'test',integ.created_by,integ.created_by) RETURNING * INTO initial;
+ VALUES(f.organization_id,f.company_id,integ.id,'sandbox',f.dps_series,before_n,'DPS'||repeat('8',42),current_date,'{}','{}','{}','Rollback E2','{}','{}',now(),'<DPS><nDPS>'||before_n||'</nDPS></DPS>','e2-test-'||gen_random_uuid(),'test',integ.created_by,integ.created_by) RETURNING * INTO initial;
  UPDATE public.invoices SET status='processing',dispatch_state='not_sent',external_number_retries=0,claim_token=NULL,lease_until=NULL WHERE id=initial.id RETURNING * INTO i;
  SELECT next_number INTO before_n FROM public.dps_sequences WHERE company_id=i.company_id AND series=i.dps_series AND environment=i.environment;
  FOR n IN 1..6 LOOP
