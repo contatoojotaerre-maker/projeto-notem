@@ -2,6 +2,7 @@ import { z } from 'zod';
 import { customerSchema, type Customer } from './customers';
 import { isValidCnpj } from './notem';
 import { approximateTaxRuleError, specialTaxRuleError } from './fiscal';
+import { accessKeyIssuer, justificationError, substitutionReasons, type SubstitutionReason } from './fiscal-events';
 
 export const fiscalDecimal = z.string().regex(/^\d{1,15}\.\d{2}$/, 'Use texto decimal com duas casas.');
 export function decimalUnits(value: string) { return BigInt(fiscalDecimal.parse(value).replace('.', '')); }
@@ -12,6 +13,7 @@ export type DpsInput = {
   fiscal: { simples: 1 | 2 | 3; regime: 1 | 2 | 3 | null; special: number; approximate: { mode: 'percent_simples' | 'percent_by_sphere' | 'none'; simples?: string | null; federal?: string | null; state?: string | null; municipal?: string | null }; withheldRate?: string | null };
   service: { code: string; municipalCode?: string | null; nbs?: string | null; description: string; taxation: 1 | 2 | 3 | 4; immunity?: number | null; withholding: 1 | 2 | 3; municipality?: string | null };
   customer?: Customer | null; values: { service: string; unconditional?: string; conditional?: string }; complementary?: string | null;
+  substitution?: { accessKey: string; reason: SubstitutionReason; justification: string } | null;
 };
 export function dpsIdentifier(municipality: string, cnpj: string, series: number, number: string) {
   if (!/^\d{7}$/.test(municipality) || !/^\d{14}$/.test(cnpj) || !isValidCnpj(cnpj) || !Number.isInteger(series) || series < 1 || series > 49999 || !/^[1-9]\d{0,14}$/.test(number)) throw new Error('Identificador DPS inválido.');
@@ -53,8 +55,17 @@ export function buildDps(input: DpsInput) {
   // E0431/E0432: only strictly positive discounts may be informed.
   const discounts=(decimalUnits(unconditional)>0n?tag('vDescIncond',unconditional):'')+(decimalUnits(conditional)>0n?tag('vDescCond',conditional):'');
   const values = group('valores', group('vServPrest', tag('vServ', input.values.service)) + (discounts?group('vDescCondIncond',discounts):'') + group('trib', group('tribMun', tag('tribISSQN', s.taxation) + tag('tpImunidade', s.immunity) + tag('tpRetISSQN', s.withholding) + rate) + group('totTrib', approximate)));
-  const body = tag('tpAmb', input.environment === 'production' ? 1 : 2) + tag('dhEmi', input.emittedAt) + tag('verAplic', 'notem-1.0') + tag('serie', input.series) + tag('nDPS', input.number) + tag('dCompet', input.competence) + tag('tpEmit', 1) + tag('cLocEmi', p.municipality) + prest + customer + service + values;
+  const substitution = input.substitution ? substitutionXml(input.substitution, p) : '';
+  const body = tag('tpAmb', input.environment === 'production' ? 1 : 2) + tag('dhEmi', input.emittedAt) + tag('verAplic', 'notem-1.0') + tag('serie', input.series) + tag('nDPS', input.number) + tag('dCompet', input.competence) + tag('tpEmit', 1) + tag('cLocEmi', p.municipality) + substitution + prest + customer + service + values;
   return { id, xml: `<?xml version="1.0" encoding="UTF-8"?><DPS xmlns="http://www.sped.fazenda.gov.br/nfse" versao="1.01"><infDPS Id="${id}">${body}</infDPS></DPS>` };
+}
+/** E0042: the replaced key must carry the same municipality, CNPJ type (2) and CNPJ as this DPS. */
+function substitutionXml(v: NonNullable<DpsInput['substitution']>, p: DpsInput['provider']) {
+  const issuer = accessKeyIssuer(v.accessKey);
+  if (!issuer || issuer.municipality !== p.municipality || issuer.inscriptionType !== '2' || issuer.inscription !== p.cnpj) throw new Error('A nota substituída deve ser da mesma empresa e do mesmo município emissor (E0042).');
+  const reason = substitutionReasons[v.reason]; if (!reason) throw new Error('Motivo da substituição inválido.');
+  const error = justificationError(v.justification); if (error) throw new Error(error);
+  return group('subst', tag('chSubstda', v.accessKey) + tag('cMotivo', reason) + tag('xMotivo', v.justification));
 }
 /** Mandatory preflight before definitive numbering; Part 3 must use this boundary. */
 export function validateDpsBeforeNumbering(input: Pick<DpsInput,'provider'|'customer'|'fiscal'> & {service?:DpsInput['service']}): void {
