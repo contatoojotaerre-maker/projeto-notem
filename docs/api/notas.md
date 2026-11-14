@@ -202,3 +202,4 @@ Se a espera da API estiver acabando, retorna 202 e continua no agendador. Respos
 | E0015 | Competência não pode ser posterior à emissão |
 | E0714 | Conferir certificado e assinatura da DPS no transmissor |
 Os detalhes preservam código, mensagem e complemento originais do governo; a explicação em português não os substitui.
+
