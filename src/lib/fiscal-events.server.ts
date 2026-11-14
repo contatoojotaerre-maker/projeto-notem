@@ -9,6 +9,13 @@ import { governmentErrors, invoiceOut, rejectionGuidance, type GovernmentReply, 
 import { transmissorPayload, definitelyNotSent } from './invoices.server';
 import { brasiliaNow, buildFiscalEvent, cancelReasons, justificationError, type CancelReason } from './fiscal-events';
 import { FISCAL_TEXT_MESSAGE, fiscalTextAccepted, normalizeFiscalText } from './fiscal-text';
+import { eventsFromReply } from './adn-xml';
+
+/** After an "event already exists" refusal, applies every official event of the key (ADN); failures never block the reply. */
+async function refreshOtherEvents(db: DB, inv: Invoice) {
+  try { const { refreshInvoiceEvents } = await import('./adn-sync.server'); await refreshInvoiceEvents(db, inv, 'reconciliação após recusa por evento existente'); }
+  catch { console.error('EVENT_KEY_REFRESH_FAILED', inv.id); }
+}
 
 export type FiscalEvent = Database['public']['Tables']['invoice_fiscal_events']['Row'];
 export type EventKind = 'cancel' | 'analysis';
@@ -59,10 +66,19 @@ export async function finishEvent(db: DB, e: FiscalEvent, inv: Invoice, patch: P
   return { event: current, invoice: await loadInvoice(db, inv.id, inv.organization_id) };
 }
 
+/** Sefin returns the event as eventos[].arquivoXml (base64 of base64-gzip); the transmissor contract also allows eventoXml. */
+export async function officialEventXml(body: unknown, accessKey: string, code: string): Promise<string | null> {
+  const b = body && typeof body === 'object' ? body as Record<string, unknown> : {};
+  if (eventXmlMatches(b['eventoXml'], accessKey, code)) return b['eventoXml'];
+  const found = (await eventsFromReply(b)).find(x => x.access_key === accessKey && x.code === code);
+  return found && eventXmlMatches(found.xml, accessKey, code) ? found.xml : null;
+}
 async function consultEvent(db: DB, inv: Invoice, e: FiscalEvent) {
   const base = await transmissorPayload(db, inv, `consulta do evento ${e.code} da nota ${inv.id}`, e.requested_by);
-  const r = await callTransmissor<EventReply>('/v1/nfse/evento/consultar', { ...base, chave_acesso: inv.access_key, tipo_evento: e.code, num_seq_evento: e.sequence });
-  return r.resposta ?? {};
+  // The transmissor requires the sequence as text.
+  const r = await callTransmissor<EventReply>('/v1/nfse/evento/consultar', { ...base, chave_acesso: inv.access_key, tipo_evento: e.code, num_seq_evento: String(e.sequence) });
+  const reply = r.resposta ?? {};
+  return { reply, xml: reply.status === 200 ? await officialEventXml(reply.corpo_json, inv.access_key ?? '', e.code) : null };
 }
 const processedAt = (xml: string) => { const v = tagValue(xml, 'dhProc'); return v && Number.isFinite(Date.parse(v)) ? new Date(v).toISOString() : undefined; };
 
@@ -74,9 +90,14 @@ export async function applyEventReply(db: DB, e: FiscalEvent, inv: Invoice, res:
     let errors = governmentErrors(reply, inv.id).map(x => ({ ...x, campo: rejectionGuidance[x.codigo_governo]?.campo ?? (e.code === '101101' ? 'cancelamento' : 'analise_cancelamento'), mensagem: rejectionGuidance[x.codigo_governo]?.mensagem ?? 'O governo recusou o pedido. Confira a mensagem original nos detalhes.', ...(e.code === '101101' && analysisCodes.includes(x.codigo_governo) ? { pode_solicitar_analise: true } : {}) }));
     if (errors.some(x => alreadyRegisteredCodes.includes(x.codigo_governo))) {
       try {
-        const found = await consultEvent(db, inv, e); const official = found.corpo_json?.['eventoXml'];
-        if (found.status === 200 && eventXmlMatches(official, inv.access_key ?? '', e.code)) return finishEvent(db, e, inv, { ...signed, status: 'registered', event_xml: official, government_response: replySummary(reply), registered_outside: true, registered_at: processedAt(official) }, request);
+        const found = await consultEvent(db, inv, e);
+        if (found.xml) {
+          const done = await finishEvent(db, e, inv, { ...signed, status: 'registered', event_xml: found.xml, government_response: replySummary(reply), registered_outside: true, registered_at: processedAt(found.xml) }, request);
+          await refreshOtherEvents(db, done.invoice);
+          return done;
+        }
       } catch { console.error('EVENT_RECONCILIATION_FAILED', e.id); }
+      await refreshOtherEvents(db, inv);
     }
     if (!errors.length) errors = [{ campo: e.code === '101101' ? 'cancelamento' : 'analise_cancelamento', mensagem: reply.status === 403 ? 'O governo recusou o certificado da empresa. Confira sua validade e autorização.' : 'O governo recusou o pedido. Confira os detalhes originais.', codigo_governo: String(reply.status), mensagem_governo: 'Rejeição informada pelo governo.', complemento: null, nota_id: inv.id }];
     return finishEvent(db, e, inv, { ...signed, status: 'rejected', government_errors: errors as Json, government_response: replySummary(reply), can_request_analysis: e.code === '101101' && errors.some(x => analysisCodes.includes(x.codigo_governo)) }, request);
@@ -153,8 +174,8 @@ export async function processFiscalEventVerifications(db: DB, now = Date.now()) 
     let inv: Invoice;
     try { inv = await loadInvoice(db, e.invoice_id, e.organization_id); } catch { failed++; continue; }
     try {
-      const reply = await consultEvent(db, inv, e); const xml = reply.corpo_json?.['eventoXml'];
-      if (reply.status === 200 && eventXmlMatches(xml, inv.access_key ?? '', e.code)) { await finishEvent(db, e, inv, { status: 'registered', event_xml: xml, government_response: replySummary(reply), registered_at: processedAt(xml) }); completed++; continue; }
+      const { reply, xml } = await consultEvent(db, inv, e);
+      if (xml) { await finishEvent(db, e, inv, { status: 'registered', event_xml: xml, government_response: replySummary(reply), registered_at: processedAt(xml) }); completed++; continue; }
       if (reply.status === 404 && now - Date.parse(e.verification_started_at ?? e.created_at) >= 15 * 60_000) { await finishEvent(db, e, inv, { status: 'not_registered', government_response: replySummary(reply) }); completed++; continue; }
       await finishEvent(db, e, inv, { status: 'verifying' });
     } catch { failed++; try { await finishEvent(db, e, inv, { status: 'verifying' }); } catch { /* lease expires and retries */ } }
