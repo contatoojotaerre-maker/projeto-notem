@@ -141,7 +141,7 @@ Os campos de `dados` de cada evento são documentados junto com a rota correspon
   }
 }
 ```
-Em `certificado.vencido`, o envelope é o mesmo, com `"tipo": "certificado.vencido"`.
+`certificado.vencido` usa o mesmo envelope e os mesmos campos em `dados`, com `"tipo": "certificado.vencido"` e `"dias_para_vencer": 0`.
 Esses eventos respeitam o filtro por empresa do endereço. Pela API, a primeira tentativa é imediata; alterações feitas no painel e a rotina diária são entregues pelo processamento automático (cerca de 1 minuto). Novos tipos podem ser adicionados sem aviso; ignore tipos que você não conhece.
 
 ## 7. Segurança
