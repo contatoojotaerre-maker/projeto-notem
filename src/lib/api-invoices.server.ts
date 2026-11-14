@@ -7,6 +7,8 @@ import { customerSchema,type Customer } from './customers';
 import { fiscalSchema } from './fiscal';
 import { loadReadiness } from './readiness.server';
 import { sendInvoice } from './invoices.server';
+import { pdfStatuses } from './danfse';
+import { generateDanfse } from './danfse.server';
 
 export function invoiceResponse(i:Invoice):ApiResult{
  if(i.status==='authorized')return {status:201,body:invoiceOut(i)};
@@ -45,7 +47,7 @@ export async function loadInvoice(ctx:ApiCtx){const id=ctx.params['invoiceId'];i
 const zUuid=(id:string)=>/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(id);
 export async function getInvoice(ctx:ApiCtx){return {status:200,body:invoiceOut(await loadInvoice(ctx))};}
 export async function getInvoiceXml(ctx:ApiCtx){const i=await loadInvoice(ctx);if(!i.authorized_nfse_xml)throw fail(404,'NAO_ENCONTRADO',[], 'XML autorizado ainda não disponível.');return {status:200,body:i.authorized_nfse_xml,headers:{'Content-Type':'application/xml; charset=utf-8','Content-Disposition':`attachment; filename="nfse-${i.id}.xml"`}};}
-export async function getInvoicePdf(ctx:ApiCtx):Promise<ApiResult>{await loadInvoice(ctx);throw fail(503,'PDF_EM_PREPARACAO',[], 'PDF em preparação');}
+export async function getInvoicePdf(ctx:ApiCtx):Promise<ApiResult>{const i=await loadInvoice(ctx);if(!i.authorized_nfse_xml||!pdfStatuses.includes(i.status))throw fail(404,'NAO_ENCONTRADO',[], 'DANFSe ainda não disponível.');const f=await ctx.db.from('company_fiscal_settings').select('print_danfse_receipt').eq('company_id',i.company_id).eq('organization_id',i.organization_id).maybeSingle();if(f.error)throw new Error('FISCAL_READ_FAILED');return {status:200,body:await generateDanfse(i.authorized_nfse_xml,i.status,f.data?.print_danfse_receipt??false),headers:{'Content-Type':'application/pdf','Content-Disposition':`attachment; filename="danfse-${i.nfse_number??i.id}.pdf"`}};}
 export async function listInvoices(ctx:ApiCtx){const {limite,offset}=pageParams(ctx.url);const p=ctx.url.searchParams;let q=ctx.db.from('invoices').select('*').eq('organization_id',ctx.organization_id).eq('environment',ctx.env);
  const company=p.get('empresa_id');if(company)q=q.eq('company_id',company);
  const external=p.get('empresa_id_externo');if(external){const c=await ctx.db.from('companies').select('id').eq('organization_id',ctx.organization_id).eq('external_id',external).maybeSingle();if(c.error)throw new Error('COMPANY_READ_FAILED');if(!c.data)return {status:200,body:page([],limite,offset)};q=q.eq('company_id',c.data.id);}

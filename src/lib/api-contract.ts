@@ -76,13 +76,13 @@ const keys = <T extends object>(o: T) => Object.keys(o) as [keyof T & string, ..
 export const fiscalIn = z.object({
   simples_nacional: z.enum(keys(simplesMap)), regime_apuracao_simples: z.enum(keys(regimeMap)).nullable().optional(), regime_especial: z.enum(keys(specialMap)),
   tributos_aproximados: z.object({ modo: z.enum(keys(modeMap)), percentual_simples: pctIn.optional(), federal: pctIn.optional(), estadual: pctIn.optional(), municipal: pctIn.optional() }).strict(),
-  aliquota_iss_simples: pctIn.optional(), serie_dps: z.unknown().optional(),
+  aliquota_iss_simples: pctIn.optional(), serie_dps: z.unknown().optional(), imprimir_canhoto_danfse: z.boolean().optional(),
 }).strict();
 const fiscalFieldMap: Record<string, string> = { simples_nacional_option: 'simples_nacional', simples_nacional_regime: 'regime_apuracao_simples', special_tax_regime: 'regime_especial', approx_taxes_mode: 'tributos_aproximados.modo', approx_simples_percent: 'tributos_aproximados.percentual_simples', approx_federal_percent: 'tributos_aproximados.federal', approx_state_percent: 'tributos_aproximados.estadual', approx_municipal_percent: 'tributos_aproximados.municipal', simples_iss_withholding_percent: 'aliquota_iss_simples' };
 /** Converts contract values to DB codes and applies the same rules as the panel (E0713, ISS do Simples). */
-export function fiscalToDb(v: z.infer<typeof fiscalIn>, ids: { company_id: string; organization_id: string }, dps_series: number | null) {
+export function fiscalToDb(v: z.infer<typeof fiscalIn>, ids: { company_id: string; organization_id: string }, dps_series: number | null, receipt=false) {
   const n = (x: string | null | undefined) => (x === null || x === undefined ? null : Number(x)); const t = v.tributos_aproximados;
-  const row = { ...ids, simples_nacional_option: simplesMap[v.simples_nacional], simples_nacional_regime: v.regime_apuracao_simples ? regimeMap[v.regime_apuracao_simples] : null, special_tax_regime: specialMap[v.regime_especial], dps_series,
+  const row = { ...ids, print_danfse_receipt:v.imprimir_canhoto_danfse??receipt, simples_nacional_option: simplesMap[v.simples_nacional], simples_nacional_regime: v.regime_apuracao_simples ? regimeMap[v.regime_apuracao_simples] : null, special_tax_regime: specialMap[v.regime_especial], dps_series,
     approx_taxes_mode: modeMap[t.modo], approx_simples_percent: n(t.percentual_simples), approx_federal_percent: n(t.federal), approx_state_percent: n(t.estadual), approx_municipal_percent: n(t.municipal), simples_iss_withholding_percent: n(v.aliquota_iss_simples) };
   const r = fiscalSchema.safeParse(row);
   if (!r.success) throw fail(422, 'REGRA_DE_NEGOCIO', zodDetails(r.error, fiscalFieldMap));
@@ -110,7 +110,7 @@ export function fiscalDbDetail(e: { code?: string; message: string }): { campo: 
 }
 export type FiscalRow = { simples_nacional_option: number; simples_nacional_regime: number | null; special_tax_regime: number; dps_series: number | null; approx_taxes_mode: string; approx_simples_percent: number | null; approx_federal_percent: number | null; approx_state_percent: number | null; approx_municipal_percent: number | null; simples_iss_withholding_percent: number | null };
 export function fiscalOut(s: FiscalRow) {
-  return { simples_nacional: rev(simplesMap)[s.simples_nacional_option] ?? null, regime_apuracao_simples: s.simples_nacional_regime === null ? null : rev(regimeMap)[s.simples_nacional_regime] ?? null, regime_especial: rev(specialMap)[s.special_tax_regime] ?? null,
+  return { imprimir_canhoto_danfse:('print_danfse_receipt' in s?s.print_danfse_receipt:false)===true, simples_nacional: rev(simplesMap)[s.simples_nacional_option] ?? null, regime_apuracao_simples: s.simples_nacional_regime === null ? null : rev(regimeMap)[s.simples_nacional_regime] ?? null, regime_especial: rev(specialMap)[s.special_tax_regime] ?? null,
     tributos_aproximados: { modo: rev(modeMap)[s.approx_taxes_mode] ?? null, percentual_simples: pct(s.approx_simples_percent), federal: pct(s.approx_federal_percent), estadual: pct(s.approx_state_percent), municipal: pct(s.approx_municipal_percent) },
     aliquota_iss_simples: pct(s.simples_iss_withholding_percent), serie_dps: s.dps_series === null ? null : String(s.dps_series).padStart(5, '0') };
 }

@@ -4,6 +4,7 @@ import { customerSchema } from './customers';
 import { fiscalDecimal } from './dps';
 import { API_BASE } from './app-url';
 import { envLabel, isoBr } from './api-contract';
+import { publicNfseUrl } from './danfse';
 
 export type Invoice = Database['public']['Tables']['invoices']['Row'];
 export const invoiceStatuses:Record<string,string>={processing:'processando',verifying:'em_verificacao',authorized:'autorizada',rejected:'rejeitada',cancellation_pending:'cancelamento_em_analise',cancelled:'cancelada',substituted:'substituida',cancelled_by_authority:'cancelada_prefeitura'};
