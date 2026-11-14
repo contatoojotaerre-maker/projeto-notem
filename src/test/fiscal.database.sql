@@ -19,7 +19,7 @@ BEGIN
   (c4,org2,'11444777000161','Fiscal cert',municipality,'',u,u);
   UPDATE public.companies SET cnpj='19131243000197' WHERE id=c3;
   IF NOT EXISTS(SELECT 1 FROM public.companies WHERE id=c3 AND cnpj='19131243000197') THEN RAISE EXCEPTION 'CNPJ must be editable before certificate/series'; END IF;
-  INSERT INTO public.company_fiscal_settings(company_id,organization_id,cnpj,simples_nacional_option,simples_nacional_regime,approx_taxes_mode,created_by,updated_by) VALUES(c1,org1,'',1,null,'none',u,u),(c2,org2,'',3,1,'none',u,u);
+  INSERT INTO public.company_fiscal_settings(company_id,organization_id,cnpj,simples_nacional_option,simples_nacional_regime,approx_taxes_mode,approx_federal_percent,approx_state_percent,approx_municipal_percent,created_by,updated_by) VALUES(c1,org1,'',1,null,'percent_by_sphere',0,100,0,u,u),(c2,org2,'',3,1,'percent_by_sphere',0,100,0,u,u);
   SELECT dps_series INTO v FROM public.company_fiscal_settings WHERE company_id=c1;IF v<>1 THEN RAISE EXCEPTION 'First series must be 1'; END IF;
   SELECT dps_series INTO v FROM public.company_fiscal_settings WHERE company_id=c2;IF v<>2 THEN RAISE EXCEPTION 'Same CNPJ other organization must receive 2'; END IF;
   BEGIN UPDATE public.companies SET cnpj='19131243000197' WHERE id=c1; RAISE EXCEPTION 'TEST_FAIL_series_cnpj'; EXCEPTION WHEN OTHERS THEN IF SQLERRM='TEST_FAIL_series_cnpj' OR position('O CNPJ não pode ser alterado' IN SQLERRM)=0 THEN RAISE; END IF; END;
@@ -29,7 +29,7 @@ BEGIN
   BEGIN UPDATE public.companies SET cnpj='19131243000197' WHERE id=c4; RAISE EXCEPTION 'TEST_FAIL_active_cnpj'; EXCEPTION WHEN OTHERS THEN IF SQLERRM='TEST_FAIL_active_cnpj' OR position('O CNPJ não pode ser alterado' IN SQLERRM)=0 THEN RAISE; END IF; END;
   BEGIN UPDATE public.company_fiscal_settings SET simples_nacional_regime=1 WHERE company_id=c1; RAISE EXCEPTION 'TEST_FAIL_SN'; EXCEPTION WHEN check_violation THEN NULL; END;
   BEGIN UPDATE public.company_fiscal_settings SET simples_nacional_regime=null WHERE company_id=c2; RAISE EXCEPTION 'TEST_FAIL_SN3'; EXCEPTION WHEN check_violation THEN NULL; END;
-  BEGIN UPDATE public.company_fiscal_settings SET approx_taxes_mode='percent_by_sphere',approx_federal_percent=0,approx_state_percent=100 WHERE company_id=c1; RAISE EXCEPTION 'TEST_FAIL_percent_required'; EXCEPTION WHEN check_violation THEN NULL; END;
+  BEGIN UPDATE public.company_fiscal_settings SET approx_taxes_mode='percent_by_sphere',approx_federal_percent=0,approx_state_percent=100,approx_municipal_percent=null WHERE company_id=c1; RAISE EXCEPTION 'TEST_FAIL_percent_required'; EXCEPTION WHEN OTHERS THEN IF position('E0713' IN SQLERRM)=0 THEN RAISE; END IF; END;
   UPDATE public.company_fiscal_settings SET approx_taxes_mode='percent_by_sphere',approx_federal_percent=0,approx_state_percent=100,approx_municipal_percent=0 WHERE company_id=c1;
   BEGIN UPDATE public.company_fiscal_settings SET approx_federal_percent=101 WHERE company_id=c1; RAISE EXCEPTION 'TEST_FAIL_percent_range'; EXCEPTION WHEN check_violation THEN NULL; END;
   BEGIN UPDATE public.company_fiscal_settings SET dps_series=50000 WHERE company_id=c1; RAISE EXCEPTION 'TEST_FAIL_series_range'; EXCEPTION WHEN OTHERS THEN IF SQLERRM='TEST_FAIL_series_range' THEN RAISE; END IF; END;

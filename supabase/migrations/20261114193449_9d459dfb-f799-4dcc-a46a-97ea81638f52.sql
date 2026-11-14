@@ -1,0 +1,1 @@
+ALTER TABLE public.company_fiscal_settings ADD COLUMN print_danfse_receipt boolean NOT NULL DEFAULT false;

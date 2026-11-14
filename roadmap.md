@@ -1,4 +1,30 @@
 # notem — Fase 1
+## Etapa E2 — DANFSe e proteção de numeração
+- [x] Máscaras e localidades, três reduções IBS/CBS e quebra entre palavras ajustadas; PNGs base/homologação regenerados e inspecionados, 254 testes passaram e build OK; publicação solicitada ao encerrar (conclusão não verificada).
+- [x] Plano E2 aprovado: seguir ordem proposta; transmissor/ intocado.
+- [x] Gerador DANFSe, preferência de canhoto e sete exemplos PNG em docs/exemplos/danfse/ e Files para entrega no chat; QR decodificado.
+- [x] Downloads API/painel, links e documentação; API PDF testada com fixture real em memória. Painel autenticado não verificado (Supabase externo).
+- [x] Séries automáticas desde 900 e saltos duráveis E0014; teste DB com rollback passou, cinco saltos e seis históricos, grants corrigidos e conferidos.
+- [x] 254 testes locais, sete PNGs inspecionados; build OK; scan sem críticos (seis informativos).
+- [x] Solicitação de publicação E2 ao finalizar; confirmação do resultado pela ferramenta e produção separadas.
+- [ ] PDF de nota autorizada real e emissão A1/continuação E0014 hospedada — banco sem notas, sem sessão externa disponível; depende do teste do proprietário.
+
+## Etapa E1 — Emissão e tomadores
+- [x] Ler contratos de notas e transmissor v2 pelo anexo autorizado como fonte até a sincronização normalizar; sem editar transmissor/.
+- [x] Plano aprovado em cinco partes com complementos; PDF usa PDF_EM_PREPARACAO (503), mensagem “PDF em preparação”.
+- [x] Parte 1: banco/rotas de tomadores, notas.md/openapi com complementos; chamadas autenticadas externas não verificadas.
+- [x] Parte 2: três XML passam sem erros no XSD com somente TSSerieDPS corrigido em memória; ZIP intacto e 10 testes DPS passaram. Exemplos entregues no chat.
+- [x] Primeira conferência externa: três XML passaram no XSD com correção em memória; proprietário identificou E0431/E0432, E0710/E0712/E0713 e E0202.
+- [x] Correções pré-Parte 3: descontos zero omitidos, matriz de tributos em tela/API/banco/DPS, legados incompletos sem reescrita, tomador distinto na validação pré-numeração, testes e documentação. 193 testes passaram; nove combinações no banco e legado sem consumo de número validados com rollback. Tela autenticada/API com chave não verificadas (Supabase externo).
+- [x] Regenerar três XML: todos passaram no XSD com correção isolada em memória; entregar completos no chat para nova conferência. Sincronização GitHub permanece não verificada.
+- [x] Segunda conferência externa: três XML aprovados em XSD/regras; Partes 3–5 liberadas em 14/11/2026.
+- [x] Validações pré-reserva E0172/E0174/E0175, E0204/E0237; legados preservados e incompletos; traduções do Anexo I e testes.
+- [x] Parte 3: emissão idempotente duradoura, número/nota atômicos, persistência anterior à transmissão, resultados e webhooks atômicos.
+- [x] Parte 4: consulta automática com leases, 404 por 15 minutos e reconciliação sem reenvio ambíguo.
+- [x] Parte 5: consultas API/XML/PDF, painel somente leitura e tomadores, mensagens de rejeição, documentação; 238 testes passaram, XSD dos três XML válido, testes DB com rollback aprovados, build OK.
+- [x] Publicação E1 solicitada para https://app.notemfiscal.com.br; confirmação externa das novas rotas pendente.
+- [ ] Emissão real com chave/A1 e painel autenticado — depende do teste externo do proprietário (Supabase externo sem sessão gerenciada); não verificado.
+
 ## Fase 3A.2 — Webhooks e ajustes de Integrações
 - [x] Correção pós-auditoria: teste direto com resultado na tela, eventos reais em fila sem waitUntil, mensagens em português, registro resumido do agendador, chave de autorização, revelar segredo, filtro por empresa, exemplo e docs.
 - [x] Teste publicado: webhook.teste entregue ao webhook.site (HTTP 200, 598 ms) pelo agendador; ciclo registrado com resumo.

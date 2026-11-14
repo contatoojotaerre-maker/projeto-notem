@@ -37,12 +37,12 @@ async function identityToken(audience: string, sa: { client_email: string; priva
   return body.id_token;
 }
 
-export async function callTransmissor<T>(path: '/v1/certificados/preparar' | '/v1/municipios/convenio', payload: unknown): Promise<T> {
+export async function callTransmissor<T>(path: '/v1/certificados/preparar' | '/v1/municipios/convenio' | '/v1/nfse/emitir' | '/v1/dps/consultar' | '/v1/nfse/consultar', payload: unknown): Promise<T> {
   const { url, sa } = config();
   const token = await identityToken(url, sa);
   let res: Response;
   try {
-    res = await fetch(`${url}${path}`, { method: 'POST', headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' }, body: JSON.stringify(payload), signal: AbortSignal.timeout(40_000) });
+    res = await fetch(`${url}${path}`, { method: 'POST', headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' }, body: JSON.stringify(payload), signal: AbortSignal.timeout(path==='/v1/nfse/emitir'?22_000:path==='/v1/dps/consultar'||path==='/v1/nfse/consultar'?12_000:40_000),redirect:'manual' });
   } catch { console.error('transmissor: unreachable', path); throw new TransmissorError('INDISPONIVEL'); }
   if (res.status === 401 || res.status === 403) { cachedToken = null; console.error('transmissor: auth status', res.status); throw new TransmissorError('CREDENCIAL', res.status); }
   if (res.status === 400 || res.status === 422) {

@@ -1,0 +1,7 @@
+import type { DpsInput } from '../lib/dps';
+export function fixture(): DpsInput { return { environment: 'sandbox', emittedAt: '2026-11-13T16:00:00-03:00', competence: '2026-11-12', series: 1, number: '1', provider: { cnpj: '11222333000181', municipality: '4212254' }, fiscal: { simples: 3, regime: 1, special: 0, approximate: { mode: 'percent_simples', simples: '6.00' } }, service: { code: '140101', description: 'Vistoria de demonstração & conferência <E1>', taxation: 1, withholding: 1 }, values: { service: '150.00' }, customer: { tipo: 'pj', documento: '11444777000161', nome: 'Tomador fictício LTDA', endereco: { cep: '88980000', logradouro: 'Rua Exemplo', numero: '10', bairro: 'Centro', codigo_municipio: '4212254' } } }; }
+export function examples() {
+  const simples = fixture(); simples.values.unconditional = '10.00'; const pf = fixture(); pf.number = '2'; pf.fiscal = { simples: 1, regime: null, special: 0, approximate: { mode: 'percent_by_sphere', federal: '10.00', state: '0.00', municipal: '2.00' } }; pf.customer = { tipo: 'pf', documento: '52998224725', nome: 'Pessoa fictícia' };
+  const foreign = fixture(); foreign.number = '3'; foreign.customer = { tipo: 'estrangeiro', nif: 'TEST-E1-123', nome: 'Foreign Example Ltd', endereco: { pais: 'US', cidade: 'Miami', codigo_postal: '33101', estado_provincia_regiao: 'Florida', endereco_livre: 'Example Street', numero: '10', bairro: 'Downtown' } };
+  return { 'simples-pj': simples, 'nao-optante-pf': pf, estrangeiro: foreign };
+}

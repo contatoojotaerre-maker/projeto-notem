@@ -1,0 +1,1 @@
+REVOKE ALL ON TABLE public.invoice_dps_attempts FROM PUBLIC,anon,authenticated; GRANT SELECT ON TABLE public.invoice_dps_attempts TO authenticated; GRANT ALL ON TABLE public.invoice_dps_attempts TO service_role; CREATE TRIGGER invoice_attempts_touch BEFORE UPDATE ON public.invoice_dps_attempts FOR EACH ROW EXECUTE FUNCTION public.touch_record();

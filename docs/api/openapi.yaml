@@ -13,11 +13,128 @@ security:
 tags:
   - name: Geral
     description: Verificação da chave e do ambiente
+  - name: Notas
+    description: Emissão e consulta de NFS-e e acompanhamento automático
   - name: Empresas
     description: Cadastro e preparação das empresas emitentes (compartilhadas entre ambientes)
   - name: Catálogos
     description: Catálogos oficiais somente leitura
 paths:
+  /notas:
+    get:
+      tags: [Notas]
+      summary: Lista notas da organização no ambiente da chave
+      parameters:
+        - { $ref: "#/components/parameters/Limite" }
+        - { $ref: "#/components/parameters/Cursor" }
+        - { name: empresa_id, in: query, schema: { type: string, format: uuid } }
+        - { name: empresa_id_externo, in: query, schema: { type: string } }
+        - { name: situacao, in: query, schema: { type: string, enum: [processando, em_verificacao, autorizada, rejeitada, cancelamento_em_analise, cancelada, substituida, cancelada_prefeitura] } }
+        - { name: id_externo, in: query, schema: { type: string } }
+        - { name: tomador_documento, in: query, schema: { type: string } }
+        - { name: emitida_de, in: query, schema: { type: string, format: date } }
+        - { name: emitida_ate, in: query, schema: { type: string, format: date } }
+      responses:
+        "200": { description: Lista paginada de notas, headers: { X-Request-Id: { $ref: "#/components/headers/XRequestId" } }, content: { application/json: { schema: { type: object, properties: { dados: { type: array, items: { $ref: "#/components/schemas/Nota" } }, proximo_cursor: { type: [string, "null"] } } } } } }
+        "400": { $ref: "#/components/responses/Erro" }
+        "401": { $ref: "#/components/responses/AutenticacaoInvalida" }
+    post:
+      tags: [Notas]
+      summary: Emite NFS-e com numeração e idempotência definitivas
+      description: |
+        Valida empresa, serviço, tomador, E0202, E0172/E0174/E0175, E0204/E0237 e tributos antes de numerar.
+        A chave/hash/nota é duradoura por integração e ambiente, sem expiração em 24 horas.
+        Repetição em processamento/verificação retorna 202 com a nota atual; conteúdo diferente retorna 409.
+        Falha comprovada anterior ao envio permite repetir a mesma DPS/número. Ambiguidade vai para consulta.
+        O transmissor aguarda o governo por até 18 segundos. E0014 explícita permite até cinco saltos duráveis; ambiguidades somente consultam.
+      parameters:
+        - name: Idempotency-Key
+          in: header
+          required: true
+          schema: { type: string, minLength: 1, maxLength: 100 }
+      requestBody: { required: true, content: { application/json: { schema: { $ref: "#/components/schemas/NotaEntrada" } } } }
+      responses:
+        "201": { description: Nota autorizada (incluindo repetição), headers: { X-Request-Id: { $ref: "#/components/headers/XRequestId" } }, content: { application/json: { schema: { $ref: "#/components/schemas/Nota" } } } }
+        "202": { description: Nota em processamento ou verificação automática, headers: { X-Request-Id: { $ref: "#/components/headers/XRequestId" } }, content: { application/json: { schema: { $ref: "#/components/schemas/Nota" } } } }
+        "400": { $ref: "#/components/responses/Erro" }
+        "401": { $ref: "#/components/responses/AutenticacaoInvalida" }
+        "404": { $ref: "#/components/responses/Erro" }
+        "409": { description: IDEMPOTENCIA_CONFLITO, ID_EXTERNO_DUPLICADO ou configuração alterada, content: { application/json: { schema: { $ref: "#/components/schemas/Erro" } } } }
+        "422": { description: REGRA_DE_NEGOCIO, EMPRESA_NAO_PRONTA ou REJEITADO_GOVERNO (detalhes incluem nota_id e mensagens originais), content: { application/json: { schema: { $ref: "#/components/schemas/Erro" } } } }
+        "503": { $ref: "#/components/responses/Erro" }
+  /notas/{id}:
+    parameters: [{ name: id, in: path, required: true, schema: { type: string, format: uuid } }]
+    get:
+      tags: [Notas]
+      summary: Consulta nota (outra organização ou ambiente retorna 404)
+      responses:
+        "200": { description: Nota completa, headers: { X-Request-Id: { $ref: "#/components/headers/XRequestId" } }, content: { application/json: { schema: { $ref: "#/components/schemas/Nota" } } } }
+        "401": { $ref: "#/components/responses/AutenticacaoInvalida" }
+        "404": { $ref: "#/components/responses/Erro" }
+  /notas/{id}/xml:
+    parameters: [{ name: id, in: path, required: true, schema: { type: string, format: uuid } }]
+    get:
+      tags: [Notas]
+      summary: Baixa XML oficial da NFS-e autorizada
+      responses:
+        "200": { description: XML sem alterações, headers: { X-Request-Id: { $ref: "#/components/headers/XRequestId" } }, content: { application/xml: { schema: { type: string } } } }
+        "401": { $ref: "#/components/responses/AutenticacaoInvalida" }
+        "404": { $ref: "#/components/responses/Erro" }
+  /empresas/{id}/tomadores:
+    parameters: [{ $ref: "#/components/parameters/EmpresaId" }]
+    get:
+      tags: [Empresas]
+      summary: Lista tomadores da empresa
+      parameters:
+        - { $ref: "#/components/parameters/Limite" }
+        - { $ref: "#/components/parameters/Cursor" }
+        - { name: documento, in: query, schema: { type: string } }
+        - { name: id_externo, in: query, schema: { type: string } }
+        - { name: busca, in: query, schema: { type: string } }
+      responses:
+        "200": { description: Lista paginada, content: { application/json: { schema: { type: object, properties: { dados: { type: array, items: { $ref: "#/components/schemas/TomadorE1" } }, proximo_cursor: { type: [string, "null"] } } } } } }
+        "404": { $ref: "#/components/responses/Erro" }
+    post:
+      tags: [Empresas]
+      summary: Cadastra tomador (id_externo único por empresa)
+      parameters: [{ $ref: "#/components/parameters/IdempotencyKey" }]
+      requestBody: { required: true, content: { application/json: { schema: { $ref: "#/components/schemas/TomadorE1" } } } }
+      responses:
+        "201": { description: Tomador criado, content: { application/json: { schema: { $ref: "#/components/schemas/TomadorE1" } } } }
+        "400": { $ref: "#/components/responses/Erro" }
+        "409": { description: ID_EXTERNO_DUPLICADO por empresa ou IDEMPOTENCIA_CONFLITO }
+  /empresas/{id}/tomadores/{tomador_id}:
+    parameters:
+      - { $ref: "#/components/parameters/EmpresaId" }
+      - { name: tomador_id, in: path, required: true, schema: { type: string, format: uuid } }
+    get:
+      tags: [Empresas]
+      summary: Consulta tomador
+      responses:
+        "200": { description: Tomador, content: { application/json: { schema: { $ref: "#/components/schemas/TomadorE1" } } } }
+        "404": { $ref: "#/components/responses/Erro" }
+    patch:
+      tags: [Empresas]
+      summary: Altera campos enviados do tomador
+      parameters: [{ $ref: "#/components/parameters/IdempotencyKey" }]
+      requestBody: { required: true, content: { application/json: { schema: { $ref: "#/components/schemas/TomadorAlteracaoE1" } } } }
+      responses:
+        "200": { description: Tomador alterado, content: { application/json: { schema: { $ref: "#/components/schemas/TomadorE1" } } } }
+        "404": { $ref: "#/components/responses/Erro" }
+        "409": { description: ID_EXTERNO_DUPLICADO por empresa ou IDEMPOTENCIA_CONFLITO }
+  /notas/{id}/pdf:
+    get:
+      tags: [Notas]
+      summary: Baixa DANFSe v2.0 em PDF
+      description: Gerado do XML autorizado e situação atual; autorizada, cancelada, cancelada_prefeitura ou substituida. Canhoto opcional; mesma organização e ambiente da chave.
+      parameters: [{ name: id, in: path, required: true, schema: { type: string, format: uuid } }]
+      responses:
+        "200":
+          description: DANFSe A4 em página única
+          headers: { X-Request-Id: { $ref: "#/components/headers/XRequestId" }, Content-Disposition: { schema: { type: string } } }
+          content: { application/pdf: { schema: { type: string, format: binary } } }
+        "401": { $ref: "#/components/responses/AutenticacaoInvalida" }
+        "404": { $ref: "#/components/responses/Erro" }
   /status:
     get:
       tags: [Geral]
@@ -115,7 +232,7 @@ paths:
         "200": { description: Configuração gravada, content: { application/json: { schema: { $ref: "#/components/schemas/ConfiguracaoFiscal" } } } }
         "400": { $ref: "#/components/responses/Erro" }
         "404": { $ref: "#/components/responses/Erro" }
-        "422": { description: "REGRA_DE_NEGOCIO com detalhes por campo (ex.: E0713, alíquota do ISS no Simples)", content: { application/json: { schema: { $ref: "#/components/schemas/Erro" } } } }
+        "422": { description: "REGRA_DE_NEGOCIO com detalhes por campo (ex.: E0710/E0712/E0713, alíquota do ISS no Simples)", content: { application/json: { schema: { $ref: "#/components/schemas/Erro" } } } }
   /empresas/{id}/certificado:
     parameters: [{ $ref: "#/components/parameters/EmpresaId" }]
     get:
@@ -227,7 +344,7 @@ components:
       name: Idempotency-Key
       in: header
       required: false
-      description: Chave de idempotência (até 100 caracteres) aceita em POST, PATCH, PUT e DELETE; vale 24 h por integração e ambiente. Mesmo conteúdo devolve a mesma resposta (cabeçalho Idempotent-Replayed true); conteúdo diferente devolve 409 IDEMPOTENCIA_CONFLITO. Obrigatória em emissão, cancelamento e substituição.
+      description: Chave de idempotência (até 100 caracteres) aceita em POST, PATCH, PUT e DELETE; vale 24 h por integração e ambiente, exceto POST /notas (associação duradoura à nota). Mesmo conteúdo devolve a mesma resposta (cabeçalho Idempotent-Replayed true); conteúdo diferente devolve 409 IDEMPOTENCIA_CONFLITO. Obrigatória em emissão, cancelamento e substituição.
       schema: { type: string, maxLength: 100 }
     Limite:
       name: limite
@@ -244,6 +361,106 @@ components:
       in: query
       schema: { type: string }
   schemas:
+    NotaEntrada:
+      type: object
+      additionalProperties: false
+      required: [valores]
+      description: Exatamente um seletor de empresa e um de serviço; no máximo um seletor de tomador. CPF/CNPJ/endereço nacional completos exigidos com retenção pelo tomador (E0204/E0237). E0202 e regras fiscais verificadas antes de numerar.
+      properties:
+        empresa_id: { type: string, format: uuid }
+        empresa_id_externo: { type: string, minLength: 1, maxLength: 100 }
+        id_externo: { type: [string, "null"], maxLength: 100, description: Único por organização }
+        servico_id: { type: string, format: uuid }
+        servico_id_externo: { type: string, minLength: 1, maxLength: 100 }
+        competencia: { type: string, format: date, description: Não pode ser futura; padrão data atual em Brasília }
+        descricao: { type: string, minLength: 1, maxLength: 2000 }
+        tomador: { oneOf: [{ $ref: "#/components/schemas/TomadorE1" }, { type: "null" }] }
+        tomador_id: { type: string, format: uuid }
+        tomador_id_externo: { type: string, maxLength: 100 }
+        valores:
+          type: object
+          additionalProperties: false
+          required: [servico]
+          properties:
+            servico: { $ref: "#/components/schemas/Valor" }
+            desconto_incondicionado: { $ref: "#/components/schemas/Valor", description: Zero omitido na DPS (E0431) }
+            desconto_condicionado: { $ref: "#/components/schemas/Valor", description: Zero omitido na DPS (E0432) }
+        retencao_iss: { type: [string, "null"], enum: [nao_retido, retido_tomador, retido_intermediario, null] }
+        aliquota_iss_simples: { oneOf: [{ $ref: "#/components/schemas/Percentual" }, { type: "null" }] }
+        local_prestacao: { type: [object, "null"], properties: { codigo_municipio: { $ref: "#/components/schemas/CodigoMunicipio" } } }
+        informacoes_complementares: { type: [string, "null"], maxLength: 2000 }
+    Nota:
+      type: object
+      properties:
+        id: { type: string, format: uuid }
+        id_externo: { type: [string, "null"] }
+        empresa_id: { type: string, format: uuid }
+        ambiente: { $ref: "#/components/schemas/Ambiente" }
+        situacao: { type: string, enum: [processando, em_verificacao, autorizada, rejeitada, cancelamento_em_analise, cancelada, substituida, cancelada_prefeitura] }
+        restricoes: { type: array, items: { type: string } }
+        manifestacao: { type: [object, "null"] }
+        numero: { type: [string, "null"] }
+        chave_acesso: { type: [string, "null"] }
+        serie_dps: { type: string }
+        numero_dps: { type: string }
+        competencia: { type: string, format: date }
+        emitida_em: { type: string, format: date-time }
+        autorizada_em: { type: [string, "null"], format: date-time }
+        tomador: { oneOf: [{ $ref: "#/components/schemas/TomadorE1" }, { type: "null" }] }
+        servico: { type: object, properties: { servico_id: { type: string, format: uuid }, codigo_servico: { type: string }, descricao: { type: string } } }
+        valores:
+          type: object
+          properties:
+            servico: { $ref: "#/components/schemas/Valor" }
+            desconto_incondicionado: { $ref: "#/components/schemas/Valor" }
+            desconto_condicionado: { $ref: "#/components/schemas/Valor" }
+            base_calculo: { type: [string, "null"] }
+            aliquota_iss: { type: [string, "null"] }
+            valor_iss: { type: [string, "null"] }
+            valor_liquido: { type: [string, "null"] }
+            iss_retido: { type: boolean }
+        local_prestacao: { type: object }
+        erros_governo: { type: array, items: { type: object } }
+        substitui_nota_id: { type: [string, "null"], format: uuid }
+        substituida_por_nota_id: { type: [string, "null"], format: uuid }
+        links: { type: object, properties: { xml: { type: string, format: uri }, pdf: { type: string, format: uri }, consulta_publica: { type: [string, "null"], description: Null até confirmação de formato oficial } } }
+        criada_em: { type: string, format: date-time }
+        atualizada_em: { type: string, format: date-time }
+    TomadorE1:
+      type: object
+      required: [tipo, nome]
+      properties:
+        id: { type: string, format: uuid, readOnly: true }
+        id_externo: { type: [string, "null"], maxLength: 100, description: Único por empresa }
+        tipo: { type: string, enum: [pj, pf, estrangeiro] }
+        nome: { type: string, minLength: 1, maxLength: 150 }
+        documento: { type: [string, "null"], description: CPF/CNPJ com dígitos válidos }
+        nif: { type: [string, "null"], maxLength: 40 }
+        motivo_sem_nif: { type: [string, "null"], enum: [dispensado, nao_exigido, null] }
+        email: { type: [string, "null"] }
+        telefone: { type: [string, "null"] }
+        inscricao_municipal: { type: [string, "null"], maxLength: 15 }
+        endereco:
+          type: [object, "null"]
+          description: Nacional exige CEP/logradouro/número/bairro/IBGE. Exterior exige país/cidade/código postal/província/logradouro ou endereço livre/número/bairro. Complemento opcional.
+          properties:
+            cep: { type: string, pattern: '^[0-9]{8}$' }
+            codigo_municipio: { type: string, pattern: '^[0-9]{7}$' }
+            pais: { type: string, pattern: '^[A-Z]{2}$' }
+            cidade: { type: string }
+            codigo_postal: { type: string }
+            estado_provincia_regiao: { type: string }
+            logradouro: { type: string }
+            endereco_livre: { type: string }
+            numero: { type: string }
+            bairro: { type: string }
+            complemento: { type: [string, "null"] }
+        criada_em: { type: string, format: date-time, readOnly: true }
+        atualizada_em: { type: string, format: date-time, readOnly: true }
+    TomadorAlteracaoE1:
+      type: object
+      description: Campos opcionais de TomadorE1; resultado após mesclar com o cadastro deve ser válido.
+      additionalProperties: true
     Ambiente:
       type: string
       enum: [homologacao, producao]
@@ -279,6 +496,10 @@ components:
                 properties:
                   campo: { type: string }
                   mensagem: { type: string }
+                  codigo_governo: { type: [string, "null"] }
+                  mensagem_governo: { type: [string, "null"] }
+                  complemento: { type: [string, "null"] }
+                  nota_id: { type: [string, "null"], format: uuid }
             codigo_governo: { type: [string, "null"] }
             mensagem_governo: { type: [string, "null"] }
         id_requisicao: { type: string }
@@ -327,6 +548,15 @@ components:
             criada_em: { type: string, format: date-time }
             atualizada_em: { type: string, format: date-time }
     ConfiguracaoFiscal:
+      description: |
+        Matriz obrigatória: nao_optante aceita somente percentual_por_esfera (E0713);
+        mei aceita percentual_por_esfera ou nao_informar, nunca percentual_simples (E0710);
+        me_epp aceita percentual_simples ou percentual_por_esfera, nunca nao_informar (E0712).
+        Por esfera exige federal/estadual/municipal; zero é permitido. Ausentes são null.
+        Legados incompatíveis não são reescritos, ficam com configuração fiscal incompleta
+        e bloqueiam emissão antes de numerar com mensagem da regra.
+        Regime especial deve ser nenhum para MEI (E0174), ME/EPP dentro do Simples (E0175)
+        e serviços ativos com imunidade/exportação/não incidência (E0172).
       type: object
       required: [simples_nacional, regime_especial, tributos_aproximados]
       properties:
@@ -343,7 +573,8 @@ components:
             estadual: { oneOf: [{ $ref: "#/components/schemas/Percentual" }, { type: "null" }] }
             municipal: { oneOf: [{ $ref: "#/components/schemas/Percentual" }, { type: "null" }] }
         aliquota_iss_simples: { oneOf: [{ $ref: "#/components/schemas/Percentual" }, { type: "null" }] }
-        serie_dps: { type: [string, "null"], readOnly: true, examples: ["00001"] }
+        imprimir_canhoto_danfse: { type: boolean, default: false, description: "Ausente no PUT preserva valor atual" }
+        serie_dps: { type: [string, "null"], readOnly: true, examples: ["00900"] }
     Certificado:
       type: object
       properties:
@@ -374,6 +605,7 @@ components:
         indicador_operacao_ibscbs: { type: [string, "null"] }
         numero_beneficio_municipal: { type: [string, "null"] }
     Situacao:
+      description: Configurações fiscais legadas incompatíveis com E0710/E0712/E0713 ou E0172/E0174/E0175 deixam configuracao_fiscal pendente, com mensagem da regra; não são reescritas.
       type: object
       properties:
         ambiente: { $ref: "#/components/schemas/Ambiente" }

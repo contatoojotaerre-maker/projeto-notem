@@ -1,7 +1,7 @@
 // Business handlers for /api/v1 empresas and catalogos. Organization always comes from the key.
 import { apiAudit, loadCompany, type ApiCtx, type ApiResult } from './api.server';
 import { certificateIn, certificateOut, companyCreate, companyIn, companyOut, companyPatch, fail, fiscalDbDetail, fiscalIn, fiscalOut, fiscalToDb, page, pageParams, parseBody, serviceCreate, serviceOut, servicePatch, serviceToDb, transmissorToContract, type CompanyRow, type FiscalRow, type ServiceRow } from './api-contract';
-import { CNPJ_LOCK_MESSAGE, validReadinessCertificate } from './fiscal';
+import { CNPJ_LOCK_MESSAGE, validReadinessCertificate,specialTaxRuleError } from './fiscal';
 import { AGREEMENT_COOLDOWN_MS, MAX_CERTIFICATE_BYTES, toTransmissorEnvironment } from './certificates';
 import { municipalitySearchTerm } from './municipality-search';
 
@@ -65,8 +65,10 @@ export async function getFiscal(ctx: ApiCtx): Promise<ApiResult> {
 }
 export async function putFiscal(ctx: ApiCtx): Promise<ApiResult> {
   const c = await loadCompany(ctx); const v = parseBody(fiscalIn, ctx.body);
-  const current = await ctx.db.from('company_fiscal_settings').select('dps_series').eq('company_id', c.id).maybeSingle(); if (current.error) throw new Error('FISCAL_READ_FAILED');
-  const { dps_series: _ignored, company_id, organization_id, ...fields } = fiscalToDb(v, { company_id: c.id, organization_id: ctx.organization_id }, current.data?.dps_series ?? null);
+  const current = await ctx.db.from('company_fiscal_settings').select('dps_series,print_danfse_receipt').eq('company_id', c.id).maybeSingle(); if (current.error) throw new Error('FISCAL_READ_FAILED');
+  const { dps_series: _ignored, company_id, organization_id, ...fields } = fiscalToDb(v, { company_id: c.id, organization_id: ctx.organization_id }, current.data?.dps_series ?? null,current.data?.print_danfse_receipt??false);
+  const profiles=await ctx.db.from('company_service_profiles').select('iss_taxation').eq('company_id',c.id).eq('organization_id',ctx.organization_id).eq('active',true);
+  if(profiles.error)throw new Error('FISCAL_READ_FAILED');for(const p of profiles.data??[]){const error=specialTaxRuleError(fields.simples_nacional_option,fields.simples_nacional_regime,fields.special_tax_regime,p.iss_taxation);if(error)throw fail(422,'REGRA_DE_NEGOCIO',[{campo:'regime_especial',mensagem:error}]);}
   const r = current.data
     ? await ctx.db.from('company_fiscal_settings').update({ ...fields, ...apiAudit(ctx) } as never).eq('company_id', company_id).eq('organization_id', organization_id).select('*').single()
     : await ctx.db.from('company_fiscal_settings').insert({ ...fields, company_id, organization_id, cnpj: '', dps_series: null as unknown as number, created_by: ctx.actor, ...apiAudit(ctx) } as never).select('*').single();
@@ -104,6 +106,7 @@ export async function postCertificate(ctx: ApiCtx): Promise<ApiResult> {
 // ---------- Serviços ----------
 const SERVICE_SELECT = '*, service_codes(description)';
 function serviceWriteError(e: { code?: string; message: string }): never {
+  if(/E017[245]/.test(e.message))throw fail(422,'REGRA_DE_NEGOCIO',[{campo:'tributacao_iss',mensagem:e.message}]);
   if (e.code === '23505') throw fail(409, 'ID_EXTERNO_DUPLICADO');
   if (e.code === '23503') throw fail(422, 'REGRA_DE_NEGOCIO', [{ campo: 'codigo_servico', mensagem: 'Use códigos existentes nos catálogos oficiais.' }]);
   if (e.code === '23514' || e.code === 'P0001') throw fail(422, 'REGRA_DE_NEGOCIO');

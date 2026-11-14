@@ -122,6 +122,9 @@ Esses eventos respeitam o filtro por empresa do endereço. Pela API, a primeira 
 
 ## Assinatura por grupo
 
+### Eventos de notas na E1
+`nota.autorizada` e `nota.rejeitada` enviam em `dados` o objeto completo de nota descrito em `notas.md`, sem XML, certificado ou senha. A mudança de situação e os eventos são gravados atomicamente, inclusive quando o resultado vem de consulta automática. Cada endereço respeita organização, ambiente, grupo/tipo e filtro por empresa. Apenas as rotas de API iniciam tentativa imediata via `waitUntil`; sem ele, os eventos permanecem na fila do agendador. Confirme o estado por `GET /notas/{id}`.
+
 Um endereço pode assinar eventos individuais (tipo exato) ou grupos inteiros por curinga, guardados no mesmo campo `eventos`. Assinar um grupo inclui automaticamente os eventos que forem adicionados a ele no futuro.
 
 | Grupo no painel | Curingas | Eventos atuais |

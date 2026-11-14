@@ -1,7 +1,7 @@
 // Pure, client-safe translation between the public API v1 contract (Portuguese, readable values)
 // and the current database codes. Shared by API routes, the panel and tests.
 import { z } from 'zod';
-import { fiscalSchema, validReadinessCertificate } from './fiscal';
+import { fiscalSchema, specialTaxRuleError, validReadinessCertificate } from './fiscal';
 import { agreementUnavailableMessage, certificateSituation } from './certificates';
 import { isValidCnpj, digits } from './notem';
 
@@ -76,13 +76,13 @@ const keys = <T extends object>(o: T) => Object.keys(o) as [keyof T & string, ..
 export const fiscalIn = z.object({
   simples_nacional: z.enum(keys(simplesMap)), regime_apuracao_simples: z.enum(keys(regimeMap)).nullable().optional(), regime_especial: z.enum(keys(specialMap)),
   tributos_aproximados: z.object({ modo: z.enum(keys(modeMap)), percentual_simples: pctIn.optional(), federal: pctIn.optional(), estadual: pctIn.optional(), municipal: pctIn.optional() }).strict(),
-  aliquota_iss_simples: pctIn.optional(), serie_dps: z.unknown().optional(),
+  aliquota_iss_simples: pctIn.optional(), serie_dps: z.unknown().optional(), imprimir_canhoto_danfse: z.boolean().optional(),
 }).strict();
 const fiscalFieldMap: Record<string, string> = { simples_nacional_option: 'simples_nacional', simples_nacional_regime: 'regime_apuracao_simples', special_tax_regime: 'regime_especial', approx_taxes_mode: 'tributos_aproximados.modo', approx_simples_percent: 'tributos_aproximados.percentual_simples', approx_federal_percent: 'tributos_aproximados.federal', approx_state_percent: 'tributos_aproximados.estadual', approx_municipal_percent: 'tributos_aproximados.municipal', simples_iss_withholding_percent: 'aliquota_iss_simples' };
 /** Converts contract values to DB codes and applies the same rules as the panel (E0713, ISS do Simples). */
-export function fiscalToDb(v: z.infer<typeof fiscalIn>, ids: { company_id: string; organization_id: string }, dps_series: number | null) {
+export function fiscalToDb(v: z.infer<typeof fiscalIn>, ids: { company_id: string; organization_id: string }, dps_series: number | null, receipt=false) {
   const n = (x: string | null | undefined) => (x === null || x === undefined ? null : Number(x)); const t = v.tributos_aproximados;
-  const row = { ...ids, simples_nacional_option: simplesMap[v.simples_nacional], simples_nacional_regime: v.regime_apuracao_simples ? regimeMap[v.regime_apuracao_simples] : null, special_tax_regime: specialMap[v.regime_especial], dps_series,
+  const row = { ...ids, print_danfse_receipt:v.imprimir_canhoto_danfse??receipt, simples_nacional_option: simplesMap[v.simples_nacional], simples_nacional_regime: v.regime_apuracao_simples ? regimeMap[v.regime_apuracao_simples] : null, special_tax_regime: specialMap[v.regime_especial], dps_series,
     approx_taxes_mode: modeMap[t.modo], approx_simples_percent: n(t.percentual_simples), approx_federal_percent: n(t.federal), approx_state_percent: n(t.estadual), approx_municipal_percent: n(t.municipal), simples_iss_withholding_percent: n(v.aliquota_iss_simples) };
   const r = fiscalSchema.safeParse(row);
   if (!r.success) throw fail(422, 'REGRA_DE_NEGOCIO', zodDetails(r.error, fiscalFieldMap));
@@ -90,7 +90,7 @@ export function fiscalToDb(v: z.infer<typeof fiscalIn>, ids: { company_id: strin
 }
 const fiscalConstraintMap: Record<string, { campo: string; mensagem: string }> = {
   company_fiscal_settings_check: { campo: 'regime_apuracao_simples', mensagem: 'Informe o regime de apuração apenas para ME/EPP (obrigatório nesse caso).' },
-  company_fiscal_settings_check1: { campo: 'tributos_aproximados', mensagem: 'Os percentuais não combinam com o modo escolhido: percentual_simples exige só percentual_simples (MEI ou ME/EPP); percentual_por_esfera exige federal, estadual e municipal; nao_informar não aceita percentuais.' },
+  company_fiscal_settings_check1: { campo: 'tributos_aproximados', mensagem: 'Os percentuais não combinam com o modo escolhido: percentual_simples exige só percentual_simples (somente ME/EPP); percentual_por_esfera exige federal, estadual e municipal; nao_informar é exclusivo de MEI e não aceita percentuais.' },
   company_fiscal_settings_approx_simples_percent_check: { campo: 'tributos_aproximados.percentual_simples', mensagem: 'Informe um percentual entre 0 e 100.' },
   company_fiscal_settings_approx_federal_percent_check: { campo: 'tributos_aproximados.federal', mensagem: 'Informe um percentual entre 0 e 100.' },
   company_fiscal_settings_approx_state_percent_check: { campo: 'tributos_aproximados.estadual', mensagem: 'Informe um percentual entre 0 e 100.' },
@@ -101,7 +101,7 @@ const fiscalConstraintMap: Record<string, { campo: string; mensagem: string }> =
   company_fiscal_settings_special_tax_regime_check: { campo: 'regime_especial', mensagem: 'Regime especial inválido.' },
   company_fiscal_settings_dps_series_check: { campo: 'serie_dps', mensagem: 'A série DPS deve estar entre 00001 e 49999.' },
 };
-const fiscalTriggerMap: [RegExp, string][] = [[/E0713/, 'tributos_aproximados'], [/alíquota do ISS/i, 'aliquota_iss_simples'], [/série/i, 'serie_dps']];
+const fiscalTriggerMap: [RegExp, string][] = [[/E017[245]/, 'regime_especial'], [/E071[023]/, 'tributos_aproximados.modo'], [/alíquota do ISS/i, 'aliquota_iss_simples'], [/série/i, 'serie_dps']];
 /** Maps a database refusal on company_fiscal_settings to the contract field; never returns "corpo". */
 export function fiscalDbDetail(e: { code?: string; message: string }): { campo: string; mensagem: string } | null {
   if (e.code === '23514') { const name = Object.keys(fiscalConstraintMap).sort((a, b) => b.length - a.length).find(k => e.message.includes(`"${k}"`)); return name ? fiscalConstraintMap[name] ?? null : null; }
@@ -110,7 +110,7 @@ export function fiscalDbDetail(e: { code?: string; message: string }): { campo: 
 }
 export type FiscalRow = { simples_nacional_option: number; simples_nacional_regime: number | null; special_tax_regime: number; dps_series: number | null; approx_taxes_mode: string; approx_simples_percent: number | null; approx_federal_percent: number | null; approx_state_percent: number | null; approx_municipal_percent: number | null; simples_iss_withholding_percent: number | null };
 export function fiscalOut(s: FiscalRow) {
-  return { simples_nacional: rev(simplesMap)[s.simples_nacional_option] ?? null, regime_apuracao_simples: s.simples_nacional_regime === null ? null : rev(regimeMap)[s.simples_nacional_regime] ?? null, regime_especial: rev(specialMap)[s.special_tax_regime] ?? null,
+  return { imprimir_canhoto_danfse:('print_danfse_receipt' in s?s.print_danfse_receipt:false)===true, simples_nacional: rev(simplesMap)[s.simples_nacional_option] ?? null, regime_apuracao_simples: s.simples_nacional_regime === null ? null : rev(regimeMap)[s.simples_nacional_regime] ?? null, regime_especial: rev(specialMap)[s.special_tax_regime] ?? null,
     tributos_aproximados: { modo: rev(modeMap)[s.approx_taxes_mode] ?? null, percentual_simples: pct(s.approx_simples_percent), federal: pct(s.approx_federal_percent), estadual: pct(s.approx_state_percent), municipal: pct(s.approx_municipal_percent) },
     aliquota_iss_simples: pct(s.simples_iss_withholding_percent), serie_dps: s.dps_series === null ? null : String(s.dps_series).padStart(5, '0') };
 }
@@ -153,12 +153,15 @@ export function expiryMilestone(validUntil: string, now = Date.now()): '30' | '1
 }
 
 // ---------- Readiness ----------
-export type ReadinessInput = { company: { active: boolean; cnpj: string }; certificates: { status: string; cnpj: string; valid_from: string; valid_until: string }[]; settings: Record<string, unknown> | null; services: { active: boolean }[]; lastQuery: { created_at: string; http_status: number | null; response_body: string | null; error_code: string | null } | null };
+export type ReadinessInput = { company: { active: boolean; cnpj: string }; certificates: { status: string; cnpj: string; valid_from: string; valid_until: string }[]; settings: Record<string, unknown> | null; services: { active: boolean;iss_taxation?:number }[]; lastQuery: { created_at: string; http_status: number | null; response_body: string | null; error_code: string | null } | null };
 export type ReadinessItem = { item: string; ok: boolean | null; mensagem: string; verificado_em?: string | null };
 const dateBr = (v: string) => new Date(v).toLocaleDateString('pt-BR', { timeZone: 'America/Sao_Paulo' });
 export function computeReadiness(env: Env, i: ReadinessInput, now = Date.now()) {
   const cert = i.certificates.find(c => validReadinessCertificate(c, i.company.cnpj, now));
-  const fiscalOk = i.settings !== null && fiscalSchema.safeParse(i.settings).success;
+  const fiscalParsed=i.settings!==null?fiscalSchema.safeParse(i.settings):null;
+  const serviceRule=i.settings?i.services.filter(s=>s.active).map(s=>specialTaxRuleError(Number(i.settings?.['simples_nacional_option']),i.settings?.['simples_nacional_regime'] as number|null,Number(i.settings?.['special_tax_regime']),s.iss_taxation)).find(Boolean):null;
+  const fiscalOk=fiscalParsed?.success===true&&!serviceRule;
+  const fiscalError=serviceRule||(fiscalParsed&&!fiscalParsed.success?fiscalParsed.error.issues.find(x=>/E071[023]|E017[245]/.test(x.message))?.message:null);
   const active = i.services.filter(s => s.active).length;
   let municipio: ReadinessItem;
   const q = i.lastQuery;
@@ -172,7 +175,7 @@ export function computeReadiness(env: Env, i: ReadinessInput, now = Date.now()) 
   const itens: ReadinessItem[] = [
     { item: 'empresa_ativa', ok: i.company.active, mensagem: i.company.active ? 'Empresa ativa.' : 'Empresa desativada.' },
     { item: 'certificado', ok: !!cert, mensagem: cert ? `Certificado válido até ${dateBr(cert.valid_until)}.` : 'Nenhum certificado válido para o CNPJ da empresa.' },
-    { item: 'configuracao_fiscal', ok: fiscalOk, mensagem: fiscalOk ? 'Configuração fiscal completa.' : 'Configuração fiscal pendente ou incompleta.' },
+    { item: 'configuracao_fiscal', ok: fiscalOk, mensagem: fiscalOk ? 'Configuração fiscal completa.' : fiscalError ? `Configuração fiscal incompleta. ${fiscalError}` : 'Configuração fiscal pendente ou incompleta.' },
     { item: 'servico_ativo', ok: active > 0, mensagem: active > 0 ? `${active} ${active === 1 ? 'serviço ativo' : 'serviços ativos'}.` : 'Nenhum serviço ativo.' },
     municipio,
   ];
