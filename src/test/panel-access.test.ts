@@ -2,7 +2,7 @@ import { readFileSync } from 'node:fs';
 import { describe, expect, it } from 'vitest';
 import { requireOrgMember } from '@/lib/panel-access';
 
-const rpc = (admin: unknown, member: unknown, error: unknown = null) => ({ rpc: async (fn: string) => ({ data: fn === 'is_platform_admin' ? admin : member, error }) });
+const rpc = (admin: unknown, member: unknown, error: unknown = null) => ({ rpc: async (fn: string) => ({ data: fn === 'is_platform_admin' ? admin : member, error }) }) as unknown as Parameters<typeof requireOrgMember>[0];
 describe('acesso do painel às notas', () => {
   it('membro da organização passa', async () => { await expect(requireOrgMember(rpc(false, true), 'o')).resolves.toBeUndefined(); });
   it('administrador da plataforma passa', async () => { await expect(requireOrgMember(rpc(true, false), 'o')).resolves.toBeUndefined(); });
