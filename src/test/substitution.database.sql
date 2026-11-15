@@ -12,6 +12,7 @@ BEGIN
   a:=t; a.id:=gen_random_uuid(); a.dps_number:=999999999999990; a.dps_id:=left(t.dps_id,30)||lpad('999999999999990',15,'0'); a.access_key:=left(t.access_key,23)||'9999999999990'||right(t.access_key,14); a.external_id:=NULL; a.idempotency_key:=NULL; a.nfse_number:='T1';
   INSERT INTO public.invoices SELECT (a).*;
   payload:=jsonb_build_object('organization_id',c.organization_id,'company_id',c.id,'integration_id',NULL,'origin','panel','environment',t.environment,'service_profile_id',p.id,'profile_snapshot',to_jsonb(p),'provider_snapshot',to_jsonb(c),'fiscal_snapshot',to_jsonb(s),'service_snapshot',to_jsonb(p)||jsonb_build_object('withholding',1),'customer_snapshot',NULL,'dps_input',jsonb_build_object('service',jsonb_build_object('withholding',1)),'competence',t.competence,'description','Substituta de teste','sent_values',t.sent_values,'service_location',t.service_location,'emitted_at',now(),'unsigned_dps_xml','<infDPS Id="PLACEHOLDER"><nDPS>1</nDPS><subst><chSubstda>'||a.access_key||'</chSubstda></subst></infDPS>','placeholder_id','PLACEHOLDER','idempotency_key','db-sub-1','request_hash','h','created_by',gen_random_uuid(),'substitutes_invoice_id',a.id);
+  payload:=payload||jsonb_build_object('unsigned_dps_file',jsonb_build_object('path','homologacao/teste/rollback.xml.gz','size',1,'stored_size',1,'sha256',encode(extensions.digest(convert_to(payload->>'unsigned_dps_xml','UTF8'),'sha256'),'hex')));
   BEGIN PERFORM public.create_invoice_request(payload); RAISE EXCEPTION 'TEST_FAIL_panel_permission'; EXCEPTION WHEN OTHERS THEN IF position('Acesso não autorizado' IN SQLERRM)=0 THEN RAISE; END IF; END;
   payload:=payload||jsonb_build_object('created_by',owner);
   BEGIN PERFORM public.create_invoice_request(payload||jsonb_build_object('unsigned_dps_xml','<infDPS Id="PLACEHOLDER"><nDPS>1</nDPS></infDPS>')); RAISE EXCEPTION 'TEST_FAIL_subst_key'; EXCEPTION WHEN OTHERS THEN IF position('E0042' IN SQLERRM)=0 THEN RAISE; END IF; END;
@@ -19,7 +20,7 @@ BEGIN
   BEGIN PERFORM public.create_invoice_request(payload); RAISE EXCEPTION 'TEST_FAIL_cancelled_substituted'; EXCEPTION WHEN OTHERS THEN IF position('CONFLITO_SITUACAO' IN SQLERRM)=0 THEN RAISE; END IF; END;
   UPDATE public.invoices SET status='authorized' WHERE id=a.id;
   n:=public.create_invoice_request(payload);
-  IF n.substitutes_invoice_id<>a.id OR n.change_origin<>'panel' OR n.integration_id IS NOT NULL OR position('<nDPS>'||n.dps_number||'</nDPS>' IN n.unsigned_dps_xml)=0 THEN RAISE EXCEPTION 'TEST_FAIL_substitute_row'; END IF;
+  IF n.substitutes_invoice_id<>a.id OR n.change_origin<>'panel' OR n.integration_id IS NOT NULL OR NOT EXISTS(SELECT 1 FROM public.fiscal_xml_files WHERE owner_table='invoices' AND owner_id=n.id AND kind='unsigned_dps') THEN RAISE EXCEPTION 'TEST_FAIL_substitute_row'; END IF;
   IF (SELECT status FROM public.invoices WHERE id=a.id)<>'authorized' THEN RAISE EXCEPTION 'TEST_FAIL_original_changed_early'; END IF;
   IF (SELECT count(*) FROM public.invoice_events WHERE invoice_id=a.id AND type='substitution_requested')<>1 THEN RAISE EXCEPTION 'TEST_FAIL_original_timeline'; END IF;
   again:=public.create_invoice_request(payload); IF again.id<>n.id THEN RAISE EXCEPTION 'TEST_FAIL_panel_replay'; END IF;
