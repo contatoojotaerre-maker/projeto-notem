@@ -1,6 +1,6 @@
 # Exemplos de DPS
 
-Exemplos **sem assinatura**, ambiente homologação, dados fictícios; não transmitir ao governo. Gerados pelo montador de `src/lib/dps.ts` e conferidos automaticamente com o montador em `src/test/dps-layout.test.ts`. Números ilustrativos (série 1, números 1–5); nenhum número foi reservado no banco.
+Exemplos **sem assinatura**, ambiente homologação, dados fictícios; não transmitir ao governo. Gerados pelo montador de `src/lib/dps.ts` e conferidos automaticamente com o montador em `src/test/dps-layout.test.ts`. Números ilustrativos (série 1, números 1–7); nenhum número foi reservado no banco.
 
 ## Leiaute NT 009 (release 1) — esta pasta
 
@@ -25,7 +25,7 @@ Validação no XSD oficial do release 1 (`docs/referencias/rtc/`, arquivos lidos
 
 ## Leiaute anterior — `leiaute-anterior/`
 
-Mesmos cenários no leiaute do XSD de 09/02/2026, usado em produção até a data de troca. O padrão `TSSerieDPS` desse ZIP contém `^`/`$` literais (defeito oficial); por autorização do proprietário o teste corrige **apenas** esse padrão em memória. O ZIP permanece intacto.
+Mesmos cenários (exceto os dois com IBSCBS) no leiaute do XSD de 09/02/2026, usado em produção até a data de troca. O padrão `TSSerieDPS` desse ZIP contém `^`/`$` literais (defeito oficial); por autorização do proprietário o teste corrige **apenas** esse padrão em memória. O ZIP permanece intacto.
 
 - Validação com a correção isolada: `python3 src/test/validate-dps-xsd.py --layout=nt004 docs/exemplos/dps/leiaute-anterior/*.xml`
 - Reprodução estrita (deve falhar pela série): acrescentar `--official`.
