@@ -4,6 +4,7 @@ import { isValidCnpj } from './notem';
 import { RuleError } from './rule-error';
 import { approximateTaxRuleError, specialTaxRuleError } from './fiscal';
 import { FISCAL_TEXT_MESSAGE, fiscalTextAccepted } from './fiscal-text';
+import { DPS_LAYOUTS, REGULAR_FIN_NFSE, orderCServ, type DpsLayout } from './dps-layout';
 import { accessKeyIssuer, justificationError, substitutionReasons, type SubstitutionReason } from './fiscal-events';
 
 export const fiscalDecimal = z.string().regex(/^\d{1,15}\.\d{2}$/, 'Use texto decimal com duas casas.');
@@ -33,7 +34,9 @@ function customerXml(c: Customer) {
   const document = c.tipo === 'pj' ? tag('CNPJ', c.documento) : c.tipo === 'pf' ? tag('CPF', c.documento) : c.nif ? tag('NIF', c.nif) : tag('cNaoNIF', c.motivo_sem_nif === 'dispensado' ? 1 : 2);
   return group('toma', document + tag('IM', c.inscricao_municipal) + tag('xNome', c.nome) + address + tag('fone', c.telefone) + tag('email', c.email));
 }
-export function buildDps(input: DpsInput) {
+/** Builds the DPS in the given layout profile (see dps-layout.ts); the layout is always explicit. */
+export function buildDps(input: DpsInput, layout: DpsLayout) {
+  if (!DPS_LAYOUTS[layout]) throw new RuleError('Leiaute da DPS inválido.');
   validateDpsBeforeNumbering(input);
   const { provider: p, fiscal: f, service: s } = input;
   const id = dpsIdentifier(p.municipality, p.cnpj, input.series, input.number);
@@ -53,12 +56,12 @@ export function buildDps(input: DpsInput) {
   else { if ([a.simples, a.federal, a.state, a.municipal].some(v => v != null)) throw new RuleError('Não informar não aceita percentuais.'); approximate = tag('indTotTrib', 0); }
   const customer = input.customer ? customerXml(customerSchema.parse(input.customer)) : '';
   const prest = group('prest', tag('CNPJ', p.cnpj) + tag('IM', p.municipalRegistration) + tag('fone', p.phone) + tag('email', p.email) + group('regTrib', tag('opSimpNac', f.simples) + (f.simples === 3 ? tag('regApTribSN', f.regime) : '') + tag('regEspTrib', f.special)));
-  const service = group('serv', group('locPrest', tag('cLocPrestacao', s.municipality || p.municipality)) + group('cServ', tag('cTribNac', s.code) + tag('cTribMun', s.municipalCode) + tag('xDescServ', s.description) + tag('cNBS', s.nbs)) + (input.complementary ? group('infoCompl', tag('xInfComp', input.complementary)) : ''));
+  const service = group('serv', group('locPrest', tag('cLocPrestacao', s.municipality || p.municipality)) + group('cServ', orderCServ({ cTribNac: tag('cTribNac', s.code), cTribMun: tag('cTribMun', s.municipalCode), cNBS: tag('cNBS', s.nbs), xDescServ: tag('xDescServ', s.description) }, layout)) + (input.complementary ? group('infoCompl', tag('xInfComp', input.complementary)) : ''));
   // E0431/E0432: only strictly positive discounts may be informed.
   const discounts=(decimalUnits(unconditional)>0n?tag('vDescIncond',unconditional):'')+(decimalUnits(conditional)>0n?tag('vDescCond',conditional):'');
   const values = group('valores', group('vServPrest', tag('vServ', input.values.service)) + (discounts?group('vDescCondIncond',discounts):'') + group('trib', group('tribMun', tag('tribISSQN', s.taxation) + tag('tpImunidade', s.immunity) + tag('tpRetISSQN', s.withholding) + rate) + group('totTrib', approximate)));
   const substitution = input.substitution ? substitutionXml(input.substitution, p) : '';
-  const body = tag('tpAmb', input.environment === 'production' ? 1 : 2) + tag('dhEmi', input.emittedAt) + tag('verAplic', 'notem-1.0') + tag('serie', input.series) + tag('nDPS', input.number) + tag('dCompet', input.competence) + tag('tpEmit', 1) + tag('cLocEmi', p.municipality) + substitution + prest + customer + service + values;
+  const body = tag('tpAmb', input.environment === 'production' ? 1 : 2) + tag('dhEmi', input.emittedAt) + tag('verAplic', 'notem-1.0') + tag('serie', input.series) + tag('nDPS', input.number) + tag('dCompet', input.competence) + tag('tpEmit', 1) + (DPS_LAYOUTS[layout].finNFSe ? tag('finNFSe', REGULAR_FIN_NFSE) : '') + tag('cLocEmi', p.municipality) + substitution + prest + customer + service + values;
   // Final guard: TSString accepts only U+0020–U+00FF; only xDescServ may carry line breaks.
   if (!fiscalTextAccepted(body.replace(/<xDescServ>[^<]*<\/xDescServ>/, m => m.replace(/\n/g, ' ')))) throw new RuleError(`Texto da DPS ${FISCAL_TEXT_MESSAGE}.`);
   return { id, xml: `<?xml version="1.0" encoding="UTF-8"?><DPS xmlns="http://www.sped.fazenda.gov.br/nfse" versao="1.01"><infDPS Id="${id}">${body}</infDPS></DPS>` };
@@ -86,7 +89,7 @@ export function validateDpsBeforeNumbering(input: Pick<DpsInput,'provider'|'cust
  }
 }
 /** Full assembly preflight with a placeholder: rejection never calls the number allocator. */
-export async function reserveValidatedDps(input: Omit<DpsInput,'number'>, reserve:()=>Promise<string>) {
- buildDps({...input,number:'1'});
+export async function reserveValidatedDps(input: Omit<DpsInput,'number'>, layout: DpsLayout, reserve:()=>Promise<string>) {
+ buildDps({...input,number:'1'},layout);
  return reserve();
 }
