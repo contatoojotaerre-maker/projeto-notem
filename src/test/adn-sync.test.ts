@@ -2,7 +2,7 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { gzipSync } from 'node:zlib';
 import { callTransmissor } from '../lib/transmissor.server';
 import { decodeXml, eventCode, eventsFromReply, readDistributed, readEvent, readNfse, repairText } from '../lib/adn-xml';
-import { BACKOFF_MS, classifyDfe, cursorPatch, flushNfseEventWebhooks, NO_DOCUMENTS_WAIT_MS, processAdnSync, reconcileRefusedCancellations } from '../lib/adn-sync.server';
+import { applySearchStep, BACKOFF_MS, classifyDfe, cursorPatch, flushNfseEventWebhooks, MAX_SEARCH_STEPS, NO_DOCUMENTS_WAIT_MS, processAdnSync, reconcileRefusedCancellations, runDailyEventCheck, searchProbe, SYNC_MONTHS, syncOptions, type SyncRequest } from '../lib/adn-sync.server';
 import { tableDb, ids } from './fake-db';
 vi.mock('../lib/transmissor.server', () => ({ callTransmissor: vi.fn(), TransmissorError: class extends Error { constructor(public code: string, public status?: number) { super(code); } } }));
 
@@ -90,44 +90,123 @@ describe('Cursor por NSU', () => {
 });
 
 const cursor = { cnpj: '63642453000131', environment: 'production', next_nsu: 0, failures: 0, claim_token: '50000000-0000-4000-8000-000000000001', company_id: ids.company_id, organization_id: ids.organization_id, actor: ids.profile_id };
-function syncDb() {
-  return tableDb({ company_certificate_material: { key_version: '1', nonce: 'n', data: 'd' } }, name => {
-    if (name === 'claim_adn_cursors') return { data: [cursor], error: null };
-    if (name === 'finish_adn_batch') return { data: { inserted: 2 }, error: null };
+const docs = (...items: Record<string, unknown>[]) => ({ resposta: { status: 200, corpo_json: { StatusProcessamento: 'DOCUMENTOS_LOCALIZADOS', LoteDFe: items } } });
+const none = { resposta: { status: 404, corpo_json: { StatusProcessamento: 'NENHUM_DOCUMENTO_LOCALIZADO' } } };
+function syncDb(request: Record<string, unknown> | null, missing = (n: number) => n) {
+  return tableDb({ company_certificate_material: { key_version: '1', nonce: 'n', data: 'd' } }, (name, args) => {
+    if (name === 'claim_adn_cursors') return { data: request ? [{ ...cursor, request }] : [], error: null };
+    if (name === 'finish_adn_batch') return { data: { inserted: (args['_items'] as unknown[]).length }, error: null };
+    if (name === 'adn_next_missing_nsu') return { data: missing(Number(args['_from'])), error: null };
     return { data: null, error: null };
   });
 }
 const batches = (f: ReturnType<typeof syncDb>) => f.calls.filter(c => c.name === 'finish_adn_batch').map(c => c.args as { _items: Record<string, unknown>[]; _patch: Record<string, unknown> });
+const base = { steps: 0, imported: 0, requested_at: '2026-11-15T12:00:00Z' };
+const clock = (start = Date.parse('2026-11-15T12:00:00Z')) => { let t = start; return { now: () => t, wait: async (ms: number) => { t += ms; }, tick: (ms: number) => { t += ms; } }; };
 
-describe('Sincronização (rotina de cada minuto)', () => {
-  it('processa lotes, avança para o maior NSU + 1 e para quando não há documentos', async () => {
-    const f = syncDb();
-    vi.mocked(callTransmissor)
-      .mockResolvedValueOnce({ resposta: { status: 200, corpo_json: { StatusProcessamento: 'DOCUMENTOS_LOCALIZADOS', LoteDFe: [{ NSU: 0, TipoDocumento: 'NFSE', ChaveAcesso: key, Xml: nfseXml() }, { NSU: 4, TipoDocumento: 'EVENTO', TipoEvento: 'CANCELAMENTO', ChaveAcesso: key, Xml: eventXml() }] } } })
-      .mockResolvedValueOnce({ resposta: { status: 404, corpo_json: { StatusProcessamento: 'NENHUM_DOCUMENTO_LOCALIZADO' } } });
-    const r = await processAdnSync(f.db, { now: () => 1_000 });
-    expect(r).toMatchObject({ reserved: 1, failed: 0 });
-    const calls = vi.mocked(callTransmissor).mock.calls;
-    expect(calls.map(c => [c[0], (c[1] as { nsu: number }).nsu, (c[1] as { cnpj_consulta: string }).cnpj_consulta])).toEqual([['/v1/adn/dfe', 0, '63642453000131'], ['/v1/adn/dfe', 5, '63642453000131']]);
-    const [first, second] = batches(f);
-    expect(first!._patch).toMatchObject({ status: 'syncing', next_nsu: 5, continue: true });
-    expect(first!._items.map(i => [i['nsu'], 'nfse' in i, 'event' in i])).toEqual([[0, true, false], [4, false, true]]);
-    expect(second!._patch).toMatchObject({ status: 'up_to_date', next_query_at: new Date(1_000 + 3_600_000).toISOString() });
-    expect(f.inserts.filter(i => i.table === 'certificate_audit_events')).toHaveLength(1);
+describe('Sincronização manual: opções e permissões', () => {
+  it('"Novidades" só aparece depois da primeira sincronização concluída; períodos 1, 3, 6, 12 e 24 meses (padrão 1 mês)', () => {
+    expect(syncOptions(null)).toEqual(['period:1', 'period:3', 'period:6', 'period:12', 'period:24']);
+    expect(syncOptions('2026-11-14T20:08:00Z')).toEqual(['news', 'period:1', 'period:3', 'period:6', 'period:12', 'period:24']);
+    expect(SYNC_MONTHS).toEqual([1, 3, 6, 12, 24]);
   });
-  it('falha do transmissor (rota ausente): registra erro e espera 5 minutos, sem repetir no mesmo ciclo', async () => {
-    const f = syncDb(); const { TransmissorError } = await import('../lib/transmissor.server');
-    vi.mocked(callTransmissor).mockRejectedValueOnce(new TransmissorError('INDISPONIVEL', 404));
-    const r = await processAdnSync(f.db, { now: () => 0 });
+  it('a rotina de cada minuto não consulta nada sem pedido feito no painel', async () => {
+    const f = syncDb(null); const r = await processAdnSync(f.db);
+    expect(r).toEqual({ reserved: 0, imported: 0, failed: 0 }); expect(vi.mocked(callTransmissor)).not.toHaveBeenCalled();
+  });
+});
+
+describe('Busca do NSU inicial do período (DataHoraGeracao)', () => {
+  const target = '2026-10-15T00:00:00.000Z'; const at = (d: string) => `${d}T10:00:00.000Z`;
+  it('passo a passo em lotes até achar o primeiro NSU do período', () => {
+    let r = { ...base, mode: 'period', months: 1, phase: 'search', lo: 0, hi: null, target } as SyncRequest;
+    expect(searchProbe(r)).toBe(0);
+    let s = applySearchStep(r, 0, [{ nsu: 1, generated_at: at('2026-03-01') }, { nsu: 2, generated_at: at('2026-04-01') }]);
+    expect(s.start).toBeNull(); expect(s.request).toMatchObject({ lo: 3, jump: 50 }); r = s.request; expect(searchProbe(r)).toBe(53);
+    s = applySearchStep(r, 53, []); expect(s.request).toMatchObject({ lo: 3, hi: 53 }); r = s.request; expect(searchProbe(r)).toBe(3);
+    s = applySearchStep(r, 3, [{ nsu: 3, generated_at: at('2026-09-01') }, { nsu: 4, generated_at: at('2026-10-20') }, { nsu: 5, generated_at: at('2026-11-01') }]);
+    expect(s.start).toBe(4); expect(s.request).toMatchObject({ phase: 'download', start_nsu: 4, position: 4, steps: 3 });
+  });
+  it('no máximo 25 etapas: depois disso começa pelo menor NSU ainda possível (nada do período fica de fora)', () => {
+    let r = { ...base, mode: 'period', months: 24, phase: 'search', lo: 0, hi: 10_000_000, target } as SyncRequest; let s;
+    for (let k = 0; k < 30; k++) { const p = searchProbe(r); s = applySearchStep(r, p, [{ nsu: p, generated_at: at('2025-01-01') }]); r = s.request; if (s.start !== null) break; }
+    expect(MAX_SEARCH_STEPS).toBe(25); expect(r.steps).toBeLessThanOrEqual(25); expect(s!.start).toBe(r.lo);
+  });
+  it('busca: 2 segundos entre consultas, etapas sem documentos não acionam a espera de 1 hora', async () => {
+    const c = clock(); const f = syncDb({ ...base, mode: 'period', months: 1, phase: 'search', lo: 0, hi: null, target });
+    vi.mocked(callTransmissor).mockResolvedValueOnce(docs({ NSU: 1, DataHoraGeracao: '2026-03-01T10:00:00' }, { NSU: 2, DataHoraGeracao: '2026-04-01T10:00:00' })).mockResolvedValueOnce(none).mockResolvedValueOnce(docs({ NSU: 3, DataHoraGeracao: '2026-11-01T10:00:00' })).mockResolvedValue(none);
+    const waits: number[] = []; let t = c.now();
+    await processAdnSync(f.db, { now: c.now, wait: async ms => { waits.push(ms); t += ms; await c.wait(ms); }, budgetMs: 60_000 });
+    expect(waits.length).toBeGreaterThan(0); expect(waits.every(w => w >= 2_000)).toBe(true); expect(t).toBeGreaterThan(0);
+    const b = batches(f); const searchSteps = b.filter(x => (x._patch['request'] as SyncRequest | null)?.phase === 'search' || (x._patch['request'] as SyncRequest | null)?.start_nsu !== undefined);
+    for (const x of searchSteps.slice(0, 2)) expect(Date.parse(String(x._patch['next_query_at'])) - c.now()).toBeLessThan(3_600_000);
+    const nsus = vi.mocked(callTransmissor).mock.calls.map(x => (x[1] as { nsu: number }).nsu);
+    expect(nsus.slice(0, 3)).toEqual([0, 53, 3]);
+  });
+  it('consumo indevido interrompe a busca na hora, com aviso claro e espera mínima de 1 hora', async () => {
+    const c = clock(); const f = syncDb({ ...base, mode: 'period', months: 3, phase: 'search', lo: 0, hi: null, target });
+    vi.mocked(callTransmissor).mockResolvedValueOnce({ resposta: { status: 400, corpo_json: { StatusProcessamento: 'REJEICAO', Erros: [{ Codigo: 'E2232', Descricao: 'Consumo indevido' }] } } });
+    const r = await processAdnSync(f.db, { now: c.now, wait: c.wait });
     expect(r.failed).toBe(1); expect(vi.mocked(callTransmissor)).toHaveBeenCalledTimes(1);
-    expect(batches(f)[0]!._patch).toMatchObject({ status: 'error', failures: 1, last_error_code: 'INDISPONIVEL_404', next_query_at: new Date(300_000).toISOString() });
+    const p = batches(f)[0]!._patch;
+    expect(p).toMatchObject({ status: 'error', request: null, last_error_code: 'CONSUMO_INDEVIDO' }); expect(String(p['last_error'])).toMatch(/consumo indevido.*interrompida/i);
+    expect(Date.parse(String(p['next_query_at'])) - c.now()).toBeGreaterThanOrEqual(3_600_000);
+    expect((p['last_request'] as { outcome: string }).outcome).toBe('error');
   });
-  it('respeita o limite de lotes por ciclo (devolve a reserva ao fim)', async () => {
-    const f = syncDb();
-    vi.mocked(callTransmissor).mockResolvedValue({ resposta: { status: 200, corpo_json: { StatusProcessamento: 'DOCUMENTOS_LOCALIZADOS', LoteDFe: [{ NSU: 10, TipoDocumento: 'NFSE', Xml: nfseXml() }] } } });
-    await processAdnSync(f.db, { maxBatches: 2, now: () => 0 });
-    expect(vi.mocked(callTransmissor)).toHaveBeenCalledTimes(2); const b = batches(f);
-    expect(b.map(x => x._patch['continue'])).toEqual([true, false]);
+  it('rejeição do ADN também interrompe a busca e encerra o pedido', async () => {
+    const c = clock(); const f = syncDb({ ...base, mode: 'period', months: 6, phase: 'search', lo: 0, hi: null, target });
+    vi.mocked(callTransmissor).mockResolvedValueOnce({ resposta: { status: 400, corpo_json: { StatusProcessamento: 'REJEICAO', Erros: [{ Codigo: 'E2220', Descricao: 'NSU inválido' }] } } });
+    await processAdnSync(f.db, { now: c.now, wait: c.wait });
+    expect(batches(f)[0]!._patch).toMatchObject({ status: 'error', request: null, last_error_code: 'E2220' }); expect(String(batches(f)[0]!._patch['last_error'])).toMatch(/busca do início do período foi interrompida/);
+  });
+});
+
+describe('Importação depois do NSU inicial', () => {
+  it('importa em lotes, pula o que já foi importado, guarda XML em arquivo e termina com espera de 1 hora', async () => {
+    const c = clock(); const f = syncDb({ ...base, mode: 'news', months: null, phase: 'download', position: 0 }, n => n === 0 ? 0 : 20);
+    vi.mocked(callTransmissor).mockResolvedValueOnce(docs({ NSU: 0, TipoDocumento: 'NFSE', ChaveAcesso: key, Xml: nfseXml() }, { NSU: 4, TipoDocumento: 'EVENTO', TipoEvento: 'CANCELAMENTO', ChaveAcesso: key, Xml: eventXml() })).mockResolvedValueOnce(none);
+    await processAdnSync(f.db, { now: c.now, wait: c.wait });
+    expect(vi.mocked(callTransmissor).mock.calls.map(x => (x[1] as { nsu: number }).nsu)).toEqual([0, 20]);
+    const [first, last] = batches(f);
+    expect(first!._items.map(i => [i['nsu'], 'nfse' in i, 'event' in i])).toEqual([[0, true, false], [4, false, true]]);
+    const nfse = first!._items[0]!['nfse'] as Record<string, unknown>; expect(nfse['xml']).toBeUndefined(); expect(nfse['xml_file']).toMatchObject({ size: nfseXml().length, sha256: expect.stringMatching(/^[0-9a-f]{64}$/) });
+    expect(String((nfse['xml_file'] as { path: string }).path)).toMatch(/^producao\/adn\/nfse\/\d{50}-[0-9a-f]{16}\.xml\.gz$/);
+    expect(first!._patch).toMatchObject({ status: 'syncing', next_nsu: 5, continue: true });
+    expect(last!._patch).toMatchObject({ status: 'up_to_date', request: null, completed: true, next_query_at: new Date(c.now() + 3_600_000).toISOString() });
+    expect(f.files.size).toBe(2);
+  });
+  it('erro de conexão durante a importação encerra o pedido com espera crescente', async () => {
+    const c = clock(); const f = syncDb({ ...base, mode: 'news', months: null, phase: 'download', position: 14 }); const { TransmissorError } = await import('../lib/transmissor.server');
+    vi.mocked(callTransmissor).mockRejectedValueOnce(new TransmissorError('INDISPONIVEL', 503));
+    await processAdnSync(f.db, { now: c.now, wait: c.wait });
+    expect(batches(f)[0]!._patch).toMatchObject({ status: 'error', request: null, failures: 1, next_query_at: new Date(c.now() + 300_000).toISOString() });
+  });
+});
+
+describe('XML compactado no armazenamento privado', () => {
+  it('compacta, confere byte a byte e lê de volta idêntico; impressão digital divergente é recusada', async () => {
+    const f = tableDb({}); const xml = eventXml(); const { storeXml, readXml, xmlPath, sha256Hex } = await import('../lib/xml-files.server');
+    const sha = await sha256Hex(new TextEncoder().encode(xml)); const ref = await storeXml(f.db, xmlPath('production', 'adn/eventos/' + key, '101101-1', sha), xml);
+    expect(ref.sha256).toBe(sha); expect(ref.size).toBe(new TextEncoder().encode(xml).length); expect(ref.stored_size).toBeLessThan(ref.size);
+    expect(await readXml(f.db, ref)).toBe(xml);
+    await expect(readXml(f.db, { ...ref, sha256: '0'.repeat(64) })).rejects.toThrow('XML_HASH_MISMATCH');
+  });
+});
+
+describe('Verificação diária das notas com cancelamento pendente', () => {
+  const pending = { id: ids.invoice_id, organization_id: ids.organization_id, company_id: ids.company_id, created_by: ids.profile_id, environment: 'production', status: 'cancellation_pending', access_key: key };
+  const dailyDb = (beat: string | null) => tableDb({ system_heartbeats: beat ? { last_success_at: beat } : null, company_certificate_material: { key_version: '1', nonce: 'n', data: 'd' } }, name => name === 'daily_check_candidates' ? { data: [pending], error: null } : name === 'store_nfse_events' ? { data: { total: 1, changed: 1 }, error: null } : { data: null, error: null });
+  it('uma vez por dia (a partir das 6h de Brasília): consulta os eventos e registra verificadas e atualizadas', async () => {
+    const f = dailyDb(null); vi.mocked(callTransmissor).mockResolvedValueOnce({ resposta: { status: 200, corpo_json: { LoteDFe: [{ TipoDocumento: 'EVENTO', TipoEvento: 'CANCELAMENTO_DEFERIDO_ANALISE_FISCAL', ChaveAcesso: key, Xml: eventXml('105104') }] } } });
+    const r = await runDailyEventCheck(f.db, Date.parse('2026-11-15T12:00:00Z'));
+    expect(r).toEqual({ ran: true, checked: 1, updated: 1 }); expect(vi.mocked(callTransmissor).mock.calls[0]![0]).toBe('/v1/adn/eventos');
+    expect(f.calls.find(c => c.name === 'record_daily_check')!.args).toMatchObject({ _date: '2026-11-15', _company: ids.company_id, _updated: true, _failed: false });
+    expect(f.calls.find(c => c.name === 'touch_nfse_refresh')!.args).toMatchObject({ _purpose: 'verificacao_diaria', _interval: '20 hours' });
+  });
+  it('não repete no mesmo dia e não roda antes das 6h de Brasília', async () => {
+    expect((await runDailyEventCheck(dailyDb('2026-11-15T10:00:00Z').db, Date.parse('2026-11-15T20:00:00Z'))).ran).toBe(false);
+    expect((await runDailyEventCheck(dailyDb(null).db, Date.parse('2026-11-15T08:00:00Z'))).ran).toBe(false);
+    expect(vi.mocked(callTransmissor)).not.toHaveBeenCalled();
   });
 });
 

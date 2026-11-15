@@ -5,7 +5,7 @@ import type { DB } from './api.server';
 import { callTransmissor, TransmissorError } from './transmissor.server';
 import { transmissorPayload } from './invoices.server';
 import { invoiceOut, type GovernmentReply, type Invoice } from './invoices';
-import { eventsFromReply, readDistributed, type DistributedItem } from './adn-xml';
+import { eventsFromReply, readDistributed, type DistributedItem, type ParsedEvent } from './adn-xml';
 
 type Env = 'sandbox' | 'production';
 type Cursor = { cnpj: string; environment: Env; next_nsu: number; failures: number; claim_token: string; company_id: string; organization_id: string; actor: string };
@@ -57,53 +57,153 @@ export function cursorPatch(o: Outcome, failures: number, now: number, nextNsu?:
 
 const itemPayload = (d: DistributedItem) => ({ nsu: d.nsu, document_type: d.document_type, event_type: d.event_type, access_key: d.access_key, generated_at: d.generated_at, ...(d.nfse ? { nfse: d.nfse } : {}), ...(d.event ? { event: d.event } : {}) });
 
+/** Replaces the XML text of official documents/events by a gzip file in the private bucket (the table keeps only the reference). */
+export async function withXmlFiles<T extends { xml?: string | null }>(db: DB, env: Env, list: T[], place: (x: T) => { folder: string; name: string }) {
+  const { storeXml, xmlPath, sha256Hex } = await import('./xml-files.server');
+  const out: (Omit<T, 'xml'> & { xml_file?: unknown })[] = [];
+  for (let i = 0; i < list.length; i += 8) {
+    out.push(...await Promise.all(list.slice(i, i + 8).map(async x => {
+      if (!x.xml) return x;
+      const { xml, ...rest } = x; const where = place(x);
+      const ref = await storeXml(db, xmlPath(env, where.folder, where.name, await sha256Hex(new TextEncoder().encode(xml))), xml, false);
+      return { ...rest, xml_file: ref };
+    })));
+  }
+  return out;
+}
+const nfsePlace = (n: { access_key: string }) => ({ folder: 'adn/nfse', name: n.access_key });
+const eventPlace = (e: { access_key: string; code: string; sequence: number }) => ({ folder: `adn/eventos/${e.access_key}`, name: `${e.code}-${e.sequence}` });
+export const eventsWithFiles = (db: DB, env: Env, events: ParsedEvent[]) => withXmlFiles(db, env, events, eventPlace);
+async function itemsWithFiles(db: DB, env: Env, items: DistributedItem[]) {
+  const nfse = await withXmlFiles(db, env, items.flatMap(i => i.nfse ? [i.nfse] : []), nfsePlace);
+  const events = await withXmlFiles(db, env, items.flatMap(i => i.event ? [i.event] : []), eventPlace);
+  let a = 0, b = 0;
+  return items.map(i => ({ ...itemPayload(i), ...(i.nfse ? { nfse: nfse[a++] } : {}), ...(i.event ? { event: events[b++] } : {}) }));
+}
+
 async function certificateBase(db: DB, c: Pick<Cursor, 'company_id' | 'organization_id' | 'actor' | 'environment'>, purpose: string) {
   return transmissorPayload(db, { id: '', company_id: c.company_id, organization_id: c.organization_id, created_by: c.actor, environment: c.environment }, purpose, c.actor);
 }
 
-async function syncCursor(db: DB, c: Cursor, opts: { maxBatches: number; deadline: number; now: () => number }) {
-  let nsu = Number(c.next_nsu); let imported = 0; let batches = 0; let last: Outcome['kind'] = 'none';
+// ---------- Manual synchronization (requested in the panel; the scheduler only continues open requests) ----------
+export const MAX_SEARCH_STEPS = 25;
+export const SEARCH_GAP_MS = 2_000;
+export const SYNC_MONTHS = [1, 3, 6, 12, 24] as const;
+export type SyncRequest = { mode: 'news' | 'period'; months: number | null; phase: 'search' | 'download'; lo?: number; hi?: number | null; jump?: number; position?: number; start_nsu?: number; target?: string; steps: number; imported: number; requested_at: string; last_probe_at?: string; [k: string]: unknown };
+type Probe = { nsu: number; generated_at: string | null }[];
+
+/** NSU to consult in the next step of the search for the first NSU of the period (by DataHoraGeracao). */
+export function searchProbe(r: Pick<SyncRequest, 'lo' | 'hi' | 'jump'>) {
+  const lo = r.lo ?? 0;
+  if (r.hi === null || r.hi === undefined) return lo + (r.jump ?? 0);
+  return r.hi - lo <= 50 ? lo : Math.floor((lo + r.hi) / 2);
+}
+/** Applies one search answer. Dates grow with the NSU; a batch returns the NSUs from the consulted one onwards. The start NSU is set when known. */
+export function applySearchStep(r: SyncRequest, p: number, items: Probe): { request: SyncRequest; start: number | null } {
+  const target = Date.parse(r.target ?? ''); const n: SyncRequest = { ...r, steps: r.steps + 1 }; let lo = r.lo ?? 0; let hi = r.hi ?? null; let start: number | null = null;
+  const sorted = [...items].sort((a, b) => a.nsu - b.nsu);
+  if (!sorted.length) { if (p <= lo) start = lo; else hi = p; }
+  else {
+    const idx = sorted.findIndex(i => i.generated_at !== null && Date.parse(i.generated_at) >= target);
+    if (idx > 0) start = sorted[idx]!.nsu;
+    else if (idx === 0) { if (p <= lo) start = sorted[0]!.nsu; else hi = p; }
+    else { lo = sorted[sorted.length - 1]!.nsu + 1; if (hi === null) n.jump = n.jump ? n.jump * 2 : 50; }
+  }
+  if (start === null && hi !== null && lo >= hi) start = lo;
+  if (start === null && n.steps >= MAX_SEARCH_STEPS) start = lo;
+  n.lo = lo; n.hi = hi;
+  return { request: start === null ? n : { ...n, phase: 'download', start_nsu: start, position: start }, start };
+}
+/** "Novidades" exists only after the first completed synchronization; periods are always offered (default 1 month). */
+export function syncOptions(firstCompletedAt: string | null) { return [...(firstCompletedAt ? ['news'] : []), ...SYNC_MONTHS.map(m => `period:${m}`)]; }
+const stopMessage = (o: Extract<Outcome, { kind: 'error' }>, phase: string) => o.code === 'CONSUMO_INDEVIDO' ? `O ADN indicou consumo indevido e a sincronização foi interrompida. ${o.message}` : `${phase === 'search' ? 'A busca do início do período foi interrompida' : 'A sincronização foi interrompida'}. ${o.message}`;
+
+const sleep = (ms: number) => new Promise(r => setTimeout(r, ms));
+type Claimed = Cursor & { request: SyncRequest | null };
+async function runCursor(db: DB, c: Claimed, opts: { deadline: number; now: () => number; wait: (ms: number) => Promise<unknown> }) {
+  let req = c.request; let imported = 0;
+  if (!req) return { imported, last: 'none' as const };
   const finish = async (items: unknown[], patch: Record<string, unknown>) => {
-    const r = await db.rpc('finish_adn_batch' as never, { _cnpj: c.cnpj, _env: c.environment, _token: c.claim_token, _items: items as Json, _patch: patch as Json } as never);
-    if ((r as { error: unknown }).error) throw new Error('ADN_BATCH_FAILED');
-    imported += Number(((r as { data: { inserted?: number } | null }).data)?.inserted ?? 0);
+    const r = await db.rpc('finish_adn_batch', { _cnpj: c.cnpj, _env: c.environment, _token: c.claim_token, _items: items as Json, _patch: patch as Json });
+    if (r.error) throw new Error('ADN_BATCH_FAILED');
+    const n = Number((r.data as { inserted?: number } | null)?.inserted ?? 0); imported += n; return n;
+  };
+  const stop = async (o: Extract<Outcome, { kind: 'error' }>) => {
+    const message = stopMessage(o, req!.phase);
+    await finish([], { ...cursorPatch(o, c.failures, opts.now()), last_error: message, request: null, last_request: { ...req, finished_at: new Date(opts.now()).toISOString(), outcome: 'error', message } });
+    return { imported, last: 'error' as const };
   };
   let base: Awaited<ReturnType<typeof certificateBase>>;
-  try { base = await certificateBase(db, c, 'sincronização automática com o ADN'); }
-  catch (err) { const code = err instanceof TransmissorError ? err.code : 'ENVELOPE_INVALIDO'; await finish([], cursorPatch({ kind: 'error', code, message: errorMessages[code] ?? errorMessages['ENVELOPE_INVALIDO']! }, c.failures, opts.now())); return { imported, batches, last: 'error' as const }; }
-  while (batches < opts.maxBatches) {
-    batches++;
-    let outcome: Outcome;
-    try { const r = await callTransmissor<Reply>('/v1/adn/dfe', { ...base, nsu, lote: true, cnpj_consulta: c.cnpj }); outcome = classifyDfe(r.resposta); }
-    catch (err) { const code = err instanceof TransmissorError ? err.code : 'INDISPONIVEL'; outcome = { kind: 'error', code: err instanceof TransmissorError && err.status ? `${code}_${err.status}` : code, message: errorMessages[code] ?? errorMessages['INDISPONIVEL']! }; }
-    last = outcome.kind;
-    if (outcome.kind !== 'documents') { await finish([], cursorPatch(outcome, c.failures, opts.now())); break; }
-    const items = await Promise.all(outcome.items.map(readDistributed));
-    const valid = items.filter(i => i.nsu !== null);
-    if (!valid.length) { last = 'error'; await finish([], cursorPatch({ kind: 'error', code: 'RESPOSTA_INVALIDA', message: errorMessages['RESPOSTA_INVALIDA']! }, c.failures, opts.now())); break; }
+  try { base = await certificateBase(db, c, 'sincronização manual com o ADN'); }
+  catch (err) { const code = err instanceof TransmissorError ? err.code : 'ENVELOPE_INVALIDO'; return stop({ kind: 'error', code, message: errorMessages[code] ?? errorMessages['ENVELOPE_INVALIDO']! }); }
+  const call = async (nsu: number): Promise<Outcome> => {
+    try { const r = await callTransmissor<Reply>('/v1/adn/dfe', { ...base, nsu, lote: true, cnpj_consulta: c.cnpj }); return classifyDfe(r.resposta); }
+    catch (err) { const code = err instanceof TransmissorError ? err.code : 'INDISPONIVEL'; return { kind: 'error', code: err instanceof TransmissorError && err.status ? `${code}_${err.status}` : code, message: errorMessages[code] ?? errorMessages['INDISPONIVEL']! }; }
+  };
+  while (opts.now() < opts.deadline) {
+    if (req.phase === 'search') {
+      const since = req.last_probe_at ? opts.now() - Date.parse(req.last_probe_at) : SEARCH_GAP_MS;
+      if (since < SEARCH_GAP_MS) { if (opts.now() + (SEARCH_GAP_MS - since) + 3_000 > opts.deadline) break; await opts.wait(SEARCH_GAP_MS - since); }
+      const p = searchProbe(req); const o = await call(p);
+      // Misuse or rejection stops the search at once, with a clear message.
+      if (o.kind === 'error') return stop(o);
+      const items = o.kind === 'documents' ? (await Promise.all(o.items.map(readDistributed))).filter(i => i.nsu !== null).map(i => ({ nsu: i.nsu!, generated_at: i.generated_at })) : [];
+      req = { ...applySearchStep(req, p, items).request, last_probe_at: new Date(opts.now()).toISOString() };
+      // Search steps without documents never start the 1-hour wait; steps stay at least 2 seconds apart.
+      await finish([], { status: 'syncing', failures: 0, next_query_at: new Date(opts.now() + (req.phase === 'search' ? SEARCH_GAP_MS : 0)).toISOString(), request: req, continue: true });
+      continue;
+    }
+    const missing = await db.rpc('adn_next_missing_nsu', { _cnpj: c.cnpj, _env: c.environment, _from: req.position ?? c.next_nsu });
+    if (missing.error) throw new Error('ADN_NSU_READ_FAILED');
+    const nsu = Number(missing.data ?? req.position ?? 0);
+    const o = await call(nsu);
+    if (o.kind === 'error') return stop(o);
+    if (o.kind === 'none') {
+      await finish([], { ...cursorPatch(o, 0, opts.now()), request: null, completed: true, last_request: { ...req, finished_at: new Date(opts.now()).toISOString(), outcome: 'completed' } });
+      return { imported, last: 'none' as const };
+    }
+    const items = await Promise.all(o.items.map(readDistributed)); const valid = items.filter(i => i.nsu !== null);
+    if (!valid.length) return stop({ kind: 'error', code: 'RESPOSTA_INVALIDA', message: errorMessages['RESPOSTA_INVALIDA']! });
     const next = Math.max(nsu, ...valid.map(i => i.nsu! + 1));
-    const more = batches < opts.maxBatches && opts.now() < opts.deadline;
-    await finish(valid.map(itemPayload), { ...cursorPatch(outcome, 0, opts.now(), next), continue: more });
-    nsu = next;
-    if (!more) break;
+    req = { ...req, position: next };
+    const n = await finish(await itemsWithFiles(db, c.environment, valid), { ...cursorPatch(o, 0, opts.now(), next), request: req, continue: true });
+    req = { ...req, imported: req.imported + n };
   }
-  return { imported, batches, last };
+  await finish([], { status: 'syncing', failures: 0, next_query_at: new Date(opts.now() + (req.phase === 'search' ? SEARCH_GAP_MS : 0)).toISOString(), request: req, continue: false });
+  return { imported, last: 'documents' as const };
 }
 
-/** Scheduler step: a few due CNPJs per cycle, a few batches each, within a time budget. */
-export async function processAdnSync(db: DB, opts: { maxCursors?: number; maxBatches?: number; budgetMs?: number; now?: () => number; cnpj?: string } = {}) {
+/** Continues open manual requests (scheduler, or right after the click). Never starts a synchronization by itself. */
+export async function processAdnSync(db: DB, opts: { maxCursors?: number; budgetMs?: number; now?: () => number; wait?: (ms: number) => Promise<unknown>; cnpj?: string; environment?: Env } = {}) {
   const now = opts.now ?? Date.now; const deadline = now() + (opts.budgetMs ?? 20_000);
-  const claims = await db.rpc('claim_adn_cursors' as never, { _limit: opts.maxCursors ?? 3, ...(opts.cnpj ? { _cnpj: opts.cnpj } : {}) } as never) as { data: Cursor[] | null; error: unknown };
+  const claims = await db.rpc('claim_adn_cursors', { _limit: opts.maxCursors ?? 3, ...(opts.cnpj ? { _cnpj: opts.cnpj } : {}), ...(opts.environment ? { _env: opts.environment } : {}) });
   if (claims.error) throw new Error('ADN_CLAIM_FAILED');
   let imported = 0, failed = 0;
-  for (const c of claims.data ?? []) {
-    try { const r = await syncCursor(db, c, { maxBatches: opts.maxBatches ?? 4, deadline, now }); imported += r.imported; if (r.last === 'error') failed++; }
+  for (const c of (claims.data ?? []) as unknown as Claimed[]) {
+    try { const r = await runCursor(db, c, { deadline, now, wait: opts.wait ?? sleep }); imported += r.imported; if (r.last === 'error') failed++; }
     catch { failed++; console.error('ADN_SYNC_FAILED', c.environment); }
   }
   return { reserved: claims.data?.length ?? 0, imported, failed };
 }
 
-/** Applies every official event of an invoice's key (ADN by key). */
+const requestErrors: Record<string, string> = {
+  ADN_EM_ANDAMENTO: 'Já existe uma sincronização em andamento para este CNPJ e ambiente.',
+  ADN_NOVIDADES_INDISPONIVEL: 'Faça primeiro uma sincronização por período.',
+  ADN_PEDIDO_INVALIDO: 'Escolha uma opção de sincronização válida.',
+};
+export class SyncRequestError extends Error { constructor(public userMessage: string, public retryAt?: string) { super('ADN_SYNC_REQUEST'); } }
+/** Records the request (the database checks the 1-hour ADN interval and open requests) and runs the first steps right away. */
+export async function requestAdnSync(db: DB, a: { cnpj: string; environment: Env; mode: 'news' | 'period'; months: number | null; actor: string; organization_id: string; budgetMs?: number }) {
+  const r = await db.rpc('request_adn_sync', { _cnpj: a.cnpj, _env: a.environment, _mode: a.mode, _months: a.months as number, _actor: a.actor, _org: a.organization_id });
+  if (r.error) {
+    const m = r.error.message; const wait = m.match(/ADN_AGUARDE:(\S+)/);
+    if (wait) throw new SyncRequestError('O ADN exige intervalo entre consultas. Aguarde para sincronizar novamente.', wait[1]);
+    const code = Object.keys(requestErrors).find(k => m.includes(k)); throw new SyncRequestError(code ? requestErrors[code]! : 'Não foi possível iniciar a sincronização.');
+  }
+  return processAdnSync(db, { cnpj: a.cnpj, environment: a.environment, maxCursors: 1, budgetMs: a.budgetMs ?? 12_000 });
+}
+
+/** Applies every official event of a key (ADN by key), with the certificate of the given company. */
 export async function refreshInvoiceEvents(db: DB, inv: Pick<Invoice, 'id' | 'company_id' | 'organization_id' | 'created_by' | 'environment' | 'access_key'>, purpose: string, actor = inv.created_by) {
   if (!inv.access_key) return { total: 0, changed: 0 };
   const base = await transmissorPayload(db, inv, purpose, actor);
@@ -112,9 +212,34 @@ export async function refreshInvoiceEvents(db: DB, inv: Pick<Invoice, 'id' | 'co
   if (reply.status === 404) return { total: 0, changed: 0 };
   if (reply.erro || (reply.status ?? 0) >= 400 || !reply.corpo_json) throw new Error('ADN_EVENTS_FAILED');
   const events = (await eventsFromReply(reply.corpo_json)).filter(e => e.access_key === inv.access_key);
-  const s = await db.rpc('store_nfse_events' as never, { _env: inv.environment, _items: events as unknown as Json, _source: 'adn_eventos' } as never) as { data: { total: number; changed: number } | null; error: unknown };
+  const s = await db.rpc('store_nfse_events', { _env: inv.environment, _items: await eventsWithFiles(db, inv.environment, events) as unknown as Json, _source: 'adn_eventos' });
   if (s.error) throw new Error('ADN_EVENTS_STORE_FAILED');
-  return s.data ?? { total: 0, changed: 0 };
+  return (s.data as { total: number; changed: number } | null) ?? { total: 0, changed: 0 };
+}
+
+// ---------- Daily verification (notem invoices with a pending cancellation) ----------
+const brDate = (ms: number) => new Date(ms - 3 * 3_600_000).toISOString().slice(0, 10);
+const brHour = (ms: number) => new Date(ms - 3 * 3_600_000).getUTCHours();
+export const DAILY_CHECK_HOUR = 6;
+/** Once a day (from 06:00 Brasília), consults /v1/adn/eventos only for notem invoices with cancellation in analysis or in verification. */
+export async function runDailyEventCheck(db: DB, now = Date.now(), limit = 10) {
+  if (brHour(now) < DAILY_CHECK_HOUR) return { ran: false, checked: 0, updated: 0 };
+  const beat = await db.from('system_heartbeats').select('last_success_at').eq('name', 'nfse_daily_check').maybeSingle();
+  if (beat.data && brDate(Date.parse(beat.data.last_success_at)) === brDate(now)) return { ran: false, checked: 0, updated: 0 };
+  const c = await db.rpc('daily_check_candidates', { _limit: limit });
+  if (c.error) throw new Error('DAILY_CHECK_READ_FAILED');
+  let checked = 0, updated = 0;
+  for (const inv of c.data ?? []) {
+    const t = await db.rpc('touch_nfse_refresh', { _env: inv.environment, _key: inv.access_key!, _purpose: 'verificacao_diaria', _interval: '20 hours' });
+    if (t.error || t.data) continue;
+    let changed = false, failed = false;
+    try { changed = (await refreshInvoiceEvents(db, inv, 'verificação diária de eventos')).changed > 0; } catch { failed = true; console.error('DAILY_CHECK_FAILED', inv.id); }
+    checked++; if (changed) updated++;
+    const rec = await db.rpc('record_daily_check', { _date: brDate(now), _company: inv.company_id, _org: inv.organization_id, _env: inv.environment, _updated: changed, _failed: failed });
+    if (rec.error) console.error('DAILY_CHECK_RECORD_FAILED');
+  }
+  if ((c.data?.length ?? 0) < limit) { const stamp = new Date(now).toISOString(); await db.from('system_heartbeats').upsert({ name: 'nfse_daily_check', last_success_at: stamp, updated_at: stamp }); }
+  return { ran: true, checked, updated };
 }
 
 const refusedByExisting = ['E0840', 'E0802', 'E1805'];
@@ -136,7 +261,7 @@ export async function reconcileRefusedCancellations(db: DB, limit = 3) {
       if (c.resposta?.status !== 200) continue;
       const events = (await eventsFromReply(c.resposta.corpo_json)).filter(e => e.access_key === inv.access_key && e.code === '101101');
       if (!events.length) continue;
-      const s = await db.rpc('store_nfse_events' as never, { _env: inv.environment, _items: events as unknown as Json, _source: 'sefin_consulta' } as never) as { data: { changed: number } | null; error: unknown };
+      const s = await db.rpc('store_nfse_events' as never, { _env: inv.environment, _items: await eventsWithFiles(db, inv.environment, events) as unknown as Json, _source: 'sefin_consulta' } as never) as { data: { changed: number } | null; error: unknown };
       if (!s.error) changed += s.data?.changed ?? 0;
     } catch { console.error('RECONCILE_CONSULT_FAILED', inv.id); }
   }

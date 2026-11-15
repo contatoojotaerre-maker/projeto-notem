@@ -4,14 +4,19 @@ export function tableDb(tables: Record<string, unknown>, rpc: (name: string, arg
   const calls: { name: string; args: Record<string, unknown> }[] = []; const inserts: { table: string; row: unknown }[] = [];
   const builder = (table: string) => {
     const b: Record<string, unknown> = {};
-    for (const m of ['select', 'eq', 'is', 'order', 'limit', 'range', 'gte', 'lte', 'lt', 'match', 'ilike', 'update']) b[m] = () => b;
+    for (const m of ['select', 'eq', 'is', 'in', 'or', 'not', 'order', 'limit', 'range', 'gte', 'lte', 'lt', 'match', 'ilike', 'update', 'upsert']) b[m] = () => b;
     const value = () => { const v = tables[table]; return typeof v === 'function' ? (v as () => unknown)() : v ?? null; };
     b['maybeSingle'] = async () => ({ data: value(), error: null }); b['single'] = b['maybeSingle'];
     b['insert'] = async (row: unknown) => { inserts.push({ table, row }); return { error: null }; };
     return b;
   };
-  const db = { from: vi.fn((t: string) => builder(t)), rpc: vi.fn(async (name: string, args: Record<string, unknown>) => { calls.push({ name, args }); return rpc(name, args); }) };
-  return { db: db as never, calls, inserts, rpc: db.rpc };
+  const files = new Map<string, Uint8Array>();
+  const storage = { from: () => ({
+    upload: vi.fn(async (path: string, body: Uint8Array) => { files.set(path, new Uint8Array(body)); return { data: { path }, error: null }; }),
+    download: vi.fn(async (path: string) => { const b = files.get(path); return b ? { data: { arrayBuffer: async () => b.slice().buffer }, error: null } : { data: null, error: { message: 'not found' } }; }),
+  }) };
+  const db = { from: vi.fn((t: string) => builder(t)), rpc: vi.fn(async (name: string, args: Record<string, unknown>) => { calls.push({ name, args }); return rpc(name, args); }), storage };
+  return { db: db as never, calls, inserts, rpc: db.rpc, files };
 }
 export const ids = { organization_id: '20000000-0000-4000-8000-000000000001', company_id: '10000000-0000-4000-8000-000000000001', integration_id: '10000000-0000-4000-8000-000000000008', profile_id: '10000000-0000-4000-8000-000000000007', invoice_id: '10000000-0000-4000-8000-000000000009' };
 export const company = { id: ids.company_id, organization_id: ids.organization_id, cnpj: '11222333000181', municipality_ibge_code: '4212254', municipal_registration: '', phone: '', email: '', active: true };

@@ -118,32 +118,55 @@ export async function issueSubstitution(c:IssueCtx,original:Invoice,body:unknown
 }
 export async function substituteInvoice(ctx:ApiCtx):Promise<ApiResult>{
  const key=idempotencyKey(ctx.request.headers.get('Idempotency-Key'));if(!key)throw fail(400,'REQUISICAO_INVALIDA',[{campo:'Idempotency-Key',mensagem:'A chave é obrigatória para substituir notas.'}]);
- const original=await loadInvoice(ctx);const hash=await bodyHash('POST',`/api/v1/notas/${original.id}/substituir`,JSON.stringify(ctx.body));
+ const original=await loadOwnInvoice(ctx);const hash=await bodyHash('POST',`/api/v1/notas/${original.id}/substituir`,JSON.stringify(ctx.body));
  return issueSubstitution(apiIssueCtx(ctx),original,ctx.body,key,hash);
 }
 async function fiscalEvent(ctx:ApiCtx,kind:'cancel'|'analysis'):Promise<ApiResult>{
  const key=idempotencyKey(ctx.request.headers.get('Idempotency-Key'));if(!key)throw fail(400,'REQUISICAO_INVALIDA',[{campo:'Idempotency-Key',mensagem:'A chave é obrigatória para este pedido.'}]);
- const original=await loadInvoice(ctx);const hash=await bodyHash('POST',`/api/v1/notas/${original.id}/${kind==='cancel'?'cancelar':'solicitar-analise-cancelamento'}`,JSON.stringify(ctx.body));
+ const original=await loadOwnInvoice(ctx);const hash=await bodyHash('POST',`/api/v1/notas/${original.id}/${kind==='cancel'?'cancelar':'solicitar-analise-cancelamento'}`,JSON.stringify(ctx.body));
  const {requestFiscalEvent,eventResponse}=await import('./fiscal-events.server');
  return eventResponse(await requestFiscalEvent({db:ctx.db,organization_id:ctx.organization_id,environment:ctx.env,invoice_id:original.id,integration_id:ctx.integration_id,origin:'api',actor:ctx.actor,kind,body:ctx.body,idempotency_key:key,request_hash:hash,request:ctx.request}));
 }
 export const cancelInvoice=(ctx:ApiCtx)=>fiscalEvent(ctx,'cancel');
 export const requestCancellationAnalysis=(ctx:ApiCtx)=>fiscalEvent(ctx,'analysis');
 export async function getInvoiceEventXml(ctx:ApiCtx):Promise<ApiResult>{
- const i=await loadInvoice(ctx);const code=ctx.params['codigo']??'';if(!['101101','101103'].includes(code))throw fail(404,'NAO_ENCONTRADO');
- const {latestEventXml}=await import('./fiscal-events.server');const xml=await latestEventXml(ctx.db,i.id,ctx.organization_id,code);if(!xml)throw fail(404,'NAO_ENCONTRADO',[], 'Evento não registrado para esta nota.');
- return {status:200,body:xml,headers:{'Content-Type':'application/xml; charset=utf-8','Content-Disposition':`attachment; filename="evento-${code}-${i.id}.xml"`}};
+ const n=await loadNote(ctx);const code=ctx.params['codigo']??'';if(!/^\d{6}$/.test(code))throw fail(404,'NAO_ENCONTRADO');
+ const {invoiceEventXml,documentEventXml}=await import('./notes.server');
+ const xml=n.kind==='notem'?await invoiceEventXml(ctx.db,n.invoice,code):await documentEventXml(ctx.db,ctx.env,n.doc.access_key,code);
+ if(!xml)throw fail(404,'NAO_ENCONTRADO',[], 'Evento não registrado para esta nota.');
+ return {status:200,body:xml,headers:{'Content-Type':'application/xml; charset=utf-8','Content-Disposition':`attachment; filename="evento-${code}-${n.id}.xml"`}};
 }
+type Note={kind:'notem';id:string;invoice:Invoice}|{kind:'externa';id:string;doc:import('./nfse-documents').NfseDocument;companyId:string};
+/** notem invoice of the organization, or a note issued outside notem by one of its companies (proof of possession). */
+export async function loadNote(ctx:ApiCtx):Promise<Note>{
+ const id=ctx.params['invoiceId'];if(!id||!zUuid(id))throw fail(404,'NAO_ENCONTRADO');
+ const r=await ctx.db.from('invoices').select('*').eq('id',id).eq('organization_id',ctx.organization_id).eq('environment',ctx.env).maybeSingle();if(r.error)throw new Error('INVOICE_READ_FAILED');
+ if(r.data){ctx.setCompany(r.data.company_id);return {kind:'notem',id,invoice:r.data};}
+ const {loadExternalNote}=await import('./notes.server');const e=await loadExternalNote(ctx.db,ctx.organization_id,ctx.env,id);if(!e)throw fail(404,'NAO_ENCONTRADO');
+ ctx.setCompany(e.companyId);return {kind:'externa',id,doc:e.doc,companyId:e.companyId};
+}
+/** Cancel, analysis and substitution are only for notes issued by notem. */
+async function loadOwnInvoice(ctx:ApiCtx){const n=await loadNote(ctx);if(n.kind==='externa'){const {EXTERNAL_MUTATION_MESSAGE}=await import('./nfse-documents');throw fail(409,'CONFLITO',[],EXTERNAL_MUTATION_MESSAGE);}return n.invoice;}
 export async function loadInvoice(ctx:ApiCtx){const id=ctx.params['invoiceId'];if(!id||!zUuid(id))throw fail(404,'NAO_ENCONTRADO');const r=await ctx.db.from('invoices').select('*').eq('id',id).eq('organization_id',ctx.organization_id).eq('environment',ctx.env).maybeSingle();if(r.error)throw new Error('INVOICE_READ_FAILED');if(!r.data)throw fail(404,'NAO_ENCONTRADO');ctx.setCompany(r.data.company_id);return r.data;}
 const zUuid=(id:string)=>/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(id);
-export async function getInvoice(ctx:ApiCtx){return {status:200,body:invoiceOut(await loadInvoice(ctx))};}
-export async function getInvoiceXml(ctx:ApiCtx){const i=await loadInvoice(ctx);if(!i.authorized_nfse_xml)throw fail(404,'NAO_ENCONTRADO',[], 'XML autorizado ainda não disponível.');return {status:200,body:i.authorized_nfse_xml,headers:{'Content-Type':'application/xml; charset=utf-8','Content-Disposition':`attachment; filename="nfse-${i.id}.xml"`}};}
-export async function getInvoicePdf(ctx:ApiCtx):Promise<ApiResult>{const i=await loadInvoice(ctx);if(!i.authorized_nfse_xml||!pdfStatuses.includes(i.status))throw fail(404,'NAO_ENCONTRADO',[], 'DANFSe ainda não disponível.');const f=await ctx.db.from('company_fiscal_settings').select('print_danfse_receipt').eq('company_id',i.company_id).eq('organization_id',i.organization_id).maybeSingle();if(f.error)throw new Error('FISCAL_READ_FAILED');return {status:200,body:await generateDanfse(i.authorized_nfse_xml,i.status,f.data?.print_danfse_receipt??false),headers:{'Content-Type':'application/pdf','Content-Disposition':`attachment; filename="danfse-${i.nfse_number??i.id}.pdf"`}};}
-export async function listInvoices(ctx:ApiCtx){const {limite,offset}=pageParams(ctx.url);const p=ctx.url.searchParams;let q=ctx.db.from('invoices').select('*').eq('organization_id',ctx.organization_id).eq('environment',ctx.env);
- const company=p.get('empresa_id');if(company)q=q.eq('company_id',company);
- const external=p.get('empresa_id_externo');if(external){const c=await ctx.db.from('companies').select('id').eq('organization_id',ctx.organization_id).eq('external_id',external).maybeSingle();if(c.error)throw new Error('COMPANY_READ_FAILED');if(!c.data)return {status:200,body:page([],limite,offset)};q=q.eq('company_id',c.data.id);}
- const status=p.get('situacao');if(status){const dbStatus=Object.entries(invoiceStatuses).find(([,label])=>label===status)?.[0];if(!dbStatus)throw fail(400,'REQUISICAO_INVALIDA',[{campo:'situacao',mensagem:'Situação inválida.'}]);q=q.eq('status',dbStatus);}
- const id=p.get('id_externo');if(id)q=q.eq('external_id',id);const doc=p.get('tomador_documento');if(doc)q=q.eq('customer_snapshot->>documento',doc);
- for(const field of ['emitida_de','emitida_ate'] as const){const date=p.get(field);if(date){if(!/^\d{4}-\d{2}-\d{2}$/.test(date)||!Number.isFinite(Date.parse(date)))throw fail(400,'REQUISICAO_INVALIDA',[{campo:field,mensagem:'Informe data válida no formato AAAA-MM-DD.'}]);q=field==='emitida_de'?q.gte('emitted_at',`${date}T00:00:00-03:00`):q.lte('emitted_at',`${date}T23:59:59.999-03:00`);}}
- const r=await q.order('emitted_at',{ascending:false}).order('id').range(offset,offset+limite);if(r.error)throw new Error('INVOICES_LIST_FAILED');return {status:200,body:page((r.data??[]).map(invoiceOut),limite,offset)};
+export async function getInvoice(ctx:ApiCtx){const n=await loadNote(ctx);if(n.kind==='notem')return {status:200,body:invoiceOut(n.invoice)};const {externalOut}=await import('./nfse-documents');return {status:200,body:externalOut(n.doc,n.companyId)};}
+async function noteXml(ctx:ApiCtx,n:Note){const {invoiceXml,documentXml}=await import('./notes.server');return n.kind==='notem'?await invoiceXml(ctx.db,n.invoice):await documentXml(ctx.db,n.doc);}
+export async function getInvoiceXml(ctx:ApiCtx){const n=await loadNote(ctx);const xml=await noteXml(ctx,n);if(!xml)throw fail(404,'NAO_ENCONTRADO',[], 'XML autorizado ainda não disponível.');return {status:200,body:xml,headers:{'Content-Type':'application/xml; charset=utf-8','Content-Disposition':`attachment; filename="nfse-${n.id}.xml"`}};}
+export async function getInvoicePdf(ctx:ApiCtx):Promise<ApiResult>{const n=await loadNote(ctx);const status=n.kind==='notem'?n.invoice.status:n.doc.status;const xml=pdfStatuses.includes(status)?await noteXml(ctx,n):null;if(!xml)throw fail(404,'NAO_ENCONTRADO',[], 'DANFSe ainda não disponível.');const companyId=n.kind==='notem'?n.invoice.company_id:n.companyId;const f=await ctx.db.from('company_fiscal_settings').select('print_danfse_receipt').eq('company_id',companyId).eq('organization_id',ctx.organization_id).maybeSingle();if(f.error)throw new Error('FISCAL_READ_FAILED');const number=n.kind==='notem'?n.invoice.nfse_number:n.doc.nfse_number;return {status:200,body:await generateDanfse(xml,status,f.data?.print_danfse_receipt??false),headers:{'Content-Type':'application/pdf','Content-Disposition':`attachment; filename="danfse-${number??n.id}.pdf"`}};}
+export async function listInvoices(ctx:ApiCtx){const {limite,offset}=pageParams(ctx.url);const p=ctx.url.searchParams;
+ let company=p.get('empresa_id');if(company&&!zUuid(company))throw fail(400,'REQUISICAO_INVALIDA',[{campo:'empresa_id',mensagem:'Identificador inválido.'}]);
+ const external=p.get('empresa_id_externo');if(external){const c=await ctx.db.from('companies').select('id').eq('organization_id',ctx.organization_id).eq('external_id',external).maybeSingle();if(c.error)throw new Error('COMPANY_READ_FAILED');if(!c.data)return {status:200,body:page([],limite,offset)};company=c.data.id;}
+ const status=p.get('situacao');let dbStatus:string|null=null;if(status){dbStatus=Object.entries(invoiceStatuses).find(([,label])=>label===status)?.[0]??null;if(!dbStatus)throw fail(400,'REQUISICAO_INVALIDA',[{campo:'situacao',mensagem:'Situação inválida.'}]);}
+ const origin=p.get('origem');if(origin&&!['notem','externa'].includes(origin))throw fail(400,'REQUISICAO_INVALIDA',[{campo:'origem',mensagem:'Use notem ou externa.'}]);
+ const dates:Record<string,string|null>={emitida_de:null,emitida_ate:null};
+ for(const field of ['emitida_de','emitida_ate'] as const){const date=p.get(field);if(date){if(!/^\d{4}-\d{2}-\d{2}$/.test(date)||!Number.isFinite(Date.parse(date)))throw fail(400,'REQUISICAO_INVALIDA',[{campo:field,mensagem:'Informe data válida no formato AAAA-MM-DD.'}]);dates[field]=field==='emitida_de'?`${date}T00:00:00-03:00`:`${date}T23:59:59.999-03:00`;}}
+ const args=Object.fromEntries(Object.entries({_company:company,_origin:origin,_status:dbStatus,_from:dates['emitida_de'],_to:dates['emitida_ate'],_external_id:p.get('id_externo'),_taker:p.get('tomador_documento')}).filter(([,v])=>v!=null)) as Record<string,string>;
+ const r=await ctx.db.rpc('list_org_notes',{_org:ctx.organization_id,_env:ctx.env,...args,_limit:limite+1,_offset:offset});
+ if(r.error)throw new Error('INVOICES_LIST_FAILED');
+ const rows=r.data??[];const own=rows.filter(x=>x.origin==='notem').map(x=>x.id),ext=rows.filter(x=>x.origin==='externa').map(x=>x.id);
+ const [inv,docs]=await Promise.all([own.length?ctx.db.from('invoices').select('*').eq('organization_id',ctx.organization_id).in('id',own):Promise.resolve({data:[],error:null}),ext.length?ctx.db.from('nfse_documents').select('*').in('id',ext):Promise.resolve({data:[],error:null})]);
+ if(inv.error||docs.error)throw new Error('INVOICES_LIST_FAILED');
+ const {externalOut}=await import('./nfse-documents');
+ const out=rows.map(x=>{if(x.origin==='notem'){const i=(inv.data??[]).find(v=>v.id===x.id);return i?invoiceOut(i):null;}const d=(docs.data??[]).find(v=>v.id===x.id);return d?externalOut(d,x.company_id):null;}).filter(Boolean);
+ return {status:200,body:page(out,limite,offset)};
 }
