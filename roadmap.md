@@ -110,5 +110,8 @@
 
 ## Fase 7 — Sincronização com o ADN
 - [x] Parte 1: núcleo publicado; primeira sincronização da Group Jota concluída (13 NSUs) e nota nº 11 cancelada como registrada fora da notem. Aguardando aprovação para a Parte 2.
+- [ ] Ajuste A: sincronização só manual por empresa/ambiente (Novidades após a 1ª concluída; períodos 1/3/6/12/24 meses, padrão 1); busca do NSU inicial ≤25 etapas, ≥2 s entre consultas, para em consumo indevido/rejeição; etapas sem documentos não acionam 1 h; owner/admin/admin plataforma; homologação permitida; Scheduler só continua pedidos.
+- [ ] Ajuste B: XML gzip em bucket privado (caminho, tamanho, SHA-256); migrar XML existentes com conferência byte a byte e relatório; NÃO remover colunas antes da aprovação do relatório.
+- [ ] Ajuste C: verificação diária de eventos para notas notem com operação pendente; registrar e mostrar data/hora, verificadas e atualizadas na aba Sincronização.
 - [ ] Parte 2: API (origem, filtro, notas recebidas, sincronização só do ambiente da chave), docs e OpenAPI; aviso nota.desbloqueada_prefeitura em webhooks.md e grupo nota.*.
 - [ ] Parte 3: painel (selo/filtro, abas Sincronização e Notas recebidas, Atualizar com o governo), testes e publicação.
