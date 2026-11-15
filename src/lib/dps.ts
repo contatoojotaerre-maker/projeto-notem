@@ -1,6 +1,7 @@
 import { z } from 'zod';
 import { customerSchema, type Customer } from './customers';
 import { isValidCnpj } from './notem';
+import { RuleError } from './rule-error';
 import { approximateTaxRuleError, specialTaxRuleError } from './fiscal';
 import { FISCAL_TEXT_MESSAGE, fiscalTextAccepted } from './fiscal-text';
 import { accessKeyIssuer, justificationError, substitutionReasons, type SubstitutionReason } from './fiscal-events';

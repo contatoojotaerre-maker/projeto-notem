@@ -1,3 +1,4 @@
+import { ruleMessage } from './rule-error';
 // Cancellation (e101101) and fiscal analysis (e101103) requests: durable record before sending,
 // ambiguous replies are confirmed by consulting the event and never re-sent blindly.
 import { z } from 'zod';
@@ -152,7 +153,7 @@ export async function requestFiscalEvent(a: EventRequest): Promise<Outcome> {
   if (cert.data.cnpj.replace(/\D/g, '').slice(0, 8) !== cnpj.slice(0, 8)) throw fail(422, 'REGRA_DE_NEGOCIO', [{ campo: 'certificado', mensagem: rejectionGuidance['E0812']?.mensagem ?? 'Certificado não corresponde ao prestador.' }]);
   let built: { id: string; xml: string };
   try { built = buildFiscalEvent({ code, environment: inv.environment, accessKey: inv.access_key, authorCnpj: cnpj, occurredAt: brasiliaNow(), reason: v.motivo, justification }); }
-  catch (err) { throw fail(422, 'REGRA_DE_NEGOCIO', [{ campo: 'nota', mensagem: err instanceof Error ? err.message : 'Pedido inválido.' }]); }
+  catch (err) { throw fail(422, 'REGRA_DE_NEGOCIO', [{ campo: 'nota', mensagem: ruleMessage(err, 'Pedido inválido.') }]); }
   let unsignedFile;
   try { unsignedFile = await putXml(db, a.environment, 'invoice_fiscal_events', inv.id, `unsigned-${code}`, built.xml); } catch { throw new Error('EVENT_XML_STORE_FAILED'); }
   const r = await db.rpc('create_fiscal_event_request', { _payload: { organization_id: a.organization_id, environment: a.environment, integration_id: a.integration_id, origin: a.origin, requested_by: a.actor, invoice_id: inv.id, code, reason: v.motivo, justification, idempotency_key: a.idempotency_key, request_hash: a.request_hash, request_id: built.id, unsigned_xml: built.xml, unsigned_file: unsignedFile } as Json });

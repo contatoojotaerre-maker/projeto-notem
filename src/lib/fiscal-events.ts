@@ -1,6 +1,7 @@
 // Builder for NFS-e "pedido de registro de evento" (pedRegEvento v1.01), unsigned.
 // The transmissor only signs and sends; content is the notem's responsibility.
 import { isValidCnpj } from './notem';
+import { RuleError } from './rule-error';
 import { FISCAL_TEXT_MESSAGE, fiscalTextAccepted } from './fiscal-text';
 
 export const cancelReasons = { erro_emissao: '1', servico_nao_prestado: '2', outros: '9' } as const;
