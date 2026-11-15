@@ -11,7 +11,7 @@ export const DEFAULT_NT009R1_PRODUCTION_START = '2026-12-01T03:00:00.000Z';
 export const ALPHANUMERIC_CNPJ_LAYOUT_MESSAGE = 'CNPJ alfanumérico só pode ser usado em produção a partir da vigência da NT 009';
 export const ALPHANUMERIC_CNPJ_CONVERSION_ERROR = 'DPS_CNPJ_ALFANUMERICO_LEIAUTE_ANTERIOR';
 /** True when the DPS carries letters in its Id or in any CNPJ / replaced key (only the NT 009 layout accepts them). */
-export function dpsHasAlphanumericCnpj(xml: string) { return /Id="DPS[^"]*[A-Z][^"]*"/.test(xml.slice(4)) || /<(CNPJ|chSubstda)>[^<]*[A-Z][^<]*<\//.test(xml); }
+export function dpsHasAlphanumericCnpj(xml: string) { return /Id="DPS[^"]*[A-Z][^"]*"/.test(xml) || /<(CNPJ|chSubstda)>[^<]*[A-Z][^<]*<\//.test(xml); }
 /** finNFSe sent by notem: 0 = regular NFS-e (credit/debit notes are not issued). */
 export const REGULAR_FIN_NFSE = '0';
 
