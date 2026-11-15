@@ -5,7 +5,7 @@ import { readAuthorizedNfse } from './nfse-xml';
 import { explainKeySchemaDefect,governmentErrors,invoiceOut,verificationDecision,type Invoice,type Transmission,type GovernmentReply } from './invoices';
 import { explicitExternalDps } from './external-dps';
 import { dpsWithNumber,putXml,putXmlOptional,xmlOf,type XmlRef } from './xml-files.server';
-import { ALPHANUMERIC_CNPJ_CONVERSION_ERROR,convertDpsLayout,detectDpsLayout } from './dps-layout';
+import { ALPHANUMERIC_CNPJ_CONVERSION_ERROR,IBSCBS_OLD_LAYOUT_ERROR,LAYOUT_NOT_CONVERTIBLE,convertDpsLayout,detectDpsLayout } from './dps-layout';
 import { currentDpsLayout } from './platform-settings.server';
 import { isAccessKey } from './fiscal-ids';
 
@@ -38,7 +38,7 @@ export async function applyGovernmentReply(db:DB,i:Invoice,res:Transmission,requ
  const reply=res.resposta??{};const signedRef=await putXmlOptional(db,i.environment,'invoices',i.id,'signed_dps',res.dps_assinada);const signed=signedRef?{files:{signed_dps:signedRef}}:{};
  const xml=reply.corpo_json?.['nfseXml'];
  if(reply.status===201&&typeof xml==='string'){
-  try{const p=i.provider_snapshot as {cnpj?:string};const n=readAuthorizedNfse(xml,{dpsId:i.dps_id,environment:i.environment,cnpj:p?.cnpj??''});const key=reply.corpo_json?.['chaveAcesso'];if(key&&key!==n.accessKey)throw new Error('KEY_MISMATCH');const authorized=await putXml(db,i.environment,'invoices',i.id,'authorized_nfse',xml);return await persistInvoiceResult(db,i,{files:{...signed.files,authorized_nfse:authorized},status:'authorized',dispatch_state:'completed',access_key:n.accessKey,nfse_number:n.number,authorized_at:n.authorizedAt,government_values:{base:n.base,rate:n.rate,iss:n.iss,net:n.net,withheld:n.withheld},message:'Nota autorizada pelo governo.'},'authorized',request);}catch(e){console.error('INVOICE_XML_RECONCILIATION_REQUIRED',i.id);}
+  try{const p=i.provider_snapshot as {cnpj?:string};const n=readAuthorizedNfse(xml,{dpsId:i.dps_id,environment:i.environment,cnpj:p?.cnpj??''});const key=reply.corpo_json?.['chaveAcesso'];if(key&&key!==n.accessKey)throw new Error('KEY_MISMATCH');const authorized=await putXml(db,i.environment,'invoices',i.id,'authorized_nfse',xml);return await persistInvoiceResult(db,i,{files:{...signed.files,authorized_nfse:authorized},status:'authorized',dispatch_state:'completed',access_key:n.accessKey,nfse_number:n.number,authorized_at:n.authorizedAt,government_values:{base:n.base,rate:n.rate,iss:n.iss,net:n.net,withheld:n.withheld,ibs_cbs:n.ibsCbs as Json},message:'Nota autorizada pelo governo.'},'authorized',request);}catch(e){console.error('INVOICE_XML_RECONCILIATION_REQUIRED',i.id);}
  }
  if(reply.status===400||reply.status===403){
   let errors=governmentErrors(reply,i.id);

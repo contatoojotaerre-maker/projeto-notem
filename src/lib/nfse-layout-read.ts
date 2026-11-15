@@ -43,3 +43,43 @@ export function issBaseAdjustmentOf(nfseValores: unknown): string | null { const
 export function ibsCbsBaseAdjustmentOf(ibsValores: unknown): string | null { const v = obj(ibsValores); const x = first(v.vCalcAjusteBCIBSCBS, v.vCalcReeRepRes); return x === undefined ? null : String(x); }
 /** cIndOp: optional in NT 009 (only when the classification requires taxation). */
 export function indOpOf(infDPS: unknown): string | null { const v = obj(obj(infDPS).IBSCBS).cIndOp; return v === undefined || v === null || v === '' ? null : String(v); }
+
+/** Public `ibs_cbs` object (API, webhooks, panel): values calculated by the government, read from infNFSe/IBSCBS. */
+export type IbsCbsValues = {
+  classificacao: { cst: string | null; codigo: string | null }; indicador_operacao: string | null; consumidor_final: boolean;
+  localidade_incidencia: { codigo_municipio: string | null; nome: string | null };
+  percentual_redutor: string | null; base_calculo: string | null; ajuste_base_calculo: string | null; ajuste_base_locacao_imoveis: string | null;
+  ibs_uf: { aliquota: string | null; reducao_aliquota: string | null; aliquota_efetiva: string | null; valor: string | null; diferimento: string | null };
+  ibs_municipal: { aliquota: string | null; reducao_aliquota: string | null; aliquota_efetiva: string | null; valor: string | null; diferimento: string | null };
+  cbs: { aliquota: string | null; reducao_aliquota: string | null; aliquota_efetiva: string | null; valor: string | null; diferimento: string | null };
+  valor_total_ibs: string | null; valor_total_ibs_cbs: string | null; valor_total_nota: string | null;
+  credito_presumido_ibs: { percentual: string | null; valor: string | null } | null; credito_presumido_cbs: { percentual: string | null; valor: string | null } | null;
+  receita_bruta_simples: string | null; versao_calculadora: string | null;
+};
+const s = (v: unknown) => (v === undefined || v === null || v === '' || typeof v === 'object' ? null : String(v));
+/** Decimal strings added exactly in cents (no floating point). */
+export function addDecimals(...v: (string | null | undefined)[]): string | null {
+  const parts = v.filter((x): x is string => typeof x === 'string' && /^-?\d+(\.\d{1,2})?$/.test(x)); if (!parts.length) return null;
+  const cents = parts.reduce((t, x) => { const neg = x.startsWith('-'); const [i, f = ''] = x.replace('-', '').split('.'); const c = BigInt(i!) * 100n + BigInt((f + '00').slice(0, 2)); return t + (neg ? -c : c); }, 0n);
+  const neg = cents < 0n, a = neg ? -cents : cents; return `${neg ? '-' : ''}${a / 100n}.${String(a % 100n).padStart(2, '0')}`;
+}
+/** Reads the government-calculated IBS/CBS of an authorized NFS-e (parsed infNFSe); null when the note has no group. */
+export function ibsCbsValuesOf(infNFSe: unknown): IbsCbsValues | null {
+  const n = obj(infNFSe); const g = obj(n.IBSCBS); const d = obj(obj(n.DPS).infDPS); const dg = obj(d.IBSCBS);
+  if (!n.IBSCBS && !d.IBSCBS) return null;
+  const v = obj(g.valores), uf = obj(v.uf), mun = obj(v.mun), fed = obj(v.fed), tot = obj(g.totCIBS), gi = obj(tot.gIBS), gc = obj(tot.gCBS);
+  const cls = ibsCbsClassOf(d); const ibs = s(gi.vIBSTot), cbs = s(gc.vCBS);
+  const pres = (p: Obj, k: 'IBS' | 'CBS') => (p && Object.keys(p).length ? { percentual: s(p[`pCredPres${k}`]), valor: s(p[`vCredPres${k}`]) } : null);
+  return {
+    classificacao: { cst: cls.cst, codigo: cls.cClassTrib }, indicador_operacao: s(dg.cIndOp), consumidor_final: s(dg.indFinal) === '1',
+    localidade_incidencia: { codigo_municipio: s(g.cLocalidadeIncid), nome: s(g.xLocalidadeIncid) },
+    percentual_redutor: s(g.pRedutor), base_calculo: s(v.vBC), ajuste_base_calculo: s(v.vCalcAjusteBCIBSCBS), ajuste_base_locacao_imoveis: s(v.vCalcAjusteBCLocImoveis),
+    ibs_uf: { aliquota: s(uf.pIBSUF), reducao_aliquota: s(uf.pRedAliqUF), aliquota_efetiva: s(uf.pAliqEfetUF), valor: s(obj(gi.gIBSUFTot).vIBSUF), diferimento: s(obj(gi.gIBSUFTot).vDifUF) },
+    ibs_municipal: { aliquota: s(mun.pIBSMun), reducao_aliquota: s(mun.pRedAliqMun), aliquota_efetiva: s(mun.pAliqEfetMun), valor: s(obj(gi.gIBSMunTot).vIBSMun), diferimento: s(obj(gi.gIBSMunTot).vDifMun) },
+    cbs: { aliquota: s(fed.pCBS), reducao_aliquota: s(fed.pRedAliqCBS), aliquota_efetiva: s(fed.pAliqEfetCBS), valor: cbs, diferimento: s(gc.vDifCBS) },
+    valor_total_ibs: ibs, valor_total_ibs_cbs: addDecimals(ibs, cbs), valor_total_nota: s(tot.vTotNF),
+    credito_presumido_ibs: pres(obj(gi.gIBSCredPres), 'IBS'), credito_presumido_cbs: pres(obj(gc.gCBSCredPres), 'CBS'),
+    // Later releases (Anexo VI v1.04.01): read when present, never required.
+    receita_bruta_simples: s(first(v.vReceitaBrutaSN, obj(tot.gTribSN).vReceitaBrutaSN)), versao_calculadora: s(first(n.verCalcIBSCBS, g.verCalcIBSCBS)),
+  };
+}
