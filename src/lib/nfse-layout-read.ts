@@ -1,6 +1,7 @@
 // Tolerant readers for parsed NFS-e/DPS objects (fast-xml-parser, namespace prefixes removed).
 // They accept the layout before NT 009 and NT 009 (release 1 and later); NT 008 tables cite pre-NT 009 paths.
-type Obj = Record<string, any>;
+// eslint-disable-next-line @typescript-eslint/no-explicit-any -- parsed XML of unknown shape, read defensively
+type Obj = any;
 const obj = (v: unknown): Obj => (v && typeof v === 'object' ? v as Obj : {});
 const first = (...v: unknown[]) => v.find(x => x !== undefined && x !== null && x !== '');
 
