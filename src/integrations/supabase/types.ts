@@ -2074,6 +2074,27 @@ export type Database = {
           },
         ]
       }
+      platform_settings: {
+        Row: {
+          id: boolean
+          nt009r1_production_starts_at: string
+          updated_at: string
+          updated_by: string | null
+        }
+        Insert: {
+          id?: boolean
+          nt009r1_production_starts_at?: string
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Update: {
+          id?: boolean
+          nt009r1_production_starts_at?: string
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Relationships: []
+      }
       profiles: {
         Row: {
           avatar_url: string | null
@@ -3306,6 +3327,17 @@ export type Database = {
         }
         Returns: string
       }
+      replace_invoice_dps_base: {
+        Args: {
+          _file: Json
+          _from: string
+          _id: string
+          _org: string
+          _to: string
+          _token: string
+        }
+        Returns: boolean
+      }
       replay_webhook_delivery: {
         Args: { _actor: string; _id: string; _org: string }
         Returns: string
@@ -3415,6 +3447,21 @@ export type Database = {
           to: "municipalities"
           isOneToOne: false
           isSetofReturn: true
+        }
+      }
+      set_nt009_production_start: {
+        Args: { _actor: string; _value: string }
+        Returns: {
+          id: boolean
+          nt009r1_production_starts_at: string
+          updated_at: string
+          updated_by: string | null
+        }
+        SetofOptions: {
+          from: "*"
+          to: "platform_settings"
+          isOneToOne: true
+          isSetofReturn: false
         }
       }
       special_tax_rule_error: {
