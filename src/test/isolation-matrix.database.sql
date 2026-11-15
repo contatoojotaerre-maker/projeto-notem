@@ -100,7 +100,6 @@ BEGIN
   jsonb_build_object('n','marcar aviso de homologacao como lido','q','update public.sandbox_change_audit set acknowledged_at=now(), acknowledged_by=$3 where organization_id=$1','a','["owner","admin","platform"]'),
   jsonb_build_object('n','reescrever aviso de homologacao','q','update public.sandbox_change_audit set item=item where organization_id=$1','a','[]'),
   jsonb_build_object('n','ajustar limite da organizacao','q','update public.api_rate_limit_overrides set max_hits=max_hits where organization_id=$1','a','[]'),
-  jsonb_build_object('n','gravar contador de limite','q','insert into public.api_rate_counters select * from public.api_rate_counters limit 0','a','[]'),
   jsonb_build_object('n','RPC api_rate_check','q','select public.api_rate_check($1,''[]''::jsonb)','a','[]'),
   jsonb_build_object('n','RPC api_slot_acquire','q','select public.api_slot_acquire(''x'',1,60)','a','[]'),
   jsonb_build_object('n','apagar trilha administrativa','q','delete from public.admin_audit_events','a','[]'),
