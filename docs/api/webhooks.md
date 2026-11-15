@@ -102,6 +102,8 @@ Durante a troca de segredo, a notem pode enviar duas assinaturas (`v1=...,v1=...
 
 Os campos de `dados` de cada evento são documentados junto com a rota correspondente da API.
 
+Os avisos `nota.bloqueada_prefeitura` e `nota.desbloqueada_prefeitura` são enviados para notas emitidas pela notem quando a prefeitura registra ou retira o bloqueio por ofício. `dados` é o objeto `nota` completo; durante o bloqueio, `restricoes` contém um item com `"tipo": "bloqueio_prefeitura"`, que deixa de aparecer após o desbloqueio. Como os demais avisos de nota, chegam quando o evento é conhecido pela notem: pela sincronização feita no painel, por "Atualizar com o governo" ou pela verificação diária das notas com cancelamento pendente.
+
 ### Dados dos eventos de empresa e certificado
 `empresa.situacao_alterada` — enviado uma única vez a cada mudança de `pronta_para_emitir` em um ambiente (após alteração pela API ou pelo painel, verificação do município ou vencimento do certificado):
 ```json
