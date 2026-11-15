@@ -1,26 +1,30 @@
-# DPS E1 — conferência externa obrigatória
+# Exemplos de DPS
 
-Três exemplos **sem assinatura**, ambiente homologação, dados fictícios; não transmitir ao governo:
-- simples-pj.xml: ME/EPP sem retenção, tomador PJ com CNPJ diferente do prestador e desconto incondicionado de 10,00.
-- nao-optante-pf.xml: não optante, percentuais por esfera, tomador PF.
-- estrangeiro.xml: tomador estrangeiro identificado por NIF; serviço não é automaticamente exportação.
+Exemplos **sem assinatura**, ambiente homologação, dados fictícios; não transmitir ao governo. Gerados pelo montador de `src/lib/dps.ts` e conferidos automaticamente com o montador em `src/test/dps-layout.test.ts`. Números ilustrativos (série 1, números 1–5); nenhum número foi reservado no banco.
 
-Gerados pelo montador de src/lib/dps.ts. Tipo de inscrição CNPJ = 2; versão 1.01; série 1, números 1–3. Não foram reservados números no banco.
+## Leiaute NT 009 (release 1) — esta pasta
 
-## Resultado com o XSD original e lxml
-**Os três XML NÃO passam integralmente no XSD original.** Único erro reportado:
-`Element '{http://www.sped.fazenda.gov.br/nfse}serie': [facet 'pattern'] The value '1' is not accepted by the pattern '^0{0,4}\d{1,5}$'.`
+Leiaute usado em homologação desde já e em produção a partir da data configurada na Administração (padrão 01/12/2026 00:00, horário de Brasília).
 
-O padrão TSSerieDPS no ZIP oficial contém ^/$ como caracteres literais, não âncoras: defeito do esquema oficial. Por autorização do proprietário, o teste corrige **apenas** esse padrão para `0{0,4}\d{1,5}` em uma cópia em memória. O ZIP oficial e o conteúdo dos XML permanecem intactos.
+- `simples-pj.xml`: ME/EPP sem retenção, tomador PJ e desconto incondicionado de 10,00.
+- `nao-optante-pf.xml`: não optante, percentuais por esfera, tomador PF.
+- `estrangeiro.xml`: tomador estrangeiro identificado por NIF; serviço não é automaticamente exportação.
+- `com-nbs.xml`: serviço 01.05.01 com código municipal e NBS 1.1103.21.00.
 
-Reprodução estrita (deve falhar):
-`python3 src/test/validate-dps-xsd.py --official docs/exemplos/dps/simples-pj.xml docs/exemplos/dps/nao-optante-pf.xml docs/exemplos/dps/estrangeiro.xml`
+Diferenças em relação ao leiaute anterior: `finNFSe` = 0 (NFS-e regular) logo após `tpEmit` e antes de `cLocEmi`; em `cServ`, `cNBS` passa a vir antes de `xDescServ`. A notem não envia `vDedRed` nem `vAjusteBC`, e o grupo `IBSCBS` ainda não é enviado.
 
-Validação completa com a correção isolada em memória (os três devem passar sem erros):
-`python3 src/test/validate-dps-xsd.py docs/exemplos/dps/simples-pj.xml docs/exemplos/dps/nao-optante-pf.xml docs/exemplos/dps/estrangeiro.xml`
+Validação no XSD oficial do release 1 (`docs/referencias/rtc/`, arquivos lidos como estão — o padrão da série foi corrigido pelo governo nesta versão):
+`python3 src/test/validate-dps-xsd.py --layout=nt009r1 docs/exemplos/dps/*.xml`
 
-Nenhum erro de validação é ignorado. Os testes verificam o ZIP intacto e a recusa de ambiente/série inválidos.
+## Leiaute anterior — `leiaute-anterior/`
 
-**Parte 3 bloqueada** até conferência externa e liberação do proprietário. Sincronização/presença dos arquivos no GitHub precisa ser confirmada; gravação local não comprova sincronização.
-## Nova conferência de regras de negócio
-E0431/E0432: campos de descontos zero e grupo vazio omitidos. E0710/E0712/E0713: matriz por situação do Simples aplicada. E0202: tomador nacional não pode ter o documento do prestador. Os três exemplos são regenerados pelo mesmo montador; números são ilustrativos, sem reserva no banco.
+Mesmos cenários no leiaute do XSD de 09/02/2026, usado em produção até a data de troca. O padrão `TSSerieDPS` desse ZIP contém `^`/`$` literais (defeito oficial); por autorização do proprietário o teste corrige **apenas** esse padrão em memória. O ZIP permanece intacto.
+
+- Validação com a correção isolada: `python3 src/test/validate-dps-xsd.py --layout=nt004 docs/exemplos/dps/leiaute-anterior/*.xml`
+- Reprodução estrita (deve falhar pela série): acrescentar `--official`.
+
+Os testes exigem que cada DPS passe no XSD do seu leiaute **e falhe no do outro**, para que um perfil trocado nunca passe despercebido.
+
+## Regras de negócio já conferidas
+
+E0431/E0432: descontos zero omitidos. E0710/E0712/E0713: matriz por situação do Simples. E0202: tomador nacional não pode ter o documento do prestador.
