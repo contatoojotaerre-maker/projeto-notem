@@ -12,8 +12,8 @@ export function tableDb(tables: Record<string, unknown>, rpc: (name: string, arg
   };
   const files = new Map<string, Uint8Array>();
   const storage = { from: () => ({
-    upload: vi.fn(async (path: string, body: Blob) => { files.set(path, new Uint8Array(await new Response(body).arrayBuffer())); return { data: { path }, error: null }; }),
-    download: vi.fn(async (path: string) => files.has(path) ? { data: new Blob([files.get(path)! as BlobPart]), error: null } : { data: null, error: { message: 'not found' } }),
+    upload: vi.fn(async (path: string, body: Uint8Array) => { files.set(path, new Uint8Array(body)); return { data: { path }, error: null }; }),
+    download: vi.fn(async (path: string) => { const b = files.get(path); return b ? { data: { arrayBuffer: async () => b.slice().buffer }, error: null } : { data: null, error: { message: 'not found' } }; }),
   }) };
   const db = { from: vi.fn((t: string) => builder(t)), rpc: vi.fn(async (name: string, args: Record<string, unknown>) => { calls.push({ name, args }); return rpc(name, args); }), storage };
   return { db: db as never, calls, inserts, rpc: db.rpc, files };

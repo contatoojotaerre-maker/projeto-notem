@@ -35,7 +35,7 @@ export function ownerFolder(table: XmlTable, id: string, extra?: string) {
 export async function storeXml(db: DB, path: string, xml: string, verify = true): Promise<XmlRef> {
   const bytes = new TextEncoder().encode(xml); const sha = await sha256Hex(bytes); const packed = await gzip(bytes);
   const finalPath = path.includes('{sha}') ? path.replace('{sha}', sha.slice(0, 16)) : path;
-  const up = await db.storage.from(XML_BUCKET).upload(finalPath, new Blob([packed as BlobPart], { type: 'application/gzip' }), { upsert: true, contentType: 'application/gzip', cacheControl: 'no-store' });
+  const up = await db.storage.from(XML_BUCKET).upload(finalPath, packed, { upsert: true, contentType: 'application/gzip', cacheControl: 'no-store' });
   if (up.error) throw new Error('XML_UPLOAD_FAILED');
   const ref = { path: finalPath, size: bytes.length, stored_size: packed.length, sha256: sha };
   if (verify) { const back = await readXmlBytes(db, ref); if (back.length !== bytes.length || back.some((b, i) => b !== bytes[i])) throw new Error('XML_VERIFY_FAILED'); }
@@ -44,7 +44,7 @@ export async function storeXml(db: DB, path: string, xml: string, verify = true)
 export async function readXmlBytes(db: DB, ref: Pick<XmlRef, 'path' | 'sha256'>) {
   const r = await db.storage.from(XML_BUCKET).download(ref.path);
   if (r.error || !r.data) throw new Error('XML_DOWNLOAD_FAILED');
-  const bytes = await gunzip(new Uint8Array(await new Response(r.data).arrayBuffer()));
+  const bytes = await gunzip(new Uint8Array(await r.data.arrayBuffer()));
   if (await sha256Hex(bytes) !== ref.sha256) throw new Error('XML_HASH_MISMATCH');
   return bytes;
 }
