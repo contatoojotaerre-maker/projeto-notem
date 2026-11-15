@@ -112,7 +112,9 @@
 - [x] Parte 1: núcleo publicado; primeira sincronização da Group Jota concluída (13 NSUs) e nota nº 11 cancelada como registrada fora da notem. Aguardando aprovação para a Parte 2.
 - [x] Ajuste A: sincronização só manual por empresa/ambiente, busca ≤25 etapas com 2 s, homologação permitida; Scheduler só continua pedidos.
 - [x] Ajuste B (cópia): 18 XML copiados para o bucket privado e conferidos byte a byte.
-- [ ] Ajuste B (remoção das colunas de XML): aguardando aprovação do relatório pelo usuário.
+- [x] Ajuste B (remoção das colunas de XML): aprovada e aplicada; arquivos privados são a única cópia.
+- [x] Teste automático da permissão de sincronização (servidor e banco): owner/admin/admin da plataforma aceitos; operator/developer/viewer/outra organização recusados.
+- [ ] Publicar o painel com a remoção das colunas.
 - [x] Ajuste C: verificação diária com data/hora, verificadas e atualizadas na aba Sincronização.
 - [x] Parte 2: API (origem, notas recebidas, situação da sincronização), sincronizacao.md, OpenAPI, nota.desbloqueada_prefeitura.
 - [x] Parte 3: painel (selo/filtro de origem, abas Sincronização e Notas recebidas, Atualizar com o governo) e testes. Telas não verificadas com sessão real (projeto sem login de teste disponível).
