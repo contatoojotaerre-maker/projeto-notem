@@ -5,6 +5,7 @@ import { CNPJ_LOCK_MESSAGE, validReadinessCertificate,specialTaxRuleError } from
 import { AGREEMENT_COOLDOWN_MS, MAX_CERTIFICATE_BYTES, toTransmissorEnvironment } from './certificates';
 import { municipalitySearchTerm } from './municipality-search';
 import { normalizeCnpj } from './notem';
+import { IBSCBS_MESSAGES } from './ibscbs';
 
 const COMPANY_SELECT = '*, municipalities(name)';
 const refresh = (ctx: ApiCtx, companyId: string) => ctx.background(import('./readiness.server').then(m => m.refreshReadiness(ctx.db, companyId, { request: ctx.request })));
@@ -137,8 +138,8 @@ async function loadService(ctx: ApiCtx, companyId: string) {
 }
 export async function getService(ctx: ApiCtx): Promise<ApiResult> { const c = await loadCompany(ctx); return { status: 200, body: serviceOut(await loadService(ctx, c.id)) }; }
 export async function patchService(ctx: ApiCtx): Promise<ApiResult> {
-  const c = await loadCompany(ctx); const current = await loadService(ctx, c.id); const v = parseBody(servicePatch, ctx.body);
-  const r = await ctx.db.from('company_service_profiles').update({ ...serviceToDb(v, current), ...apiAudit(ctx) } as never).eq('id', current.id).eq('organization_id', ctx.organization_id).select(SERVICE_SELECT).single();
+  const c = await loadCompany(ctx); const current = await loadService(ctx, c.id); const v = parseBody(servicePatch, ctx.body); const row = serviceToDb(v, current); if (row.simples_activity_code !== current.simples_activity_code) await checkSimplesActivity(ctx, c.id, row.simples_activity_code);
+  const r = await ctx.db.from('company_service_profiles').update({ ...row, ...apiAudit(ctx) } as never).eq('id', current.id).eq('organization_id', ctx.organization_id).select(SERVICE_SELECT).single();
   if (r.error) serviceWriteError(r.error); refresh(ctx, c.id); return { status: 200, body: serviceOut(r.data as unknown as ServiceRow) };
 }
 
