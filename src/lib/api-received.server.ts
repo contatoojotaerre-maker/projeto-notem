@@ -1,6 +1,6 @@
 // API v1: received notes of a company (taker or intermediary) and the read-only synchronization status.
 import type { ApiCtx, ApiResult } from './api.server';
-import { fail, page, pageParams } from './api-contract';
+import { dateRange, fail, page, pageParams } from './api-contract';
 import { invoiceStatuses } from './invoices';
 import { pdfStatuses } from './danfse';
 import { receivedOut } from './nfse-documents';
@@ -17,8 +17,7 @@ export async function listReceived(ctx: ApiCtx): Promise<ApiResult> {
   const status = p.get('situacao'); const dbStatus = status ? Object.entries(invoiceStatuses).find(([, l]) => l === status)?.[0] : null;
   if (status && !dbStatus) throw fail(400, 'REQUISICAO_INVALIDA', [{ campo: 'situacao', mensagem: 'Situação inválida.' }]);
   const provider = p.get('prestador_cnpj'); if (provider && !/^\d{14}$/.test(provider)) throw fail(400, 'REQUISICAO_INVALIDA', [{ campo: 'prestador_cnpj', mensagem: 'Informe o CNPJ com 14 números.' }]);
-  const range: Record<string, string | null> = { emitida_de: null, emitida_ate: null };
-  for (const f of ['emitida_de', 'emitida_ate'] as const) { const d = p.get(f); if (d) { if (!/^\d{4}-\d{2}-\d{2}$/.test(d) || !Number.isFinite(Date.parse(d))) throw fail(400, 'REQUISICAO_INVALIDA', [{ campo: f, mensagem: 'Informe data válida no formato AAAA-MM-DD.' }]); range[f] = f === 'emitida_de' ? `${d}T00:00:00-03:00` : `${d}T23:59:59.999-03:00`; } }
+  const dr = dateRange(ctx.url, 'emitida_de', 'emitida_ate'); const range: Record<string, string | null> = { emitida_de: dr.from, emitida_ate: dr.to };
   const r = await listReceivedNotes(ctx.db, ctx.organization_id, ctx.env, id, { status: dbStatus ?? null, provider, from: range['emitida_de'], to: range['emitida_ate'] }, limite, offset);
   if (!r) throw fail(404, 'NAO_ENCONTRADO');
   return { status: 200, body: page(r.rows.map(d => receivedOut(d, id, r.cnpj)), limite, offset) };

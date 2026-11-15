@@ -24,7 +24,7 @@ export async function listCompanies(ctx: ApiCtx): Promise<ApiResult> {
   if (q.get('cnpj')) query = query.eq('cnpj', q.get('cnpj')!.replace(/\D/g, ''));
   if (q.get('id_externo')) query = query.eq('external_id', q.get('id_externo')!);
   const ativa = q.get('ativa'); if (ativa !== null) { if (!['true', 'false'].includes(ativa)) throw fail(400, 'REQUISICAO_INVALIDA', [{ campo: 'ativa', mensagem: 'Use true ou false.' }]); query = query.eq('active', ativa === 'true'); }
-  const busca = q.get('busca')?.trim(); if (busca) { if (busca.length < 2) throw fail(400, 'REQUISICAO_INVALIDA', [{ campo: 'busca', mensagem: 'Digite pelo menos 2 caracteres.' }]); const term = `%${busca.replace(/[%_,()]/g, ' ')}%`; query = query.or(`legal_name.ilike.${term},trade_name.ilike.${term}`); }
+  const busca = searchParam(ctx.url); if (busca) { const term = `%${busca.replace(/[%_,()]/g, ' ')}%`; query = query.or(`legal_name.ilike.${term},trade_name.ilike.${term}`); }
   const r = await query.order('created_at', { ascending: false }).order('id').range(offset, offset + limite);
   if (r.error) throw new Error('COMPANY_LIST_FAILED');
   return { status: 200, body: page((r.data as unknown as CompanyRow[]).map(companyOut), limite, offset) };
@@ -165,8 +165,7 @@ export async function verifyMunicipality(ctx: ApiCtx): Promise<ApiResult> {
 
 // ---------- Catálogos ----------
 export async function catalog(ctx: ApiCtx, kind: 'municipios' | 'servicos' | 'nbs'): Promise<ApiResult> {
-  const { limite, offset } = pageParams(ctx.url); const busca = (ctx.url.searchParams.get('busca') ?? '').trim();
-  if (busca && busca.length < 2) throw fail(400, 'REQUISICAO_INVALIDA', [{ campo: 'busca', mensagem: 'Digite pelo menos 2 caracteres.' }]);
+  const { limite, offset } = pageParams(ctx.url); const busca = searchParam(ctx.url);
   if (kind === 'municipios') {
     const r = busca ? await ctx.db.rpc('search_municipality_catalog', { search_term: municipalitySearchTerm(busca).term }).range(offset, offset + limite) : await ctx.db.from('municipalities').select('*').order('name').range(offset, offset + limite);
     if (r.error) throw new Error('CATALOG_FAILED');
