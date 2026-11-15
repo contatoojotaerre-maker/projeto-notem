@@ -16,3 +16,10 @@ export function sanitizeBody(value:unknown):import('@/integrations/supabase/type
  return {truncado:true,conteudo:Array.from(json).slice(0,10000).join('')}
 }
 export const apiError=(id:string,code='AUTENTICACAO_INVALIDA')=>({erro:{codigo:code,mensagem:code==='AUTENTICACAO_INVALIDA'?'Chave de acesso inválida.':code==='REQUISICAO_INVALIDA'?'Método não permitido.':'Não foi possível concluir a requisição.',detalhes:[],codigo_governo:null,mensagem_governo:null},id_requisicao:id})
+/** Log-only minimization (on top of sanitizeBody): documents masked (last 2 digits kept), contact and address omitted, XML never stored. */
+export function sanitizeLog(value:unknown):import('@/integrations/supabase/types').Json {
+ const doc=/^(cpf|documento|nif|cpf_cnpj|taker_document|tomador_documento)$/i, omit=/^(email|e_mail|telefone|phone|endereco|address)$/i
+ const mask=(v:unknown)=>typeof v==='string'?v.replace(/[0-9A-Za-z](?=[0-9A-Za-z]{2})/g,'*'):v===null?null:'[OMITIDO]'
+ const walk=(v:unknown,depth=0):unknown=>{if(depth>20)return '[TRUNCADO]';if(typeof v==='string')return /^\s*</.test(v)&&/<\/?[A-Za-z][^>]*>/.test(v)?`[XML OMITIDO: ${new TextEncoder().encode(v).length} bytes]`:v;if(Array.isArray(v))return v.slice(0,1000).map(x=>walk(x,depth+1));if(v&&typeof v==='object')return Object.fromEntries(Object.entries(v).slice(0,1000).map(([k,x])=>[k,omit.test(k)?(x===null?null:'[OMITIDO]'):doc.test(k)?mask(x):walk(x,depth+1)]));return v}
+ return sanitizeBody(walk(value))
+}
