@@ -1,4 +1,8 @@
 # notem — Fase 1
+## Fase C — NT 009, CNPJ alfanumérico e IBS/CBS
+- [ ] Parte 1: perfis de leiaute nt004/nt009r1, data de vigência (admin plataforma, auditoria), escolha antes de cada envio, remontagem com mesmo número, leitores tolerantes, DANFSe (finalidade, destinatário), testes XSD nos dois perfis, exemplos e docs — pausa com relatório
+- [ ] Parte 2: CNPJ alfanumérico — aguarda aprovação da Parte 1
+- [ ] Parte 3: IBS/CBS — aguarda aprovação da Parte 2
 ## Revisão de segurança — Etapa 2 (correções aprovadas em 15/11/2026)
 - [x] S-01 membro obrigatório nas notas do painel + teste
 - [x] S-02 cadastro público desligado (configuração pública) + teste permanente
