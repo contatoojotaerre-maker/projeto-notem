@@ -37,7 +37,67 @@ paths:
         - { name: emitida_de, in: query, schema: { type: string, format: date } }
         - { name: emitida_ate, in: query, schema: { type: string, format: date } }
         - { name: origem, in: query, description: "notem = emitidas pela notem; externa = emitidas fora da notem por empresas da organização (trazidas pela sincronização)", schema: { type: string, enum: [notem, externa] } }
-      responses:
+        ClassificacaoIbsCbs:
+      type: object
+      required: [codigo_classificacao]
+      description: "A notem envia só a classificação; alíquotas, base e valores do IBS/CBS são calculados pelo governo. O indicador é obrigatório quando a classificação exige tributação (E0860) e proibido quando não exige (E0859). Quando o indicador aponta para o endereço do tomador/destinatário, a nota exige tomador com CPF/CNPJ e endereço no Brasil (E0239/E0243), e o município do tomador deve ser o mesmo do cadastro na Receita Federal."
+      properties:
+        codigo_classificacao: { type: string, pattern: '^\d{6}$' }
+        cst: { type: [string, "null"], readOnly: true }
+        descricao: { type: [string, "null"], readOnly: true }
+        indicador_operacao: { type: [string, "null"], pattern: '^\d{6}$' }
+        consumidor_final: { type: boolean, default: false }
+        atividade_simples: { type: [string, "null"], enum: ["07", "08", "09", "10", "11", "12", "13", "14", "90", null], description: "Somente ME/EPP. 10 só com 16.01; 11 só com 99.04.01; 12/13 só com 7.02 e 7.05. Enviada a partir do próximo leiaute." }
+        situacao: { type: string, enum: [completa, pendente, a_revisar], readOnly: true, description: "a_revisar = indicador retirado da tabela oficial" }
+    IbsCbs:
+      type: object
+      description: "Somente leitura: valores calculados pelo governo, lidos da NFS-e autorizada. null quando a nota não tem o grupo IBS/CBS."
+      properties:
+        classificacao: { type: object, properties: { cst: { type: [string, "null"] }, codigo: { type: [string, "null"] } } }
+        indicador_operacao: { type: [string, "null"] }
+        consumidor_final: { type: boolean }
+        localidade_incidencia: { type: object, properties: { codigo_municipio: { type: [string, "null"] }, nome: { type: [string, "null"] } } }
+        percentual_redutor: { type: [string, "null"] }
+        base_calculo: { type: [string, "null"] }
+        ajuste_base_calculo: { type: [string, "null"] }
+        ajuste_base_locacao_imoveis: { type: [string, "null"] }
+        ibs_uf: { $ref: "#/components/schemas/TributoIbsCbs" }
+        ibs_municipal: { $ref: "#/components/schemas/TributoIbsCbs" }
+        cbs: { $ref: "#/components/schemas/TributoIbsCbs" }
+        valor_total_ibs: { type: [string, "null"] }
+        valor_total_ibs_cbs: { type: [string, "null"], description: "vIBSTot + vCBS" }
+        valor_total_nota: { type: [string, "null"], description: "vTotNF (valor líquido + IBS/CBS)" }
+        credito_presumido_ibs: { type: [object, "null"], properties: { percentual: { type: [string, "null"] }, valor: { type: [string, "null"] } } }
+        credito_presumido_cbs: { type: [object, "null"], properties: { percentual: { type: [string, "null"] }, valor: { type: [string, "null"] } } }
+        receita_bruta_simples: { type: [string, "null"] }
+        versao_calculadora: { type: [string, "null"] }
+    TributoIbsCbs:
+      type: object
+      properties:
+        aliquota: { type: [string, "null"] }
+        reducao_aliquota: { type: [string, "null"] }
+        aliquota_efetiva: { type: [string, "null"] }
+        valor: { type: [string, "null"] }
+        diferimento: { type: [string, "null"] }
+    ValorSugerido:
+      type: [object, "null"]
+      properties:
+        codigo: { type: string }
+        descricao: { type: [string, "null"] }
+        aplicavel: { type: boolean }
+        motivo: { type: [string, "null"] }
+    SugestaoIbsCbs:
+      type: object
+      properties:
+        codigo_servico: { type: string }
+        item: { type: string }
+        nbs: { $ref: "#/components/schemas/ValorSugerido" }
+        classificacao: { $ref: "#/components/schemas/ValorSugerido" }
+        indicador_operacao: { $ref: "#/components/schemas/ValorSugerido" }
+        atividade_simples: { $ref: "#/components/schemas/ValorSugerido" }
+        alternativas: { type: object, properties: { nbs: { type: array, items: { type: string } }, classificacoes: { type: array, items: { type: string } }, indicadores_operacao: { type: array, items: { type: string } } } }
+        aviso: { type: [string, "null"] }
+  responses:
         "200": { description: "Lista paginada de notas", headers: { X-Request-Id: { $ref: "#/components/headers/XRequestId" } }, content: { application/json: { schema: { type: object, properties: { dados: { type: array, items: { $ref: "#/components/schemas/Nota" } }, proximo_cursor: { type: [string, "null"] } } } } } }
         "400": { $ref: "#/components/responses/Erro" }
         "401": { $ref: "#/components/responses/AutenticacaoInvalida" }
@@ -466,6 +526,34 @@ paths:
       responses:
         "200": { description: "Lista paginada", content: { application/json: { schema: { $ref: "#/components/schemas/ListaPaginada" } } } }
         "400": { $ref: "#/components/responses/Erro" }
+  /catalogos/classificacoes-tributarias:
+    get:
+      tags: [Catálogos]
+      summary: "Classificações tributárias do IBS/CBS aceitas na NFS-e (cClassTrib)"
+      description: "Tabela oficial (73 classificações com NFS-e = Sim). suportada = false indica classificação que a notem ainda não aceita (tributação regular, crédito presumido, diferimento, CST 800/811 e doações 410003/410026), com o motivo."
+      parameters: [{ $ref: "#/components/parameters/Limite" }, { $ref: "#/components/parameters/Cursor" }, { name: busca, in: query, schema: { type: string, minLength: 2 } }]
+      responses:
+        "200": { description: "Lista paginada", content: { application/json: { schema: { $ref: "#/components/schemas/ListaPaginada" } } } }
+        "400": { $ref: "#/components/responses/Erro" }
+  /catalogos/indicadores-operacao:
+    get:
+      tags: [Catálogos]
+      summary: "Indicadores de operação do IBS/CBS (cIndOp, Anexo VII v1.03)"
+      description: "Por padrão lista só os 28 indicadores ativos. incluir_inativos=true inclui os 5 retirados da tabela oficial (ativo = false), que não podem ser escolhidos em novos cadastros."
+      parameters: [{ $ref: "#/components/parameters/Limite" }, { $ref: "#/components/parameters/Cursor" }, { name: busca, in: query, schema: { type: string, minLength: 2 } }, { name: incluir_inativos, in: query, schema: { type: boolean, default: false } }]
+      responses:
+        "200": { description: "Lista paginada", content: { application/json: { schema: { $ref: "#/components/schemas/ListaPaginada" } } } }
+        "400": { $ref: "#/components/responses/Erro" }
+  /catalogos/sugestao-classificacao:
+    get:
+      tags: [Catálogos]
+      summary: "Sugestão de NBS, classificação, indicador e atividade do Simples (Anexo VIII)"
+      description: "Primeira opção da tabela oficial de correlação para o código de serviço, com as alternativas. Nunca é aplicada automaticamente; valores não aceitos na NFS-e, retirados ou não suportados vêm com aplicavel = false e o motivo."
+      parameters: [{ name: codigo_servico, in: query, required: true, schema: { type: string, pattern: '^\d{6}$' } }]
+      responses:
+        "200": { description: "Sugestão", content: { application/json: { schema: { $ref: "#/components/schemas/SugestaoIbsCbs" } } } }
+        "400": { $ref: "#/components/responses/Erro" }
+        "404": { $ref: "#/components/responses/Erro" }
 components:
   securitySchemes:
     chaveIntegracao:
@@ -558,6 +646,7 @@ components:
             valor_liquido: { type: [string, "null"] }
             iss_retido: { type: boolean }
         local_prestacao: { type: object }
+        ibs_cbs: { oneOf: [{ $ref: "#/components/schemas/IbsCbs" }, { type: "null" }] }
         erros_governo: { type: array, items: { type: object } }
         substitui_nota_id: { type: [string, "null"], format: uuid }
         substituida_por_nota_id: { type: [string, "null"], format: uuid }
@@ -642,6 +731,7 @@ components:
         tomador: { type: object }
         servico: { type: object }
         valores: { type: object }
+        ibs_cbs: { oneOf: [{ $ref: "#/components/schemas/IbsCbs" }, { type: "null" }] }
         cancelamento: { type: [object, "null"] }
         links: { type: object, properties: { xml: { type: string, format: uri }, pdf: { type: string, format: uri }, consulta_publica: { type: [string, "null"] } } }
         criada_em: { type: string, format: date-time }
@@ -822,6 +912,7 @@ components:
             estadual: { oneOf: [{ $ref: "#/components/schemas/Percentual" }, { type: "null" }] }
             municipal: { oneOf: [{ $ref: "#/components/schemas/Percentual" }, { type: "null" }] }
         aliquota_iss_simples: { oneOf: [{ $ref: "#/components/schemas/Percentual" }, { type: "null" }] }
+        regime_apuracao_ibscbs: { type: [string, "null"], enum: [pelo_simples, cbs_simples_ibs_regular, regime_regular, null], description: "Somente ME/EPP (regApIBSCBSSN). Com ISS dentro do Simples: pelo_simples (padrão) ou regime_regular. Com ISS fora do Simples: cbs_simples_ibs_regular (padrão) ou regime_regular. Ausente ou null usa o padrão; ao mudar regime_apuracao_simples o padrão é reaplicado. Guardado agora e enviado a partir do próximo leiaute da NT 009." }
         imprimir_canhoto_danfse: { type: boolean, default: false, description: "Ausente no PUT preserva valor atual" }
         serie_dps: { type: [string, "null"], readOnly: true, examples: ["00900"] }
     Certificado:
@@ -851,7 +942,8 @@ components:
         tributacao_iss: { type: string, enum: [tributavel, imunidade, exportacao, nao_incidencia] }
         tipo_imunidade: { type: [string, "null"], enum: [nao_informado, entes_federativos, templos, partidos_sindicatos_entidades, livros_jornais_papel, fonogramas_musicais, null] }
         retencao_iss: { type: string, enum: [nao_retido, retido_tomador, retido_intermediario] }
-        indicador_operacao_ibscbs: { type: [string, "null"] }
+        classificacao_ibscbs: { oneOf: [{ $ref: "#/components/schemas/ClassificacaoIbsCbs" }, { type: "null" }] }
+        indicador_operacao_ibscbs: { type: [string, "null"], deprecated: true, description: "Obsoleto: use classificacao_ibscbs.indicador_operacao. Ainda aceito; se enviado junto com um valor diferente em classificacao_ibscbs, responde 422." }
         numero_beneficio_municipal: { type: [string, "null"] }
     Situacao:
       description: "Configurações fiscais legadas incompatíveis com E0710/E0712/E0713 ou E0172/E0174/E0175 deixam configuracao_fiscal pendente, com mensagem da regra; não são reescritas."
@@ -864,10 +956,14 @@ components:
           items:
             type: object
             properties:
-              item: { type: string, enum: [empresa_ativa, certificado, configuracao_fiscal, servico_ativo, municipio] }
+              item: { type: string, enum: [empresa_ativa, certificado, configuracao_fiscal, servico_ativo, classificacao_ibscbs, municipio] }
               ok: { type: [boolean, "null"] }
               mensagem: { type: string }
               verificado_em: { type: [string, "null"], format: date-time }
+        avisos:
+          type: array
+          description: "Alertas que não impedem a emissão. Antes da data de obrigatoriedade do IBS/CBS do ambiente (padrão 01/01/2027), serviços ativos sem classificação geram aviso; a partir dela viram o item classificacao_ibscbs."
+          items: { type: object, properties: { item: { type: string, enum: [classificacao_ibscbs, atividade_simples] }, mensagem: { type: string } } }
   responses:
     LimiteExcedido:
       description: "LIMITE_EXCEDIDO — limite de uso atingido; aguarde os segundos indicados em Retry-After"
