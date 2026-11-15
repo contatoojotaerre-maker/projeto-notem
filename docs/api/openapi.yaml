@@ -407,7 +407,7 @@ paths:
         - { $ref: "#/components/parameters/Limite" }
         - { $ref: "#/components/parameters/Cursor" }
         - { name: situacao, in: query, schema: { type: string, enum: [autorizada, cancelamento_em_analise, cancelada, substituida, cancelada_prefeitura] } }
-        - { name: prestador_cnpj, in: query, schema: { type: string, pattern: "^[0-9]{14}$" } }
+        - { name: prestador_cnpj, in: query, schema: { $ref: "#/components/schemas/Cnpj" } }
         - { name: emitida_de, in: query, schema: { type: string, format: date } }
         - { name: emitida_ate, in: query, schema: { type: string, format: date } }
       responses:
@@ -538,7 +538,7 @@ components:
         restricoes: { type: array, items: { type: string } }
         manifestacao: { type: [object, "null"] }
         numero: { type: [string, "null"] }
-        chave_acesso: { type: [string, "null"] }
+        chave_acesso: { type: [string, "null"], pattern: "^[0-9]{9}[0-9A-Z]{14}[0-9]{27}$", description: "50 posições; as 14 do CNPJ do emitente podem conter letras" }
         serie_dps: { type: string }
         numero_dps: { type: string }
         competencia: { type: string, format: date }
@@ -631,7 +631,7 @@ components:
         restricoes: { type: array, items: { type: object } }
         manifestacao: { type: [object, "null"] }
         numero: { type: [string, "null"] }
-        chave_acesso: { type: string }
+        chave_acesso: { type: string, pattern: "^[0-9]{9}[0-9A-Z]{14}[0-9]{27}$", description: "50 posições; as 14 do CNPJ do emitente podem conter letras" }
         serie_dps: { type: [string, "null"] }
         numero_dps: { type: [string, "null"] }
         competencia: { type: [string, "null"], format: date }
@@ -681,7 +681,7 @@ components:
         id_externo: { type: [string, "null"], maxLength: 100, description: "Único por empresa" }
         tipo: { type: string, enum: [pj, pf, estrangeiro] }
         nome: { type: string, minLength: 1, maxLength: 150 }
-        documento: { type: [string, "null"], description: "CPF/CNPJ com dígitos válidos" }
+        documento: { type: [string, "null"], maxLength: 18, description: "CPF (11 números) ou CNPJ (14 posições, numérico ou alfanumérico) com dígitos verificadores válidos; máscara e minúsculas são normalizadas" }
         nif: { type: [string, "null"], maxLength: 40 }
         motivo_sem_nif: { type: [string, "null"], enum: [dispensado, nao_exigido, null] }
         email: { type: [string, "null"] }
@@ -722,7 +722,9 @@ components:
       examples: ["2.00"]
     Cnpj:
       type: string
-      pattern: '^\d{14}$'
+      description: "CNPJ de 14 posições, numérico ou alfanumérico (12 posições 0-9/A-Z + 2 dígitos verificadores). Na entrada, máscara e minúsculas são aceitas e normalizadas; nas respostas vem sempre com 14 caracteres maiúsculos, sem máscara."
+      maxLength: 18
+      examples: ["11222333000181", "12ABC34501DE35"]
     CodigoMunicipio:
       type: string
       pattern: '^\d{7}$'

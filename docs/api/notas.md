@@ -69,7 +69,7 @@ A **alíquota do ISS** não é enviada pelo parceiro: o governo aplica a do muni
 | Campo | Regra |
 |---|---|
 | `tipo` | `pj`, `pf` ou `estrangeiro` |
-| `documento` | CNPJ (14) para `pj`; CPF (11) para `pf`; ausente para `estrangeiro` |
+| `documento` | CNPJ (14 posições, numérico ou alfanumérico) para `pj`; CPF (11 números) para `pf`; ausente para `estrangeiro`. Máscara e minúsculas são normalizadas |
 | `nif` | estrangeiro: número de identificação fiscal do país (ou `null` com `motivo_sem_nif`) |
 | `nome` | obrigatório |
 | `email`, `telefone`, `inscricao_municipal` | opcionais |

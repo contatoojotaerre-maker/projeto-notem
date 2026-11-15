@@ -16,7 +16,7 @@ Eventos registrados depois da emissão chegam à notem por três caminhos: a sin
 | Rota | Descrição |
 |---|---|
 | `GET /empresas/{id}/sincronizacao` | Situação da sincronização no ambiente da chave |
-| `GET /empresas/{id}/notas-recebidas` | Lista paginada. Filtros: `situacao`, `prestador_cnpj` (14 números), `emitida_de`, `emitida_ate` |
+| `GET /empresas/{id}/notas-recebidas` | Lista paginada. Filtros: `situacao`, `prestador_cnpj` (14 posições, numérico ou alfanumérico), `emitida_de`, `emitida_ate` |
 | `GET /empresas/{id}/notas-recebidas/{nota_id}` | Nota recebida |
 | `GET /empresas/{id}/notas-recebidas/{nota_id}/xml` | XML oficial, sem alterações |
 | `GET /empresas/{id}/notas-recebidas/{nota_id}/pdf` | DANFSe gerado do XML oficial |
