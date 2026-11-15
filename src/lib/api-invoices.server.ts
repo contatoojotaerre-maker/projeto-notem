@@ -7,6 +7,7 @@ import { invoiceRequest,invoiceOut,replayDecision,invoiceStatuses,rejectionGuida
 import { justificationError,substitutionReasons,type SubstitutionReason } from './fiscal-events';
 import { FISCAL_TEXT_MESSAGE,fiscalTextAccepted,normalizeCustomerText,normalizeFields,normalizeFiscalText } from './fiscal-text';
 import { buildDps,reserveValidatedDps,type DpsInput } from './dps';
+import type { DpsLayout } from './dps-layout';
 import { customerSchema,type Customer } from './customers';
 import { fiscalSchema } from './fiscal';
 import { loadReadiness } from './readiness.server';
@@ -68,12 +69,14 @@ export async function issueInvoice(ctx:IssueCtx,v:InvoiceRequest,key:string,hash
   const rule=substitutionRuleError(input.fiscal.simples,{competence:o.competence,serviceCode:String(os['service_code']??''),municipalCode:(os['municipal_tax_code'] as string|null)??null,location:String(loc['codigo_municipio']??''),customerDocument:docOf(o.customer_snapshot),serviceValue:String(sent['servico']??'')},{competence:input.competence,serviceCode:s.service_code,municipalCode:s.municipal_tax_code,location:input.service.municipality??c.municipality_ibge_code,customerDocument:docOf(customer),serviceValue:input.values.service});
   if(rule)throw fail(422,'REGRA_DE_NEGOCIO',[rule]);
  }
- try{buildDps({...input,number:'1'});}catch(e){const message=ruleMessage(e,'Confira os dados fiscais da nota.');throw fail(422,'REGRA_DE_NEGOCIO',[{campo:/E0042/.test(message)?'substituicao':/E0202|própria/.test(message)?'tomador.documento':/E0204/.test(message)?'tomador.documento':/E0237/.test(message)?'tomador.endereco':/E017/.test(message)?'configuracao_fiscal.regime_especial':/E071/.test(message)?'configuracao_fiscal.tributos_aproximados':/justificativa/i.test(message)?'justificativa':'nota',mensagem:message}]);}
+ // Layout in force at request time for the preflight and base; it is decided again right before each send.
+ let layout:DpsLayout;try{const {currentDpsLayout}=await import('./platform-settings.server');layout=await currentDpsLayout(ctx.db,ctx.env);}catch{throw new Error('PLATFORM_SETTINGS_READ_FAILED');}
+ try{buildDps({...input,number:'1'},layout);}catch(e){const message=ruleMessage(e,'Confira os dados fiscais da nota.');throw fail(422,'REGRA_DE_NEGOCIO',[{campo:/E0042/.test(message)?'substituicao':/E0202|própria/.test(message)?'tomador.documento':/E0204/.test(message)?'tomador.documento':/E0237/.test(message)?'tomador.endereco':/E017/.test(message)?'configuracao_fiscal.regime_especial':/E071/.test(message)?'configuracao_fiscal.tributos_aproximados':/justificativa/i.test(message)?'justificativa':'nota',mensagem:message}]);}
  for(const [table,,value,field] of [['municipalities','ibge_code',customer?.endereco?.codigo_municipio,'tomador.endereco.codigo_municipio'],['countries','iso2',customer?.endereco?.pais,'tomador.endereco.pais'],['municipalities','ibge_code',input.service.municipality,'local_prestacao.codigo_municipio']] as const){if(value){const found=table==='countries'?await ctx.db.from('countries').select('iso2').eq('iso2',value).maybeSingle():await ctx.db.from('municipalities').select('ibge_code').eq('ibge_code',value).maybeSingle();if(found.error)throw new Error('CATALOG_READ_FAILED');if(!found.data)throw fail(422,'REGRA_DE_NEGOCIO',[{campo:field,mensagem:'Código não encontrado no catálogo oficial.'}]);}}
  const {readiness}=await loadReadiness(ctx.db,c.id,ctx.env);if(!readiness.pronta_para_emitir)throw fail(422,'EMPRESA_NAO_PRONTA',readiness.itens.filter(i=>i.ok!==true).map(i=>({campo:i.item,mensagem:i.mensagem})));
  let created:Invoice|null=null;
- await reserveValidatedDps(input,async()=>{
-  const placeholder=buildDps({...input,number:'1'});
+ await reserveValidatedDps(input,layout,async()=>{
+  const placeholder=buildDps({...input,number:'1'},layout);
   // Base DPS (number 1) goes to a private file before numbering; the RPC checks its SHA-256 and stores only the reference.
   let baseFile;try{const {putXml}=await import('./xml-files.server');baseFile=await putXml(ctx.db,ctx.env,'invoices','dps-base','unsigned_dps',placeholder.xml);}catch{throw new Error('INVOICE_CREATE_FAILED');}
   const r=await ctx.db.rpc('create_invoice_request',{_payload:{organization_id:ctx.organization_id,company_id:c.id,integration_id:ctx.integration_id,origin:ctx.origin,substitutes_invoice_id:substitution?.original.id??null,environment:ctx.env,external_id:v.id_externo??null,service_profile_id:s.id,profile_snapshot:s,provider_snapshot:c,fiscal_snapshot:f,service_snapshot:{...s,withholding:input.service.withholding},customer_snapshot:customer,dps_input:input,competence:input.competence,description:input.service.description,complementary_information:input.complementary??null,sent_values:{servico:input.values.service,desconto_incondicionado:input.values.unconditional??'0.00',desconto_condicionado:input.values.conditional??'0.00'},service_location:{codigo_municipio:input.service.municipality??c.municipality_ibge_code,municipio:null,uf:null},emitted_at:emittedAt,unsigned_dps_xml:placeholder.xml,unsigned_dps_file:baseFile,placeholder_id:placeholder.id,idempotency_key:key,request_hash:hash,created_by:ctx.actor} as Json});
