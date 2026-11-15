@@ -34,6 +34,7 @@ paths:
         - { name: tomador_documento, in: query, schema: { type: string } }
         - { name: emitida_de, in: query, schema: { type: string, format: date } }
         - { name: emitida_ate, in: query, schema: { type: string, format: date } }
+        - { name: origem, in: query, description: "notem = emitidas pela notem; externa = emitidas fora da notem por empresas da organização (trazidas pela sincronização)", schema: { type: string, enum: [notem, externa] } }
       responses:
         "200": { description: "Lista paginada de notas", headers: { X-Request-Id: { $ref: "#/components/headers/XRequestId" } }, content: { application/json: { schema: { type: object, properties: { dados: { type: array, items: { $ref: "#/components/schemas/Nota" } }, proximo_cursor: { type: [string, "null"] } } } } } }
         "400": { $ref: "#/components/responses/Erro" }
@@ -384,6 +385,61 @@ paths:
         "404": { $ref: "#/components/responses/Erro" }
         "422": { description: "REGRA_DE_NEGOCIO — exige certificado válido", content: { application/json: { schema: { $ref: "#/components/schemas/Erro" } } } }
         "429": { description: "LIMITE_EXCEDIDO — 1 por minuto por empresa e ambiente; ver Retry-After", headers: { Retry-After: { schema: { type: integer } } }, content: { application/json: { schema: { $ref: "#/components/schemas/Erro" } } } }
+  /empresas/{id}/sincronizacao:
+    parameters: [{ $ref: "#/components/parameters/EmpresaId" }]
+    get:
+      tags: [Empresas]
+      summary: "Situação da sincronização com o ADN (somente consulta, ambiente da chave)"
+      description: "A sincronização é iniciada apenas no painel. A API não oferece sincronização por NSU."
+      responses:
+        "200": { description: "Situação da sincronização", headers: { X-Request-Id: { $ref: "#/components/headers/XRequestId" } }, content: { application/json: { schema: { $ref: "#/components/schemas/Sincronizacao" } } } }
+        "401": { $ref: "#/components/responses/AutenticacaoInvalida" }
+        "404": { $ref: "#/components/responses/Erro" }
+  /empresas/{id}/notas-recebidas:
+    parameters: [{ $ref: "#/components/parameters/EmpresaId" }]
+    get:
+      tags: [Empresas]
+      summary: "Notas em que a empresa é tomadora ou intermediária (ambiente da chave)"
+      description: "Exige prova de posse: a empresa precisa ter tido certificado digital cadastrado nesta organização."
+      parameters:
+        - { $ref: "#/components/parameters/Limite" }
+        - { $ref: "#/components/parameters/Cursor" }
+        - { name: situacao, in: query, schema: { type: string, enum: [autorizada, cancelamento_em_analise, cancelada, substituida, cancelada_prefeitura] } }
+        - { name: prestador_cnpj, in: query, schema: { type: string, pattern: "^[0-9]{14}$" } }
+        - { name: emitida_de, in: query, schema: { type: string, format: date } }
+        - { name: emitida_ate, in: query, schema: { type: string, format: date } }
+      responses:
+        "200": { description: "Lista paginada", headers: { X-Request-Id: { $ref: "#/components/headers/XRequestId" } }, content: { application/json: { schema: { type: object, properties: { dados: { type: array, items: { $ref: "#/components/schemas/NotaRecebida" } }, proximo_cursor: { type: [string, "null"] } } } } } }
+        "400": { $ref: "#/components/responses/Erro" }
+        "401": { $ref: "#/components/responses/AutenticacaoInvalida" }
+        "404": { $ref: "#/components/responses/Erro" }
+  /empresas/{id}/notas-recebidas/{nota_id}:
+    parameters: [{ $ref: "#/components/parameters/EmpresaId" }, { name: nota_id, in: path, required: true, schema: { type: string, format: uuid } }]
+    get:
+      tags: [Empresas]
+      summary: "Consulta nota recebida"
+      responses:
+        "200": { description: "Nota recebida", content: { application/json: { schema: { $ref: "#/components/schemas/NotaRecebida" } } } }
+        "401": { $ref: "#/components/responses/AutenticacaoInvalida" }
+        "404": { $ref: "#/components/responses/Erro" }
+  /empresas/{id}/notas-recebidas/{nota_id}/xml:
+    parameters: [{ $ref: "#/components/parameters/EmpresaId" }, { name: nota_id, in: path, required: true, schema: { type: string, format: uuid } }]
+    get:
+      tags: [Empresas]
+      summary: "XML oficial da nota recebida, sem alterações"
+      responses:
+        "200": { description: "XML oficial", content: { application/xml: { schema: { type: string } } } }
+        "401": { $ref: "#/components/responses/AutenticacaoInvalida" }
+        "404": { $ref: "#/components/responses/Erro" }
+  /empresas/{id}/notas-recebidas/{nota_id}/pdf:
+    parameters: [{ $ref: "#/components/parameters/EmpresaId" }, { name: nota_id, in: path, required: true, schema: { type: string, format: uuid } }]
+    get:
+      tags: [Empresas]
+      summary: "DANFSe da nota recebida, gerado do XML oficial"
+      responses:
+        "200": { description: "PDF", content: { application/pdf: { schema: { type: string, format: binary } } } }
+        "401": { $ref: "#/components/responses/AutenticacaoInvalida" }
+        "404": { $ref: "#/components/responses/Erro" }
   /catalogos/municipios:
     get:
       tags: [Catálogos]
@@ -473,6 +529,7 @@ components:
       properties:
         id: { type: string, format: uuid }
         id_externo: { type: [string, "null"] }
+        origem: { type: string, enum: [notem, externa], description: "externa = emitida por outro sistema ou pelo Portal Nacional; somente leitura (cancelar, solicitar análise e substituir respondem 409 CONFLITO)" }
         empresa_id: { type: string, format: uuid }
         ambiente: { $ref: "#/components/schemas/Ambiente" }
         situacao: { type: string, enum: [processando, em_verificacao, autorizada, rejeitada, cancelamento_em_analise, cancelada, substituida, cancelada_prefeitura] }
@@ -523,6 +580,68 @@ components:
             registrado_fora_da_notem: { type: boolean }
             erros_governo: { type: array, items: { type: object } }
         links: { type: object, properties: { xml: { type: string, format: uri }, pdf: { type: string, format: uri }, consulta_publica: { type: [string, "null"], description: "https://www.nfse.gov.br/ConsultaPublica?tpc=1&chave={chave_acesso}; null somente sem chave válida" } } }
+        criada_em: { type: string, format: date-time }
+        atualizada_em: { type: string, format: date-time }
+    Sincronizacao:
+      type: object
+      properties:
+        ambiente: { $ref: "#/components/schemas/Ambiente" }
+        situacao: { type: string, enum: [nunca_sincronizada, em_andamento, atualizada, erro] }
+        ultimo_nsu: { type: [integer, "null"] }
+        ultima_consulta: { type: [string, "null"], format: date-time }
+        proxima_consulta_permitida: { type: [string, "null"], format: date-time, description: "null quando já é possível sincronizar" }
+        primeira_sincronizacao_concluida_em: { type: [string, "null"], format: date-time }
+        documentos_importados: { type: integer }
+        sincronizacao_em_andamento:
+          type: [object, "null"]
+          properties:
+            tipo: { type: string, enum: [novidades, periodo] }
+            meses: { type: [integer, "null"], enum: [1, 3, 6, 12, 24, null] }
+            etapa: { type: string, enum: [busca_inicio_periodo, importacao] }
+            documentos_importados: { type: integer }
+            solicitada_em: { type: [string, "null"], format: date-time }
+        ultima_sincronizacao:
+          type: [object, "null"]
+          properties:
+            tipo: { type: string, enum: [novidades, periodo] }
+            meses: { type: [integer, "null"] }
+            resultado: { type: string, enum: [concluida, interrompida] }
+            concluida_em: { type: [string, "null"], format: date-time }
+            documentos_importados: { type: integer }
+            mensagem: { type: [string, "null"] }
+        ultimo_erro: { type: [object, "null"], properties: { codigo: { type: [string, "null"] }, mensagem: { type: string } } }
+        verificacao_diaria:
+          type: object
+          description: "Verificação automática diária das notas emitidas pela notem com cancelamento pendente"
+          properties:
+            ultima_execucao: { type: [string, "null"], format: date-time }
+            notas_verificadas: { type: integer }
+            notas_atualizadas: { type: integer }
+    NotaRecebida:
+      type: object
+      properties:
+        id: { type: string, format: uuid }
+        empresa_id: { type: string, format: uuid }
+        origem: { type: string, enum: [notem, externa] }
+        papel: { type: string, enum: [tomador, intermediario] }
+        ambiente: { $ref: "#/components/schemas/Ambiente" }
+        situacao: { type: string, enum: [autorizada, cancelamento_em_analise, cancelada, substituida, cancelada_prefeitura] }
+        restricoes: { type: array, items: { type: object } }
+        manifestacao: { type: [object, "null"] }
+        numero: { type: [string, "null"] }
+        chave_acesso: { type: string }
+        serie_dps: { type: [string, "null"] }
+        numero_dps: { type: [string, "null"] }
+        competencia: { type: [string, "null"], format: date }
+        emitida_em: { type: [string, "null"], format: date-time }
+        autorizada_em: { type: [string, "null"], format: date-time }
+        prestador: { type: object, properties: { cnpj: { type: [string, "null"] }, nome: { type: [string, "null"] } } }
+        intermediario: { type: [object, "null"], properties: { documento: { type: string }, nome: { type: [string, "null"] } } }
+        tomador: { type: object }
+        servico: { type: object }
+        valores: { type: object }
+        cancelamento: { type: [object, "null"] }
+        links: { type: object, properties: { xml: { type: string, format: uri }, pdf: { type: string, format: uri }, consulta_publica: { type: [string, "null"] } } }
         criada_em: { type: string, format: date-time }
         atualizada_em: { type: string, format: date-time }
     PedidoCancelamento:

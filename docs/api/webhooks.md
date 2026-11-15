@@ -93,6 +93,7 @@ Durante a troca de segredo, a notem pode enviar duas assinaturas (`v1=...,v1=...
 | `nota.substituida` | Nota original substituída: a substituta foi autorizada |
 | `nota.cancelada_prefeitura` | Prefeitura cancelou a nota por ofício |
 | `nota.bloqueada_prefeitura` | Prefeitura bloqueou ações sobre a nota |
+| `nota.desbloqueada_prefeitura` | Prefeitura retirou o bloqueio da nota |
 | `nota.manifestacao` | Tomador (ou outro ator) confirmou ou rejeitou a nota |
 | `empresa.situacao_alterada` | Empresa ficou pronta ou deixou de estar pronta para emitir |
 | `certificado.vencendo` | Certificado vence em 30, 15, 7 e 1 dia |
@@ -159,7 +160,7 @@ Um endereço pode assinar eventos individuais (tipo exato) ou grupos inteiros po
 
 | Grupo no painel | Curingas | Eventos atuais |
 |---|---|---|
-| Notas de serviço (NFS-e) | `nota.*` | `nota.autorizada`, `nota.rejeitada`, `nota.cancelada`, `nota.cancelamento_em_analise`, `nota.cancelamento_indeferido`, `nota.substituida`, `nota.cancelada_prefeitura`, `nota.bloqueada_prefeitura`, `nota.manifestacao` |
+| Notas de serviço (NFS-e) | `nota.*` | `nota.autorizada`, `nota.rejeitada`, `nota.cancelada`, `nota.cancelamento_em_analise`, `nota.cancelamento_indeferido`, `nota.substituida`, `nota.cancelada_prefeitura`, `nota.bloqueada_prefeitura`, `nota.desbloqueada_prefeitura`, `nota.manifestacao` |
 | Empresas e certificados | `empresa.*`, `certificado.*` | `empresa.situacao_alterada`, `certificado.vencendo`, `certificado.vencido` |
 | Municípios | `municipio.*` | `municipio.disponivel` |
 
