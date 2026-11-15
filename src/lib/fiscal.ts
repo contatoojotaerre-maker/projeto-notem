@@ -1,4 +1,5 @@
 import { z } from 'zod';
+import { normalizeCnpj } from './notem';
 export const CNPJ_LOCK_MESSAGE = 'O CNPJ não pode ser alterado porque a empresa já tem certificado ou série. Cadastre uma nova empresa.';
 export const fiscalIds = z.object({ company_id: z.string().uuid(), organization_id: z.string().uuid() });
 export function approximateTaxRuleError(option: number, mode: string): string | null {
@@ -53,7 +54,7 @@ export const immunityDescriptions = [
  'Fonogramas e videofonogramas musicais produzidos no Brasil contendo obras musicais ou literomusicais de autores brasileiros e/ou obras em geral interpretadas por artistas brasileiros bem como os suportes materiais ou arquivos digitais que os contenham, salvo na etapa de replicação industrial de mídias ópticas de leitura a laser. (CF88, Art 150, VI, e)',
 ];
 export function cnpjLocked(hasCertificate: boolean, hasSeries: boolean) { return hasCertificate || hasSeries; }
-export function validReadinessCertificate(c: {status:string;cnpj:string;valid_from:string;valid_until:string},cnpj:string,now=Date.now()) {return c.status==='active' && c.cnpj===cnpj && Number.isFinite(Date.parse(c.valid_from)) && Date.parse(c.valid_from)<=now && Date.parse(c.valid_until)>now;}
+export function validReadinessCertificate(c: {status:string;cnpj:string;valid_from:string;valid_until:string},cnpj:string,now=Date.now()) {return c.status==='active' && normalizeCnpj(c.cnpj)===normalizeCnpj(cnpj) && Number.isFinite(Date.parse(c.valid_from)) && Date.parse(c.valid_from)<=now && Date.parse(c.valid_until)>now;}
 export const catalogNames = ['service_codes','nbs_codes','ibscbs_operation_indicators'] as const;
 export type CatalogName = typeof catalogNames[number];
 export type CatalogChoice = {code:string;description:string;details:unknown};

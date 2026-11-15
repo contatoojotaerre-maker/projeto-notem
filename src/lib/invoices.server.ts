@@ -2,10 +2,10 @@ import type { Json } from '@/integrations/supabase/types';
 import type { DB } from './api.server';
 import { callTransmissor,TransmissorError } from './transmissor.server';
 import { readAuthorizedNfse } from './nfse-xml';
-import { governmentErrors,invoiceOut,verificationDecision,type Invoice,type Transmission,type GovernmentReply } from './invoices';
+import { explainKeySchemaDefect,governmentErrors,invoiceOut,verificationDecision,type Invoice,type Transmission,type GovernmentReply } from './invoices';
 import { explicitExternalDps } from './external-dps';
 import { dpsWithNumber,putXml,putXmlOptional,xmlOf,type XmlRef } from './xml-files.server';
-import { convertDpsLayout,detectDpsLayout } from './dps-layout';
+import { ALPHANUMERIC_CNPJ_CONVERSION_ERROR,convertDpsLayout,detectDpsLayout } from './dps-layout';
 import { currentDpsLayout } from './platform-settings.server';
 import { isAccessKey } from './fiscal-ids';
 
@@ -42,6 +42,10 @@ export async function applyGovernmentReply(db:DB,i:Invoice,res:Transmission,requ
  }
  if(reply.status===400||reply.status===403){
   let errors=governmentErrors(reply,i.id);
+  // Substitution of a note whose key carries letters: explain the known defect of the official TSChaveNFSe.
+  let substitutedKey:string|null=/<chSubstda>([0-9A-Z]{50})<\/chSubstda>/.exec(res.dps_assinada??'')?.[1]??null;
+  if(!substitutedKey&&i.substitutes_invoice_id){const o=await db.from('invoices').select('access_key').eq('id',i.substitutes_invoice_id).eq('organization_id',i.organization_id).maybeSingle();substitutedKey=o.data?.access_key??null;}
+  errors=explainKeySchemaDefect(errors,substitutedKey,'substituicao');
   if(!errors.length)errors=[{campo:reply.status===403?'certificado':'nota',mensagem:reply.status===403?'O governo recusou o certificado da empresa. Confira sua validade e autorização para emitir.':'O governo rejeitou a nota. Confira os dados enviados e os detalhes originais.',codigo_governo:String(reply.status),mensagem_governo:'Rejeição informada pelo governo.',complemento:null,nota_id:i.id}];
   const result=await persistInvoiceResult(db,i,{...signed,status:'rejected',dispatch_state:'completed',government_errors:errors as Json,message:errors[0]?.mensagem??'Nota rejeitada.'},'rejected',request);
   if(reply.status===403){const {refreshReadiness}=await import('./readiness.server');await refreshReadiness(db,i.company_id);}
@@ -70,7 +74,7 @@ export async function dpsForSending(db:DB,i:Invoice,now=Date.now()):Promise<stri
 export async function sendInvoice(db:DB,i:Invoice,request?:Request,deadline=Date.now()+20000):Promise<Invoice>{
  const claim=await db.rpc('claim_invoice_dispatch',{_id:i.id,_org:i.organization_id});if(claim.error)throw new Error('INVOICE_CLAIM_FAILED');const claimed=claim.data?.[0];if(!claimed){const r=await db.from('invoices').select('*').eq('id',i.id).eq('organization_id',i.organization_id).single();if(r.error)throw new Error('INVOICE_READ_FAILED');return r.data;}
  // The DPS is read (and its hash checked) before sending: an unreadable file is a certain "not sent", never an ambiguity.
- let dpsXml:string;try{dpsXml=await dpsForSending(db,claimed);}catch{console.error('INVOICE_DPS_FILE_UNAVAILABLE',claimed.id);return persistInvoiceResult(db,claimed,{status:'processing',dispatch_state:'not_sent',message:'Envio não realizado. Tente novamente com a mesma Idempotency-Key.'},'not_sent',request);}
+ let dpsXml:string;try{dpsXml=await dpsForSending(db,claimed);}catch(e){const alnum=e instanceof Error&&e.message===ALPHANUMERIC_CNPJ_CONVERSION_ERROR;console.error(alnum?'INVOICE_DPS_ALPHANUMERIC_OLD_LAYOUT':'INVOICE_DPS_FILE_UNAVAILABLE',claimed.id);return persistInvoiceResult(db,claimed,{status:'processing',dispatch_state:'not_sent',message:alnum?'Envio não realizado: CNPJ alfanumérico exige o leiaute da NT 009, que ainda não está em vigor em produção. Tente novamente após a vigência com a mesma Idempotency-Key.':'Envio não realizado. Tente novamente com a mesma Idempotency-Key.'},'not_sent',request);}
  let res:Transmission;
  try{const base=await payload(db,claimed);res=await callTransmissor<Transmission>('/v1/nfse/emitir',{...base,dps_xml:dpsXml,tempo_limite_segundos:Math.max(1,Math.min(18,Math.floor((deadline-Date.now())/1000)))});}
  catch(e){return persistInvoiceResult(db,claimed,{status:definitelyNotSent(e)?'processing':'verifying',dispatch_state:definitelyNotSent(e)?'not_sent':'uncertain',message:definitelyNotSent(e)?'Envio não realizado. Tente novamente com a mesma Idempotency-Key.':'Aguardando confirmação do governo.'},definitelyNotSent(e)?'not_sent':'verifying',request);}

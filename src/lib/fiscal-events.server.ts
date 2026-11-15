@@ -6,7 +6,7 @@ import type { Database, Json } from '@/integrations/supabase/types';
 import type { DB, ApiResult } from './api.server';
 import { callTransmissor } from './transmissor.server';
 import { fail, parseBody } from './api-contract';
-import { governmentErrors, invoiceOut, rejectionGuidance, type GovernmentReply, type Invoice } from './invoices';
+import { explainKeySchemaDefect, governmentErrors, invoiceOut, rejectionGuidance, type GovernmentReply, type Invoice } from './invoices';
 import { transmissorPayload, definitelyNotSent } from './invoices.server';
 import { brasiliaNow, buildFiscalEvent, cancelReasons, justificationError, type CancelReason } from './fiscal-events';
 import { FISCAL_TEXT_MESSAGE, fiscalTextAccepted, normalizeFiscalText } from './fiscal-text';
@@ -97,6 +97,7 @@ export async function applyEventReply(db: DB, e: FiscalEvent, inv: Invoice, res:
   if ((reply.status === 200 || reply.status === 201) && eventXmlMatches(xml, inv.access_key ?? '', e.code)) return finishEvent(db, e, inv, { ...signed, status: 'registered', event_xml: xml, government_response: replySummary(reply), registered_at: processedAt(xml) }, request);
   if (reply.status === 400 || reply.status === 403 || reply.status === 409 || reply.status === 422) {
     let errors = governmentErrors(reply, inv.id).map(x => ({ ...x, campo: rejectionGuidance[x.codigo_governo]?.campo ?? (e.code === '101101' ? 'cancelamento' : 'analise_cancelamento'), mensagem: rejectionGuidance[x.codigo_governo]?.mensagem ?? 'O governo recusou o pedido. Confira a mensagem original nos detalhes.', ...(e.code === '101101' && analysisCodes.includes(x.codigo_governo) ? { pode_solicitar_analise: true } : {}) }));
+    errors = explainKeySchemaDefect(errors, inv.access_key);
     if (errors.some(x => alreadyRegisteredCodes.includes(x.codigo_governo))) {
       try {
         const found = await consultEvent(db, inv, e);

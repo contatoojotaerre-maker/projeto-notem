@@ -4,7 +4,7 @@ import { CNPJ_PATTERN, isAlphanumericCnpj, isValidCnpj, normalizeCnpj } from './
 import { RuleError } from './rule-error';
 import { approximateTaxRuleError, specialTaxRuleError } from './fiscal';
 import { FISCAL_TEXT_MESSAGE, fiscalTextAccepted } from './fiscal-text';
-import { DPS_LAYOUTS, REGULAR_FIN_NFSE, orderCServ, type DpsLayout } from './dps-layout';
+import { ALPHANUMERIC_CNPJ_LAYOUT_MESSAGE, DPS_LAYOUTS, REGULAR_FIN_NFSE, orderCServ, type DpsLayout } from './dps-layout';
 import { accessKeyIssuer, justificationError, substitutionReasons, type SubstitutionReason } from './fiscal-events';
 
 export const fiscalDecimal = z.string().regex(/^\d{1,15}\.\d{2}$/, 'Use texto decimal com duas casas.');
@@ -34,9 +34,12 @@ function customerXml(c: Customer) {
   const document = c.tipo === 'pj' ? tag('CNPJ', c.documento) : c.tipo === 'pf' ? tag('CPF', c.documento) : c.nif ? tag('NIF', c.nif) : tag('cNaoNIF', c.motivo_sem_nif === 'dispensado' ? 1 : 2);
   return group('toma', document + tag('IM', c.inscricao_municipal) + tag('xNome', c.nome) + address + tag('fone', c.telefone) + tag('email', c.email));
 }
+/** Provider or PJ taker with letters in the CNPJ (the replaced key carries the provider CNPJ). */
+export function dpsInputHasAlphanumericCnpj(input: Pick<DpsInput, 'provider' | 'customer'>) { return isAlphanumericCnpj(input.provider.cnpj) || (input.customer?.tipo === 'pj' && isAlphanumericCnpj(input.customer.documento)); }
 /** Builds the DPS in the given layout profile (see dps-layout.ts); the layout is always explicit. */
 export function buildDps(input: DpsInput, layout: DpsLayout) {
   if (!DPS_LAYOUTS[layout]) throw new RuleError('Leiaute da DPS inválido.');
+  if (!DPS_LAYOUTS[layout].alphanumericCnpj && dpsInputHasAlphanumericCnpj(input)) throw new RuleError(`${ALPHANUMERIC_CNPJ_LAYOUT_MESSAGE}.`);
   validateDpsBeforeNumbering(input);
   const { provider: p, fiscal: f, service: s } = input;
   const id = dpsIdentifier(p.municipality, p.cnpj, input.series, input.number);

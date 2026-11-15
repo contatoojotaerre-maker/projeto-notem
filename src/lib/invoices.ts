@@ -5,6 +5,7 @@ import { fiscalDecimal } from './dps';
 import { API_BASE } from './app-url';
 import { envLabel, isoBr } from './api-contract';
 import { publicNfseUrl } from './danfse';
+import { keyHitsSchemaDefect } from './fiscal-ids';
 
 export type Invoice = Database['public']['Tables']['invoices']['Row'];
 export const invoiceStatuses:Record<string,string>={processing:'processando',verifying:'em_verificacao',authorized:'autorizada',rejected:'rejeitada',cancellation_pending:'cancelamento_em_analise',cancelled:'cancelada',substituted:'substituida',cancelled_by_authority:'cancelada_prefeitura'};
@@ -66,6 +67,12 @@ export function governmentErrors(reply:GovernmentReply,invoiceId:string){
  const body=reply.corpo_json??{};const raw=body['erros']??body['Erros']??body['erro']??body['Erro'];
  const rows=Array.isArray(raw)?raw:raw&&typeof raw==='object'?[raw]:[];
  return rows.map((v:unknown)=>{const e=v&&typeof v==='object'?v as Record<string,Json|undefined>:{};const code=String(e['codigo']??e['Codigo']??'');const original=String(e['descricao']??e['Descricao']??'Rejeição informada pelo governo.');const guide=rejectionGuidance[code];return {campo:guide?.campo??'nota',mensagem:guide?.mensagem??'O governo rejeitou a nota. Confira a mensagem original nos detalhes.',codigo_governo:code,mensagem_governo:original,complemento:e['complemento']??null,nota_id:invoiceId};});
+}
+/** Shown when the government refuses, by schema failure, an access key that the defective official TSChaveNFSe rejects. */
+export const ALPHANUMERIC_KEY_SCHEMA_MESSAGE='O governo recusou a chave de acesso com CNPJ alfanumérico por um defeito conhecido no esquema oficial. Tente novamente mais tarde ou use o Portal Nacional.';
+export function explainKeySchemaDefect<T extends {campo:string;mensagem:string;codigo_governo:string;mensagem_governo:string}>(errors:T[],key:unknown,campo?:string):T[]{
+ if(!keyHitsSchemaDefect(key))return errors;
+ return errors.map(e=>e.codigo_governo==='E1235'||/esquema|schema/i.test(e.mensagem_governo)?{...e,...campo?{campo}:{},mensagem:ALPHANUMERIC_KEY_SCHEMA_MESSAGE}:e);
 }
 export function verificationDecision(reply:GovernmentReply,started:string,now=Date.now()):'found'|'missing'|'retry'{
  if(reply.status===200)return 'found';
