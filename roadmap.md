@@ -1,4 +1,17 @@
 # notem — Fase 1
+## Revisão de segurança — Etapa 2 (correções aprovadas em 15/11/2026)
+- [ ] S-01 membro obrigatório nas notas externas do painel + teste
+- [ ] S-02 cadastro público desligado (confirmado na configuração pública) + teste permanente
+- [ ] S-03 limites de uso por chave/ambiente (429 + Retry-After), estrutura de ajuste por organização, convencoes.md
+- [ ] S-04 auditoria e alerta no painel de alterações feitas por chave de homologação; risco em convencoes.md
+- [ ] S-05 registros: metadados nos downloads, mascarar documentos, sem contato/endereço; leitura owner/admin/developer
+- [ ] S-06 convites com validade de 7 dias e revogação registrada
+- [ ] S-07 atualizar bibliotecas (zod v4 em etapa separada se for grande)
+- [ ] S-08 limite de corpo durante a leitura (413)
+- [ ] S-09 revogar concessões amplas; S-10 cabeçalhos CSP/frame + OPTIONS; S-11 mensagens públicas fixas; S-12 liberar idempotência; S-13 tetos de paginação/filtros; S-14 retenção; S-15 OIDC sub/exp; S-16 auditoria admin; S-17 última organização; S-18 chave webhook só servidor; S-24 /status no runtime
+- [ ] S-23 passo a passo de rotação da conta notem-painel (sem executar)
+- [ ] Matriz de isolamento na suíte + teste /api/v1 com IDs de outra organização (404)
+- [ ] Publicar e relatar verificado/não verificado
 ## Fase 5 — Cancelamento, análise fiscal e substituição
 - [x] Plano aprovado com ajustes; transmissor/ intocado.
 - [x] Parte 1: montador de eventos e101101/e101103 e grupo subst, testes XSD (268 testes OK), exemplos em docs/exemplos/eventos/.
