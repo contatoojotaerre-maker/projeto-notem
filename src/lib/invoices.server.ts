@@ -7,6 +7,7 @@ import { explicitExternalDps } from './external-dps';
 import { dpsWithNumber,putXml,putXmlOptional,xmlOf,type XmlRef } from './xml-files.server';
 import { convertDpsLayout,detectDpsLayout } from './dps-layout';
 import { currentDpsLayout } from './platform-settings.server';
+import { isAccessKey } from './fiscal-ids';
 
 async function payload(db:DB,i:Invoice){return transmissorPayload(db,i,'assinatura/transmissão ou consulta da nota '+i.id);}
 export async function transmissorPayload(db:DB,i:Pick<Invoice,'id'|'company_id'|'organization_id'|'created_by'|'environment'>,purpose:string,actor=i.created_by){
@@ -92,7 +93,7 @@ export async function processInvoiceVerifications(db:DB,now=Date.now()){
    const base=await payload(db,i);const d=await callTransmissor<Transmission>('/v1/dps/consultar',{...base,id_dps:i.dps_id});const reply=d.resposta??{};const decision=verificationDecision(reply,i.verification_started_at??i.last_attempt_at??i.emitted_at,now);
    if(decision==='missing'){await persistInvoiceResult(db,i,{status:'rejected',dispatch_state:'completed',government_errors:[{campo:'nota',mensagem:'O governo não gerou esta nota',codigo_governo:'404',mensagem_governo:'DPS não encontrada',nota_id:i.id}],message:'O governo não gerou esta nota'},'rejected');completed++;continue;}
    const key=reply.corpo_json?.['chaveAcesso'];
-   if(decision==='found'&&typeof key==='string'&&/^\d{50}$/.test(key)){
+   if(decision==='found'&&isAccessKey(key)){
     const n=await callTransmissor<Transmission>('/v1/nfse/consultar',{...base,chave_acesso:key});const xml=n.resposta?.corpo_json?.['nfseXml'];
     if(n.resposta?.status===200&&typeof xml==='string'){const next=await applyGovernmentReply(db,i,{resposta:{...n.resposta,status:201,corpo_json:{...n.resposta.corpo_json,chaveAcesso:key}}});if(next.status==='authorized')completed++;else failed++;continue;}
    }

@@ -1,6 +1,7 @@
 // Builder for NFS-e "pedido de registro de evento" (pedRegEvento v1.01), unsigned.
 // The transmissor only signs and sends; content is the notem's responsibility.
-import { isValidCnpj } from './notem';
+import { CNPJ_PATTERN, isValidCnpj } from './notem';
+import { isAccessKey } from './fiscal-ids';
 import { RuleError } from './rule-error';
 import { FISCAL_TEXT_MESSAGE, fiscalTextAccepted } from './fiscal-text';
 
@@ -32,11 +33,11 @@ export const escapeXml = (v: string) => v.replace(/&/g, '&amp;').replace(/</g, '
 
 /** Access key layout: cMun(7) ambGer(1) tpInsc(1) inscrição(14) nNFSe(13) AAMM(4) código(9) DV(1). */
 export function accessKeyIssuer(key: string) {
-  if (!/^\d{50}$/.test(key)) return null;
+  if (!isAccessKey(key)) return null;
   return { municipality: key.slice(0, 7), inscriptionType: key[8], inscription: key.slice(9, 23) };
 }
 export function eventRequestId(accessKey: string, code: FiscalEventCode) {
-  if (!/^\d{50}$/.test(accessKey)) throw new RuleError('Chave de acesso inválida.');
+  if (!isAccessKey(accessKey)) throw new RuleError('Chave de acesso inválida.');
   return `PRE${accessKey}${code}`;
 }
 export type FiscalEventInput = {
@@ -46,7 +47,7 @@ export type FiscalEventInput = {
 export function buildFiscalEvent(input: FiscalEventInput) {
   if (!(input.code in descriptions)) throw new RuleError('Tipo de evento não suportado.');
   const id = eventRequestId(input.accessKey, input.code);
-  if (!/^\d{14}$/.test(input.authorCnpj) || !isValidCnpj(input.authorCnpj)) throw new RuleError('CNPJ do autor inválido.');
+  if (!CNPJ_PATTERN.test(input.authorCnpj) || !isValidCnpj(input.authorCnpj)) throw new RuleError('CNPJ do autor inválido.');
   const issuer = accessKeyIssuer(input.accessKey);
   if (issuer?.inscriptionType !== '2' || issuer.inscription !== input.authorCnpj) throw new RuleError('O autor do evento deve ser o prestador da nota (E0812).');
   if (!/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}-03:00$/.test(input.occurredAt) || !Number.isFinite(Date.parse(input.occurredAt))) throw new RuleError('Data e hora do evento inválida.');

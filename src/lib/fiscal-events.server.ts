@@ -12,6 +12,7 @@ import { brasiliaNow, buildFiscalEvent, cancelReasons, justificationError, type 
 import { FISCAL_TEXT_MESSAGE, fiscalTextAccepted, normalizeFiscalText } from './fiscal-text';
 import { eventsFromReply } from './adn-xml';
 import { putXml, putXmlOptional, xmlOf } from './xml-files.server';
+import { normalizeCnpj } from './notem';
 
 /** After an "event already exists" refusal, applies every official event of the key (ADN); failures never block the reply. */
 async function refreshOtherEvents(db: DB, inv: Invoice) {
@@ -150,7 +151,7 @@ export async function requestFiscalEvent(a: EventRequest): Promise<Outcome> {
   const cert = await db.from('company_certificates').select('cnpj').eq('company_id', inv.company_id).eq('organization_id', a.organization_id).eq('status', 'active').maybeSingle();
   if (cert.error) throw new Error('CERTIFICATE_READ_FAILED');
   if (!cert.data) throw fail(422, 'EMPRESA_NAO_PRONTA', [{ campo: 'certificado', mensagem: 'A empresa não tem certificado digital ativo.' }]);
-  if (cert.data.cnpj.replace(/\D/g, '').slice(0, 8) !== cnpj.slice(0, 8)) throw fail(422, 'REGRA_DE_NEGOCIO', [{ campo: 'certificado', mensagem: rejectionGuidance['E0812']?.mensagem ?? 'Certificado não corresponde ao prestador.' }]);
+  if (normalizeCnpj(cert.data.cnpj).slice(0, 8) !== normalizeCnpj(cnpj).slice(0, 8)) throw fail(422, 'REGRA_DE_NEGOCIO', [{ campo: 'certificado', mensagem: rejectionGuidance['E0812']?.mensagem ?? 'Certificado não corresponde ao prestador.' }]);
   let built: { id: string; xml: string };
   try { built = buildFiscalEvent({ code, environment: inv.environment, accessKey: inv.access_key, authorCnpj: cnpj, occurredAt: brasiliaNow(), reason: v.motivo, justification }); }
   catch (err) { throw fail(422, 'REGRA_DE_NEGOCIO', [{ campo: 'nota', mensagem: ruleMessage(err, 'Pedido inválido.') }]); }

@@ -14,6 +14,7 @@ import { loadReadiness } from './readiness.server';
 import { sendInvoice } from './invoices.server';
 import { pdfStatuses } from './danfse';
 import { generateDanfse } from './danfse.server';
+import { normalizeCnpj } from './notem';
 
 export function invoiceResponse(i:Invoice):ApiResult{
  if(i.status==='authorized')return {status:201,body:invoiceOut(i)};
@@ -166,7 +167,7 @@ export async function listInvoices(ctx:ApiCtx){const {limite,offset}=pageParams(
  const origin=p.get('origem');if(origin&&!['notem','externa'].includes(origin))throw fail(400,'REQUISICAO_INVALIDA',[{campo:'origem',mensagem:'Use notem ou externa.'}]);
  const range=dateRange(ctx.url,'emitida_de','emitida_ate');const dates:Record<string,string|null>={emitida_de:range.from,emitida_ate:range.to};
  for(const field of ['id_externo','tomador_documento'] as const){const v=p.get(field);if(v&&v.length>MAX_SEARCH)throw fail(400,'REQUISICAO_INVALIDA',[{campo:field,mensagem:`Use no máximo ${MAX_SEARCH} caracteres.`}]);}
- const args=Object.fromEntries(Object.entries({_company:company,_origin:origin,_status:dbStatus,_from:dates['emitida_de'],_to:dates['emitida_ate'],_external_id:p.get('id_externo'),_taker:p.get('tomador_documento')}).filter(([,v])=>v!=null)) as Record<string,string>;
+ const args=Object.fromEntries(Object.entries({_company:company,_origin:origin,_status:dbStatus,_from:dates['emitida_de'],_to:dates['emitida_ate'],_external_id:p.get('id_externo'),_taker:p.get('tomador_documento')?normalizeCnpj(p.get('tomador_documento')!):null}).filter(([,v])=>v!=null)) as Record<string,string>;
  const r=await ctx.db.rpc('list_org_notes',{_org:ctx.organization_id,_env:ctx.env,...args,_limit:limite+1,_offset:offset});
  if(r.error)throw new Error('INVOICES_LIST_FAILED');
  const rows=r.data??[];const own=rows.filter(x=>x.origin==='notem').map(x=>x.id),ext=rows.filter(x=>x.origin==='externa').map(x=>x.id);
