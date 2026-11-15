@@ -6,6 +6,7 @@ Esta pasta contém informações operacionais e de implementação. Não faz par
 |---|---|
 | `agendador-webhooks.md` | Configuração OIDC e processamento do Google Cloud Scheduler |
 | `implementacao-api.md` | Notas de registro, emissão, consulta automática e DANFSe retiradas da documentação pública |
+| `leiaute-nt009.md` | Perfis de leiaute da DPS, data de troca, remontagem com o mesmo número e leitura tolerante |
 
 ## Validação do contrato OpenAPI 3.1
 
