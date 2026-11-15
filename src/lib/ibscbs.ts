@@ -123,3 +123,19 @@ export function buildSuggestion(serviceCode: string, c: Correlation, catalogs: {
     aviso: atv === 'IMP' ? 'A tabela oficial indica atividade impeditiva no Simples Nacional para este serviço.' : null,
   };
 }
+
+type ProfileForDps = ServiceIbsCbs & { ibscbs_final_consumer?: boolean | null };
+/**
+ * IBSCBS group of a DPS: null before the obligation date of the environment (the DPS goes without the group); from it,
+ * the complete classification is required and every catalog rule is applied before numbering.
+ */
+export function ibsCbsForDps(p: ProfileForDps, competence: string, requiredFrom: string, layoutHasIbsCbs: boolean): { value: import('./dps').DpsIbsCbs | null } | { error: string; field: string } {
+  if (!ibsCbsRequired(competence, requiredFrom)) return { value: null };
+  if (!p.ibscbs_classification || !p.nbs_code) return { error: ibsCbsMissingMessage(requiredFrom), field: p.ibscbs_classification ? 'servico.codigo_nbs' : 'servico.classificacao_ibscbs' };
+  const rule = ibsCbsServiceRuleError(p.service_code, p.ibscbs_classification, p.classification, p.ibscbs_operation_indicator, p.simples_activity_code);
+  if (rule) return { error: rule, field: /atividade/.test(rule) ? 'servico.atividade_simples' : /indicador/.test(rule) ? 'servico.indicador_operacao' : 'servico.classificacao_ibscbs' };
+  if (p.ibscbs_operation_indicator && p.indicator?.active === false) return { error: IBSCBS_MESSAGES.indicatorInactive, field: 'servico.indicador_operacao' };
+  if (!layoutHasIbsCbs) return { error: IBSCBS_MESSAGES.layoutWithoutIbsCbs, field: 'competencia' };
+  const c = p.classification!;
+  return { value: { cst: c.cst, classification: c.code, requiresTaxation: c.requires_taxation, indicator: c.requires_taxation ? p.ibscbs_operation_indicator ?? null : null, indicatorIncidence: p.indicator?.incidence_location ?? null, finalConsumer: !!p.ibscbs_final_consumer } };
+}
