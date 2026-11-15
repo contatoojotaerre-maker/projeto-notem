@@ -182,8 +182,3 @@ export async function processFiscalEventVerifications(db: DB, now = Date.now()) 
   }
   return { reserved: claims.data?.length ?? 0, completed, failed };
 }
-
-export async function latestEventXml(db: DB, invoiceId: string, org: string, code: string) {
-  const r = await db.from('invoice_fiscal_events').select('event_xml').eq('invoice_id', invoiceId).eq('organization_id', org).eq('code', code).eq('status', 'registered').order('registered_at', { ascending: false }).limit(1).maybeSingle();
-  if (r.error) throw new Error('EVENT_READ_FAILED'); return r.data?.event_xml ?? null;
-}
