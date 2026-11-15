@@ -31,9 +31,9 @@ export function externalOut(d: NfseDocument, companyId: string) {
     links: { xml: `${API_BASE}/notas/${d.id}/xml`, pdf: `${API_BASE}/notas/${d.id}/pdf`, consulta_publica: publicNfseUrl(d.access_key) } };
 }
 /** Note where the company is taker or intermediary (read only). */
-export function receivedOut(d: NfseDocument, companyId: string) {
+export function receivedOut(d: NfseDocument, companyId: string, cnpj: string) {
   const b = base(d);
-  return { ...b, empresa_id: companyId, origem: d.invoice_id ? 'notem' as const : 'externa' as const, papel: 'tomador' as 'tomador' | 'intermediario',
+  return { ...b, empresa_id: companyId, origem: d.invoice_id ? 'notem' as const : 'externa' as const, papel: d.taker_document === cnpj ? 'tomador' as const : 'intermediario' as const,
     prestador: { cnpj: d.provider_cnpj, nome: d.provider_name }, intermediario: d.intermediary_document ? { documento: d.intermediary_document, nome: d.intermediary_name } : null,
     links: { xml: `${API_BASE}/empresas/${companyId}/notas-recebidas/${d.id}/xml`, pdf: `${API_BASE}/empresas/${companyId}/notas-recebidas/${d.id}/pdf`, consulta_publica: publicNfseUrl(d.access_key) } };
 }
