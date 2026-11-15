@@ -3,12 +3,12 @@
 - [x] Parte 1: perfis de leiaute nt004/nt009r1, data de vigência (admin plataforma, auditoria), escolha antes de cada envio, remontagem com mesmo número, leitores tolerantes, DANFSe (finalidade, destinatário), testes XSD nos dois perfis, exemplos e docs — pausa com relatório
 - [x] Parte 2: CNPJ alfanumérico — plano aprovado (bloqueio produção antes da NT 009, recusa conversão, chave 9+14+27 com correção em memória só do TSChaveNFSe nos testes, mensagem clara para recusa de esquema da chave, defeito em docs/interno, API aceita máscara/minúsculas) — pausa com relatório
 - [x] Publicar a Parte 2 (solicitado em 15/11/2026)
-- [ ] Parte 3: IBS/CBS — plano aprovado com decisões (datas por ambiente, DANFSe bloco sempre, regime 1/2/3, campo API obsoleto, casos extras bloqueados) — em execução; pausa com relatório
-  - [ ] Catálogos (cClassTrib 73, cIndOp 28 + 5 inativos, Anexo VIII) com versão
-  - [ ] Cadastros (regime IBS/CBS, perfil de serviço, sugestão, aviso tomador)
-  - [ ] Prontidão (datas por ambiente, avisos)
-  - [ ] DPS nt009r1 com IBSCBS + validações + perfil nt009r2 desligado
-  - [ ] Leitura, API, webhooks, DANFSe, docs e testes
+- [ ] Parte 3: IBS/CBS — plano aprovado com decisões (datas por ambiente, DANFSe bloco sempre, regime 1/2/3, campo API obsoleto, casos extras bloqueados) — implementada; aguardando aprovação do relatório (não publicada)
+  - [x] Catálogos (cClassTrib 73, cIndOp 28 + 5 inativos, Anexo VIII) com versão
+  - [x] Cadastros (regime IBS/CBS, perfil de serviço, sugestão, aviso tomador)
+  - [x] Prontidão (datas por ambiente, avisos)
+  - [x] DPS nt009r1 com IBSCBS + validações + perfil nt009r2 desligado
+  - [x] Leitura, API, webhooks, DANFSe, docs e testes
 ## Revisão de segurança — Etapa 2 (correções aprovadas em 15/11/2026)
 - [x] S-01 membro obrigatório nas notas do painel + teste
 - [x] S-02 cadastro público desligado (configuração pública) + teste permanente
