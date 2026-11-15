@@ -1,66 +1,43 @@
-# Fase C — Parte 1: leiaute NT 009 (release 1)
+# Fase C — Parte 2: CNPJ alfanumérico
 
-Escopo desta etapa: somente a Parte 1. Nada é enviado ao governo (nem homologação); `transmissor/` não é tocado; a API pública não muda. Pausa com relatório ao final.
+## Objetivo
+Aceitar CNPJ alfanumérico (12 posições `[0-9A-Z]` + 2 DV numéricos) em todo o fluxo: cadastro, emissão, eventos, ADN, prova de posse, API, painel e DANFSe. CPF continua só numérico. Nada é enviado ao governo para teste.
 
-## Bloqueio antes de começar
+## Regra única de CNPJ
+- Normalização: remove máscara/pontuação e converte para maiúsculas (`12.abc.345/01de-35` vira `12ABC34501DE35`).
+- Validação: valor de cada caractere = código ASCII − 48; pesos e módulo 11 iguais aos do CNPJ numérico; os dois DV são sempre números; 14 caracteres iguais continuam inválidos. Exemplo oficial `12ABC34501DE35` válido; qualquer DV trocado, inválido.
+- Exibição: máscara `12.ABC.345/01DE-35` (mesmo desenho da numérica).
+- A mesma regra existe em TypeScript e em SQL (`is_valid_cnpj` atualizado e nova `normalize_cnpj`), com testes iguais nos dois lados.
 
-A pasta `docs/referencias/rtc/` **não está no projeto** (só existem `anexos/`, `dados/`, `esquemas/` com o ZIP de 09/02/2026, `manuais/` e `swaggers/`). Sem o XSD do release 1, a NT 009 e a NT 008 não consigo validar as DPS nem conferir a ordem exata dos campos. Preciso que os arquivos cheguem ao projeto (sincronização GitHub ou envio pelo chat) antes de aplicar. Ao recebê-los, confiro as cinco diferenças descritas no briefing contra o XSD e aviso se alguma não bater.
+## Onde muda
+- **Painel**: campo CNPJ da empresa, tomador PJ, intermediário, substituição (tomador), busca da lista de empresas e do seletor de empresas dos webhooks; campo passa a aceitar letras (teclado de texto, maiúsculas automáticas).
+- **API**: `cnpj` de empresas, filtros `cnpj` e `prestador_cnpj`, documento do tomador/intermediário. Entrada com ou sem máscara e minúsculas é aceita e normalizada; respostas sempre com 14 caracteres maiúsculos sem máscara. Mensagens passam de "14 números" para "14 caracteres".
+- **Emissão**: Id da DPS `DPS + município + 2 + CNPJ(14 alfanumérico) + série + número`; comparação "tomador = emitente" pela regra nova; leitura da NFS-e autorizada e conferência do CNPJ do prestador.
+- **Chave de acesso e Ids**: chave com letras nas posições do CNPJ (10–23); Id da NFS-e, Id do pedido de evento e Id do evento seguindo os padrões do XSD release 1; extração do CNPJ do autor a partir da chave.
+- **Eventos (cancelamento/análise/substituição)**: CNPJ do autor e checagem E0812 (raiz de 8 posições) aceitando letras.
+- **Certificado**: `cnpj_esperado` enviado normalizado (transmissor v5 já aceita; confirmei a versão "5" no código, sem alterar a pasta).
+- **ADN e prova de posse**: sincronização, cursores, notas externas/recebidas, visibilidade e listagem passam a comparar pelo CNPJ normalizado (hoje removem tudo que não é número, o que apagaria as letras).
+- **DANFSe**: máscara alfanumérica no prestador/tomador/intermediário e link de consulta pública aceitando chave com letras.
+- **Banco**: restrições de chave de acesso (`invoices`, `nfse_documents`, `nfse_document_events`), Id da DPS, cursor ADN e funções/políticas de prova de posse atualizadas para o formato alfanumérico. Os CNPJs atuais são todos numéricos e continuam válidos; a migração confere isso antes de trocar as regras.
+- **Documentação**: OpenAPI e `docs/api/` (CNPJ: string de 14 posições alfanumérica; exemplos), nota interna e regras do projeto.
 
-## O que muda para o usuário
+## Decisões para aprovar
+1. **Leiaute antigo não aceita CNPJ com letras** (XSD de 09/02/2026: CNPJ, chave e Ids só numéricos). Proposta: em produção, antes da vigência da NT 009 (01/12/2026), qualquer nota com CNPJ alfanumérico (emitente, tomador ou intermediário) é recusada com 422 **antes da numeração**: "CNPJ alfanumérico só pode ser usado em produção a partir da vigência da NT 009 (dd/mm/aaaa)". Em homologação funciona sempre. Se a data for adiada depois de uma DPS montada no leiaute novo com CNPJ alfanumérico, a conversão para o antigo é recusada e o envio fica como "não realizado" (sem envio, sem ambiguidade).
+2. **Defeito no XSD release 1 (chave de acesso)**: `TSChaveNFSe` = `[0-9]{6}([0-9A-Z]{14})[0-9]{30}` admite letras nas posições 7–20, mas o CNPJ ocupa 10–23 (como confirmam `TSIdNFSe`, `TSIdDPS` e `TSIdPedRegEvt` do mesmo arquivo). Com o exemplo oficial, a chave tem letra na posição 21 e falha nesse tipo. Ele é usado em `chSubstda` (substituição), `chNFSeRej`, `refNFSe` e `chNFSe`/`chSubstituta` dos eventos. Proposta: a notem valida a chave pela estrutura correta (9 dígitos + 14 alfanuméricos + 27 dígitos); nos testes, correção em memória só desse tipo (o arquivo em `docs/referencias/rtc/` continua intacto), documentada como defeito oficial; substituição e cancelamento não são bloqueados. Vale conferir no seu validador independente.
+3. **API tolerante à máscara**: aceitar CNPJ com máscara e minúsculas (hoje exige 14 números sem máscara). É mais permissivo, sem quebrar integrações existentes.
 
-1. **Administração → nova seção "Leiaute fiscal"** (somente administrador da plataforma):
-   - Mostra o leiaute vigente agora em cada ambiente: Homologação = "NT 009 (release 1)"; Produção = "Leiaute atual" ou "NT 009 (release 1)" conforme a data.
-   - Campo "Início do leiaute NT 009 em produção" (padrão 01/12/2026 00:00, horário de Brasília), com confirmação antes de salvar e registro na trilha de auditoria (quem, quando, valor anterior e novo).
-2. **DANFSe**:
-   - "Finalidade" passa a mostrar a descrição: 0 = "NFS-e regular", 1 = "NFS-e de crédito", 2 = "NFS-e de débito" (hoje mostra "código 0").
-   - Destinatário: com indicação de que o destinatário é o próprio tomador, imprime "O DESTINATÁRIO É O PRÓPRIO TOMADOR/ADQUIRENTE DA OPERAÇÃO"; "DESTINATÁRIO DA OPERAÇÃO NÃO IDENTIFICADO NA NFS-e" só quando não houver indicação (nota sem grupo IBS/CBS).
-   - CST/cClassTrib e valores de ajuste da base lidos nos dois formatos.
+## Testes
+- DV válido/inválido (exemplo oficial, DV trocado, letra no DV, caracteres repetidos, minúsculas e máscara) em TS e SQL.
+- Cadastro de empresa e tomador pelo painel/API com CNPJ alfanumérico; filtro da API.
+- Emissão em homologação com emitente e tomador alfanuméricos: DPS validada no XSD release 1; bloqueio em produção antes da vigência; conversão recusada para o leiaute antigo.
+- Leitura de NFS-e e eventos com chave com letras (ADN, NFS-e autorizada, DANFSe); prova de posse e "Notas recebidas" com CNPJ alfanumérico; isolamento entre organizações mantido.
+- Substituição e pedido de cancelamento com chave alfanumérica validados no XSD (com a correção do item 2).
+- Suíte completa, OpenAPI 3.1, typecheck/build.
 
-## Como o leiaute é escolhido
-
-- Homologação: sempre NT 009 release 1.
-- Produção: NT 009 release 1 a partir da data configurada; antes dela, leiaute atual.
-- **Momento da decisão** (ponto para sua confirmação): a decisão é tomada **imediatamente antes de cada envio** (quando a DPS segue para assinatura no transmissor), não só no pedido. Motivo: um pedido criado às 23:59 de 30/11 e enviado às 00:00 de 01/12 iria no leiaute errado. A validação antes da numeração usa o leiaute que vale no momento do pedido.
-- **Remontagem com o mesmo número**: se o leiaute de envio for diferente do da DPS guardada, a DPS é remontada a partir dos dados já gravados no pedido, com o mesmo número, série e data de emissão, **apenas** nos caminhos que já permitem envio hoje (primeiro envio, "envio não realizado" com a mesma Idempotency-Key, avanço E0014). Casos ambíguos continuam só com consulta, nunca reenvio. A DPS remontada é guardada como novo arquivo; o arquivo anterior fica preservado para auditoria e a nota registra qual leiaute foi usado.
-- Substituições usam o mesmo caminho. Eventos (cancelamento/análise) não mudam.
-
-## Diferenças isoladas no montador (um único montador, dois perfis)
-
-| Ponto | Leiaute atual (`nt004`) | NT 009 release 1 (`nt009r1`) |
-|---|---|---|
-| `infDPS/finNFSe` | não enviado (XSD antigo recusa) | `0`, após `cMotivoEmisTI` e antes de `chNFSeRej`/`cLocEmi` |
-| Ordem em `cServ` | `cTribNac, cTribMun, xDescServ, cNBS` | `cTribNac, cTribMun, cNBS, cIntContrib, xDescServ` |
-| `vDedRed` / `vAjusteBC` | não enviado | não enviado |
-| Série 900 | válida | válida |
-
-Grupo IBS/CBS continua fora da DPS nesta parte (entra na Parte 3).
-
-## Leitores tolerantes (NFS-e, ADN, DANFSe, eventos)
-
-Um único módulo de leitura aceita os dois formatos:
-- `CST`/`cClassTrib` em `IBSCBS/valores/trib/` ou em `.../trib/gIBSCBS/`;
-- `finNFSe` em `infDPS` ou em `IBSCBS`;
-- `dest`/`indDest` na raiz de `infDPS` ou dentro de `IBSCBS`;
-- `vAjusteBC` ou `vDedRed`; `vCalcAjusteBCISSQN` ou `vCalcDR`; `vCalcAjusteBCIBSCBS` ou `vCalcReeRepRes`.
-
-## Testes automáticos
-
-- Cada cenário existente (Simples PJ, não optante PF, estrangeiro, substituição, com e sem NBS, com desconto) gerado nos dois perfis e validado no XSD correspondente; o teste também exige que a DPS de um perfil **falhe** no XSD do outro (detecta perfil trocado).
-- Troca pela data: antes/depois do horário, homologação × produção, e data adiada.
-- Remontagem: DPS guardada no leiaute antigo enviada após a troca sai no novo com o mesmo número; caso ambíguo não remonta nem reenvia.
-- Permissão: só administrador da plataforma altera a data (owner/admin de organização e demais papéis recusados no servidor); alteração gera registro de auditoria.
-- DANFSe: finalidade com descrição; textos do destinatário; CST/cClassTrib nos dois caminhos.
-
-## Documentação
-
-- `docs/exemplos/dps/`: exemplos no leiaute NT 009 (os atuais passam para uma subpasta do leiaute antigo).
-- `docs/interno/`: perfis de leiaute, regra de escolha, remontagem e mapeamento NT 008 × NT 009.
-- Cópias dos XSD do release 1 em `docs/referencias/esquemas/nt009-r1/` com os nomes que os `include` esperam; o XSD de 09/02/2026 fica intacto para o leiaute antigo.
+## Fora desta parte
+IBS/CBS (Parte 3). Nenhuma alteração em `transmissor/`. Sem envio real ao governo.
 
 ## Detalhes técnicos
-
-- Banco: tabela `platform_settings` (linha única) com `nt009r1_production_starts_at timestamptz` (padrão `2026-12-01T03:00:00Z`); acesso só pelo servidor (revogar anon/authenticated, conceder ao service_role); colunas futuras da Parte 3 entram depois. `invoices.dps_layout` (texto, `nt004`/`nt009r1`) gravado no RPC que reserva/atualiza a base. Alteração da data por server function autenticada que confere administrador da plataforma antes de usar o cliente privilegiado e grava em `admin_audit_events`.
-- Montador: `buildDps(input, layout)` com as diferenças concentradas numa tabela de perfil; `chooseLayout(environment, now, settings)` puro e testado.
-- Envio: `sendInvoice` resolve o leiaute antes de ler a base; se diferente, remonta a partir de `dps_input`, grava o arquivo e troca a referência por RPC atômico sob o mesmo lease, depois aplica Id/nDPS como hoje.
-- Validador Python: parâmetro de leiaute (`--layout=nt004|nt009r1`); a correção em memória do padrão da série continua só no XSD antigo; no release 1 só será aplicada se o mesmo defeito existir (aviso antes).
-- Regras novas registradas em `src/lib/AGENTS.md`.
+- `src/lib/notem.ts`: `normalizeCnpj`, `isValidCnpj` (ASCII−48), `formatCnpj`; `digits` continua para CPF/CEP/telefone.
+- Arquivos afetados (principais): `api-contract.ts`, `api-companies.server.ts`, `api-received.server.ts`, `customers.ts`, `dps.ts`, `dps-layout.ts` (recusa de conversão), `invoices.server.ts`, `nfse-xml.ts`, `adn-xml.ts`, `fiscal-events.ts`, `fiscal-events.server.ts`, `notes.server.ts`, `adn-sync-request.server.ts`, `certificates.functions.ts`, `danfse.ts`, componentes de empresa/tomador/substituição/webhook, `docs/api/openapi.yaml`.
+- Migração: `normalize_cnpj` imutável; `is_valid_cnpj` novo; checks `^[0-9]{9}[0-9A-Z]{14}[0-9]{27}$` (chave), `^DPS[0-9]{7}(1[0-9]{14}|2[0-9A-Z]{14})[0-9]{20}$` (Id DPS), `^[0-9A-Z]{12}[0-9]{2}$` (cursor); `list_org_notes`, `org_proven_cnpj`, `request_adn_sync` e políticas `adn_cursor_read`/`nfse_documents_read` usando `normalize_cnpj`; revogações/concessões mantidas como hoje.
