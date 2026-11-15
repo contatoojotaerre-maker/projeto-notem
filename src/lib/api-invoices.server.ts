@@ -2,7 +2,7 @@ import { ruleMessage } from './rule-error';
 import type { Json } from '@/integrations/supabase/types';
 import { type ApiCtx,type ApiResult } from './api.server';
 import { z } from 'zod';
-import { ApiFailure,bodyHash,fail,idempotencyKey,page,pageParams,parseBody,pct,withholdingMap,type Detail,type Env } from './api-contract';
+import { ApiFailure,bodyHash,dateRange,MAX_SEARCH,fail,idempotencyKey,page,pageParams,parseBody,pct,withholdingMap,type Detail,type Env } from './api-contract';
 import { invoiceRequest,invoiceOut,replayDecision,invoiceStatuses,rejectionGuidance,type Invoice,type InvoiceRequest } from './invoices';
 import { justificationError,substitutionReasons,type SubstitutionReason } from './fiscal-events';
 import { FISCAL_TEXT_MESSAGE,fiscalTextAccepted,normalizeCustomerText,normalizeFields,normalizeFiscalText } from './fiscal-text';
