@@ -40,9 +40,9 @@ describe('Cadastro do serviço (mesma regra do gatilho do banco)', () => {
     expect(ibsCbsServiceRuleError('010501', '550016', cls('550016', { regular_taxation: true }), '100501', null)).toBe(IBSCBS_MESSAGES.specialRegime);
     expect(ibsCbsServiceRuleError('010501', '550022', cls('550022', { regular_taxation: true }), '100501', null)).toBe(IBSCBS_MESSAGES.specialRegime);
     expect(ibsCbsServiceRuleError('010501', '515001', cls('515001', { deferral: true }), '100501', null)).toBe(IBSCBS_MESSAGES.specialRegime);
-    const csv = readFileSync('docs/referencias/rtc/classificacao_tributaria.csv', 'latin1').split(/\r?\n/);
+    const csv = readFileSync('docs/referencias/rtc/classificacao_tributaria.csv', 'utf8').split(/\r?\n/);
     const row = (code: string) => csv.find(l => l.split(';')[10] === code)!.split(';');
-    expect(row('550016')[4]).toBe('Sim'); expect(row('550022')[4]).toBe('Sim'); expect(row('515001')[6]).toBe('Sim');
+    expect(row('550016')[14]).toBe('Sim'); expect(row('550022')[14]).toBe('Sim'); expect(row('515001')[6]).toBe('Sim');
   });
   it('820xxx permitido', () => { expect(ibsCbsServiceRuleError('010501', '820001', cls('820001', { requires_taxation: false }), null, null)).toBeNull(); });
   it('E0860: indicador obrigatório quando exige tributação', () => { expect(ibsCbsServiceRuleError('010501', '000001', integral, null, null)).toBe(IBSCBS_MESSAGES.indicatorRequired); });
