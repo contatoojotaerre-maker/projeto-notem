@@ -10,4 +10,4 @@
 - Every DPS/event text is normalized (fiscal-text) before validation and the stored text is exactly what is sent; refused characters fail with 422 before numbering.
 - ADN sync state is per CNPJ and environment (companies repeat across organizations): cursor leases, one row per NSU, one official document per key and one event per key/code/sequence; event application, timeline and webhook outbox live in SQL functions so re-processing is idempotent and final states never regress.
 - External/received NFS-e visibility requires proof of possession (a company of that CNPJ with a certificate in the reader's organization) evaluated inline in RLS under the caller's own policies; notem-issued notes stay with the issuing organization.
-- Government payloads are decoded tolerantly (plain, base64, gzip, base64 of base64-gzip) and read without DTD/entities; the transmissor requires event sequence numbers as text.
+- Government payloads are decoded tolerantly (plain, base64, gzip, base64 of base64-gzip) and read without DTD/entities; decoded `xml` fields take precedence over `arquivoXml`, and event sequences are sent as text (accepted by every transmissor version).
