@@ -44,7 +44,7 @@ export async function storeXml(db: DB, path: string, xml: string, verify = true)
 export async function readXmlBytes(db: DB, ref: Pick<XmlRef, 'path' | 'sha256'>) {
   const r = await db.storage.from(XML_BUCKET).download(ref.path);
   if (r.error || !r.data) throw new Error('XML_DOWNLOAD_FAILED');
-  const bytes = await gunzip(new Uint8Array(await r.data.arrayBuffer()));
+  const bytes = await gunzip(new Uint8Array(await new Response(r.data).arrayBuffer()));
   if (await sha256Hex(bytes) !== ref.sha256) throw new Error('XML_HASH_MISMATCH');
   return bytes;
 }
