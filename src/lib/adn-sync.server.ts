@@ -261,7 +261,7 @@ export async function reconcileRefusedCancellations(db: DB, limit = 3) {
       if (c.resposta?.status !== 200) continue;
       const events = (await eventsFromReply(c.resposta.corpo_json)).filter(e => e.access_key === inv.access_key && e.code === '101101');
       if (!events.length) continue;
-      const s = await db.rpc('store_nfse_events' as never, { _env: inv.environment, _items: events as unknown as Json, _source: 'sefin_consulta' } as never) as { data: { changed: number } | null; error: unknown };
+      const s = await db.rpc('store_nfse_events' as never, { _env: inv.environment, _items: await eventsWithFiles(db, inv.environment, events) as unknown as Json, _source: 'sefin_consulta' } as never) as { data: { changed: number } | null; error: unknown };
       if (!s.error) changed += s.data?.changed ?? 0;
     } catch { console.error('RECONCILE_CONSULT_FAILED', inv.id); }
   }
