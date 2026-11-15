@@ -21,9 +21,12 @@ import { Route as AuthenticatedAdminOrganizacoesRouteImport } from './routes/_au
 import { Route as ApiV1StatusRouteImport } from './routes/api/v1/status'
 import { Route as AuthenticatedOOrgSlugSectionRouteImport } from './routes/_authenticated/o/$orgSlug/$section'
 import { Route as ApiPublicWebhooksProcessRouteImport } from './routes/api/public/webhooks/process'
+import { Route as ApiV1CatalogosClassificacoesTributariasRouteImport } from './routes/api/v1/catalogos/classificacoes-tributarias'
+import { Route as ApiV1CatalogosIndicadoresOperacaoRouteImport } from './routes/api/v1/catalogos/indicadores-operacao'
 import { Route as ApiV1CatalogosMunicipiosRouteImport } from './routes/api/v1/catalogos/municipios'
 import { Route as ApiV1CatalogosNbsRouteImport } from './routes/api/v1/catalogos/nbs'
 import { Route as ApiV1CatalogosServicosRouteImport } from './routes/api/v1/catalogos/servicos'
+import { Route as ApiV1CatalogosSugestaoClassificacaoRouteImport } from './routes/api/v1/catalogos/sugestao-classificacao'
 import { Route as ApiV1EmpresasIndexRouteImport } from './routes/api/v1/empresas/index'
 import { Route as ApiV1NotasIndexRouteImport } from './routes/api/v1/notas/index'
 import { Route as AuthenticatedOOrgSlugEmpresasIndexRouteImport } from './routes/_authenticated/o/$orgSlug/empresas/index'
@@ -117,6 +120,18 @@ const ApiPublicWebhooksProcessRoute =
     path: '/api/public/webhooks/process',
     getParentRoute: () => rootRouteImport,
   } as any)
+const ApiV1CatalogosClassificacoesTributariasRoute =
+  ApiV1CatalogosClassificacoesTributariasRouteImport.update({
+    id: '/api/v1/catalogos/classificacoes-tributarias',
+    path: '/api/v1/catalogos/classificacoes-tributarias',
+    getParentRoute: () => rootRouteImport,
+  } as any)
+const ApiV1CatalogosIndicadoresOperacaoRoute =
+  ApiV1CatalogosIndicadoresOperacaoRouteImport.update({
+    id: '/api/v1/catalogos/indicadores-operacao',
+    path: '/api/v1/catalogos/indicadores-operacao',
+    getParentRoute: () => rootRouteImport,
+  } as any)
 const ApiV1CatalogosMunicipiosRoute =
   ApiV1CatalogosMunicipiosRouteImport.update({
     id: '/api/v1/catalogos/municipios',
@@ -133,6 +148,12 @@ const ApiV1CatalogosServicosRoute = ApiV1CatalogosServicosRouteImport.update({
   path: '/api/v1/catalogos/servicos',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ApiV1CatalogosSugestaoClassificacaoRoute =
+  ApiV1CatalogosSugestaoClassificacaoRouteImport.update({
+    id: '/api/v1/catalogos/sugestao-classificacao',
+    path: '/api/v1/catalogos/sugestao-classificacao',
+    getParentRoute: () => rootRouteImport,
+  } as any)
 const ApiV1EmpresasIndexRoute = ApiV1EmpresasIndexRouteImport.update({
   id: '/api/v1/empresas/',
   path: '/api/v1/empresas/',
@@ -315,9 +336,12 @@ export interface FileRoutesByFullPath {
   '/api/v1/status': typeof ApiV1StatusRoute
   '/o/$orgSlug/$section': typeof AuthenticatedOOrgSlugSectionRoute
   '/api/public/webhooks/process': typeof ApiPublicWebhooksProcessRoute
+  '/api/v1/catalogos/classificacoes-tributarias': typeof ApiV1CatalogosClassificacoesTributariasRoute
+  '/api/v1/catalogos/indicadores-operacao': typeof ApiV1CatalogosIndicadoresOperacaoRoute
   '/api/v1/catalogos/municipios': typeof ApiV1CatalogosMunicipiosRoute
   '/api/v1/catalogos/nbs': typeof ApiV1CatalogosNbsRoute
   '/api/v1/catalogos/servicos': typeof ApiV1CatalogosServicosRoute
+  '/api/v1/catalogos/sugestao-classificacao': typeof ApiV1CatalogosSugestaoClassificacaoRoute
   '/api/v1/empresas/': typeof ApiV1EmpresasIndexRoute
   '/api/v1/notas/': typeof ApiV1NotasIndexRoute
   '/o/$orgSlug/empresas/$companyId': typeof AuthenticatedOOrgSlugEmpresasCompanyIdRoute
@@ -360,9 +384,12 @@ export interface FileRoutesByTo {
   '/api/v1/status': typeof ApiV1StatusRoute
   '/o/$orgSlug/$section': typeof AuthenticatedOOrgSlugSectionRoute
   '/api/public/webhooks/process': typeof ApiPublicWebhooksProcessRoute
+  '/api/v1/catalogos/classificacoes-tributarias': typeof ApiV1CatalogosClassificacoesTributariasRoute
+  '/api/v1/catalogos/indicadores-operacao': typeof ApiV1CatalogosIndicadoresOperacaoRoute
   '/api/v1/catalogos/municipios': typeof ApiV1CatalogosMunicipiosRoute
   '/api/v1/catalogos/nbs': typeof ApiV1CatalogosNbsRoute
   '/api/v1/catalogos/servicos': typeof ApiV1CatalogosServicosRoute
+  '/api/v1/catalogos/sugestao-classificacao': typeof ApiV1CatalogosSugestaoClassificacaoRoute
   '/api/v1/empresas': typeof ApiV1EmpresasIndexRoute
   '/api/v1/notas': typeof ApiV1NotasIndexRoute
   '/o/$orgSlug/empresas/$companyId': typeof AuthenticatedOOrgSlugEmpresasCompanyIdRoute
@@ -407,9 +434,12 @@ export interface FileRoutesById {
   '/api/v1/status': typeof ApiV1StatusRoute
   '/_authenticated/o/$orgSlug/$section': typeof AuthenticatedOOrgSlugSectionRoute
   '/api/public/webhooks/process': typeof ApiPublicWebhooksProcessRoute
+  '/api/v1/catalogos/classificacoes-tributarias': typeof ApiV1CatalogosClassificacoesTributariasRoute
+  '/api/v1/catalogos/indicadores-operacao': typeof ApiV1CatalogosIndicadoresOperacaoRoute
   '/api/v1/catalogos/municipios': typeof ApiV1CatalogosMunicipiosRoute
   '/api/v1/catalogos/nbs': typeof ApiV1CatalogosNbsRoute
   '/api/v1/catalogos/servicos': typeof ApiV1CatalogosServicosRoute
+  '/api/v1/catalogos/sugestao-classificacao': typeof ApiV1CatalogosSugestaoClassificacaoRoute
   '/api/v1/empresas/': typeof ApiV1EmpresasIndexRoute
   '/api/v1/notas/': typeof ApiV1NotasIndexRoute
   '/_authenticated/o/$orgSlug/empresas/$companyId': typeof AuthenticatedOOrgSlugEmpresasCompanyIdRoute
@@ -454,9 +484,12 @@ export interface FileRouteTypes {
     | '/api/v1/status'
     | '/o/$orgSlug/$section'
     | '/api/public/webhooks/process'
+    | '/api/v1/catalogos/classificacoes-tributarias'
+    | '/api/v1/catalogos/indicadores-operacao'
     | '/api/v1/catalogos/municipios'
     | '/api/v1/catalogos/nbs'
     | '/api/v1/catalogos/servicos'
+    | '/api/v1/catalogos/sugestao-classificacao'
     | '/api/v1/empresas/'
     | '/api/v1/notas/'
     | '/o/$orgSlug/empresas/$companyId'
@@ -499,9 +532,12 @@ export interface FileRouteTypes {
     | '/api/v1/status'
     | '/o/$orgSlug/$section'
     | '/api/public/webhooks/process'
+    | '/api/v1/catalogos/classificacoes-tributarias'
+    | '/api/v1/catalogos/indicadores-operacao'
     | '/api/v1/catalogos/municipios'
     | '/api/v1/catalogos/nbs'
     | '/api/v1/catalogos/servicos'
+    | '/api/v1/catalogos/sugestao-classificacao'
     | '/api/v1/empresas'
     | '/api/v1/notas'
     | '/o/$orgSlug/empresas/$companyId'
@@ -545,9 +581,12 @@ export interface FileRouteTypes {
     | '/api/v1/status'
     | '/_authenticated/o/$orgSlug/$section'
     | '/api/public/webhooks/process'
+    | '/api/v1/catalogos/classificacoes-tributarias'
+    | '/api/v1/catalogos/indicadores-operacao'
     | '/api/v1/catalogos/municipios'
     | '/api/v1/catalogos/nbs'
     | '/api/v1/catalogos/servicos'
+    | '/api/v1/catalogos/sugestao-classificacao'
     | '/api/v1/empresas/'
     | '/api/v1/notas/'
     | '/_authenticated/o/$orgSlug/empresas/$companyId'
@@ -588,9 +627,12 @@ export interface RootRouteChildren {
   RedefinirSenhaRoute: typeof RedefinirSenhaRoute
   ApiV1StatusRoute: typeof ApiV1StatusRoute
   ApiPublicWebhooksProcessRoute: typeof ApiPublicWebhooksProcessRoute
+  ApiV1CatalogosClassificacoesTributariasRoute: typeof ApiV1CatalogosClassificacoesTributariasRoute
+  ApiV1CatalogosIndicadoresOperacaoRoute: typeof ApiV1CatalogosIndicadoresOperacaoRoute
   ApiV1CatalogosMunicipiosRoute: typeof ApiV1CatalogosMunicipiosRoute
   ApiV1CatalogosNbsRoute: typeof ApiV1CatalogosNbsRoute
   ApiV1CatalogosServicosRoute: typeof ApiV1CatalogosServicosRoute
+  ApiV1CatalogosSugestaoClassificacaoRoute: typeof ApiV1CatalogosSugestaoClassificacaoRoute
   ApiV1EmpresasIndexRoute: typeof ApiV1EmpresasIndexRoute
   ApiV1NotasIndexRoute: typeof ApiV1NotasIndexRoute
   ApiV1EmpresasIdCertificadoRoute: typeof ApiV1EmpresasIdCertificadoRoute
@@ -702,6 +744,20 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ApiPublicWebhooksProcessRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/api/v1/catalogos/classificacoes-tributarias': {
+      id: '/api/v1/catalogos/classificacoes-tributarias'
+      path: '/api/v1/catalogos/classificacoes-tributarias'
+      fullPath: '/api/v1/catalogos/classificacoes-tributarias'
+      preLoaderRoute: typeof ApiV1CatalogosClassificacoesTributariasRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/v1/catalogos/indicadores-operacao': {
+      id: '/api/v1/catalogos/indicadores-operacao'
+      path: '/api/v1/catalogos/indicadores-operacao'
+      fullPath: '/api/v1/catalogos/indicadores-operacao'
+      preLoaderRoute: typeof ApiV1CatalogosIndicadoresOperacaoRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/api/v1/catalogos/municipios': {
       id: '/api/v1/catalogos/municipios'
       path: '/api/v1/catalogos/municipios'
@@ -721,6 +777,13 @@ declare module '@tanstack/react-router' {
       path: '/api/v1/catalogos/servicos'
       fullPath: '/api/v1/catalogos/servicos'
       preLoaderRoute: typeof ApiV1CatalogosServicosRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/v1/catalogos/sugestao-classificacao': {
+      id: '/api/v1/catalogos/sugestao-classificacao'
+      path: '/api/v1/catalogos/sugestao-classificacao'
+      fullPath: '/api/v1/catalogos/sugestao-classificacao'
+      preLoaderRoute: typeof ApiV1CatalogosSugestaoClassificacaoRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/api/v1/empresas/': {
@@ -973,9 +1036,15 @@ const rootRouteChildren: RootRouteChildren = {
   RedefinirSenhaRoute: RedefinirSenhaRoute,
   ApiV1StatusRoute: ApiV1StatusRoute,
   ApiPublicWebhooksProcessRoute: ApiPublicWebhooksProcessRoute,
+  ApiV1CatalogosClassificacoesTributariasRoute:
+    ApiV1CatalogosClassificacoesTributariasRoute,
+  ApiV1CatalogosIndicadoresOperacaoRoute:
+    ApiV1CatalogosIndicadoresOperacaoRoute,
   ApiV1CatalogosMunicipiosRoute: ApiV1CatalogosMunicipiosRoute,
   ApiV1CatalogosNbsRoute: ApiV1CatalogosNbsRoute,
   ApiV1CatalogosServicosRoute: ApiV1CatalogosServicosRoute,
+  ApiV1CatalogosSugestaoClassificacaoRoute:
+    ApiV1CatalogosSugestaoClassificacaoRoute,
   ApiV1EmpresasIndexRoute: ApiV1EmpresasIndexRoute,
   ApiV1NotasIndexRoute: ApiV1NotasIndexRoute,
   ApiV1EmpresasIdCertificadoRoute: ApiV1EmpresasIdCertificadoRoute,

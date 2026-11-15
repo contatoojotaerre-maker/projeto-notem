@@ -15,6 +15,7 @@ import { deliverFile } from '@/lib/file-download';
 import type { SyncStatus } from '@/lib/nfse-documents';
 import type { Env } from '@/lib/api-contract';
 import { useWorkspace } from './app-shell';
+import { IbsCbsSection } from './ibs-cbs-values';
 
 const when = (v: string | null | undefined) => v ? new Date(v).toLocaleString('pt-BR') : '—';
 const money = (v: unknown) => v == null || v === '' ? '—' : `R$ ${Number(v).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}`;
@@ -72,7 +73,7 @@ function PdfButton({ organizationId, environment, id, companyId }: { organizatio
   return <Button variant="outline" disabled={busy} onClick={async () => { if (pdf) return deliverFile(pdf.blob, pdf.filename); setBusy(true); try { const r = await get({ data: { organization_id: organizationId, environment, id, ...(companyId ? { company_id: companyId } : {}) } }); setPdf({ blob: new Blob([Uint8Array.from(atob(r.base64), c => c.charCodeAt(0))], { type: 'application/pdf' }), filename: r.filename }); } catch { toast.error('Não foi possível preparar o DANFSe.'); } finally { setBusy(false); } }}><Download />{busy ? 'Preparando PDF…' : pdf ? 'Salvar PDF' : 'Baixar PDF'}</Button>;
 }
 
-type DocOut = { id: string; numero: string | null; chave_acesso: string; serie_dps: string | null; numero_dps: string | null; competencia: string | null; emitida_em: string | null; autorizada_em: string | null; situacao: string; tomador: Record<string, unknown>; servico: Record<string, unknown>; valores: Record<string, unknown>; cancelamento: { situacao: string | null; justificativa: string | null; registrado_em: string | null } | null };
+type DocOut = { id: string; numero: string | null; chave_acesso: string; serie_dps: string | null; numero_dps: string | null; competencia: string | null; emitida_em: string | null; autorizada_em: string | null; situacao: string; tomador: Record<string, unknown>; servico: Record<string, unknown>; valores: Record<string, unknown>; ibs_cbs?: unknown; cancelamento: { situacao: string | null; justificativa: string | null; registrado_em: string | null } | null };
 type OfficialEvent = { id: string; code: string; name: string; sequence: number; processed_at: string | null; reason: string | null; xml: string | null };
 const statusKey = (s: string) => Object.entries({ authorized: 'autorizada', cancellation_pending: 'cancelamento_em_analise', cancelled: 'cancelada', substituted: 'substituida', cancelled_by_authority: 'cancelada_prefeitura' }).find(([, v]) => v === s)?.[0] ?? s;
 function DocSummary({ n }: { n: DocOut }) {
@@ -80,6 +81,7 @@ function DocSummary({ n }: { n: DocOut }) {
     <section className="border-t border-border pt-5"><h2 className="mb-4 text-lg font-medium">Resumo</h2><dl className="grid grid-cols-2 gap-3 text-sm">{[['Competência', n.competencia], ['Emitida em', n.emitida_em], ['Autorizada em', n.autorizada_em], ['Série DPS', n.serie_dps], ['Número DPS', n.numero_dps]].map(([k, v]) => <div key={k}><dt className="text-muted-foreground">{k}</dt><dd className="mt-1 break-words">{v ?? '—'}</dd></div>)}</dl><h3 className="mb-2 mt-6 font-medium">Serviço</h3><p className="whitespace-pre-wrap text-sm">{String(n.servico['descricao'] ?? '—')}</p></section>
     <section className="border-t border-border pt-5"><h2 className="mb-4 text-lg font-medium">Tomador</h2><dl className="space-y-3 text-sm"><div><dt className="text-muted-foreground">Nome</dt><dd className="mt-1">{String(n.tomador['nome'] ?? '—')}</dd></div><div><dt className="text-muted-foreground">Documento</dt><dd className="mt-1">{String(n.tomador['documento'] ?? n.tomador['nif'] ?? '—')}</dd></div></dl></section>
     <section className="border-t border-border pt-5"><h2 className="mb-4 text-lg font-medium">Valores</h2><dl className="space-y-3 text-sm">{[['Serviço', money(n.valores['servico'])], ['Base de cálculo', money(n.valores['base_calculo'])], ['Alíquota do ISS', n.valores['aliquota_iss'] ? `${Number(n.valores['aliquota_iss']).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}%` : '—'], ['ISS', money(n.valores['valor_iss'])], ['Valor líquido', money(n.valores['valor_liquido'])], ['ISS retido', n.valores['iss_retido'] ? 'Sim' : 'Não']].map(([k, v]) => <div key={k} className="flex justify-between gap-5"><dt className="text-muted-foreground">{k}</dt><dd>{v}</dd></div>)}</dl></section>
+    <IbsCbsSection value={n.ibs_cbs} />
     {n.cancelamento && <section className="border-t border-border pt-5"><h2 className="mb-4 text-lg font-medium">Cancelamento</h2><dl className="space-y-3 text-sm"><div><dt className="text-muted-foreground">Justificativa</dt><dd className="mt-1">{n.cancelamento.justificativa ?? '—'}</dd></div><div><dt className="text-muted-foreground">Registrado em</dt><dd className="mt-1">{n.cancelamento.registrado_em ?? '—'}</dd></div></dl></section>}
   </div>;
 }

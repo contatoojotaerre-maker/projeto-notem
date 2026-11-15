@@ -5,6 +5,7 @@ import { CNPJ_LOCK_MESSAGE, validReadinessCertificate,specialTaxRuleError } from
 import { AGREEMENT_COOLDOWN_MS, MAX_CERTIFICATE_BYTES, toTransmissorEnvironment } from './certificates';
 import { municipalitySearchTerm } from './municipality-search';
 import { normalizeCnpj } from './notem';
+import { IBSCBS_MESSAGES, unsupportedClassificationReason, type IbsCbsClassification } from './ibscbs';
 
 const COMPANY_SELECT = '*, municipalities(name)';
 const refresh = (ctx: ApiCtx, companyId: string) => ctx.background(import('./readiness.server').then(m => m.refreshReadiness(ctx.db, companyId, { request: ctx.request })));
@@ -105,11 +106,18 @@ export async function postCertificate(ctx: ApiCtx): Promise<ApiResult> {
 }
 
 // ---------- Serviços ----------
-const SERVICE_SELECT = '*, service_codes(description)';
+const ibsCbsRuleMessages = new Set<string>(Object.values(IBSCBS_MESSAGES));
+/** atividade_simples only for ME/EPP (opSimpNac 3). */
+async function checkSimplesActivity(ctx: ApiCtx, companyId: string, activity: string | null | undefined) {
+  if (!activity) return; const f = await ctx.db.from('company_fiscal_settings').select('simples_nacional_option').eq('company_id', companyId).eq('organization_id', ctx.organization_id).maybeSingle();
+  if (f.error) throw new Error('FISCAL_READ_FAILED'); if (f.data?.simples_nacional_option !== 3) throw fail(422, 'REGRA_DE_NEGOCIO', [{ campo: 'classificacao_ibscbs.atividade_simples', mensagem: IBSCBS_MESSAGES.simplesActivityForbidden }]);
+}
+const SERVICE_SELECT = '*, service_codes(description), ibscbs_classifications(*), ibscbs_operation_indicators(code,active)';
 function serviceWriteError(e: { code?: string; message: string }): never {
   if(/E017[245]/.test(e.message))throw fail(422,'REGRA_DE_NEGOCIO',[{campo:'tributacao_iss',mensagem:e.message}]);
   if (e.code === '23505') throw fail(409, 'ID_EXTERNO_DUPLICADO');
   if (e.code === '23503') throw fail(422, 'REGRA_DE_NEGOCIO', [{ campo: 'codigo_servico', mensagem: 'Use códigos existentes nos catálogos oficiais.' }]);
+  if (e.code === 'P0001' && ibsCbsRuleMessages.has(e.message)) throw fail(422, 'REGRA_DE_NEGOCIO', [{ campo: /atividade/.test(e.message) ? 'classificacao_ibscbs.atividade_simples' : /indicador/.test(e.message) ? 'classificacao_ibscbs.indicador_operacao' : 'classificacao_ibscbs.codigo_classificacao', mensagem: e.message }]);
   if (e.code === '23514' || e.code === 'P0001') throw fail(422, 'REGRA_DE_NEGOCIO');
   throw new Error('SERVICE_WRITE_FAILED');
 }
@@ -119,7 +127,7 @@ export async function listServices(ctx: ApiCtx): Promise<ApiResult> {
   if (r.error) throw new Error('SERVICE_LIST_FAILED'); return { status: 200, body: page((r.data as unknown as ServiceRow[]).map(serviceOut), limite, offset) };
 }
 export async function createService(ctx: ApiCtx): Promise<ApiResult> {
-  const c = await loadCompany(ctx); const v = parseBody(serviceCreate, ctx.body); const row = serviceToDb(v, {});
+  const c = await loadCompany(ctx); const v = parseBody(serviceCreate, ctx.body); const row = serviceToDb(v, {}); await checkSimplesActivity(ctx, c.id, row.simples_activity_code);
   const r = await ctx.db.from('company_service_profiles').insert({ ...row, company_id: c.id, organization_id: ctx.organization_id, created_by: ctx.actor, ...apiAudit(ctx) } as never).select(SERVICE_SELECT).single();
   if (r.error) serviceWriteError(r.error); refresh(ctx, c.id); return { status: 201, body: serviceOut(r.data as unknown as ServiceRow) };
 }
@@ -130,8 +138,8 @@ async function loadService(ctx: ApiCtx, companyId: string) {
 }
 export async function getService(ctx: ApiCtx): Promise<ApiResult> { const c = await loadCompany(ctx); return { status: 200, body: serviceOut(await loadService(ctx, c.id)) }; }
 export async function patchService(ctx: ApiCtx): Promise<ApiResult> {
-  const c = await loadCompany(ctx); const current = await loadService(ctx, c.id); const v = parseBody(servicePatch, ctx.body);
-  const r = await ctx.db.from('company_service_profiles').update({ ...serviceToDb(v, current), ...apiAudit(ctx) } as never).eq('id', current.id).eq('organization_id', ctx.organization_id).select(SERVICE_SELECT).single();
+  const c = await loadCompany(ctx); const current = await loadService(ctx, c.id); const v = parseBody(servicePatch, ctx.body); const row = serviceToDb(v, current); if (row.simples_activity_code !== current.simples_activity_code) await checkSimplesActivity(ctx, c.id, row.simples_activity_code);
+  const r = await ctx.db.from('company_service_profiles').update({ ...row, ...apiAudit(ctx) } as never).eq('id', current.id).eq('organization_id', ctx.organization_id).select(SERVICE_SELECT).single();
   if (r.error) serviceWriteError(r.error); refresh(ctx, c.id); return { status: 200, body: serviceOut(r.data as unknown as ServiceRow) };
 }
 
@@ -165,8 +173,21 @@ export async function verifyMunicipality(ctx: ApiCtx): Promise<ApiResult> {
 }
 
 // ---------- Catálogos ----------
-export async function catalog(ctx: ApiCtx, kind: 'municipios' | 'servicos' | 'nbs'): Promise<ApiResult> {
+export async function catalog(ctx: ApiCtx, kind: 'municipios' | 'servicos' | 'nbs' | 'classificacoes' | 'indicadores'): Promise<ApiResult> {
   const { limite, offset } = pageParams(ctx.url); const busca = searchParam(ctx.url);
+  if (kind === 'classificacoes') {
+    const r = busca ? await ctx.db.rpc('search_fiscal_catalog', { _catalog: 'ibscbs_classifications', _search: busca }).range(offset, offset + limite) : await ctx.db.from('ibscbs_classifications').select('*').order('code').range(offset, offset + limite);
+    if (r.error) throw new Error('CATALOG_FAILED');
+    const rows = busca ? (r.data as { code: string; details: Record<string, unknown> }[]).map(x => ({ ...(x.details as unknown as IbsCbsClassification), code: x.code })) : (r.data as unknown as IbsCbsClassification[]);
+    return { status: 200, body: page(rows.map(classificationOut), limite, offset) };
+  }
+  if (kind === 'indicadores') {
+    const inactive = ctx.url.searchParams.get('incluir_inativos') === 'true';
+    let q = ctx.db.from('ibscbs_operation_indicators').select('*').order('code'); if (!inactive) q = q.eq('active', true);
+    if (busca) q = q.or(`code.like.${busca.replace(/[^0-9]/g, '') || '_'}%,location_to_identify.ilike.%${busca.replace(/[%,()*]/g, ' ')}%`);
+    const r = await q.range(offset, offset + limite); if (r.error) throw new Error('CATALOG_FAILED');
+    return { status: 200, body: page((r.data ?? []).map(x => ({ codigo: x.code, ativo: x.active, tipo_operacao: x.operation_type, local_operacao: x.operation_location, caracteristica_fornecimento: x.supply_characteristic, local_identificar: x.location_to_identify, localidade_incidencia: x.incidence_location ?? null })), limite, offset) };
+  }
   if (kind === 'municipios') {
     const r = busca ? await ctx.db.rpc('search_municipality_catalog', { search_term: municipalitySearchTerm(busca).term }).range(offset, offset + limite) : await ctx.db.from('municipalities').select('*').order('name').range(offset, offset + limite);
     if (r.error) throw new Error('CATALOG_FAILED');
@@ -176,4 +197,14 @@ export async function catalog(ctx: ApiCtx, kind: 'municipios' | 'servicos' | 'nb
   const r = busca ? await ctx.db.rpc('search_fiscal_catalog', { _catalog: table, _search: busca }).range(offset, offset + limite) : await ctx.db.from(table).select('code,description').order('code').range(offset, offset + limite);
   if (r.error) throw new Error('CATALOG_FAILED');
   return { status: 200, body: page(((r.data ?? []) as { code: string; description: string }[]).map(x => ({ codigo: x.code, descricao: x.description })), limite, offset) };
+}
+
+const classificationOut = (c: IbsCbsClassification) => ({ codigo: c.code, cst: c.cst, descricao_cst: c.cst_description ?? null, descricao: c.description ?? null, exige_tributacao: c.requires_taxation, percentual_reducao_ibs: c.ibs_reduction_percent === undefined ? null : String(c.ibs_reduction_percent), percentual_reducao_cbs: c.cbs_reduction_percent === undefined ? null : String(c.cbs_reduction_percent), suportada: unsupportedClassificationReason(c) === null, motivo_nao_suportada: unsupportedClassificationReason(c) });
+/** GET /catalogos/sugestao-classificacao?codigo_servico= — Anexo VIII suggestion, never applied automatically. */
+export async function ibsCbsSuggestion(ctx: ApiCtx): Promise<ApiResult> {
+  const code = (ctx.url.searchParams.get('codigo_servico') ?? '').replace(/\D/g, '');
+  if (!/^\d{6}$/.test(code)) throw fail(400, 'REQUISICAO_INVALIDA', [{ campo: 'codigo_servico', mensagem: 'Informe o código de tributação nacional com 6 dígitos.' }]);
+  const { loadIbsCbsSuggestion } = await import('./ibscbs.server');
+  const s = await loadIbsCbsSuggestion(ctx.db, code); if (!s) throw fail(404, 'NAO_ENCONTRADO', [], 'A tabela oficial de correlação não tem sugestão para este serviço.');
+  return { status: 200, body: { codigo_servico: code, ...s } };
 }

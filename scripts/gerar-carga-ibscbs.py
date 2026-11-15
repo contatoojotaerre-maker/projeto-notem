@@ -1,7 +1,8 @@
 #!/usr/bin/env python3
 """Gera a carga idempotente dos catálogos IBS/CBS a partir dos arquivos oficiais em docs/referencias/rtc/.
 
-Uso: python3 scripts/gerar-carga-ibscbs.py > /tmp/carga-ibscbs.sql
+Uso: python3 scripts/gerar-carga-ibscbs.py > /tmp/carga-ibscbs.sql   (SQL equivalente)
+     python3 scripts/gerar-carga-ibscbs.py --carregar  (carga pela API do banco com a chave de serviço)
      python3 scripts/gerar-carga-ibscbs.py --resumo   (contagens em JSON, usado nos testes)
 Somente leitura dos arquivos; os valores oficiais são preservados como estão (apenas espaços nas pontas são removidos).
 """
@@ -98,5 +99,27 @@ if __name__ == '__main__':
     if '--resumo' in sys.argv:
         c, i, k = classifications(), indicators(), correlations()
         print(json.dumps({'classificacoes': len(c), 'exigem_tributacao': sum(r['requires_taxation'] for r in c), 'indicadores': len(i), 'indicadores_codigos': [r['code'] for r in i], 'inativos': REMOVED_INDOP, 'correlacoes': len(k), 'exemplo_0105': next(r for r in k if r['service_item'] == '01.05')}, ensure_ascii=False))
-    else:
+    elif '--carregar' not in sys.argv:
         sys.stdout.write(sql())
+
+def load_rest():
+    """Carrega os catálogos pela API do banco com a chave de serviço (SUPABASE_URL / SUPABASE_SERVICE_ROLE_KEY). Idempotente."""
+    import urllib.request
+    url, key = os.environ['SUPABASE_URL'].rstrip('/'), os.environ['SUPABASE_SERVICE_ROLE_KEY']
+    def call(method, path, body=None, prefer='resolution=merge-duplicates,return=minimal'):
+        req = urllib.request.Request(f'{url}/rest/v1/{path}', method=method, data=None if body is None else json.dumps(body).encode(), headers={'apikey': key, **({'Authorization': 'Bearer ' + key} if key.startswith('eyJ') else {}), 'Content-Type': 'application/json', 'Prefer': prefer})
+        with urllib.request.urlopen(req, timeout=60) as r: return r.status
+    v = VERSIONS
+    c, i, k = classifications(), indicators(), correlations()
+    call('POST', 'ibscbs_classifications?on_conflict=code', [{**r, 'catalog_version': v['ibscbs_classifications']} for r in c])
+    call('POST', 'ibscbs_operation_indicators?on_conflict=code', [{**r, 'operation_location': r['location_to_identify'], 'active': True, 'catalog_version': v['ibscbs_operation_indicators']} for r in i])
+    codes = ','.join(r['code'] for r in i)
+    call('PATCH', f'ibscbs_operation_indicators?code=not.in.({codes})', {'active': False, 'catalog_version': v['ibscbs_operation_indicators']}, 'return=minimal')
+    call('POST', 'ibscbs_service_correlations?on_conflict=service_item', [{**r, 'catalog_version': v['ibscbs_service_correlations']} for r in k])
+    from datetime import datetime, timezone
+    now = datetime.now(timezone.utc).isoformat()
+    call('POST', 'fiscal_catalog_versions?on_conflict=catalog', [{'catalog': cat, 'version': v[cat], 'source_file': 'docs/referencias/rtc/' + f, 'source_sha256': sha(f), 'row_count': n, 'loaded_at': now} for cat, f, n in [('ibscbs_classifications', CSV_FILE, len(c)), ('ibscbs_operation_indicators', INDOP_FILE, len(i)), ('ibscbs_service_correlations', CORR_FILE, len(k))]])
+    print(json.dumps({'classificacoes': len(c), 'indicadores_ativos': len(i), 'correlacoes': len(k)}))
+
+if __name__ == '__main__' and '--carregar' in sys.argv:
+    load_rest()

@@ -21,6 +21,7 @@ function base(d: NfseDocument) {
     servico: { servico_id: null, codigo_servico: sv['codigo_servico'] ?? null, codigo_municipal: sv['codigo_municipal'] ?? null, descricao: sv['descricao'] ?? null },
     valores: { servico: v['valor_servico'] ?? null, base_calculo: v['base_calculo'] ?? null, aliquota_iss: v['aliquota_iss'] ?? null, valor_iss: v['valor_iss'] ?? null, valor_liquido: v['valor_liquido'] ?? null, iss_retido: v['iss_retido'] === true },
     local_prestacao: { codigo_municipio: sv['local_prestacao'] ?? null },
+    ibs_cbs: s['ibs_cbs'] ?? null,
     cancelamento: cancellationOut(d.cancellation),
     criada_em: isoBr(d.created_at), atualizada_em: isoBr(d.updated_at),
   };

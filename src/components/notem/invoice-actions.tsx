@@ -14,6 +14,7 @@ import { requestPanelFiscalEvent, substitutePanelInvoice } from '@/lib/invoices.
 import { FISCAL_TEXT_MESSAGE, fiscalTextAccepted, normalizeFiscalText } from '@/lib/fiscal-text';
 import type { Env } from '@/lib/api-contract';
 import { normalizeCnpj } from '@/lib/notem';
+import { TAKER_MUNICIPALITY_NOTICE } from '@/lib/ibscbs';
 
 export const cancelReasonLabels: Record<string, string> = { erro_emissao: 'Erro na emissão', servico_nao_prestado: 'Serviço não prestado', outros: 'Outros' };
 export const substitutionReasonLabels: Record<string, string> = { desenquadramento_simples: 'Desenquadramento do Simples Nacional', enquadramento_simples: 'Enquadramento no Simples Nacional', inclusao_imunidade_isencao: 'Inclusão retroativa de imunidade ou isenção', exclusao_imunidade_isencao: 'Exclusão retroativa de imunidade ou isenção', rejeicao_tomador_intermediario: 'Rejeição pelo tomador ou intermediário', outros: 'Outros' };
@@ -84,7 +85,7 @@ function SubstituteDialog(p: Props & { idempotencyKey: string; busy: boolean; re
           {field('sub-unconditional', 'Desconto incondicionado', <Input id="sub-unconditional" inputMode="decimal" value={f.unconditional} onChange={e => set('unconditional')(e.target.value)} />)}
           {field('sub-conditional', 'Desconto condicionado', <Input id="sub-conditional" inputMode="decimal" value={f.conditional} onChange={e => set('conditional')(e.target.value)} />)}
         </div>
-        {customer ? <div className="grid gap-5 sm:grid-cols-2"><p className="text-sm font-medium sm:col-span-2">Tomador</p>
+        {customer ? <div className="grid gap-5 sm:grid-cols-2"><p className="text-sm font-medium sm:col-span-2">Tomador</p>{customer['tipo'] !== 'estrangeiro' && <p className="text-xs text-muted-foreground sm:col-span-2">{TAKER_MUNICIPALITY_NOTICE}</p>}
           {field('sub-name', 'Nome', <Input id="sub-name" value={f.name} onChange={e => set('name')(e.target.value)} />)}
           {customer['tipo'] !== 'estrangeiro' && field('sub-document', customer['tipo'] === 'pf' ? 'CPF' : 'CNPJ', <Input id="sub-document" inputMode={customer['tipo'] === 'pf' ? 'numeric' : 'text'} autoCapitalize="characters" value={f.document} disabled={lock.simples} onChange={e => set('document')(e.target.value)} />, lock.simples ? locked('MEI e ME/EPP não podem alterar o documento do tomador (E0061).') : undefined)}
           {field('sub-email', 'E-mail', <Input id="sub-email" type="email" value={f.email} onChange={e => set('email')(e.target.value)} />)}

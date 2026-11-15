@@ -12,12 +12,14 @@ export async function loadReadiness(db: DB, companyId: string, env: Env) {
     db.from('companies').select('id,organization_id,cnpj,active,external_id').eq('id', companyId).single(),
     db.from('company_certificates').select('status,cnpj,valid_from,valid_until').eq('company_id', companyId),
     db.from('company_fiscal_settings').select('*').eq('company_id', companyId).maybeSingle(),
-    db.from('company_service_profiles').select('active,iss_taxation').eq('company_id', companyId),
+    db.from('company_service_profiles').select('active,iss_taxation,service_code,nbs_code,ibscbs_classification,ibscbs_operation_indicator,simples_activity_code,ibscbs_classifications(*),ibscbs_operation_indicators(code,active,incidence_location)').eq('company_id', companyId),
     db.from('municipality_agreement_queries').select('created_at,http_status,response_body,error_code').eq('company_id', companyId).eq('environment', env).order('created_at', { ascending: false }).limit(1),
   ]);
   if (company.error || certs.error || settings.error || services.error || last.error) throw new Error('READINESS_READ_FAILED');
+  let requiredFrom: string; try { const { ibsCbsRequiredFrom } = await import('./platform-settings.server'); requiredFrom = await ibsCbsRequiredFrom(db, env); } catch { throw new Error('READINESS_READ_FAILED'); }
   const s = settings.data ? { ...settings.data, company_id: companyId, organization_id: company.data.organization_id } : null;
-  return { company: company.data, readiness: computeReadiness(env, { company: company.data, certificates: certs.data ?? [], settings: s, services: services.data ?? [], lastQuery: last.data?.[0] ?? null }) };
+  const list = (services.data ?? []).map(({ ibscbs_classifications, ibscbs_operation_indicators, ...x }) => ({ ...x, classification: ibscbs_classifications, indicator: ibscbs_operation_indicators }));
+  return { company: company.data, readiness: computeReadiness(env, { company: company.data, certificates: certs.data ?? [], settings: s, services: list, ibsCbsRequiredFrom: requiredFrom, lastQuery: last.data?.[0] ?? null }) };
 }
 
 type Emit = { request?: Request };

@@ -705,6 +705,7 @@ export type Database = {
           created_at: string
           created_by: string
           dps_series: number
+          ibscbs_simples_regime: number | null
           organization_id: string
           print_danfse_receipt: boolean
           simples_iss_withholding_percent: number | null
@@ -727,6 +728,7 @@ export type Database = {
           created_at?: string
           created_by: string
           dps_series: number
+          ibscbs_simples_regime?: number | null
           organization_id: string
           print_danfse_receipt?: boolean
           simples_iss_withholding_percent?: number | null
@@ -749,6 +751,7 @@ export type Database = {
           created_at?: string
           created_by?: string
           dps_series?: number
+          ibscbs_simples_regime?: number | null
           organization_id?: string
           print_danfse_receipt?: boolean
           simples_iss_withholding_percent?: number | null
@@ -817,6 +820,8 @@ export type Database = {
           created_by: string
           default_description: string
           external_id: string | null
+          ibscbs_classification: string | null
+          ibscbs_final_consumer: boolean
           ibscbs_operation_indicator: string | null
           id: string
           immunity_type: number | null
@@ -828,6 +833,7 @@ export type Database = {
           nbs_code: string | null
           organization_id: string
           service_code: string
+          simples_activity_code: string | null
           updated_at: string
           updated_by: string
         }
@@ -840,6 +846,8 @@ export type Database = {
           created_by: string
           default_description?: string
           external_id?: string | null
+          ibscbs_classification?: string | null
+          ibscbs_final_consumer?: boolean
           ibscbs_operation_indicator?: string | null
           id?: string
           immunity_type?: number | null
@@ -851,6 +859,7 @@ export type Database = {
           nbs_code?: string | null
           organization_id: string
           service_code: string
+          simples_activity_code?: string | null
           updated_at?: string
           updated_by: string
         }
@@ -863,6 +872,8 @@ export type Database = {
           created_by?: string
           default_description?: string
           external_id?: string | null
+          ibscbs_classification?: string | null
+          ibscbs_final_consumer?: boolean
           ibscbs_operation_indicator?: string | null
           id?: string
           immunity_type?: number | null
@@ -874,6 +885,7 @@ export type Database = {
           nbs_code?: string | null
           organization_id?: string
           service_code?: string
+          simples_activity_code?: string | null
           updated_at?: string
           updated_by?: string
         }
@@ -891,6 +903,13 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "companies"
             referencedColumns: ["id", "organization_id"]
+          },
+          {
+            foreignKeyName: "company_service_profiles_ibscbs_classification_fkey"
+            columns: ["ibscbs_classification"]
+            isOneToOne: false
+            referencedRelation: "ibscbs_classifications"
+            referencedColumns: ["code"]
           },
           {
             foreignKeyName: "company_service_profiles_ibscbs_operation_indicator_fkey"
@@ -974,6 +993,33 @@ export type Database = {
           },
         ]
       }
+      fiscal_catalog_versions: {
+        Row: {
+          catalog: string
+          loaded_at: string
+          row_count: number
+          source_file: string
+          source_sha256: string
+          version: string
+        }
+        Insert: {
+          catalog: string
+          loaded_at?: string
+          row_count: number
+          source_file: string
+          source_sha256: string
+          version: string
+        }
+        Update: {
+          catalog?: string
+          loaded_at?: string
+          row_count?: number
+          source_file?: string
+          source_sha256?: string
+          version?: string
+        }
+        Relationships: []
+      }
       fiscal_xml_files: {
         Row: {
           created_at: string
@@ -1007,27 +1053,126 @@ export type Database = {
         }
         Relationships: []
       }
+      ibscbs_classifications: {
+        Row: {
+          catalog_version: string
+          cbs_reduction_percent: number
+          code: string
+          cst: string
+          cst_description: string
+          deferral: boolean
+          description: string
+          donation_type: string | null
+          ibs_reduction_percent: number
+          legislation_url: string | null
+          presumed_credit: boolean
+          regular_taxation: boolean
+          requires_taxation: boolean
+          simples_revenue_type: string | null
+        }
+        Insert: {
+          catalog_version: string
+          cbs_reduction_percent: number
+          code: string
+          cst: string
+          cst_description: string
+          deferral: boolean
+          description: string
+          donation_type?: string | null
+          ibs_reduction_percent: number
+          legislation_url?: string | null
+          presumed_credit: boolean
+          regular_taxation: boolean
+          requires_taxation: boolean
+          simples_revenue_type?: string | null
+        }
+        Update: {
+          catalog_version?: string
+          cbs_reduction_percent?: number
+          code?: string
+          cst?: string
+          cst_description?: string
+          deferral?: boolean
+          description?: string
+          donation_type?: string | null
+          ibs_reduction_percent?: number
+          legislation_url?: string | null
+          presumed_credit?: boolean
+          regular_taxation?: boolean
+          requires_taxation?: boolean
+          simples_revenue_type?: string | null
+        }
+        Relationships: []
+      }
       ibscbs_operation_indicators: {
         Row: {
+          active: boolean
+          catalog_version: string | null
           code: string
+          incidence_location: string | null
+          legal_basis: string | null
           location_to_identify: string
+          notes: string | null
           operation_location: string
           operation_type: string
           supply_characteristic: string
         }
         Insert: {
+          active?: boolean
+          catalog_version?: string | null
           code: string
+          incidence_location?: string | null
+          legal_basis?: string | null
           location_to_identify: string
+          notes?: string | null
           operation_location: string
           operation_type: string
           supply_characteristic: string
         }
         Update: {
+          active?: boolean
+          catalog_version?: string | null
           code?: string
+          incidence_location?: string | null
+          legal_basis?: string | null
           location_to_identify?: string
+          notes?: string | null
           operation_location?: string
           operation_type?: string
           supply_characteristic?: string
+        }
+        Relationships: []
+      }
+      ibscbs_service_correlations: {
+        Row: {
+          catalog_version: string
+          classifications: Json
+          item_description: string | null
+          nbs: Json
+          operation_indicators: Json
+          service_item: string
+          simples_activity: string | null
+          simples_activity_description: string | null
+        }
+        Insert: {
+          catalog_version: string
+          classifications?: Json
+          item_description?: string | null
+          nbs?: Json
+          operation_indicators?: Json
+          service_item: string
+          simples_activity?: string | null
+          simples_activity_description?: string | null
+        }
+        Update: {
+          catalog_version?: string
+          classifications?: Json
+          item_description?: string | null
+          nbs?: Json
+          operation_indicators?: Json
+          service_item?: string
+          simples_activity?: string | null
+          simples_activity_description?: string | null
         }
         Relationships: []
       }
@@ -2076,20 +2221,32 @@ export type Database = {
       }
       platform_settings: {
         Row: {
+          ibscbs_required_production_from: string
+          ibscbs_required_sandbox_from: string
           id: boolean
           nt009r1_production_starts_at: string
+          nt009r2_production_starts_at: string | null
+          nt009r2_sandbox_starts_at: string | null
           updated_at: string
           updated_by: string | null
         }
         Insert: {
+          ibscbs_required_production_from?: string
+          ibscbs_required_sandbox_from?: string
           id?: boolean
           nt009r1_production_starts_at?: string
+          nt009r2_production_starts_at?: string | null
+          nt009r2_sandbox_starts_at?: string | null
           updated_at?: string
           updated_by?: string | null
         }
         Update: {
+          ibscbs_required_production_from?: string
+          ibscbs_required_sandbox_from?: string
           id?: boolean
           nt009r1_production_starts_at?: string
+          nt009r2_production_starts_at?: string | null
+          nt009r2_sandbox_starts_at?: string | null
           updated_at?: string
           updated_by?: string | null
         }
@@ -3154,6 +3311,20 @@ export type Database = {
         }
         Returns: boolean
       }
+      ibscbs_regime_allowed: {
+        Args: { _iss_regime: number; _value: number }
+        Returns: boolean
+      }
+      ibscbs_regime_default: { Args: { _iss_regime: number }; Returns: number }
+      ibscbs_service_rule_error: {
+        Args: {
+          _activity: string
+          _classification: string
+          _indicator: string
+          _service_code: string
+        }
+        Returns: string
+      }
       integration_revocation_actors: {
         Args: { _org: string }
         Returns: {
@@ -3450,11 +3621,34 @@ export type Database = {
           isSetofReturn: true
         }
       }
+      set_fiscal_platform_setting: {
+        Args: { _actor: string; _setting: string; _value: string }
+        Returns: {
+          ibscbs_required_production_from: string
+          ibscbs_required_sandbox_from: string
+          id: boolean
+          nt009r1_production_starts_at: string
+          nt009r2_production_starts_at: string | null
+          nt009r2_sandbox_starts_at: string | null
+          updated_at: string
+          updated_by: string | null
+        }
+        SetofOptions: {
+          from: "*"
+          to: "platform_settings"
+          isOneToOne: true
+          isSetofReturn: false
+        }
+      }
       set_nt009_production_start: {
         Args: { _actor: string; _value: string }
         Returns: {
+          ibscbs_required_production_from: string
+          ibscbs_required_sandbox_from: string
           id: boolean
           nt009r1_production_starts_at: string
+          nt009r2_production_starts_at: string | null
+          nt009r2_sandbox_starts_at: string | null
           updated_at: string
           updated_by: string | null
         }
