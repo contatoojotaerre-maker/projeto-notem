@@ -3,7 +3,7 @@ import { Link, Outlet, useNavigate, useRouterState } from '@tanstack/react-route
 import { SandboxChangeAlerts } from './sandbox-change-alerts';
 import { useQueryClient, useSuspenseQuery } from '@tanstack/react-query';
 import { useServerFn } from '@tanstack/react-start';
-import { Building2, FileText, Home, Layers, Bell, Code2, Users, Settings, CircleHelp, ChevronsLeft, Menu, Search, Sun, Moon, LogOut, TriangleAlert, ArrowRight, Activity, MapPin, MessageSquare, CreditCard, X } from 'lucide-react';
+import { Building2, FileText, Home, Layers, Bell, Code2, Users, Settings, CircleHelp, ChevronsLeft, Menu, Search, Sun, Moon, LogOut, TriangleAlert, ArrowRight, Activity, MapPin, MessageSquare, CreditCard, FileCode2, X } from 'lucide-react';
 import { toast } from 'sonner';
 import { Button } from '@/components/ui/button';
 import { supabase } from '@/integrations/supabase/client';
@@ -17,7 +17,7 @@ const WorkspaceContext=createContext<Workspace|null>(null);
 export function useWorkspace(){const context=useContext(WorkspaceContext);if(!context)throw new Error('Workspace unavailable');return context;}
 export function useOrganization(slug:string){const workspace=useWorkspace();const organization=workspace.organizations.find(o=>o.slug===slug);const role=workspace.memberships.find(m=>m.organization_id===organization?.id)?.role;return {organization,role,isAdmin:workspace.isAdmin};}
 const organizationItems=[{title:'Início',section:'inicio',icon:Home},{title:'Notas',section:'notas',icon:FileText},{title:'Empresas',section:'empresas',icon:Building2},{title:'Modelos de serviço',section:'modelos-de-servico',icon:Layers},{title:'Alertas',section:'alertas',icon:Bell},{title:'Integrações',section:'integracoes',icon:Code2},{title:'Equipe',section:'equipe',icon:Users},{title:'Organização',section:'organizacao',icon:Settings},{title:'Ajuda',section:'ajuda',icon:CircleHelp}];
-const adminItems=[{title:'Organizações',section:'organizacoes',icon:Building2},{title:'Empresas e notas',section:'empresas-e-notas',icon:FileText},{title:'Municípios',section:'municipios',icon:MapPin},{title:'Mensagens de rejeição',section:'mensagens-de-rejeicao',icon:MessageSquare},{title:'Saúde do sistema',section:'saude-do-sistema',icon:Activity},{title:'Cobrança',section:'cobranca',icon:CreditCard}];
+const adminItems=[{title:'Organizações',section:'organizacoes',icon:Building2},{title:'Empresas e notas',section:'empresas-e-notas',icon:FileText},{title:'Municípios',section:'municipios',icon:MapPin},{title:'Mensagens de rejeição',section:'mensagens-de-rejeicao',icon:MessageSquare},{title:'Leiaute fiscal',section:'leiaute-fiscal',icon:FileCode2},{title:'Saúde do sistema',section:'saude-do-sistema',icon:Activity},{title:'Cobrança',section:'cobranca',icon:CreditCard}];
 export function AppShell(){
  const {data:workspace}=useSuspenseQuery(workspaceQuery());const cache=useQueryClient();const navigate=useNavigate();const path=useRouterState({select:s=>s.location.pathname});const save=useServerFn(updatePreferences);const accept=useServerFn(acceptInvitation);const [collapsed,setCollapsed]=useState(false);const [mobile,setMobile]=useState(false);const [account,setAccount]=useState(false);
  const slug=path.split('/')[1]==='o'?path.split('/')[2]:undefined;

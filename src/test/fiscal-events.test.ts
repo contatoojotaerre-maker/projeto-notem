@@ -7,7 +7,7 @@ import { buildFiscalEvent, eventRequestId, justificationError, brasiliaNow } fro
 import { buildDps } from '../lib/dps';
 import { eventFixture, eventExamples, substituteFixture, exampleKey } from './fiscal-event-fixtures';
 
-const validate = (schema: 'DPS' | 'pedRegEvento', files: string[], strict = false) => execFileSync('python3', ['src/test/validate-dps-xsd.py', `--schema=${schema}`, ...(strict ? ['--official'] : []), ...files], { encoding: 'utf8', stdio: 'pipe' });
+const validate = (schema: 'DPS' | 'pedRegEvento', files: string[], strict = false, layout: 'nt004' | 'nt009r1' = 'nt004') => execFileSync('python3', ['src/test/validate-dps-xsd.py', `--schema=${schema}`, `--layout=${layout}`, ...(strict ? ['--official'] : []), ...files], { encoding: 'utf8', stdio: 'pipe' });
 
 describe('Pedido de registro de evento', () => {
   it('Id = PRE + chave (50) + código do evento (6), 59 caracteres', () => {
@@ -47,15 +47,15 @@ describe('Pedido de registro de evento', () => {
 
 describe('Grupo subst da DPS', () => {
   it('fica após cLocEmi e antes de prest, com motivo de dois dígitos', () => {
-    const xml = buildDps(substituteFixture()).xml;
+    const xml = buildDps(substituteFixture(),'nt009r1').xml;
     expect(xml).toContain(`<cLocEmi>4212254</cLocEmi><subst><chSubstda>${exampleKey}</chSubstda><cMotivo>99</cMotivo><xMotivo>`);
     expect(xml.indexOf('</subst>')).toBeLessThan(xml.indexOf('<prest>'));
   });
   it('E0042: chave de outra empresa ou município é recusada', () => {
-    const other = substituteFixture(); other.provider.cnpj = '12345678000195'; expect(() => buildDps(other)).toThrow('E0042');
-    const city = substituteFixture(); city.provider.municipality = '4205407'; expect(() => buildDps(city)).toThrow('E0042');
+    const other = substituteFixture(); other.provider.cnpj = '12345678000195'; expect(() => buildDps(other,'nt009r1')).toThrow('E0042');
+    const city = substituteFixture(); city.provider.municipality = '4205407'; expect(() => buildDps(city,'nt009r1')).toThrow('E0042');
   });
-  it('justificativa obrigatória mesmo fora do motivo 99', () => { const v = substituteFixture(); v.substitution!.reason = 'desenquadramento_simples'; v.substitution!.justification = 'curta'; expect(() => buildDps(v)).toThrow('15 a 255'); });
+  it('justificativa obrigatória mesmo fora do motivo 99', () => { const v = substituteFixture(); v.substitution!.reason = 'desenquadramento_simples'; v.substitution!.justification = 'curta'; expect(() => buildDps(v,'nt009r1')).toThrow('15 a 255'); });
 });
 
 describe('XSD oficial dos eventos', () => {
@@ -67,14 +67,17 @@ describe('XSD oficial dos eventos', () => {
       expect(validate('pedRegEvento', events).match(/XSD 1.01 válido/g)).toHaveLength(events.length);
       // Event schemas do not use TSSerieDPS: they also pass the untouched official schema.
       expect(validate('pedRegEvento', events, true).match(/XSD 1.01 válido/g)).toHaveLength(events.length);
-      const dps = join(folder, 'substituta.xml'); const dpsXml = buildDps(substituteFixture()).xml; writeFileSync(dps, dpsXml);
+      // Events did not change in NT 009 release 1: the same requests pass the release 1 schema.
+      expect(validate('pedRegEvento', events, false, 'nt009r1').match(/XSD 1.01 válido/g)).toHaveLength(events.length);
+      const dps = join(folder, 'substituta.xml'); const dpsXml = buildDps(substituteFixture(),'nt009r1').xml; writeFileSync(dps, dpsXml);
       expect(readFileSync('docs/exemplos/eventos/dps-substituta.xml', 'utf8')).toBe(dpsXml);
-      expect(validate('DPS', [dps])).toContain('XSD 1.01 válido');
+      expect(validate('DPS', [dps], false, 'nt009r1')).toContain('XSD 1.01 válido');
+      expect(() => validate('DPS', [dps])).toThrow();
       const base = buildFiscalEvent(eventFixture()).xml;
       for (const [name, xml] of [['motivo', base.replace('<cMotivo>1</cMotivo>', '<cMotivo>3</cMotivo>')], ['id', base.replace(/Id="PRE\d+"/, 'Id="PRE123"')], ['desc', base.replace('Cancelamento de NFS-e<', 'Cancelamento<')], ['curta', base.replace(/<xMotivo>[^<]+</, '<xMotivo>curta<')]] as const) {
         const p = join(folder, `bad-${name}.xml`); writeFileSync(p, xml); expect(() => validate('pedRegEvento', [p])).toThrow();
       }
-      const badSubst = join(folder, 'bad-subst.xml'); writeFileSync(badSubst, dpsXml.replace('<cMotivo>99</cMotivo>', '<cMotivo>9</cMotivo>')); expect(() => validate('DPS', [badSubst])).toThrow();
+      const badSubst = join(folder, 'bad-subst.xml'); writeFileSync(badSubst, dpsXml.replace('<cMotivo>99</cMotivo>', '<cMotivo>9</cMotivo>')); expect(() => validate('DPS', [badSubst], false, 'nt009r1')).toThrow();
       expect(readFileSync(archive).equals(original)).toBe(true);
     } finally { rmSync(folder, { recursive: true, force: true }); }
   });

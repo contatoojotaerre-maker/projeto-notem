@@ -3,5 +3,7 @@ export function fixture(): DpsInput { return { environment: 'sandbox', emittedAt
 export function examples() {
   const simples = fixture(); simples.values.unconditional = '10.00'; const pf = fixture(); pf.number = '2'; pf.fiscal = { simples: 1, regime: null, special: 0, approximate: { mode: 'percent_by_sphere', federal: '10.00', state: '0.00', municipal: '2.00' } }; pf.customer = { tipo: 'pf', documento: '52998224725', nome: 'Pessoa fictícia' };
   const foreign = fixture(); foreign.number = '3'; foreign.customer = { tipo: 'estrangeiro', nif: 'TEST-E1-123', nome: 'Foreign Example Ltd', endereco: { pais: 'US', cidade: 'Miami', codigo_postal: '33101', estado_provincia_regiao: 'Florida', endereco_livre: 'Example Street', numero: '10', bairro: 'Downtown' } };
-  return { 'simples-pj': simples, 'nao-optante-pf': pf, estrangeiro: foreign };
+  // With NBS (cNBS moves before xDescServ in NT 009) and without discount.
+  const nbs = fixture(); nbs.number = '5'; nbs.service = { ...nbs.service, code: '010501', nbs: '111032100', municipalCode: '001', description: 'Licenciamento de programa de computador' };
+  return { 'simples-pj': simples, 'nao-optante-pf': pf, estrangeiro: foreign, 'com-nbs': nbs };
 }
