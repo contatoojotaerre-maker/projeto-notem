@@ -118,7 +118,8 @@ describe('Chave de acesso com letras', () => {
     expect(parseDanfse(xml)['@_Id']).toBe(`NFS${id}`);
     const n = readNfse(xml)!; expect(n.access_key).toBe(id); expect(n.provider_cnpj).toBe(OFFICIAL);
     const dpsId = /<infDPS Id="([^"]+)"/.exec(xml)![1]!;
-    expect(readAuthorizedNfse(xml, { dpsId, environment: 'sandbox', cnpj: OFFICIAL }).accessKey).toBe(id);
+    const environment = /<infDPS[^>]*><tpAmb>1</.test(xml) ? 'production' as const : 'sandbox' as const;
+    expect(readAuthorizedNfse(xml, { dpsId, environment, cnpj: OFFICIAL }).accessKey).toBe(id);
     const ev = `<evento versao="1.01" xmlns="http://www.sped.fazenda.gov.br/nfse"><infEvento Id="EVT${key}101101001"><nSeqEvento>1</nSeqEvento><dhProc>2026-11-14T18:08:20-03:00</dhProc><pedRegEvento versao="1.01"><infPedReg Id="PRE${key}101101"><tpAmb>2</tpAmb><verAplic>x</verAplic><dhEvento>2026-11-14T18:08:00-03:00</dhEvento><CNPJAutor>${OFFICIAL}</CNPJAutor><chNFSe>${key}</chNFSe><e101101><xDesc>Cancelamento de NFS-e</xDesc><cMotivo>1</cMotivo><xMotivo>Erro na emissão da nota fiscal.</xMotivo></e101101></infPedReg></pedRegEvento></infEvento></evento>`;
     expect(readEvent(ev)).toMatchObject({ access_key: key, code: '101101', author_document: OFFICIAL });
   });
