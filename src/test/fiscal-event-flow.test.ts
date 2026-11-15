@@ -12,24 +12,26 @@ vi.mock('../lib/readiness.server', () => ({ refreshReadiness: vi.fn(), loadReadi
 
 const invoice = (over: Partial<Invoice> = {}) => ({ id: ids.invoice_id, organization_id: ids.organization_id, company_id: ids.company_id, integration_id: ids.integration_id, environment: 'sandbox', status: 'authorized', access_key: exampleKey, nfse_number: '11', provider_snapshot: { cnpj: '11222333000181' }, created_by: 'actor', cancellation: null, pending_operation: null, sent_values: { servico: '150.00' }, service_snapshot: { service_code: '140101', municipal_tax_code: null, withholding: 1 }, service_location: { codigo_municipio: '4212254' }, competence: '2026-11-12', customer_snapshot: { tipo: 'pj', documento: '11444777000161', nome: 'Tomador' }, description: 'Vistoria', complementary_information: null, service_profile_id: ids.profile_id, dps_series: 900, dps_number: 1, emitted_at: '2026-11-13T19:00:00Z', created_at: '2026-11-13T19:00:00Z', updated_at: '2026-11-13T19:00:00Z', ...over } as unknown as Invoice);
 const built = buildFiscalEvent(eventFixture());
-const event = (over: Partial<FiscalEvent> = {}) => ({ id: '40000000-0000-4000-8000-000000000001', invoice_id: ids.invoice_id, organization_id: ids.organization_id, company_id: ids.company_id, environment: 'sandbox', integration_id: ids.integration_id, origin: 'api', requested_by: 'actor', code: '101101', sequence: 1, reason: 'erro_emissao', justification: 'Valor do serviço informado incorretamente na emissão.', idempotency_key: 'k', request_hash: 'h', request_id: built.id, status: 'sending', unsigned_xml: built.xml, claim_token: 'token', lease_until: '2999-01-01T00:00:00Z', created_at: '2026-11-14T18:00:00Z', verification_started_at: '2026-11-14T18:00:00Z', government_errors: [], ...over } as unknown as FiscalEvent);
+const event = (over: Partial<FiscalEvent> = {}) => ({ id: '40000000-0000-4000-8000-000000000001', invoice_id: ids.invoice_id, organization_id: ids.organization_id, company_id: ids.company_id, environment: 'sandbox', integration_id: ids.integration_id, origin: 'api', requested_by: 'actor', code: '101101', sequence: 1, reason: 'erro_emissao', justification: 'Valor do serviço informado incorretamente na emissão.', idempotency_key: 'k', request_hash: 'h', request_id: built.id, status: 'sending', claim_token: 'token', lease_until: '2999-01-01T00:00:00Z', created_at: '2026-11-14T18:00:00Z', verification_started_at: '2026-11-14T18:00:00Z', government_errors: [], ...over } as unknown as FiscalEvent);
 const officialXml = (code = '101101') => `<evento xmlns="http://www.sped.fazenda.gov.br/nfse"><infEvento Id="EVT${exampleKey}${code}001"><dhProc>2026-11-14T18:31:00-03:00</dhProc><pedRegEvento><infPedReg><chNFSe>${exampleKey}</chNFSe><e${code}><cMotivo>2</cMotivo><xMotivo>Cancelado no Portal Nacional pelo prestador.</xMotivo></e${code}></infPedReg></pedRegEvento></infEvento></evento>`;
 function db(tables: Record<string, unknown> = {}) {
-  return tableDb({ invoices: invoice(), company_certificate_material: { key_version: '1', nonce: 'n', data: 'd' }, company_certificates: { cnpj: '11222333000181' }, invoice_fiscal_events: null, ...tables }, (name, args) => {
+  const f = tableDb({ invoices: invoice(), company_certificate_material: { key_version: '1', nonce: 'n', data: 'd' }, company_certificates: { cnpj: '11222333000181' }, invoice_fiscal_events: null, ...tables }, (name, args) => {
     if (name === 'finish_fiscal_event') return { data: { ...event(), status: (args['_patch'] as { status: string }).status, claim_token: null }, error: null };
     if (name === 'create_fiscal_event_request') return { data: { created: true, event: event() }, error: null };
     if (name === 'claim_fiscal_event_verifications') return { data: [event({ status: 'verifying' })], error: null };
     return { data: null, error: null };
   });
+  f.seed('invoice_fiscal_events', event().id, 'unsigned', built.xml);
+  return f;
 }
-const finish = (f: ReturnType<typeof db>) => f.calls.find(c => c.name === 'finish_fiscal_event')?.args as Record<string, unknown> & { _patch: Record<string, unknown>; _invoice: { cancellation: Record<string, unknown>; pending_operation: unknown } };
+const finish = (f: ReturnType<typeof db>) => f.calls.find(c => c.name === 'finish_fiscal_event')?.args as Record<string, unknown> & { _patch: Record<string, unknown> & { files: Record<string, { path: string; sha256: string }> }; _invoice: { cancellation: Record<string, unknown>; pending_operation: unknown } };
 const paths = () => vi.mocked(callTransmissor).mock.calls.map(c => c[0]);
 beforeEach(() => vi.mocked(callTransmissor).mockReset());
 
 describe('Cancelamento: respostas do governo', () => {
   it('201 com eventoXml: cancelada, XML guardado e nota.cancelada', async () => {
     const f = db(); await applyEventReply(f.db, event(), invoice(), { evento_assinado: 'signed', resposta: { status: 201, corpo_json: { eventoXml: officialXml() } } });
-    const a = finish(f); expect(a._patch['status']).toBe('registered'); expect(a._patch['event_xml']).toBe(officialXml()); expect(a['_webhook']).toBe('nota.cancelada'); expect(a['_timeline']).toBe('cancellation_registered'); expect(a._invoice.cancellation['situacao']).toBe('cancelado'); expect((a['_nota'] as { situacao: string }).situacao).toBe('cancelada');
+    const a = finish(f); expect(a._patch['status']).toBe('registered'); expect(a._patch['event_xml']).toBeUndefined(); expect(await f.read(a._patch.files['event']!)).toBe(officialXml()); expect(await f.read(a._patch.files['signed']!)).toBe('signed'); expect(a['_webhook']).toBe('nota.cancelada'); expect(a['_timeline']).toBe('cancellation_registered'); expect(a._invoice.cancellation['situacao']).toBe('cancelado'); expect((a['_nota'] as { situacao: string }).situacao).toBe('cancelada');
   });
   it('XML de outra nota nunca registra: fica em verificação', async () => {
     const f = db(); await applyEventReply(f.db, event(), invoice(), { resposta: { status: 201, corpo_json: { eventoXml: officialXml().replaceAll(exampleKey, '9'.repeat(50)) } } });
@@ -44,7 +46,7 @@ describe('Cancelamento: respostas do governo', () => {
     const f = db(); vi.mocked(callTransmissor).mockResolvedValueOnce({ resposta: { status: 200, corpo_json: { eventoXml: officialXml() } } });
     await applyEventReply(f.db, event(), invoice(), { resposta: { status: 400, corpo_json: { erros: [{ codigo: 'E0840', descricao: 'Já existe evento' }] } } });
     expect(vi.mocked(callTransmissor)).toHaveBeenCalledWith('/v1/nfse/evento/consultar', expect.objectContaining({ chave_acesso: exampleKey, tipo_evento: '101101', num_seq_evento: '1' }));
-    const a = finish(f); expect(a._patch).toMatchObject({ status: 'registered', registered_outside: true, event_xml: officialXml() }); expect(a['_timeline']).toBe('cancellation_registered_outside'); expect(a['_message']).toBe('Cancelamento registrado fora da notem.'); expect(a['_webhook']).toBe('nota.cancelada');
+    const a = finish(f); expect(a._patch).toMatchObject({ status: 'registered', registered_outside: true }); expect(await f.read(a._patch.files['event']!)).toBe(officialXml()); expect(a['_timeline']).toBe('cancellation_registered_outside'); expect(a['_message']).toBe('Cancelamento registrado fora da notem.'); expect(a['_webhook']).toBe('nota.cancelada');
     expect(a._invoice.cancellation).toMatchObject({ motivo: 'servico_nao_prestado', justificativa: 'Cancelado no Portal Nacional pelo prestador.', registrado_fora_da_notem: true });
   });
   it('E0840 sem evento encontrado: recusa normal', async () => {
@@ -60,6 +62,11 @@ describe('Cancelamento: respostas do governo', () => {
   it('recusa do transmissor antes do envio: não enviado', async () => {
     const f = db(); vi.mocked(callTransmissor).mockRejectedValueOnce(new TransmissorError('EVENTO_INVALIDO', 422));
     await sendFiscalEvent(f.db, event(), invoice()); expect(finish(f)._patch['status']).toBe('not_sent');
+  });
+  it('evento oficial que não pôde ser guardado não registra: fica em verificação', async () => {
+    const f = db(); (f.db as unknown as { storage: unknown }).storage = { from: () => ({ upload: async () => ({ error: { message: 'down' } }), download: async () => ({ data: null, error: {} }) }) };
+    await applyEventReply(f.db, event(), invoice(), { resposta: { status: 201, corpo_json: { eventoXml: officialXml() } } });
+    const a = finish(f); expect(a._patch['status']).toBe('verifying'); expect(a._patch.files['event']).toBeUndefined(); expect(a['_webhook']).toBeUndefined();
   });
   it('análise fiscal registrada: cancelamento em análise e webhook próprio', async () => {
     const f = db(); await applyEventReply(f.db, event({ code: '101103' }), invoice(), { resposta: { status: 201, corpo_json: { eventoXml: officialXml('101103') } } });
@@ -91,6 +98,8 @@ describe('Cancelamento: pedido e respostas da API', () => {
     await requestFiscalEvent(args(f));
     const p = f.calls.find(c => c.name === 'create_fiscal_event_request')?.args['_payload'] as Record<string, string>;
     expect(p['justification']).toBe('Valor "errado" - corrigido na nova emissão...'); expect(p['unsigned_xml']).toContain('<xMotivo>Valor &quot;errado&quot; - corrigido na nova emissão...</xMotivo>');
+    const file = (p as unknown as { unsigned_file: { path: string; sha256: string } }).unsigned_file; expect(await f.read(file)).toBe(p['unsigned_xml']);
+    expect((vi.mocked(callTransmissor).mock.calls[0]?.[1] as { evento_xml: string }).evento_xml).toBe(p['unsigned_xml']);
   });
   it('emoji na justificativa: 422 no campo, sem gravar nem enviar', async () => {
     const f = db(); await expect(requestFiscalEvent(args(f, { motivo: 'outros', justificativa: 'Cliente desistiu do serviço 😕' }))).rejects.toMatchObject({ status: 422, details: [{ campo: 'justificativa', mensagem: FISCAL_TEXT_MESSAGE }] });
