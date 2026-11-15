@@ -2,7 +2,7 @@ import { createServerFn } from '@tanstack/react-start';
 import { z } from 'zod';
 import { appLink } from '@/lib/app-url';
 import { requireSupabaseAuth } from '@/integrations/supabase/auth-middleware';
-import { companySchema, roles, organizationSchema } from './notem';
+import { companySchema, normalizeCnpj, roles, organizationSchema } from './notem';
 import { municipalitySearchTerm } from './municipality-search';
 import { CNPJ_LOCK_MESSAGE } from './fiscal';
 
