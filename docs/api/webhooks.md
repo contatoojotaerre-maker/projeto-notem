@@ -173,6 +173,8 @@ Um endereço pode assinar eventos individuais (tipo exato) ou grupos inteiros po
 - Endereços já cadastrados com eventos individuais continuam funcionando sem alteração.
 - O envelope, os cabeçalhos, a assinatura e o cronograma de tentativas não mudam.
 
+Os dados das notas trazem o objeto `ibs_cbs` (valores do IBS/CBS calculados pelo governo e lidos da nota autorizada; `null` quando a nota não tem o grupo), no mesmo formato de `GET /notas/{id}` (ver `notas.md`).
+
 ### Exemplo completo: `nota.autorizada`
 Valores fictícios para demonstrar o formato; mensagens governamentais são ilustrativas.
 ```json
@@ -223,6 +225,7 @@ Valores fictícios para demonstrar o formato; mensagens governamentais são ilus
       "municipio": "Passo de Torres",
       "uf": "SC"
     },
+    "ibs_cbs": null,
     "erros_governo": [],
     "substitui_nota_id": null,
     "substituida_por_nota_id": null,
@@ -289,6 +292,7 @@ Valores fictícios para demonstrar o formato; mensagens governamentais são ilus
       "municipio": "Passo de Torres",
       "uf": "SC"
     },
+    "ibs_cbs": null,
     "erros_governo": [
       {
         "campo": "tomador.endereco.cep",
@@ -364,6 +368,7 @@ Enviado quando o governo registra o cancelamento, inclusive quando a notem confi
       "municipio": "Passo de Torres",
       "uf": "SC"
     },
+    "ibs_cbs": null,
     "erros_governo": [],
     "substitui_nota_id": null,
     "substituida_por_nota_id": null,
@@ -377,6 +382,7 @@ Enviado quando o governo registra o cancelamento, inclusive quando a notem confi
       "situacao": "cancelado",
       "pode_solicitar_analise": false,
       "registrado_fora_da_notem": false,
+      "ibs_cbs": null,
       "erros_governo": []
     },
     "links": {
@@ -440,6 +446,7 @@ Enviado quando o pedido de análise fiscal do cancelamento é registrado. Valore
       "municipio": "Passo de Torres",
       "uf": "SC"
     },
+    "ibs_cbs": null,
     "erros_governo": [],
     "substitui_nota_id": null,
     "substituida_por_nota_id": null,
@@ -453,6 +460,7 @@ Enviado quando o pedido de análise fiscal do cancelamento é registrado. Valore
       "situacao": "em_analise",
       "pode_solicitar_analise": false,
       "registrado_fora_da_notem": false,
+      "ibs_cbs": null,
       "erros_governo": []
     },
     "links": {
@@ -516,6 +524,7 @@ Enviado para a nota **original** quando a substituta é autorizada (a substituta
       "municipio": "Passo de Torres",
       "uf": "SC"
     },
+    "ibs_cbs": null,
     "erros_governo": [],
     "substitui_nota_id": null,
     "substituida_por_nota_id": "00000000-0000-4000-8000-000000000102",

@@ -1,3 +1,4 @@
+import { readFileSync } from 'node:fs';
 // Part 3 (IBS/CBS): one test per approved rule. DPS with the group are validated against the official release 1 XSD.
 import { describe, it, expect, vi } from 'vitest';
 import { execFileSync } from 'node:child_process';
@@ -35,6 +36,14 @@ describe('Cadastro do serviço (mesma regra do gatilho do banco)', () => {
   it('tributação regular, crédito presumido e diferimento não suportados', () => { for (const k of ['regular_taxation', 'presumed_credit', 'deferral'] as const) expect(ibsCbsServiceRuleError('010501', '000001', cls('000001', { [k]: true }), '100501', null)).toBe(IBSCBS_MESSAGES.specialRegime); });
   it('CST 800 e 811 não suportados', () => { expect(ibsCbsServiceRuleError('010501', '800001', cls('800001'), '100501', null)).toBe(IBSCBS_MESSAGES.creditAdjustment); expect(ibsCbsServiceRuleError('010501', '811001', cls('811001'), '100501', null)).toBe(IBSCBS_MESSAGES.creditAdjustment); });
   it('doações 410003 e 410026 não suportadas', () => { for (const c of ['410003', '410026']) expect(ibsCbsServiceRuleError('010501', c, cls(c, { requires_taxation: false }), null, null)).toBe(IBSCBS_MESSAGES.donation); });
+  it('550016 e 550022 (tributação regular) e 515001 (diferimento) não suportados, com os indicadores da tabela oficial', () => {
+    expect(ibsCbsServiceRuleError('010501', '550016', cls('550016', { regular_taxation: true }), '100501', null)).toBe(IBSCBS_MESSAGES.specialRegime);
+    expect(ibsCbsServiceRuleError('010501', '550022', cls('550022', { regular_taxation: true }), '100501', null)).toBe(IBSCBS_MESSAGES.specialRegime);
+    expect(ibsCbsServiceRuleError('010501', '515001', cls('515001', { deferral: true }), '100501', null)).toBe(IBSCBS_MESSAGES.specialRegime);
+    const csv = readFileSync('docs/referencias/rtc/classificacao_tributaria.csv', 'utf8').split(/\r?\n/);
+    const row = (code: string) => csv.find(l => l.split(';')[10] === code)!.split(';');
+    expect(row('550016')[14]).toBe('Sim'); expect(row('550022')[14]).toBe('Sim'); expect(row('515001')[6]).toBe('Sim');
+  });
   it('820xxx permitido', () => { expect(ibsCbsServiceRuleError('010501', '820001', cls('820001', { requires_taxation: false }), null, null)).toBeNull(); });
   it('E0860: indicador obrigatório quando exige tributação', () => { expect(ibsCbsServiceRuleError('010501', '000001', integral, null, null)).toBe(IBSCBS_MESSAGES.indicatorRequired); });
   it('E0859: indicador proibido sem tributação', () => { expect(ibsCbsServiceRuleError('010501', '410999', exempt, '100501', null)).toBe(IBSCBS_MESSAGES.indicatorForbidden); });
@@ -172,7 +181,7 @@ describe('Leitura e DANFSe', () => {
   it('DANFSe mostra o Total do IBS/CBS (vIBSTot + vCBS) e mantém o bloco com "-" sem o grupo', async () => {
     const text = async (x: string) => { const d = mkdtempSync(join(tmpdir(), 'danfse-ibs-')); try { const p = join(d, 'n.pdf'); writeFileSync(p, await generateDanfse(x, 'authorized')); return execFileSync('pdftotext', ['-raw', p, '-'], { encoding: 'utf8' }); } finally { rmSync(d, { recursive: true, force: true }); } };
     const withGroup = await text(nfseIbs('nt009')); expect(withGroup).toMatch(/R\$ 2,50/); expect(withGroup).toMatch(/R\$ 252,40/);
-    const without = await text(danfseFixture()); expect(without).toMatch(/TRIBUTAÇÃO IBS\/CBS/);
+    const without = await text(danfseFixture()); expect(without).toMatch(/TRIBUTAÇÃO IBS\/CBS CST \/ cClassTrib\n- \/ -\n/); expect(without).toMatch(/Valor Total Apurado - CBS\n-\n/);
   });
 });
 

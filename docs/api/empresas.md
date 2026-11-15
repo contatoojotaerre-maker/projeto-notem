@@ -72,6 +72,7 @@ Rotas para o sistema parceiro cadastrar e preparar as empresas emitentes, sem qu
     "municipal": null
   },
   "aliquota_iss_simples": null,
+  "regime_apuracao_ibscbs": "pelo_simples",
   "serie_dps": "00900"
 }
 ```
@@ -83,6 +84,7 @@ Rotas para o sistema parceiro cadastrar e preparar as empresas emitentes, sem qu
 | `regime_especial` | `nenhum`, `ato_cooperado`, `estimativa`, `microempresa_municipal`, `notario_registrador`, `profissional_autonomo`, `sociedade_profissionais`, `outros` |
 | `tributos_aproximados.modo` | `percentual_simples` (somente ME/EPP), `percentual_por_esfera` (todos), `nao_informar` (somente MEI) |
 | `aliquota_iss_simples` | opcional; só `me_epp` + `dentro_do_simples`; mínimo `"1.80"`. Usada apenas em notas com ISS retido |
+| `regime_apuracao_ibscbs` | só para `me_epp`. Com `dentro_do_simples`: `pelo_simples` (padrão) ou `regime_regular`. Com `iss_fora_do_simples`: `cbs_simples_ibs_regular` (padrão) ou `regime_regular`. Com `tudo_fora_do_simples`: `regime_regular`. Ausente/`null` usa o padrão; ao trocar `regime_apuracao_simples`, o padrão volta a valer. Guardado agora e enviado na nota a partir do próximo leiaute da NT 009 |
 | `serie_dps` | somente leitura; novas atribuições automáticas desde 00900 até 49999; existentes preservadas |
 | `imprimir_canhoto_danfse` | booleano opcional; padrão false; ausente no PUT preserva a preferência atual |
 
@@ -154,7 +156,16 @@ Na emissão com `retido_tomador`, o tomador precisa de CPF/CNPJ válido e endere
   "tributacao_iss": "tributavel",
   "tipo_imunidade": null,
   "retencao_iss": "nao_retido",
-  "indicador_operacao_ibscbs": null,
+  "classificacao_ibscbs": {
+    "codigo_classificacao": "000001",
+    "cst": "000",
+    "descricao": "Situações tributadas integralmente pelo IBS e CBS.",
+    "indicador_operacao": "100501",
+    "consumidor_final": false,
+    "atividade_simples": "09",
+    "situacao": "completa"
+  },
+  "indicador_operacao_ibscbs": "100501",
   "numero_beneficio_municipal": null
 }
 ```
@@ -164,6 +175,23 @@ Na emissão com `retido_tomador`, o tomador precisa de CPF/CNPJ válido e endere
 | `tributacao_iss` | `tributavel`, `imunidade`, `exportacao`, `nao_incidencia` |
 | `tipo_imunidade` | só com `imunidade`: `nao_informado`, `entes_federativos`, `templos`, `partidos_sindicatos_entidades`, `livros_jornais_papel`, `fonogramas_musicais` |
 | `retencao_iss` | `nao_retido`, `retido_tomador`, `retido_intermediario` |
+
+### IBS/CBS do serviço (`classificacao_ibscbs`)
+
+A notem envia ao governo **somente a classificação**; alíquotas, base e valores do IBS/CBS são calculados pelo governo e devolvidos na nota autorizada (objeto `ibs_cbs`, ver `notas.md`).
+
+| Campo | Regra |
+|---|---|
+| `codigo_classificacao` | cClassTrib de 6 dígitos (ver `/catalogos/classificacoes-tributarias`). Ainda não suportadas: tributação regular, crédito presumido, diferimento, CST 800/811 e doações 410003/410026 |
+| `indicador_operacao` | cIndOp (ver `/catalogos/indicadores-operacao`): **obrigatório** quando a classificação exige tributação (E0860) e **proibido** quando não exige (E0859). Indicadores retirados do Anexo VII v1.03 não podem ser escolhidos; os já gravados aparecem com `situacao: "a_revisar"` |
+| `consumidor_final` | `true` envia `indFinal = 1` |
+| `atividade_simples` | só ME/EPP: `07`–`14` ou `90`. `10` somente com 16.01; `11` somente com 99.04.01; `12`/`13` somente com 7.02 e 7.05. Enviada a partir do próximo leiaute |
+| `cst`, `descricao`, `situacao` | somente leitura (`completa`, `pendente`, `a_revisar`) |
+
+- Serviços dos subitens 99.03, 99.04, 99.05 e 25.05, 15.09, 17.12, 10.05 ainda não aceitam classificação.
+- Quando o indicador aponta para o endereço do tomador ou do destinatário, a nota exige tomador com CPF/CNPJ e endereço no Brasil (E0239/E0243). **O município do tomador deve ser o mesmo do cadastro na Receita Federal.**
+- `indicador_operacao_ibscbs` está **obsoleto**: continua aceito e devolvido (espelha `classificacao_ibscbs.indicador_operacao`); se enviado com valor diferente do de `classificacao_ibscbs.indicador_operacao`, responde `422 REGRA_DE_NEGOCIO`.
+- `GET /catalogos/sugestao-classificacao?codigo_servico=010501` devolve a sugestão da tabela oficial de correlação (Anexo VIII). Ela **nunca é aplicada automaticamente**; valores não aceitos, retirados ou não suportados vêm com `aplicavel: false` e o motivo.
 
 Serviços não são excluídos: use `ativo: false`.
 
@@ -185,6 +213,7 @@ Serviços não são excluídos: use `ativo: false`.
 }
 ```
 - `ok: null` no item `municipio` quando ainda não foi verificado.
+- `avisos` lista alertas que **não impedem** a emissão. Antes da data de obrigatoriedade do IBS/CBS do ambiente (padrão 01/01/2027), serviços ativos sem classificação completa geram `{ "item": "classificacao_ibscbs", "mensagem": "Classificação IBS/CBS pendente — obrigatória a partir de 01/01/2027." }`; a partir da data, `classificacao_ibscbs` passa a ser um item de `itens` e bloqueia a emissão enquanto pendente.
 - `POST /empresas/{id}/situacao/verificar-municipio` consulta o governo (convênio) e devolve a situação atualizada. Limite: 1 vez por minuto por empresa e ambiente (`429 LIMITE_EXCEDIDO` com `Retry-After`). Exige certificado válido.
 
 ## 6. Catálogos oficiais (somente leitura)
@@ -193,6 +222,9 @@ Serviços não são excluídos: use `ativo: false`.
 | `GET /catalogos/municipios` | nome ou código IBGE |
 | `GET /catalogos/servicos` | descrição ou código nacional |
 | `GET /catalogos/nbs` | descrição ou código NBS |
+| `GET /catalogos/classificacoes-tributarias` | descrição ou código cClassTrib (73 aceitas na NFS-e; `suportada` e `motivo_nao_suportada`) |
+| `GET /catalogos/indicadores-operacao` | código ou local; `incluir_inativos=true` inclui os 5 retirados |
+| `GET /catalogos/sugestao-classificacao?codigo_servico=` | sugestão do Anexo VIII (não é lista) |
 
 Respostas em lista paginada.
 
