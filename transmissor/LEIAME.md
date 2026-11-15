@@ -1,4 +1,4 @@
-# notem-transmissor (v4)
+# notem-transmissor (v5)
 
 Serviço isolado da notem, publicado no Google Cloud Run (southamerica-east1).
 Responsabilidade exclusiva: comunicação fiscal — validar/trancar certificado A1, assinar documentos e conversar com o governo via mTLS (OpenSSL).
@@ -36,3 +36,9 @@ Sefin: homologação `https://sefin.producaorestrita.nfse.gov.br/API/SefinNacion
 Eventos: o transmissor não monta nem altera o pedido; a notem é responsável pelo conteúdo (tipo, motivo, autor). Mesmo tratamento de ambiguidade: falha após o envio ⇒ consultar o evento antes de reenviar.
 
 Tratamento esperado pela notem: `erro: TEMPO_ESGOTADO/CONEXAO` após o envio ⇒ nota "em verificação" e consulta por `/v1/dps/consultar`; nunca reenviar com outro número.
+
+
+## v5 — CNPJ alfanumérico
+- `cnpj_esperado`, `cnpj_consulta` e o CNPJ extraído do certificado aceitam o formato alfanumérico da Receita Federal (12 posições `[0-9A-Z]` + 2 dígitos verificadores numéricos), com validação do DV (valor de cada caractere = código ASCII − 48; módulo 11). CNPJ numérico continua aceito.
+- `chave_acesso`: 50 posições `[0-9A-Z]`.
+- `id_dps`: `DPS` + município (7) + tipo de inscrição e inscrição (`1` + CPF 14 dígitos ou `2` + CNPJ 14 posições alfanuméricas) + série e número (20 dígitos).

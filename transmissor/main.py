@@ -1,4 +1,4 @@
-"""notem-transmissor v4.
+"""notem-transmissor v5.
 
 Serviço isolado da notem. Responsabilidades (e somente estas):
   1. Validar um certificado A1 recebido e devolvê-lo TRANCADO (envelope AES-256-GCM).
@@ -44,6 +44,8 @@ app.config["MAX_CONTENT_LENGTH"] = 1024 * 1024  # 1 MB por requisição
 OID_CNPJ = x509.ObjectIdentifier("2.16.76.1.3.3")
 OID_RESPONSAVEL = x509.ObjectIdentifier("2.16.76.1.3.2")
 UUID_RE = re.compile(r"^[0-9a-fA-F-]{36}$")
+# Chave de acesso NFS-e (50 posições; pode conter letras quando o emitente tiver CNPJ alfanumérico)
+CHAVE_RE = re.compile(r"[0-9A-Z]{50}")
 
 BASES_ADN_PARAMETRIZACAO = {
     "homologacao": "https://adn.producaorestrita.nfse.gov.br/parametrizacao",
@@ -100,18 +102,45 @@ def digitos_der(dados: bytes) -> str:
     return texto
 
 
+# CNPJ numérico ou alfanumérico (Receita Federal, a partir de jul/2026): 12 posições [0-9A-Z] + 2 DV numéricos.
+CNPJ_RE = re.compile(r"[0-9A-Z]{12}[0-9]{2}")
+
+
+def cnpj_valido(cnpj: str) -> bool:
+    """DV do CNPJ (numérico e alfanumérico): valor de cada caractere = código ASCII - 48; módulo 11."""
+    if not CNPJ_RE.fullmatch(cnpj or "") or len(set(cnpj)) == 1:
+        return False
+    def dv(base: str) -> int:
+        pesos = [6, 5, 4, 3, 2, 9, 8, 7, 6, 5, 4, 3, 2][-len(base):]
+        r = sum((ord(c) - 48) * p for c, p in zip(base, pesos)) % 11
+        return 0 if r < 2 else 11 - r
+    return dv(cnpj[:12]) == int(cnpj[12]) and dv(cnpj[:13]) == int(cnpj[13])
+
+
+def _primeiro_cnpj(texto: str):
+    for i in range(0, max(len(texto) - 13, 0)):
+        cand = texto[i:i + 14]
+        if cnpj_valido(cand):
+            return cand
+    return None
+
+
 def extrair_cnpj(cert: x509.Certificate):
     try:
         san = cert.extensions.get_extension_for_class(x509.SubjectAlternativeName).value
         for nome in san:
             if isinstance(nome, x509.OtherName) and nome.type_id == OID_CNPJ:
-                m = re.search(r"\d{14}", digitos_der(nome.value))
-                if m:
-                    return m.group(0), "san_icp_brasil"
+                bruto = nome.value.decode("latin-1", "ignore")
+                achado = _primeiro_cnpj(re.sub(r"[^0-9A-Z]", " ", bruto).replace(" ", "") ) or _primeiro_cnpj(bruto)
+                if not achado:  # compatibilidade com a extração anterior (somente dígitos)
+                    m = re.search(r"\d{14}", digitos_der(nome.value))
+                    achado = m.group(0) if m else None
+                if achado:
+                    return achado, "san_icp_brasil"
     except x509.ExtensionNotFound:
         pass
     cn = ",".join(a.value for a in cert.subject.get_attributes_for_oid(x509.NameOID.COMMON_NAME))
-    m = re.search(r":(\d{14})", cn)
+    m = re.search(r":([0-9A-Z]{12}[0-9]{2})", cn)
     if m:
         return m.group(1), "nome_comum"
     return None, None
@@ -227,7 +256,7 @@ def tratar_erro(e: ErroNegocio):
 # ---------------------------------------------------------------- rotas
 @app.get("/")
 def raiz():
-    return jsonify({"servico": "notem-transmissor", "versao": "4", "status": "ok"})
+    return jsonify({"servico": "notem-transmissor", "versao": "5", "status": "ok"})
 
 
 @app.post("/v1/certificados/preparar")
@@ -236,7 +265,7 @@ def preparar_certificado():
     corpo = request.get_json(silent=True) or {}
     organizacao_id = exigir(corpo, "organizacao_id", UUID_RE)
     empresa_id = exigir(corpo, "empresa_id", UUID_RE)
-    cnpj_esperado = exigir(corpo, "cnpj_esperado", re.compile(r"\d{14}"))
+    cnpj_esperado = exigir(corpo, "cnpj_esperado", CNPJ_RE)
     senha = exigir(corpo, "senha", maximo=200)
     try:
         pfx = base64.b64decode(exigir(corpo, "pfx_base64", maximo=200_000), validate=True)
@@ -298,7 +327,7 @@ ALGORITMOS = {
 }
 C14N = "http://www.w3.org/TR/2001/REC-xml-c14n-20010315"
 ENVELOPED = "http://www.w3.org/2000/09/xmldsig#enveloped-signature"
-ID_DPS_RE = re.compile(r"^DPS\d{42}$")
+ID_DPS_RE = re.compile(r"^DPS[0-9]{7}(1[0-9]{14}|2[0-9A-Z]{14})[0-9]{20}$")
 
 
 def c14n(elemento) -> bytes:
@@ -434,7 +463,7 @@ def consultar_nfse():
     """Obtém a NFS-e (XML) pela chave de acesso."""
     corpo = request.get_json(silent=True) or {}
     ambiente = exigir_ambiente(corpo)
-    chave_acesso = exigir(corpo, "chave_acesso", re.compile(r"\d{50}"))
+    chave_acesso = exigir(corpo, "chave_acesso", CHAVE_RE)
     _, empresa_id, (chave, cert, cadeia) = abrir_envelope(corpo)
     resposta = requisicao_mtls("GET", f"{BASES_SEFIN[ambiente]}/nfse/{chave_acesso}", chave, cert, cadeia, timeout=20)
     log("nfse_consultar", empresa_id=empresa_id, ambiente=ambiente, status=resposta.get("status"), erro=resposta.get("erro"))
@@ -450,7 +479,7 @@ def registrar_evento():
     Usado para cancelamento (e101101) e solicitação de análise fiscal (e101103). Não altera o conteúdo."""
     corpo = request.get_json(silent=True) or {}
     ambiente = exigir_ambiente(corpo)
-    chave_acesso = exigir(corpo, "chave_acesso", re.compile(r"\d{50}"))
+    chave_acesso = exigir(corpo, "chave_acesso", CHAVE_RE)
     evento_xml = exigir(corpo, "evento_xml", maximo=200_000).encode("utf-8")
     algoritmo = corpo.get("algoritmo_assinatura") or "rsa-sha256"
     _, empresa_id, (chave, cert, cadeia) = abrir_envelope(corpo)
@@ -476,7 +505,7 @@ def consultar_evento():
     """GET {Sefin}/nfse/{chave}/eventos/{tipoEvento}/{numSeqEvento} — confirma um evento após falha/tempo esgotado."""
     corpo = request.get_json(silent=True) or {}
     ambiente = exigir_ambiente(corpo)
-    chave_acesso = exigir(corpo, "chave_acesso", re.compile(r"\d{50}"))
+    chave_acesso = exigir(corpo, "chave_acesso", CHAVE_RE)
     tipo = exigir(corpo, "tipo_evento", TIPO_EVENTO_RE)
     if isinstance(corpo.get("num_seq_evento"), int):
         corpo["num_seq_evento"] = str(corpo["num_seq_evento"])
@@ -488,8 +517,6 @@ def consultar_evento():
 
 
 # ---------------------------------------------------------------- ADN (distribuição para contribuintes)
-CNPJ_RE = re.compile(r"\d{14}")
-
 BASES_ADN_CONTRIB = {
     "homologacao": "https://adn.producaorestrita.nfse.gov.br/contribuintes",
     "producao": "https://adn.nfse.gov.br/contribuintes",
@@ -542,8 +569,8 @@ def adn_distribuicao():
         raise ErroNegocio("REQUISICAO_INVALIDA", "nsu deve ser um número inteiro maior ou igual a zero.", 400)
     lote = corpo.get("lote", True) is not False
     cnpj_consulta = corpo.get("cnpj_consulta")
-    if cnpj_consulta is not None and not CNPJ_RE.fullmatch(str(cnpj_consulta)):
-        raise ErroNegocio("REQUISICAO_INVALIDA", "cnpj_consulta deve ter 14 dígitos.", 400)
+    if cnpj_consulta is not None and not cnpj_valido(str(cnpj_consulta)):
+        raise ErroNegocio("REQUISICAO_INVALIDA", "cnpj_consulta deve ser um CNPJ válido (14 posições).", 400)
     _, empresa_id, (chave, cert, cadeia) = abrir_envelope(corpo)
     url = f"{BASES_ADN_CONTRIB[ambiente]}/DFe/{nsu}?lote={'true' if lote else 'false'}"
     if cnpj_consulta:
@@ -559,7 +586,7 @@ def adn_eventos_por_chave():
     """GET {ADN}/contribuintes/NFSe/{chave}/Eventos — todos os eventos vinculados à NFS-e (XML descompactado)."""
     corpo = request.get_json(silent=True) or {}
     ambiente = exigir_ambiente(corpo)
-    chave_acesso = exigir(corpo, "chave_acesso", re.compile(r"\d{50}"))
+    chave_acesso = exigir(corpo, "chave_acesso", CHAVE_RE)
     _, empresa_id, (chave, cert, cadeia) = abrir_envelope(corpo)
     resposta = requisicao_mtls("GET", f"{BASES_ADN_CONTRIB[ambiente]}/NFSe/{chave_acesso}/Eventos", chave, cert, cadeia, timeout=30)
     log("adn_eventos", empresa_id=empresa_id, ambiente=ambiente, status=resposta.get("status"), erro=resposta.get("erro"))
