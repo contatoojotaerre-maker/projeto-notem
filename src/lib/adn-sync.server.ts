@@ -190,6 +190,7 @@ const requestErrors: Record<string, string> = {
   ADN_EM_ANDAMENTO: 'Já existe uma sincronização em andamento para este CNPJ e ambiente.',
   ADN_NOVIDADES_INDISPONIVEL: 'Faça primeiro uma sincronização por período.',
   ADN_PEDIDO_INVALIDO: 'Escolha uma opção de sincronização válida.',
+  SEM_PERMISSAO: 'Somente proprietário, administrador da organização ou administrador da plataforma podem sincronizar.',
 };
 export class SyncRequestError extends Error { constructor(public userMessage: string, public retryAt?: string) { super('ADN_SYNC_REQUEST'); } }
 /** Records the request (the database checks the 1-hour ADN interval and open requests) and runs the first steps right away. */
