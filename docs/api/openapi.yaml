@@ -5,6 +5,8 @@ info:
   description: |
     API para emissão e gestão de NFS-e (padrão nacional) por sistemas parceiros.
     Leia primeiro docs/api/convencoes.md. Campos em português; valores monetários como texto ("150.00").
+    Toda rota tem limites de uso por chave e ambiente (convencoes.md, seção 9): ao exceder, responde 429 LIMITE_EXCEDIDO com Retry-After.
+    Corpo acima de 200 KB responde 413.
 servers:
   - url: https://app.notemfiscal.com.br/api/v1
     description: "API oficial da notem"
@@ -865,6 +867,14 @@ components:
               mensagem: { type: string }
               verificado_em: { type: [string, "null"], format: date-time }
   responses:
+    LimiteExcedido:
+      description: "LIMITE_EXCEDIDO — limite de uso atingido; aguarde os segundos indicados em Retry-After"
+      headers:
+        X-Request-Id: { $ref: "#/components/headers/XRequestId" }
+        Retry-After: { description: "Segundos até poder tentar de novo", schema: { type: integer, minimum: 1 } }
+      content:
+        application/json:
+          schema: { $ref: "#/components/schemas/Erro" }
     Erro:
       description: "Erro no formato padrão (ver convencoes.md)"
       headers:
