@@ -2,13 +2,23 @@ import sys, zipfile
 from pathlib import Path
 from lxml import etree
 
-archive = Path('docs/referencias/esquemas/nfse-esquemas_xsd-v1-01-20260209.zip')
-with zipfile.ZipFile(archive) as z:
-    sources = {Path(name).name: z.read(name) for name in z.namelist()
-               if name.startswith('Schemas/1.01/') and name.endswith('.xsd')}
+# --layout=nt004 (default): XSD of 09/02/2026 (ZIP). --layout=nt009r1: NT 009 release 1 (docs/referencias/rtc/).
+layout = next((a.split('=', 1)[1] for a in sys.argv[1:] if a.startswith('--layout=')), 'nt004')
+if layout == 'nt004':
+    archive = Path('docs/referencias/esquemas/nfse-esquemas_xsd-v1-01-20260209.zip')
+    with zipfile.ZipFile(archive) as z:
+        sources = {Path(name).name: z.read(name) for name in z.namelist()
+                   if name.startswith('Schemas/1.01/') and name.endswith('.xsd')}
+elif layout == 'nt009r1':
+    # Official release 1 files, read as they are: the series defect was fixed by the government in this release.
+    sources = {f.name: f.read_bytes() for f in Path('docs/referencias/rtc').glob('*.xsd')}
+    if b'value="[0-9]{1,4}|[0-8][0-9]{4}"' not in sources['tiposSimples_v1.01.xsd']:
+        raise RuntimeError('Padrão de série do release 1 mudou; revisar.')
+else:
+    raise RuntimeError('Leiaute não suportado: ' + layout)
 
 parser = etree.XMLParser(resolve_entities=False, no_network=True, load_dtd=False)
-if '--official' not in sys.argv:
+if layout == 'nt004' and '--official' not in sys.argv:
     # Official defect: ^/$ are literals in XSD regex, not anchors. The owner
     # approved correcting ONLY TSSerieDPS in memory. Never edit the official ZIP
     # or suppress validation errors; all documents must fully validate.
@@ -40,4 +50,7 @@ for file in [arg for arg in sys.argv[1:] if not arg.startswith('--')]:
     # Separate parser: the in-memory schema resolver is not used for XML input.
     document = etree.parse(file, etree.XMLParser(resolve_entities=False, no_network=True, load_dtd=False))
     schema.assertValid(document)
-    print(Path(file).name + ': XSD 1.01 válido' + (' (original)' if '--official' in sys.argv else ' (série corrigida somente em memória)'))
+    if layout == 'nt009r1':
+        print(Path(file).name + ': XSD 1.01 válido (NT 009 release 1, oficial)')
+    else:
+        print(Path(file).name + ': XSD 1.01 válido' + (' (original)' if '--official' in sys.argv else ' (série corrigida somente em memória)'))
