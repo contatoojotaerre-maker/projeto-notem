@@ -1,6 +1,6 @@
 # Exemplos de DPS
 
-Exemplos **sem assinatura**, ambiente homologação, dados fictícios; não transmitir ao governo. Gerados pelo montador de `src/lib/dps.ts` e conferidos automaticamente com o montador em `src/test/dps-layout.test.ts`. Números ilustrativos (série 1, números 1–5); nenhum número foi reservado no banco.
+Exemplos **sem assinatura**, ambiente homologação, dados fictícios; não transmitir ao governo. Gerados pelo montador de `src/lib/dps.ts` e conferidos automaticamente com o montador em `src/test/dps-layout.test.ts`. Números ilustrativos (série 1, números 1–7); nenhum número foi reservado no banco.
 
 ## Leiaute NT 009 (release 1) — esta pasta
 
@@ -11,14 +11,21 @@ Leiaute usado em homologação desde já e em produção a partir da data config
 - `estrangeiro.xml`: tomador estrangeiro identificado por NIF; serviço não é automaticamente exportação.
 - `com-nbs.xml`: serviço 01.05.01 com código municipal e NBS 1.1103.21.00.
 
-Diferenças em relação ao leiaute anterior: `finNFSe` = 0 (NFS-e regular) logo após `tpEmit` e antes de `cLocEmi`; em `cServ`, `cNBS` passa a vir antes de `xDescServ`. A notem não envia `vDedRed` nem `vAjusteBC`, e o grupo `IBSCBS` ainda não é enviado.
+- `ibscbs-tributado.xml`: grupo `IBSCBS` com tributação — classificação 000001 (CST 000) e indicador da operação 100501 (`cIndOp`); ME/EPP, competência 04/01/2027, NBS 1.1103.21.00.
+- `ibscbs-sem-tributacao.xml`: grupo `IBSCBS` sem tributação — classificação 410999 (CST 410), sem `cIndOp` (E0859); não optante, competência 04/01/2027.
+
+Diferenças em relação ao leiaute anterior: `finNFSe` = 0 (NFS-e regular) logo após `tpEmit` e antes de `cLocEmi`; em `cServ`, `cNBS` passa a vir antes de `xDescServ`. A notem não envia `vDedRed` nem `vAjusteBC`.
+
+## Grupo IBSCBS
+
+O grupo `IBSCBS` é enviado quando a competência da nota é igual ou posterior à data de obrigatoriedade do ambiente (padrão 01/01/2027, configurável na Administração). Antes dessa data a DPS sai sem o grupo — como os quatro primeiros exemplos — e a classificação pendente aparece só como aviso, sem bloquear a emissão. A notem informa apenas a classificação (`indFinal` quando consumidor final, `cIndOp` quando a classificação exige tributação, `indDest`, `CST` e `cClassTrib`); os valores de IBS/CBS são calculados pelo governo, por isso `gIBSCBS` vai vazio no caso tributado. NBS é obrigatório com o grupo (E0322). O leiaute anterior não tem o grupo: esses dois exemplos existem só nesta pasta, e a notem nunca converte uma DPS com IBS/CBS para o leiaute anterior.
 
 Validação no XSD oficial do release 1 (`docs/referencias/rtc/`, arquivos lidos como estão — o padrão da série foi corrigido pelo governo nesta versão):
 `python3 src/test/validate-dps-xsd.py --layout=nt009r1 docs/exemplos/dps/*.xml`
 
 ## Leiaute anterior — `leiaute-anterior/`
 
-Mesmos cenários no leiaute do XSD de 09/02/2026, usado em produção até a data de troca. O padrão `TSSerieDPS` desse ZIP contém `^`/`$` literais (defeito oficial); por autorização do proprietário o teste corrige **apenas** esse padrão em memória. O ZIP permanece intacto.
+Mesmos cenários (exceto os dois com IBSCBS) no leiaute do XSD de 09/02/2026, usado em produção até a data de troca. O padrão `TSSerieDPS` desse ZIP contém `^`/`$` literais (defeito oficial); por autorização do proprietário o teste corrige **apenas** esse padrão em memória. O ZIP permanece intacto.
 
 - Validação com a correção isolada: `python3 src/test/validate-dps-xsd.py --layout=nt004 docs/exemplos/dps/leiaute-anterior/*.xml`
 - Reprodução estrita (deve falhar pela série): acrescentar `--official`.

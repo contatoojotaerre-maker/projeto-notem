@@ -16,6 +16,8 @@ DECLARE
    'invoice_events','invoice_fiscal_events','invoice_dps_attempts','nfse_daily_checks','api_request_logs','invitations','organization_members'];
  svc_tables text[] := ARRAY['fiscal_xml_files','adn_distributions','nfse_key_refreshes','company_readiness_state','api_idempotency_keys','certificate_expiry_notices','api_rate_counters','api_concurrency_slots'];
  reads jsonb := '[]'; r jsonb; writes jsonb := '[]'; w jsonb;
+ sp public.company_service_profiles; sprec jsonb; xsprec jsonb;
+ all_auth text := '["owner","admin","operator","developer","viewer","foreign","noorg","platform"]';
 BEGIN
  SELECT id INTO T FROM public.organizations WHERE slug='grupojota';
  SELECT * INTO co FROM public.companies WHERE organization_id=T ORDER BY created_at LIMIT 1;
@@ -56,6 +58,15 @@ BEGIN
  BEGIN INSERT INTO public.nfse_daily_checks(run_date,company_id,organization_id,environment) VALUES(current_date,co.id,T,'production');
  EXCEPTION WHEN OTHERS THEN notes := notes || ('seed daily: '||SQLERRM); END;
 
+ -- IBS/CBS: apply the Anexo VIII suggestion for 01.05 (NBS 1.1103.21.00, 000001/100501) to T's service so the new columns carry data
+ SELECT * INTO sp FROM public.company_service_profiles WHERE organization_id=T ORDER BY created_at LIMIT 1;
+ IF sp.id IS NULL THEN notes := notes || 'no service profile in T'::text;
+ ELSE
+  BEGIN UPDATE public.company_service_profiles SET nbs_code='111032100', ibscbs_classification='000001', ibscbs_operation_indicator='100501', ibscbs_final_consumer=false WHERE id=sp.id;
+  EXCEPTION WHEN OTHERS THEN notes := notes || ('seed IBS/CBS on service: '||SQLERRM); END;
+  SELECT * INTO sp FROM public.company_service_profiles WHERE id=sp.id;
+ END IF;
+
  -- read checks: name, sql, kind (org | admin_only | platform_only | none | special)
  FOREACH tname IN ARRAY org_tables LOOP
   reads := reads || jsonb_build_object('n',tname,'q',format('select count(%s) from public.%I where organization_id=$1',
@@ -80,11 +91,26 @@ BEGIN
   jsonb_build_object('n','platform_admins(outros)','q','select count(*) from public.platform_admins where user_id is distinct from $3','k','zero'),
   jsonb_build_object('n','profiles(outros)','q','select count(*) from public.profiles where id is distinct from $3','k','zero'),
   jsonb_build_object('n','storage fiscal-xml','q','select count(*) from storage.objects where bucket_id=''fiscal-xml''','k','zero'),
-  jsonb_build_object('n','pending_invitations(alheio)','q','select count(*) from public.pending_invitations()','k','zero'));
+  jsonb_build_object('n','pending_invitations(alheio)','q','select count(*) from public.pending_invitations()','k','zero'),
+  -- IBS/CBS (Part 3): service columns and company regime are tenant data; catalogs/suggestion are readable by any signed-in user only
+  jsonb_build_object('n','servicos: colunas IBS/CBS','q','select count(*) from public.company_service_profiles where organization_id=$1 and (ibscbs_classification is not null or ibscbs_operation_indicator is not null or ibscbs_final_consumer or simples_activity_code is not null)','k','org'),
+  jsonb_build_object('n','servicos: classificacao com catalogo','q','select count(c.code) from public.company_service_profiles s join public.ibscbs_classifications c on c.code=s.ibscbs_classification join public.ibscbs_operation_indicators i on i.code=s.ibscbs_operation_indicator where s.organization_id=$1','k','org'),
+  jsonb_build_object('n','configuracao fiscal: regime IBS/CBS','q','select count(*) from public.company_fiscal_settings where organization_id=$1 and (ibscbs_simples_regime is not null or simples_nacional_option<>3)','k','org'),
+  jsonb_build_object('n','catalogo ibscbs_classifications','q','select count(*) from public.ibscbs_classifications','k','auth'),
+  jsonb_build_object('n','catalogo ibscbs_operation_indicators','q','select count(*) from public.ibscbs_operation_indicators','k','auth'),
+  jsonb_build_object('n','catalogo ibscbs_service_correlations','q','select count(*) from public.ibscbs_service_correlations','k','auth'),
+  jsonb_build_object('n','catalogo fiscal_catalog_versions','q','select count(*) from public.fiscal_catalog_versions','k','auth'),
+  jsonb_build_object('n','sugestao Anexo VIII (01.05)','q','select count(*) from public.ibscbs_service_correlations c join public.ibscbs_classifications k on k.code=c.classifications->0->>''code'' where c.service_item=''01.05''','k','auth'),
+  jsonb_build_object('n','RPC search_fiscal_catalog(ibscbs)','q','select count(*) from public.search_fiscal_catalog(''ibscbs_classifications'',''tributa'')','k','auth'),
+  jsonb_build_object('n','platform_settings (datas IBS/CBS)','q','select count(*) from public.platform_settings','k','zero'));
  -- baseline counts as owner of the database
  FOR r IN SELECT * FROM jsonb_array_elements(reads) LOOP
   EXECUTE r->>'q' INTO n USING T, tcnpj, NULL::uuid; base := base || jsonb_build_object(r->>'n', n);
  END LOOP;
+
+ notes := notes || ('base IBS/CBS: '||(SELECT string_agg(key||'='||value,', ') FROM jsonb_each_text(base) WHERE key ~ '(IBS|ibscbs|Anexo|catalogo|platform_settings)'));
+ IF coalesce((base->>'servicos: colunas IBS/CBS')::bigint,0)=0 THEN notes := notes || 'IBS/CBS service columns empty at baseline'::text; END IF;
+ IF coalesce((base->>'catalogo ibscbs_classifications')::bigint,0)=0 THEN notes := notes || 'IBS/CBS catalog empty at baseline'::text; END IF;
 
  -- write / RPC checks: name, sql, allowed actors
  writes := jsonb_build_array(
@@ -116,7 +142,28 @@ BEGIN
   jsonb_build_object('n','RPC org_proven_cnpj','q','select public.org_proven_cnpj($1,$2)','a','[]'),
   jsonb_build_object('n','RPC delete_company_if_unused','q','select public.delete_company_if_unused($6,$1)','a','[]'),
   jsonb_build_object('n','RPC create_invoice_request','q','select public.create_invoice_request(''{}''::jsonb)','a','[]'),
-  jsonb_build_object('n','RPC create_fiscal_event_request','q','select public.create_fiscal_event_request(''{}''::jsonb)','a','[]'));
+  jsonb_build_object('n','RPC create_fiscal_event_request','q','select public.create_fiscal_event_request(''{}''::jsonb)','a','[]'),
+  -- IBS/CBS: applying the suggestion / editing the classification follows "editar perfil de servico" (owner, admin, platform)
+  jsonb_build_object('n','aplicar sugestao IBS/CBS no servico','q','update public.company_service_profiles set nbs_code=''111032100'', ibscbs_classification=''000001'', ibscbs_operation_indicator=''100501'', ibscbs_final_consumer=false where id=$7','a','["owner","admin","platform"]'),
+  jsonb_build_object('n','marcar consumidor final IBS/CBS','q','update public.company_service_profiles set ibscbs_final_consumer=true where id=$7','a','["owner","admin","platform"]'),
+  jsonb_build_object('n','limpar classificacao IBS/CBS','q','update public.company_service_profiles set ibscbs_classification=null, ibscbs_operation_indicator=null where id=$7','a','["owner","admin","platform"]'),
+  jsonb_build_object('n','alterar regime IBS/CBS','q','update public.company_fiscal_settings set ibscbs_simples_regime=ibscbs_simples_regime where organization_id=$1','a','["owner","admin","platform"]'),
+  jsonb_build_object('n','criar servico com IBS/CBS em T','q','insert into public.company_service_profiles select (jsonb_populate_record(null::public.company_service_profiles, $8)).*','a','["owner","admin","platform"]'),
+  jsonb_build_object('n','criar servico na empresa de T pela organizacao B','q','insert into public.company_service_profiles select (jsonb_populate_record(null::public.company_service_profiles, $9)).*','a','[]'),
+  jsonb_build_object('n','mover servico IBS/CBS para organizacao B','q','update public.company_service_profiles set organization_id=$10 where id=$7','a','[]'),
+  jsonb_build_object('n','RPC ibscbs_service_rule_error','q','select public.ibscbs_service_rule_error(''010501'',''000001'',''100501'',null)','a',all_auth),
+  jsonb_build_object('n','RPC ibscbs_regime_default','q','select public.ibscbs_regime_default(1)','a',all_auth),
+  jsonb_build_object('n','RPC set_fiscal_platform_setting','q','select public.set_fiscal_platform_setting(''ibscbs_required_production_from'',''2026-12-01'',$3)','a','[]'),
+  jsonb_build_object('n','alterar data IBS/CBS direto','q','update public.platform_settings set ibscbs_required_production_from=ibscbs_required_production_from','a','[]'),
+  jsonb_build_object('n','alterar catalogo ibscbs_classifications','q','update public.ibscbs_classifications set code=code','a','[]'),
+  jsonb_build_object('n','apagar catalogo ibscbs_classifications','q','delete from public.ibscbs_classifications','a','[]'),
+  jsonb_build_object('n','inserir em ibscbs_classifications','q','insert into public.ibscbs_classifications(code,cst,requires_taxation) values(''999999'',''999'',false)','a','[]'),
+  jsonb_build_object('n','alterar catalogo ibscbs_operation_indicators','q','update public.ibscbs_operation_indicators set active=true','a','[]'),
+  jsonb_build_object('n','apagar catalogo ibscbs_operation_indicators','q','delete from public.ibscbs_operation_indicators','a','[]'),
+  jsonb_build_object('n','alterar correlacao Anexo VIII','q','update public.ibscbs_service_correlations set classifications=classifications','a','[]'),
+  jsonb_build_object('n','apagar correlacao Anexo VIII','q','delete from public.ibscbs_service_correlations','a','[]'),
+  jsonb_build_object('n','alterar fiscal_catalog_versions','q','update public.fiscal_catalog_versions set version=version','a','[]'),
+  jsonb_build_object('n','apagar fiscal_catalog_versions','q','delete from public.fiscal_catalog_versions','a','[]'));
  FOREACH tname IN ARRAY org_tables LOOP
   writes := writes || jsonb_build_object('n','apagar '||tname,'q',format('delete from public.%I where organization_id=$1',tname),'a','[]');
   IF tname NOT IN ('companies','company_fiscal_settings','company_service_profiles') THEN
@@ -136,6 +183,8 @@ BEGIN
  FOREACH a IN ARRAY actors LOOP
   u := (users->>a)::uuid; inorg := a IN ('owner','admin','operator','developer','viewer'); plat := a='platform';
   rec := to_jsonb(co) || jsonb_build_object('id',gen_random_uuid(),'external_id',NULL,'created_by',coalesce(u,co.created_by),'updated_by',coalesce(u,co.created_by));
+  sprec := to_jsonb(sp) || jsonb_build_object('id',gen_random_uuid(),'external_id',NULL,'name','Matriz IBS/CBS '||a,'created_by',coalesce(u,sp.created_by),'updated_by',coalesce(u,sp.created_by),'created_at',now(),'updated_at',now());
+  xsprec := sprec || jsonb_build_object('id',gen_random_uuid(),'organization_id',X);
   IF a='anon' THEN EXECUTE 'set local role anon'; PERFORM set_config('request.jwt.claims','{"role":"anon"}',true);
   ELSE EXECUTE 'set local role authenticated';
    PERFORM set_config('request.jwt.claims',json_build_object('sub',u,'role','authenticated','email','matriz-'||a||'-'||u||'@example.invalid','amr',json_build_array(json_build_object('method','password')))::text,true);
@@ -146,13 +195,14 @@ BEGIN
    e := CASE r->>'k' WHEN 'org' THEN CASE WHEN inorg OR plat THEN (base->>(r->>'n'))::bigint ELSE 0 END
               WHEN 'admin_only' THEN CASE WHEN a IN ('owner','admin','platform') THEN (base->>(r->>'n'))::bigint ELSE 0 END
               WHEN 'logs' THEN CASE WHEN a IN ('owner','admin','developer','platform') THEN (base->>(r->>'n'))::bigint ELSE 0 END
-              WHEN 'platform_only' THEN CASE WHEN plat THEN (base->>(r->>'n'))::bigint ELSE 0 END ELSE 0 END;
+              WHEN 'platform_only' THEN CASE WHEN plat THEN (base->>(r->>'n'))::bigint ELSE 0 END
+              WHEN 'auth' THEN CASE WHEN a<>'anon' THEN (base->>(r->>'n'))::bigint ELSE 0 END ELSE 0 END;
    IF (e=0 AND n NOT IN (0,-1)) OR (e>0 AND n<>e) THEN fails := fails || format('%s le %s: visto=%s esperado=%s',a,r->>'n',n,e); END IF;
   END LOOP;
   FOR w IN SELECT * FROM jsonb_array_elements(writes) LOOP
    checks := checks+1; st := 'ok'; msg := ''; rc := NULL;
    BEGIN
-    EXECUTE w->>'q' USING T, tcnpj, u, rec, seed_inv, co.id; GET DIAGNOSTICS rc = ROW_COUNT;
+    EXECUTE w->>'q' USING T, tcnpj, u, rec, seed_inv, co.id, sp.id, sprec, xsprec, X; GET DIAGNOSTICS rc = ROW_COUNT;
     -- rolled back at once: a permitted write must not influence the next checks
     RAISE EXCEPTION USING ERRCODE='ZX002', MESSAGE='undo';
    EXCEPTION WHEN SQLSTATE 'ZX002' THEN NULL; WHEN OTHERS THEN st := SQLSTATE; msg := SQLERRM; END;

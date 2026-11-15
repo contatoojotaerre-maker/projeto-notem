@@ -32,7 +32,9 @@ function data(): Record<string, Row[]> {
     nfse_document_events: [{ id: id(23), environment: 'production', access_key: '5'.repeat(50), code: '101101', sequence: 1 }],
     adn_sync_cursors: [{ cnpj: CNPJ_B, environment: 'production', next_nsu: 1, status: 'up_to_date', next_query_at: '2026-11-01T12:00:00Z', documents_imported: 0, last_error: null, last_error_code: null, last_query_at: null, first_completed_at: null, last_request: null, request: null }],
     nfse_daily_checks: [], fiscal_xml_files: [], company_readiness_state: [], webhook_endpoints: [], integrations: [{ id: id(30), organization_id: A, name: 'A', active: true }],
-    municipalities: [{ ibge_code: '4212254', name: 'Passo de Torres', state: 'SC' }], service_codes: [{ code: '140101', description: 'x' }], nbs_codes: [], countries: [{ iso2: 'BR' }],
+    ibscbs_service_correlations: [{ service_item: '01.05', simples_activity: '09', nbs: [{ code: '111032100', formatted_code: '1.1103.21.00' }], operation_indicators: [{ code: '100501', incidence_location: 'Endereço do Tomador/Adquirente' }], classifications: [{ code: '000001' }] }],
+    ibscbs_classifications: [{ code: '000001', cst: '000', requires_taxation: true, regular_taxation: false, presumed_credit: false, deferral: false }], ibscbs_operation_indicators: [{ code: '100501', active: true, incidence_location: 'Endereço do Tomador/Adquirente' }],
+    municipalities: [{ ibge_code: '4212254', name: 'Passo de Torres', state: 'SC' }], service_codes: [{ code: '140101', description: 'x' }], nbs_codes: [{ code: '111032100', description: 'x' }], countries: [{ iso2: 'BR' }],
   };
 }
 const belongsToB = (table: string, r: Row) => r['organization_id'] === B || (table === 'companies' && r['id'] === ids.companyB)
@@ -108,6 +110,10 @@ const cases: Case[] = [
   ['POST', `/api/v1/empresas/${C}/servicos`, 'createService', { id: C }, async () => (await companies()).createService, { nome: 'S' }],
   ['GET', `/api/v1/empresas/${C}/servicos/${ids.serviceB}`, 'getService', { id: C, servicoId: ids.serviceB }, async () => (await companies()).getService],
   ['PATCH', `/api/v1/empresas/${C}/servicos/${ids.serviceB}`, 'patchService', { id: C, servicoId: ids.serviceB }, async () => (await companies()).patchService, { nome: 'S2' }],
+  // IBS/CBS: the new service columns (applying the Anexo VIII suggestion) and the company's IBS/CBS regime.
+  ['PATCH', `/api/v1/empresas/${C}/servicos/${ids.serviceB}`, 'patchService (aplicar sugestão IBS/CBS)', { id: C, servicoId: ids.serviceB }, async () => (await companies()).patchService, { codigo_nbs: '111032100', classificacao_ibscbs: { codigo_classificacao: '000001', indicador_operacao: '100501', consumidor_final: false } }],
+  ['POST', `/api/v1/empresas/${C}/servicos`, 'createService (com IBS/CBS)', { id: C }, async () => (await companies()).createService, { nome: 'S', ativo: true, codigo_servico: '010501', codigo_nbs: '111032100', tributacao_iss: 'operacao_tributavel', retencao_iss: 'nao_retido', classificacao_ibscbs: { codigo_classificacao: '000001', indicador_operacao: '100501' } }],
+  ['PUT', `/api/v1/empresas/${C}/configuracao-fiscal`, 'putFiscal (regime IBS/CBS)', { id: C }, async () => (await companies()).putFiscal, { simples_nacional: 'me_epp', regime_apuracao_simples: 'caixa', regime_apuracao_ibscbs: 'regime_regular' }],
   ['GET', `/api/v1/empresas/${C}/situacao`, 'getSituation', { id: C }, async () => (await companies()).getSituation],
   ['POST', `/api/v1/empresas/${C}/situacao/verificar-municipio`, 'verifyMunicipality', { id: C }, async () => (await companies()).verifyMunicipality],
   ['GET', `/api/v1/empresas/${C}/tomadores`, 'listCustomers', { id: C }, async () => (await customers()).listCustomers],
@@ -138,6 +144,8 @@ describe('isolamento entre organizações na API v1 (chave da organização A, I
       expect(leaks).toEqual([]);
       expect(status >= 200 && status < 300).toBe(false);
       if (method === 'GET') expect(status).toBe(404);
+      // IBS/CBS writes must be refused by the organization lookup itself (404), not by body validation.
+      if (/IBS\/CBS/.test(name)) expect(status).toBe(404);
     });
   }
   it('listagens com filtro da B não devolvem nada da B', async () => {
@@ -146,6 +154,13 @@ describe('isolamento entre organizações na API v1 (chave da organização A, I
     expect(leaks).toEqual([]); expect((r.body as { dados: unknown[] }).dados).toEqual([]);
     const list = await (await companies()).listCompanies(ctx(leaks, 'GET', '/api/v1/empresas?id_externo=ext-b', {}));
     expect(leaks).toEqual([]); expect((list.body as { dados: unknown[] }).dados).toEqual([]);
+  });
+  it('sugestão do Anexo VIII (API) lê só catálogos oficiais, nunca tabelas de organizações', async () => {
+    const leaks: string[] = []; const c = ctx(leaks, 'GET', '/api/v1/catalogos/sugestao-classificacao?codigo_servico=010501', {}) as unknown as { db: { from: (t: string) => unknown } };
+    const read: string[] = []; const from = c.db.from; c.db.from = (t: string) => { read.push(t); return from(t); };
+    const r = await (await companies()).ibsCbsSuggestion(c as never);
+    expect(r.status).toBe(200); expect((r.body as { classificacao: { codigo: string } }).classificacao.codigo).toBe('000001');
+    expect(leaks).toEqual([]); expect([...new Set(read)].sort()).toEqual(['ibscbs_classifications', 'ibscbs_operation_indicators', 'ibscbs_service_correlations', 'nbs_codes']);
   });
   it('controle: a própria empresa da organização A é encontrada (o 404 acima não é efeito do teste)', async () => {
     const leaks: string[] = []; const status = await run((await companies()).getCompany, ctx(leaks, 'GET', `/api/v1/empresas/${ids.companyA}`, { id: ids.companyA }));

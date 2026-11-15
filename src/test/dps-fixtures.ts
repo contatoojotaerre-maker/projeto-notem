@@ -7,3 +7,11 @@ export function examples() {
   const nbs = fixture(); nbs.number = '5'; nbs.service = { ...nbs.service, code: '010501', nbs: '111032100', municipalCode: '001', description: 'Licenciamento de programa de computador' };
   return { 'simples-pj': simples, 'nao-optante-pf': pf, estrangeiro: foreign, 'com-nbs': nbs };
 }
+/** Published IBS/CBS examples (docs/exemplos/dps/ibscbs-*.xml): competence after the obligation date, release 1 only. */
+export function ibsCbsExamples() {
+  const base = (n: string) => { const v = fixture(); v.number = n; v.emittedAt = '2027-01-04T10:00:00-03:00'; v.competence = '2027-01-04'; v.service = { ...v.service, code: '010501', nbs: '111032100', municipalCode: '001', description: 'Licenciamento de programa de computador' }; return v; };
+  const taxed = base('6'); taxed.ibsCbs = { cst: '000', classification: '000001', requiresTaxation: true, indicator: '100501', indicatorIncidence: 'Endereço do Tomador/Adquirente', finalConsumer: false };
+  const exempt = base('7'); exempt.fiscal = { simples: 1, regime: null, special: 0, approximate: { mode: 'percent_by_sphere', federal: '10.00', state: '0.00', municipal: '2.00' } };
+  exempt.ibsCbs = { cst: '410', classification: '410999', requiresTaxation: false, indicator: null, indicatorIncidence: null, finalConsumer: false };
+  return { 'ibscbs-tributado': taxed, 'ibscbs-sem-tributacao': exempt };
+}
