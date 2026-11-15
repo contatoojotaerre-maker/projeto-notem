@@ -159,7 +159,7 @@ export function serviceOut(s: ServiceRow) {
     /** @deprecated use classificacao_ibscbs.indicador_operacao */ indicador_operacao_ibscbs: s.ibscbs_operation_indicator, numero_beneficio_municipal: s.municipal_benefit_number };
 }
 function ibsCbsSituation(s: ServiceRow): 'completa' | 'pendente' | 'a_revisar' {
-  const v = { service_code: s.service_code, nbs_code: s.nbs_code, ibscbs_classification: s.ibscbs_classification, ibscbs_operation_indicator: s.ibscbs_operation_indicator, simples_activity_code: s.simples_activity_code, classification: s.ibscbs_classifications ?? null, indicator: s.ibscbs_operation_indicators ?? null };
+  const v = { service_code: s.service_code, nbs_code: s.nbs_code, ibscbs_classification: s.ibscbs_classification ?? null, ibscbs_operation_indicator: s.ibscbs_operation_indicator, simples_activity_code: s.simples_activity_code ?? null, classification: s.ibscbs_classifications ?? null, indicator: s.ibscbs_operation_indicators ?? null };
   return serviceNeedsReview(v) ? 'a_revisar' : serviceIbsCbsIssues(v).length ? 'pendente' : 'completa';
 }
 /** classificacao_ibscbs + obsolete indicador_operacao_ibscbs (kept for compatibility; 422 when both disagree). */
