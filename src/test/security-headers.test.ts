@@ -28,7 +28,7 @@ describe('filtros das listagens', () => {
     expect(fails(() => searchParam(u('busca=a')))).toBe(true); expect(fails(() => searchParam(u(`busca=${'a'.repeat(151)}`)))).toBe(true);
   });
   it('cursor não passa de 100.000 posições', () => {
-    const cursor = (o: number) => Buffer.from(JSON.stringify({ o })).toString('base64url');
+    const cursor = (o: number) => Buffer.from(JSON.stringify({ o })).toString('base64');
     expect(MAX_OFFSET).toBe(100_000);
     expect(pageParams(u(`cursor=${cursor(100_000)}`)).offset).toBe(100_000);
     expect(fails(() => pageParams(u(`cursor=${cursor(100_001)}`)))).toBe(true);
