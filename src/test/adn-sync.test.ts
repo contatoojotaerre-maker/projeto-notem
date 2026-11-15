@@ -56,6 +56,10 @@ describe('Leitura dos documentos do governo', () => {
     const events = await eventsFromReply({ eventos: [{ arquivoXml: sefinEncode(eventXml()), chaveAcesso: key, tipoEvento: 101101, numeroPedidoRegistroEvento: 1 }] });
     expect(events).toHaveLength(1); expect(events[0]).toMatchObject({ code: '101101', sequence: 1, reason_text: 'SERVIÇO NÃO REALIZADO' });
   });
+  it('transmissor v4: usa eventos[].xml já decodificado, mesmo com arquivoXml presente', async () => {
+    const events = await eventsFromReply({ eventos: [{ arquivoXml: 'corrompido', xml: eventXml(), chaveAcesso: key, tipoEvento: 101101 }] });
+    expect(events).toHaveLength(1); expect(events[0]).toMatchObject({ access_key: key, code: '101101', sequence: 1, reason_code: '1' });
+  });
 });
 
 describe('Cursor por NSU', () => {

@@ -66,7 +66,7 @@ export async function finishEvent(db: DB, e: FiscalEvent, inv: Invoice, patch: P
   return { event: current, invoice: await loadInvoice(db, inv.id, inv.organization_id) };
 }
 
-/** Sefin returns the event as eventos[].arquivoXml (base64 of base64-gzip); the transmissor contract also allows eventoXml. */
+/** Transmissor v4 returns eventos[].xml (decoded) next to Sefin's eventos[].arquivoXml (base64 of base64-gzip); eventoXml is also accepted. */
 export async function officialEventXml(body: unknown, accessKey: string, code: string): Promise<string | null> {
   const b = body && typeof body === 'object' ? body as Record<string, unknown> : {};
   if (eventXmlMatches(b['eventoXml'], accessKey, code)) return b['eventoXml'];
@@ -75,7 +75,7 @@ export async function officialEventXml(body: unknown, accessKey: string, code: s
 }
 async function consultEvent(db: DB, inv: Invoice, e: FiscalEvent) {
   const base = await transmissorPayload(db, inv, `consulta do evento ${e.code} da nota ${inv.id}`, e.requested_by);
-  // The transmissor requires the sequence as text.
+  // The transmissor accepts text or number; text is sent for compatibility with older versions.
   const r = await callTransmissor<EventReply>('/v1/nfse/evento/consultar', { ...base, chave_acesso: inv.access_key, tipo_evento: e.code, num_seq_evento: String(e.sequence) });
   const reply = r.resposta ?? {};
   return { reply, xml: reply.status === 200 ? await officialEventXml(reply.corpo_json, inv.access_key ?? '', e.code) : null };
