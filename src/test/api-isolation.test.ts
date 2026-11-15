@@ -144,6 +144,8 @@ describe('isolamento entre organizações na API v1 (chave da organização A, I
       expect(leaks).toEqual([]);
       expect(status >= 200 && status < 300).toBe(false);
       if (method === 'GET') expect(status).toBe(404);
+      // IBS/CBS writes must be refused by the organization lookup itself (404), not by body validation.
+      if (/IBS\/CBS/.test(name)) expect(status).toBe(404);
     });
   }
   it('listagens com filtro da B não devolvem nada da B', async () => {
