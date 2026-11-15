@@ -114,7 +114,7 @@
 - [x] Ajuste B (cópia): 18 XML copiados para o bucket privado e conferidos byte a byte.
 - [x] Ajuste B (remoção das colunas de XML): aprovada e aplicada; arquivos privados são a única cópia.
 - [x] Teste automático da permissão de sincronização (servidor e banco): owner/admin/admin da plataforma aceitos; operator/developer/viewer/outra organização recusados.
-- [ ] Publicar o painel com a remoção das colunas.
+- [x] Publicar o painel com a remoção das colunas (publicação solicitada em 15/11/2026).
 - [x] Ajuste C: verificação diária com data/hora, verificadas e atualizadas na aba Sincronização.
 - [x] Parte 2: API (origem, notas recebidas, situação da sincronização), sincronizacao.md, OpenAPI, nota.desbloqueada_prefeitura.
 - [x] Parte 3: painel (selo/filtro de origem, abas Sincronização e Notas recebidas, Atualizar com o governo) e testes. Telas não verificadas com sessão real (projeto sem login de teste disponível).
