@@ -61,7 +61,8 @@ function fakeDb(leaks: string[]) {
     b['then'] = (ok: (v: unknown) => unknown, ko?: (e: unknown) => unknown) => Promise.resolve().then(() => {
       if (op === 'insert' || op === 'upsert') { for (const r of ([] as Row[]).concat(payload as Row)) if (belongsToB(table, r)) leaks.push(`${op} ${table} de B`); return { data: single ? null : [], error: null, count: 0 }; }
       const hit = rows().filter(r => filters.every(f => f(r)));
-      for (const r of hit) if (belongsToB(table, r)) leaks.push(`${op} ${table} ${String(r['id'] ?? r['company_id'] ?? r['cnpj'])}`);
+      // Official documents are shared by CNPJ, not owned by an organization: reading one is allowed, visibility is decided after (proof of possession) and checked by the 404.
+      for (const r of hit) if (belongsToB(table, r) && !(op === 'select' && table.startsWith('nfse_document'))) leaks.push(`${op} ${table} ${String(r['id'] ?? r['company_id'] ?? r['cnpj'])}`);
       const out = hit.slice(0, limit);
       if (head) return { data: null, error: null, count: out.length };
       if (single === 'one') return out[0] ? { data: out[0], error: null } : { data: null, error: { code: 'PGRST116', message: 'no rows' } };
