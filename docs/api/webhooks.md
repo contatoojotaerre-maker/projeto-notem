@@ -93,6 +93,7 @@ Durante a troca de segredo, a notem pode enviar duas assinaturas (`v1=...,v1=...
 | `nota.substituida` | Nota original substituída: a substituta foi autorizada |
 | `nota.cancelada_prefeitura` | Prefeitura cancelou a nota por ofício |
 | `nota.bloqueada_prefeitura` | Prefeitura bloqueou ações sobre a nota |
+| `nota.desbloqueada_prefeitura` | Prefeitura retirou o bloqueio da nota |
 | `nota.manifestacao` | Tomador (ou outro ator) confirmou ou rejeitou a nota |
 | `empresa.situacao_alterada` | Empresa ficou pronta ou deixou de estar pronta para emitir |
 | `certificado.vencendo` | Certificado vence em 30, 15, 7 e 1 dia |
@@ -100,6 +101,8 @@ Durante a troca de segredo, a notem pode enviar duas assinaturas (`v1=...,v1=...
 | `municipio.disponivel` | Município passou a ser atendido |
 
 Os campos de `dados` de cada evento são documentados junto com a rota correspondente da API.
+
+Os avisos `nota.bloqueada_prefeitura` e `nota.desbloqueada_prefeitura` são enviados para notas emitidas pela notem quando a prefeitura registra ou retira o bloqueio por ofício. `dados` é o objeto `nota` completo; durante o bloqueio, `restricoes` contém um item com `"tipo": "bloqueio_prefeitura"`, que deixa de aparecer após o desbloqueio. Como os demais avisos de nota, chegam quando o evento é conhecido pela notem: pela sincronização feita no painel, por "Atualizar com o governo" ou pela verificação diária das notas com cancelamento pendente.
 
 ### Dados dos eventos de empresa e certificado
 `empresa.situacao_alterada` — enviado uma única vez a cada mudança de `pronta_para_emitir` em um ambiente (após alteração pela API ou pelo painel, verificação do município ou vencimento do certificado):
@@ -159,7 +162,7 @@ Um endereço pode assinar eventos individuais (tipo exato) ou grupos inteiros po
 
 | Grupo no painel | Curingas | Eventos atuais |
 |---|---|---|
-| Notas de serviço (NFS-e) | `nota.*` | `nota.autorizada`, `nota.rejeitada`, `nota.cancelada`, `nota.cancelamento_em_analise`, `nota.cancelamento_indeferido`, `nota.substituida`, `nota.cancelada_prefeitura`, `nota.bloqueada_prefeitura`, `nota.manifestacao` |
+| Notas de serviço (NFS-e) | `nota.*` | `nota.autorizada`, `nota.rejeitada`, `nota.cancelada`, `nota.cancelamento_em_analise`, `nota.cancelamento_indeferido`, `nota.substituida`, `nota.cancelada_prefeitura`, `nota.bloqueada_prefeitura`, `nota.desbloqueada_prefeitura`, `nota.manifestacao` |
 | Empresas e certificados | `empresa.*`, `certificado.*` | `empresa.situacao_alterada`, `certificado.vencendo`, `certificado.vencido` |
 | Municípios | `municipio.*` | `municipio.disponivel` |
 

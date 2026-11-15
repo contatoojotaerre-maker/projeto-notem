@@ -1,0 +1,2 @@
+ALTER TABLE public.fiscal_xml_files DROP CONSTRAINT IF EXISTS fiscal_xml_files_path_check;
+ALTER TABLE public.fiscal_xml_files ADD CONSTRAINT fiscal_xml_files_path_check CHECK (path ~ '^[a-z0-9/_.-]+$' AND length(path) BETWEEN 10 AND 300);

@@ -149,13 +149,19 @@ Valores de ISS (`aliquota_iss`, `valor_iss`) vêm da nota autorizada pelo govern
 ## 3. Consultar
 | Rota | Descrição |
 |---|---|
-| `GET /notas` | Lista paginada. Filtros: `empresa_id`, `empresa_id_externo`, `situacao`, `id_externo`, `tomador_documento`, `emitida_de`, `emitida_ate` |
+| `GET /notas` | Lista paginada. Filtros: `empresa_id`, `empresa_id_externo`, `situacao`, `id_externo`, `tomador_documento`, `emitida_de`, `emitida_ate`, `origem` (`notem` ou `externa`) |
 | `GET /notas/{id}` | Nota completa |
 | `GET /notas/{id}/xml` | XML oficial da NFS-e autorizada (`application/xml`) |
 | `GET /notas/{id}/eventos/{codigo}/xml` | XML oficial do evento registrado (`101101` cancelamento, `101103` análise fiscal) |
 | `GET /notas/{id}/pdf` | `200 application/pdf`, DANFSe v2.0 em A4, sob demanda; `404` sem XML autorizado ou fora de autorizada/cancelada/substituída (inclui cancelada pela prefeitura) |
 
 Os links `xml` e `pdf` exigem a chave da integração. O parceiro baixa e entrega ao seu cliente; a notem não envia a nota ao tomador.
+
+### Notas emitidas fora da notem (`origem: "externa"`)
+Notas emitidas por outro sistema ou pelo Portal Nacional para empresas da organização aparecem em `GET /notas` depois da sincronização com o governo (veja `sincronizacao.md`). Têm o mesmo formato do objeto `nota`, com `origem: "externa"`, `id_externo: null` e `servico.servico_id: null`. XML e PDF funcionam normalmente. São somente leitura: `cancelar`, `solicitar-analise-cancelamento` e `substituir` respondem `409 CONFLITO` com a mensagem "Nota emitida fora da notem. Cancele ou substitua pelo sistema que a emitiu ou pelo Portal Nacional." As notas emitidas pela notem trazem `origem: "notem"`.
+
+### Notas recebidas
+Notas em que a empresa é tomadora ou intermediária ficam em `GET /empresas/{id}/notas-recebidas` (veja `sincronizacao.md`).
 
 ## 4. Tomadores cadastrados (opcional)
 Para não repetir os dados do cliente em cada nota. **Cada tomador pertence a uma empresa** (os clientes de uma empresa nunca aparecem para outra).
