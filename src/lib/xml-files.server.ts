@@ -59,32 +59,28 @@ export async function xmlRefs(db: DB, table: XmlTable, ids: string[]) {
   for (const f of r.data ?? []) (out[f.owner_id] ??= {})[f.kind] = { path: f.path, size: f.size, stored_size: f.stored_size, sha256: f.sha256 };
   return out;
 }
-/** The file when it exists; otherwise the text still kept in the table (operation in progress or before migration). */
-export async function xmlOf(db: DB, table: XmlTable, id: string, kind: string, text?: string | null): Promise<string | null> {
+/** XML of one owner and kind, read from its file (the only copy); null when the owner has no file of that kind. */
+export async function xmlOf(db: DB, table: XmlTable, id: string, kind: string): Promise<string | null> {
   const refs = await xmlRefs(db, table, [id]); const ref = refs[id]?.[kind];
-  if (ref) return readXml(db, ref);
-  return text ?? null;
+  return ref ? readXml(db, ref) : null;
 }
-
-type Candidate = { owner_table: XmlTable; owner_id: string; kind: string; environment: Env; xml: string };
-/** Moves XML text left in tables to files (clear=true) or copies it keeping the text (clear=false, migration before approval). */
-export async function offloadXml(db: DB, opts: { limit?: number; clear: boolean; maxRounds?: number } ) {
-  let moved = 0, failed = 0; const seen = new Set<string>(); const report: { owner_table: string; owner_id: string; kind: string; size: number; stored_size: number; sha256: string; path: string }[] = [];
-  for (let round = 0; round < (opts.maxRounds ?? 1); round++) {
-    const r = await db.rpc('xml_offload_candidates', { _limit: opts.limit ?? 20 });
-    if (r.error) throw new Error('XML_CANDIDATES_FAILED');
-    const rows = (r.data ?? []) as Candidate[]; const fresh = rows.filter(c => !seen.has(`${c.owner_table}:${c.owner_id}:${c.kind}`));
-    if (!fresh.length) break;
-    for (const c of fresh) {
-      seen.add(`${c.owner_table}:${c.owner_id}:${c.kind}`);
-      try {
-        const bytes = new TextEncoder().encode(c.xml); const sha = await sha256Hex(bytes);
-        const ref = await storeXml(db, xmlPath(c.environment, ownerFolder(c.owner_table, c.owner_id), c.kind, sha), c.xml);
-        const a = await db.rpc('attach_xml_file', { _table: c.owner_table, _id: c.owner_id, _kind: c.kind, _file: ref, _clear: opts.clear });
-        if (a.error) throw new Error('XML_ATTACH_FAILED');
-        moved++; report.push({ owner_table: c.owner_table, owner_id: c.owner_id, kind: c.kind, ...ref });
-      } catch (e) { failed++; console.error('XML_OFFLOAD_FAILED', c.owner_table, c.kind, e instanceof Error ? e.message : ''); }
-    }
-  }
-  return { moved, failed, report };
+/** Uploads (gzip, verified byte by byte) the XML of one owner and returns the reference to persist atomically in its RPC. */
+export async function putXml(db: DB, env: Env, table: XmlTable, id: string, kind: string, xml: string) {
+  return storeXml(db, xmlPath(env, ownerFolder(table, id), kind, await sha256Hex(new TextEncoder().encode(xml))), xml);
+}
+/** Same, logging instead of failing: for copies that are only kept for audit (signed DPS/event). */
+export async function putXmlOptional(db: DB, env: Env, table: XmlTable, id: string, kind: string, xml: string | null | undefined) {
+  if (!xml) return undefined;
+  try { return await putXml(db, env, table, id, kind, xml); } catch (e) { console.error('XML_AUDIT_COPY_FAILED', table, kind, e instanceof Error ? e.message : ''); return undefined; }
+}
+/** The base DPS file is stored before numbering (number 1); the reserved Id/nDPS of the invoice are applied when sending. */
+export function dpsWithNumber(base: string, dpsId: string, number: string | number) {
+  const out = base.replace(/Id="DPS[0-9]+"/, `Id="${dpsId}"`).replace(/<nDPS>[0-9]+<\/nDPS>/, `<nDPS>${String(number)}</nDPS>`);
+  if (!out.includes(`Id="${dpsId}"`) || !out.includes(`<nDPS>${String(number)}</nDPS>`)) throw new Error('DPS_BASE_INVALIDA');
+  return out;
+}
+/** Unsigned DPS of the invoice with its current reserved number (after E0014 skips, the base keeps number 1 or the first number). */
+export async function invoiceDpsXml(db: DB, i: { id: string; dps_id: string; dps_number: number | string }) {
+  const base = await xmlOf(db, 'invoices', i.id, 'unsigned_dps'); if (!base) throw new Error('DPS_BASE_AUSENTE');
+  return dpsWithNumber(base, i.dps_id, i.dps_number);
 }

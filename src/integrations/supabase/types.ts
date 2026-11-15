@@ -1124,8 +1124,6 @@ export type Database = {
           number: number
           organization_id: string
           series: number
-          signed_xml: string | null
-          unsigned_xml: string | null
           updated_at: string
         }
         Insert: {
@@ -1138,8 +1136,6 @@ export type Database = {
           number: number
           organization_id: string
           series: number
-          signed_xml?: string | null
-          unsigned_xml?: string | null
           updated_at?: string
         }
         Update: {
@@ -1152,8 +1148,6 @@ export type Database = {
           number?: number
           organization_id?: string
           series?: number
-          signed_xml?: string | null
-          unsigned_xml?: string | null
           updated_at?: string
         }
         Relationships: [
@@ -1219,7 +1213,6 @@ export type Database = {
           company_id: string
           created_at: string
           environment: Database["public"]["Enums"]["environment"]
-          event_xml: string | null
           government_errors: Json
           government_response: Json | null
           id: string
@@ -1238,9 +1231,7 @@ export type Database = {
           request_id: string
           requested_by: string
           sequence: number
-          signed_xml: string | null
           status: string
-          unsigned_xml: string | null
           updated_at: string
           verification_started_at: string | null
         }
@@ -1251,7 +1242,6 @@ export type Database = {
           company_id: string
           created_at?: string
           environment: Database["public"]["Enums"]["environment"]
-          event_xml?: string | null
           government_errors?: Json
           government_response?: Json | null
           id?: string
@@ -1270,9 +1260,7 @@ export type Database = {
           request_id: string
           requested_by: string
           sequence?: number
-          signed_xml?: string | null
           status?: string
-          unsigned_xml?: string | null
           updated_at?: string
           verification_started_at?: string | null
         }
@@ -1283,7 +1271,6 @@ export type Database = {
           company_id?: string
           created_at?: string
           environment?: Database["public"]["Enums"]["environment"]
-          event_xml?: string | null
           government_errors?: Json
           government_response?: Json | null
           id?: string
@@ -1302,9 +1289,7 @@ export type Database = {
           request_id?: string
           requested_by?: string
           sequence?: number
-          signed_xml?: string | null
           status?: string
-          unsigned_xml?: string | null
           updated_at?: string
           verification_started_at?: string | null
         }
@@ -1343,7 +1328,6 @@ export type Database = {
         Row: {
           access_key: string | null
           authorized_at: string | null
-          authorized_nfse_xml: string | null
           cancellation: Json | null
           change_origin: Database["public"]["Enums"]["change_origin"]
           claim_token: string | null
@@ -1382,11 +1366,9 @@ export type Database = {
           service_location: Json
           service_profile_id: string | null
           service_snapshot: Json
-          signed_dps_xml: string | null
           status: string
           substituted_by_invoice_id: string | null
           substitutes_invoice_id: string | null
-          unsigned_dps_xml: string | null
           updated_at: string
           updated_by: string
           verification_started_at: string | null
@@ -1394,7 +1376,6 @@ export type Database = {
         Insert: {
           access_key?: string | null
           authorized_at?: string | null
-          authorized_nfse_xml?: string | null
           cancellation?: Json | null
           change_origin?: Database["public"]["Enums"]["change_origin"]
           claim_token?: string | null
@@ -1433,11 +1414,9 @@ export type Database = {
           service_location: Json
           service_profile_id?: string | null
           service_snapshot: Json
-          signed_dps_xml?: string | null
           status?: string
           substituted_by_invoice_id?: string | null
           substitutes_invoice_id?: string | null
-          unsigned_dps_xml?: string | null
           updated_at?: string
           updated_by: string
           verification_started_at?: string | null
@@ -1445,7 +1424,6 @@ export type Database = {
         Update: {
           access_key?: string | null
           authorized_at?: string | null
-          authorized_nfse_xml?: string | null
           cancellation?: Json | null
           change_origin?: Database["public"]["Enums"]["change_origin"]
           claim_token?: string | null
@@ -1484,11 +1462,9 @@ export type Database = {
           service_location?: Json
           service_profile_id?: string | null
           service_snapshot?: Json
-          signed_dps_xml?: string | null
           status?: string
           substituted_by_invoice_id?: string | null
           substitutes_invoice_id?: string | null
-          unsigned_dps_xml?: string | null
           updated_at?: string
           updated_by?: string
           verification_started_at?: string | null
@@ -1706,7 +1682,6 @@ export type Database = {
           substitute_key: string | null
           webhook_emitted_at: string | null
           webhook_type: string | null
-          xml: string | null
         }
         Insert: {
           access_key: string
@@ -1728,7 +1703,6 @@ export type Database = {
           substitute_key?: string | null
           webhook_emitted_at?: string | null
           webhook_type?: string | null
-          xml?: string | null
         }
         Update: {
           access_key?: string
@@ -1750,7 +1724,6 @@ export type Database = {
           substitute_key?: string | null
           webhook_emitted_at?: string | null
           webhook_type?: string | null
-          xml?: string | null
         }
         Relationships: [
           {
@@ -1791,7 +1764,6 @@ export type Database = {
           taker_document: string | null
           taker_name: string | null
           updated_at: string
-          xml: string | null
         }
         Insert: {
           access_key: string
@@ -1821,7 +1793,6 @@ export type Database = {
           taker_document?: string | null
           taker_name?: string | null
           updated_at?: string
-          xml?: string | null
         }
         Update: {
           access_key?: string
@@ -1851,7 +1822,6 @@ export type Database = {
           taker_document?: string | null
           taker_name?: string | null
           updated_at?: string
-          xml?: string | null
         }
         Relationships: [
           {
@@ -2434,17 +2404,11 @@ export type Database = {
         Args: { _mode: string; _option: number }
         Returns: string
       }
-      attach_xml_file: {
-        Args: {
-          _clear: boolean
-          _file: Json
-          _id: string
-          _kind: string
-          _table: string
-        }
-        Returns: string
-      }
       can_issue_fiscal_change: {
+        Args: { _org: string; _user: string }
+        Returns: boolean
+      }
+      can_request_adn_sync: {
         Args: { _org: string; _user: string }
         Returns: boolean
       }
@@ -2475,7 +2439,6 @@ export type Database = {
           company_id: string
           created_at: string
           environment: Database["public"]["Enums"]["environment"]
-          event_xml: string | null
           government_errors: Json
           government_response: Json | null
           id: string
@@ -2494,9 +2457,7 @@ export type Database = {
           request_id: string
           requested_by: string
           sequence: number
-          signed_xml: string | null
           status: string
-          unsigned_xml: string | null
           updated_at: string
           verification_started_at: string | null
         }[]
@@ -2516,7 +2477,6 @@ export type Database = {
           company_id: string
           created_at: string
           environment: Database["public"]["Enums"]["environment"]
-          event_xml: string | null
           government_errors: Json
           government_response: Json | null
           id: string
@@ -2535,9 +2495,7 @@ export type Database = {
           request_id: string
           requested_by: string
           sequence: number
-          signed_xml: string | null
           status: string
-          unsigned_xml: string | null
           updated_at: string
           verification_started_at: string | null
         }[]
@@ -2553,7 +2511,6 @@ export type Database = {
         Returns: {
           access_key: string | null
           authorized_at: string | null
-          authorized_nfse_xml: string | null
           cancellation: Json | null
           change_origin: Database["public"]["Enums"]["change_origin"]
           claim_token: string | null
@@ -2592,11 +2549,9 @@ export type Database = {
           service_location: Json
           service_profile_id: string | null
           service_snapshot: Json
-          signed_dps_xml: string | null
           status: string
           substituted_by_invoice_id: string | null
           substitutes_invoice_id: string | null
-          unsigned_dps_xml: string | null
           updated_at: string
           updated_by: string
           verification_started_at: string | null
@@ -2613,7 +2568,6 @@ export type Database = {
         Returns: {
           access_key: string | null
           authorized_at: string | null
-          authorized_nfse_xml: string | null
           cancellation: Json | null
           change_origin: Database["public"]["Enums"]["change_origin"]
           claim_token: string | null
@@ -2652,11 +2606,9 @@ export type Database = {
           service_location: Json
           service_profile_id: string | null
           service_snapshot: Json
-          signed_dps_xml: string | null
           status: string
           substituted_by_invoice_id: string | null
           substitutes_invoice_id: string | null
-          unsigned_dps_xml: string | null
           updated_at: string
           updated_by: string
           verification_started_at: string | null
@@ -2707,7 +2659,6 @@ export type Database = {
         Returns: {
           access_key: string | null
           authorized_at: string | null
-          authorized_nfse_xml: string | null
           cancellation: Json | null
           change_origin: Database["public"]["Enums"]["change_origin"]
           claim_token: string | null
@@ -2746,11 +2697,9 @@ export type Database = {
           service_location: Json
           service_profile_id: string | null
           service_snapshot: Json
-          signed_dps_xml: string | null
           status: string
           substituted_by_invoice_id: string | null
           substitutes_invoice_id: string | null
-          unsigned_dps_xml: string | null
           updated_at: string
           updated_by: string
           verification_started_at: string | null
@@ -2767,7 +2716,6 @@ export type Database = {
         Returns: {
           access_key: string | null
           authorized_at: string | null
-          authorized_nfse_xml: string | null
           cancellation: Json | null
           change_origin: Database["public"]["Enums"]["change_origin"]
           claim_token: string | null
@@ -2806,11 +2754,9 @@ export type Database = {
           service_location: Json
           service_profile_id: string | null
           service_snapshot: Json
-          signed_dps_xml: string | null
           status: string
           substituted_by_invoice_id: string | null
           substitutes_invoice_id: string | null
-          unsigned_dps_xml: string | null
           updated_at: string
           updated_by: string
           verification_started_at: string | null
@@ -2872,7 +2818,6 @@ export type Database = {
           company_id: string
           created_at: string
           environment: Database["public"]["Enums"]["environment"]
-          event_xml: string | null
           government_errors: Json
           government_response: Json | null
           id: string
@@ -2891,9 +2836,7 @@ export type Database = {
           request_id: string
           requested_by: string
           sequence: number
-          signed_xml: string | null
           status: string
-          unsigned_xml: string | null
           updated_at: string
           verification_started_at: string | null
         }
@@ -2916,7 +2859,6 @@ export type Database = {
         Returns: {
           access_key: string | null
           authorized_at: string | null
-          authorized_nfse_xml: string | null
           cancellation: Json | null
           change_origin: Database["public"]["Enums"]["change_origin"]
           claim_token: string | null
@@ -2955,11 +2897,9 @@ export type Database = {
           service_location: Json
           service_profile_id: string | null
           service_snapshot: Json
-          signed_dps_xml: string | null
           status: string
           substituted_by_invoice_id: string | null
           substitutes_invoice_id: string | null
-          unsigned_dps_xml: string | null
           updated_at: string
           updated_by: string
           verification_started_at: string | null
@@ -3062,7 +3002,6 @@ export type Database = {
         Returns: {
           access_key: string | null
           authorized_at: string | null
-          authorized_nfse_xml: string | null
           cancellation: Json | null
           change_origin: Database["public"]["Enums"]["change_origin"]
           claim_token: string | null
@@ -3101,11 +3040,9 @@ export type Database = {
           service_location: Json
           service_profile_id: string | null
           service_snapshot: Json
-          signed_dps_xml: string | null
           status: string
           substituted_by_invoice_id: string | null
           substitutes_invoice_id: string | null
-          unsigned_dps_xml: string | null
           updated_at: string
           updated_by: string
           verification_started_at: string | null
@@ -3126,6 +3063,16 @@ export type Database = {
           requires_explicit_acceptance: boolean
           role: Database["public"]["Enums"]["org_role"]
         }[]
+      }
+      put_xml_file: {
+        Args: {
+          _file: Json
+          _id: string
+          _kind: string
+          _replace?: boolean
+          _table: string
+        }
+        Returns: undefined
       }
       record_daily_check: {
         Args: {
@@ -3182,16 +3129,15 @@ export type Database = {
       }
       retry_external_dps: {
         Args: {
+          _files?: Json
           _id: string
           _org: string
           _response: Json
-          _signed?: string
           _token: string
         }
         Returns: {
           access_key: string | null
           authorized_at: string | null
-          authorized_nfse_xml: string | null
           cancellation: Json | null
           change_origin: Database["public"]["Enums"]["change_origin"]
           claim_token: string | null
@@ -3230,11 +3176,9 @@ export type Database = {
           service_location: Json
           service_profile_id: string | null
           service_snapshot: Json
-          signed_dps_xml: string | null
           status: string
           substituted_by_invoice_id: string | null
           substitutes_invoice_id: string | null
-          unsigned_dps_xml: string | null
           updated_at: string
           updated_by: string
           verification_started_at: string | null
@@ -3310,17 +3254,6 @@ export type Database = {
           _purpose: string
         }
         Returns: string
-      }
-      xml_column: { Args: { _kind: string; _table: string }; Returns: string }
-      xml_offload_candidates: {
-        Args: { _limit: number }
-        Returns: {
-          environment: Database["public"]["Enums"]["environment"]
-          kind: string
-          owner_id: string
-          owner_table: string
-          xml: string
-        }[]
       }
     }
     Enums: {

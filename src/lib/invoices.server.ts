@@ -4,6 +4,7 @@ import { callTransmissor,TransmissorError } from './transmissor.server';
 import { readAuthorizedNfse } from './nfse-xml';
 import { governmentErrors,invoiceOut,verificationDecision,type Invoice,type Transmission,type GovernmentReply } from './invoices';
 import { explicitExternalDps } from './external-dps';
+import { invoiceDpsXml,putXml,putXmlOptional,type XmlRef } from './xml-files.server';
 
 async function payload(db:DB,i:Invoice){return transmissorPayload(db,i,'assinatura/transmissão ou consulta da nota '+i.id);}
 export async function transmissorPayload(db:DB,i:Pick<Invoice,'id'|'company_id'|'organization_id'|'created_by'|'environment'>,purpose:string,actor=i.created_by){
@@ -13,7 +14,8 @@ export async function transmissorPayload(db:DB,i:Pick<Invoice,'id'|'company_id'|
  if(audit.error)throw new TransmissorError('AUDITORIA_INDISPONIVEL',422);
  return {organizacao_id:i.organization_id,empresa_id:i.company_id,ambiente:i.environment==='sandbox'?'homologacao':'producao',envelope:{versao_chave:r.data.key_version,nonce:r.data.nonce,dados:r.data.data}};
 }
-type Patch=Partial<Invoice>&{message?:string};
+// XML never goes in the patch: only file references (files.*), persisted atomically by finish_invoice_attempt.
+type Patch=Partial<Invoice>&{message?:string;files?:{signed_dps?:XmlRef|undefined;authorized_nfse?:XmlRef}};
 export async function persistInvoiceResult(db:DB,i:Invoice,patch:Patch,event:string,request?:Request){
  if(!i.claim_token)throw new Error('INVOICE_LEASE_MISSING');
  const next={...i,...patch,updated_at:new Date().toISOString()};
@@ -30,10 +32,10 @@ export async function persistInvoiceResult(db:DB,i:Invoice,patch:Patch,event:str
  return r.data;
 }
 export async function applyGovernmentReply(db:DB,i:Invoice,res:Transmission,request?:Request){
- const reply=res.resposta??{};const signed=res.dps_assinada?{signed_dps_xml:res.dps_assinada}:{};
+ const reply=res.resposta??{};const signedRef=await putXmlOptional(db,i.environment,'invoices',i.id,'signed_dps',res.dps_assinada);const signed=signedRef?{files:{signed_dps:signedRef}}:{};
  const xml=reply.corpo_json?.['nfseXml'];
  if(reply.status===201&&typeof xml==='string'){
-  try{const p=i.provider_snapshot as {cnpj?:string};const n=readAuthorizedNfse(xml,{dpsId:i.dps_id,environment:i.environment,cnpj:p?.cnpj??''});const key=reply.corpo_json?.['chaveAcesso'];if(key&&key!==n.accessKey)throw new Error('KEY_MISMATCH');return await persistInvoiceResult(db,i,{...signed,status:'authorized',dispatch_state:'completed',authorized_nfse_xml:xml,access_key:n.accessKey,nfse_number:n.number,authorized_at:n.authorizedAt,government_values:{base:n.base,rate:n.rate,iss:n.iss,net:n.net,withheld:n.withheld},message:'Nota autorizada pelo governo.'},'authorized',request);}catch(e){console.error('INVOICE_XML_RECONCILIATION_REQUIRED',i.id);}
+  try{const p=i.provider_snapshot as {cnpj?:string};const n=readAuthorizedNfse(xml,{dpsId:i.dps_id,environment:i.environment,cnpj:p?.cnpj??''});const key=reply.corpo_json?.['chaveAcesso'];if(key&&key!==n.accessKey)throw new Error('KEY_MISMATCH');const authorized=await putXml(db,i.environment,'invoices',i.id,'authorized_nfse',xml);return await persistInvoiceResult(db,i,{files:{...signed.files,authorized_nfse:authorized},status:'authorized',dispatch_state:'completed',access_key:n.accessKey,nfse_number:n.number,authorized_at:n.authorizedAt,government_values:{base:n.base,rate:n.rate,iss:n.iss,net:n.net,withheld:n.withheld},message:'Nota autorizada pelo governo.'},'authorized',request);}catch(e){console.error('INVOICE_XML_RECONCILIATION_REQUIRED',i.id);}
  }
  if(reply.status===400||reply.status===403){
   let errors=governmentErrors(reply,i.id);
@@ -48,11 +50,16 @@ export async function applyGovernmentReply(db:DB,i:Invoice,res:Transmission,requ
 export function definitelyNotSent(e:unknown){return e instanceof TransmissorError&&(e.code==='CREDENCIAL'||(e.status!==undefined&&[400,422].includes(e.status)&&['DPS_INVALIDA','EVENTO_INVALIDO','ENVELOPE_INVALIDO','REQUISICAO_INVALIDA','AUDITORIA_INDISPONIVEL'].includes(e.code)));}
 export async function sendInvoice(db:DB,i:Invoice,request?:Request,deadline=Date.now()+20000):Promise<Invoice>{
  const claim=await db.rpc('claim_invoice_dispatch',{_id:i.id,_org:i.organization_id});if(claim.error)throw new Error('INVOICE_CLAIM_FAILED');const claimed=claim.data?.[0];if(!claimed){const r=await db.from('invoices').select('*').eq('id',i.id).eq('organization_id',i.organization_id).single();if(r.error)throw new Error('INVOICE_READ_FAILED');return r.data;}
+ // The DPS is read (and its hash checked) before sending: an unreadable file is a certain "not sent", never an ambiguity.
+ let dpsXml:string;try{dpsXml=await invoiceDpsXml(db,claimed);}catch{console.error('INVOICE_DPS_FILE_UNAVAILABLE',claimed.id);return persistInvoiceResult(db,claimed,{status:'processing',dispatch_state:'not_sent',message:'Envio não realizado. Tente novamente com a mesma Idempotency-Key.'},'not_sent',request);}
  let res:Transmission;
- try{const base=await payload(db,claimed);res=await callTransmissor<Transmission>('/v1/nfse/emitir',{...base,dps_xml:claimed.unsigned_dps_xml,tempo_limite_segundos:Math.max(1,Math.min(18,Math.floor((deadline-Date.now())/1000)))});}
+ try{const base=await payload(db,claimed);res=await callTransmissor<Transmission>('/v1/nfse/emitir',{...base,dps_xml:dpsXml,tempo_limite_segundos:Math.max(1,Math.min(18,Math.floor((deadline-Date.now())/1000)))});}
  catch(e){return persistInvoiceResult(db,claimed,{status:definitelyNotSent(e)?'processing':'verifying',dispatch_state:definitelyNotSent(e)?'not_sent':'uncertain',message:definitelyNotSent(e)?'Envio não realizado. Tente novamente com a mesma Idempotency-Key.':'Aguardando confirmação do governo.'},definitelyNotSent(e)?'not_sent':'verifying',request);}
  if(explicitExternalDps(res.resposta??{})&&claimed.claim_token){
-  const retry=await db.rpc('retry_external_dps',{_id:claimed.id,_org:claimed.organization_id,_token:claimed.claim_token,_response:res.resposta as Json,...res.dps_assinada?{_signed:res.dps_assinada}:{}});
+  // Each externally used number keeps its own XML (unsigned mandatory, signed when returned) to prevent reuse.
+  let files:{unsigned:XmlRef;signed?:XmlRef|undefined};
+  try{files={unsigned:await putXml(db,claimed.environment,'invoice_dps_attempts',claimed.id,`unsigned-${claimed.dps_number}`,dpsXml),signed:await putXmlOptional(db,claimed.environment,'invoice_dps_attempts',claimed.id,`signed-${claimed.dps_number}`,res.dps_assinada)};}catch{throw new Error('EXTERNAL_DPS_RETRY_FAILED');}
+  const retry=await db.rpc('retry_external_dps',{_id:claimed.id,_org:claimed.organization_id,_token:claimed.claim_token,_response:res.resposta as Json,_files:files as Json});
   if(retry.error)throw new Error('EXTERNAL_DPS_RETRY_FAILED');
   if(retry.data&&retry.data.dps_id!==claimed.dps_id){if(deadline-Date.now()>3000)return sendInvoice(db,retry.data,request,deadline);return retry.data;}
   if(!retry.data){const current=await db.from('invoices').select('*').eq('id',claimed.id).eq('organization_id',claimed.organization_id).single();if(current.error)throw new Error('INVOICE_READ_FAILED');return current.data;}
