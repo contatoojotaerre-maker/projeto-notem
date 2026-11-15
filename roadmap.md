@@ -12,7 +12,8 @@
 - [x] S-09..S-18, S-24 (concessões, cabeçalhos, mensagens fixas, idempotência, tetos, retenção, OIDC, auditoria admin, última organização, chave webhook, /status)
 - [x] S-23 passo a passo de rotação da conta notem-painel entregue (execução fica com o proprietário)
 - [x] Matriz de isolamento permanente (1.225 verificações, 0 falhas) + teste /api/v1 com IDs de outra organização (404)
-- [ ] Publicar e conferir no domínio oficial (cabeçalhos, OPTIONS 204) — publicação solicitada; painel autenticado não verificável daqui
+- [x] Publicado e conferido no domínio oficial (cabeçalhos, OPTIONS 204, 401 com X-Request-Id)
+- [ ] Telas autenticadas (alerta de homologação, convites pendentes, registros) — sem sessão de teste no Supabase externo; conferência do proprietário
 ## Fase 5 — Cancelamento, análise fiscal e substituição
 - [x] Plano aprovado com ajustes; transmissor/ intocado.
 - [x] Parte 1: montador de eventos e101101/e101103 e grupo subst, testes XSD (268 testes OK), exemplos em docs/exemplos/eventos/.
