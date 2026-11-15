@@ -107,7 +107,7 @@ def load_rest():
     import urllib.request
     url, key = os.environ['SUPABASE_URL'].rstrip('/'), os.environ['SUPABASE_SERVICE_ROLE_KEY']
     def call(method, path, body=None, prefer='resolution=merge-duplicates,return=minimal'):
-        req = urllib.request.Request(f'{url}/rest/v1/{path}', method=method, data=None if body is None else json.dumps(body).encode(), headers={'apikey': key, 'Content-Type': 'application/json', 'Prefer': prefer})
+        req = urllib.request.Request(f'{url}/rest/v1/{path}', method=method, data=None if body is None else json.dumps(body).encode(), headers={'apikey': key, **({'Authorization': 'Bearer ' + key} if key.startswith('eyJ') else {}), 'Content-Type': 'application/json', 'Prefer': prefer})
         with urllib.request.urlopen(req, timeout=60) as r: return r.status
     v = VERSIONS
     c, i, k = classifications(), indicators(), correlations()
