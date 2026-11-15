@@ -35,7 +35,7 @@ export function accessKeyIssuer(key: string) {
   return { municipality: key.slice(0, 7), inscriptionType: key[8], inscription: key.slice(9, 23) };
 }
 export function eventRequestId(accessKey: string, code: FiscalEventCode) {
-  if (!/^\d{50}$/.test(accessKey)) throw new Error('Chave de acesso inválida.');
+  if (!/^\d{50}$/.test(accessKey)) throw new RuleError('Chave de acesso inválida.');
   return `PRE${accessKey}${code}`;
 }
 export type FiscalEventInput = {
@@ -43,15 +43,15 @@ export type FiscalEventInput = {
   occurredAt: string; reason: CancelReason; justification: string;
 };
 export function buildFiscalEvent(input: FiscalEventInput) {
-  if (!(input.code in descriptions)) throw new Error('Tipo de evento não suportado.');
+  if (!(input.code in descriptions)) throw new RuleError('Tipo de evento não suportado.');
   const id = eventRequestId(input.accessKey, input.code);
-  if (!/^\d{14}$/.test(input.authorCnpj) || !isValidCnpj(input.authorCnpj)) throw new Error('CNPJ do autor inválido.');
+  if (!/^\d{14}$/.test(input.authorCnpj) || !isValidCnpj(input.authorCnpj)) throw new RuleError('CNPJ do autor inválido.');
   const issuer = accessKeyIssuer(input.accessKey);
-  if (issuer?.inscriptionType !== '2' || issuer.inscription !== input.authorCnpj) throw new Error('O autor do evento deve ser o prestador da nota (E0812).');
-  if (!/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}-03:00$/.test(input.occurredAt) || !Number.isFinite(Date.parse(input.occurredAt))) throw new Error('Data e hora do evento inválida.');
-  const reason = cancelReasons[input.reason]; if (!reason) throw new Error('Motivo inválido.');
-  const error = justificationError(input.justification); if (error) throw new Error(error);
-  if (!fiscalTextAccepted(input.justification)) throw new Error(`A justificativa ${FISCAL_TEXT_MESSAGE}.`);
+  if (issuer?.inscriptionType !== '2' || issuer.inscription !== input.authorCnpj) throw new RuleError('O autor do evento deve ser o prestador da nota (E0812).');
+  if (!/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}-03:00$/.test(input.occurredAt) || !Number.isFinite(Date.parse(input.occurredAt))) throw new RuleError('Data e hora do evento inválida.');
+  const reason = cancelReasons[input.reason]; if (!reason) throw new RuleError('Motivo inválido.');
+  const error = justificationError(input.justification); if (error) throw new RuleError(error);
+  if (!fiscalTextAccepted(input.justification)) throw new RuleError(`A justificativa ${FISCAL_TEXT_MESSAGE}.`);
   const body = `<tpAmb>${input.environment === 'production' ? 1 : 2}</tpAmb><verAplic>notem-1.0</verAplic><dhEvento>${input.occurredAt}</dhEvento><CNPJAutor>${input.authorCnpj}</CNPJAutor><chNFSe>${input.accessKey}</chNFSe><e${input.code}><xDesc>${escapeXml(descriptions[input.code])}</xDesc><cMotivo>${reason}</cMotivo><xMotivo>${escapeXml(input.justification)}</xMotivo></e${input.code}>`;
   return { id, xml: `<?xml version="1.0" encoding="UTF-8"?><pedRegEvento xmlns="http://www.sped.fazenda.gov.br/nfse" versao="1.01"><infPedReg Id="${id}">${body}</infPedReg></pedRegEvento>` };
 }
