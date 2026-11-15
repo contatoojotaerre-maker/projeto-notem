@@ -147,6 +147,10 @@ describe('isolamento entre organizações na API v1 (chave da organização A, I
     const list = await (await companies()).listCompanies(ctx(leaks, 'GET', '/api/v1/empresas?id_externo=ext-b', {}));
     expect(leaks).toEqual([]); expect((list.body as { dados: unknown[] }).dados).toEqual([]);
   });
+  it('controle: a própria empresa da organização A é encontrada (o 404 acima não é efeito do teste)', async () => {
+    const leaks: string[] = []; const status = await run((await companies()).getCompany, ctx(leaks, 'GET', `/api/v1/empresas/${ids.companyA}`, { id: ids.companyA }));
+    expect(status).toBe(200); expect(leaks).toEqual([]);
+  });
   it('controle: o mesmo detector acusa uma consulta sem filtro de organização', async () => {
     const leaks: string[] = []; const db = fakeDb(leaks);
     await db.from('companies').select('*').eq('id', C).maybeSingle();
