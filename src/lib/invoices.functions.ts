@@ -1,6 +1,7 @@
 import { createServerFn } from '@tanstack/react-start';
 import { requireSupabaseAuth } from '@/integrations/supabase/auth-middleware';
 import { z } from 'zod';
+import { requireOrgMember } from './panel-access';
 import { invoiceOut } from './invoices';
 import type { Json } from '@/integrations/supabase/types';
 import type { SupabaseClient } from '@supabase/supabase-js';
@@ -50,8 +51,7 @@ export const getPanelInvoices=createServerFn({method:'POST'}).middleware([requir
 async function readFiles(table:'invoices'|'invoice_fiscal_events'|'nfse_documents'|'nfse_document_events',ids:string[]){const {supabaseAdmin}=await import('@/integrations/supabase/client.server');const {xmlRefs,readXml}=await import('./xml-files.server');const refs=await xmlRefs(supabaseAdmin,table,ids);const out:Record<string,Record<string,string>>={};for(const [id,kinds] of Object.entries(refs))for(const [kind,ref] of Object.entries(kinds))(out[id]??={})[kind]=await readXml(supabaseAdmin,ref);return out;}
 const eventNames:Record<string,string>={'101101':'Cancelamento','101103':'Solicitação de análise fiscal do cancelamento','105102':'Cancelamento por substituição','105104':'Cancelamento deferido','105105':'Cancelamento indeferido','305101':'Cancelamento por ofício','305102':'Bloqueio por ofício','305103':'Desbloqueio por ofício'};
 async function officialEvents(env:'sandbox'|'production',key:string){const {supabaseAdmin}=await import('@/integrations/supabase/client.server');const r=await supabaseAdmin.from('nfse_document_events').select('id,code,sequence,processed_at,reason_text').eq('environment',env).eq('access_key',key).order('processed_at',{nullsFirst:false}).order('created_at');if(r.error)throw new Error('Não foi possível carregar os eventos.');const files=await readFiles('nfse_document_events',(r.data??[]).map(e=>e.id));return (r.data??[]).map(e=>({id:e.id,code:e.code,name:eventNames[e.code]??e.code,sequence:e.sequence,processed_at:e.processed_at,reason:e.reason_text,xml:files[e.id]?.['xml']??null}));}
-/** The caller must belong to the organization (or be a platform admin) before any service-role read. */
-async function requireMember(supabase:{rpc:(fn:'is_platform_admin'|'is_org_member',args?:Record<string,unknown>)=>PromiseLike<{data:unknown,error:unknown}>},organization_id:string){const [admin,member]=await Promise.all([supabase.rpc('is_platform_admin'),supabase.rpc('is_org_member',{org_id:organization_id})]);if(admin.error||member.error||(admin.data!==true&&member.data!==true))throw new Error('Nota não encontrada ou acesso não autorizado.');}
+const requireMember=(supabase:Parameters<typeof requireOrgMember>[0],org:string)=>requireOrgMember(supabase,org,'Nota não encontrada ou acesso não autorizado.');
 export const getPanelInvoice=createServerFn({method:'POST'}).middleware([requireSupabaseAuth]).inputValidator(scope.extend({id:z.string().uuid()})).handler(async({context,data})=>{
  await requireMember(context.supabase,data.organization_id);
  const i=await context.supabase.from('invoices').select('*').eq('id',data.id).eq('organization_id',data.organization_id).eq('environment',data.environment).maybeSingle();if(i.error)throw new Error('Nota não encontrada ou acesso não autorizado.');
