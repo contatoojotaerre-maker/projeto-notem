@@ -3,7 +3,7 @@ import { Link, Outlet, useNavigate, useRouterState } from '@tanstack/react-route
 import { SandboxChangeAlerts } from './sandbox-change-alerts';
 import { useQueryClient, useSuspenseQuery } from '@tanstack/react-query';
 import { useServerFn } from '@tanstack/react-start';
-import { Building2, FileText, Home, Layers, Bell, Code2, Users, Settings, CircleHelp, ChevronsLeft, Menu, Search, Sun, Moon, LogOut, TriangleAlert, ArrowRight, Activity, MapPin, MessageSquare, CreditCard, X } from 'lucide-react';
+import { Building2, FileText, Home, Layers, Bell, Code2, Users, Settings, CircleHelp, ChevronsLeft, Menu, Search, Sun, Moon, LogOut, TriangleAlert, ArrowRight, Activity, MapPin, MessageSquare, CreditCard, FileCode2, X } from 'lucide-react';
 import { toast } from 'sonner';
 import { Button } from '@/components/ui/button';
 import { supabase } from '@/integrations/supabase/client';
