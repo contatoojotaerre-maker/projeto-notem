@@ -15,7 +15,7 @@ import { addDecimals, ibsCbsExclusionsOf, ibsCbsValuesOf } from '../lib/nfse-lay
 import { parseDanfse } from '../lib/danfse';
 import { generateDanfse } from '../lib/danfse.server';
 import { readNfse } from '../lib/adn-xml';
-import { fixture } from './dps-fixtures';
+import { fixture, ibsCbsExamples } from './dps-fixtures';
 import { danfseFixture } from './danfse-fixtures';
 
 const cls = (code: string, over: Partial<IbsCbsClassification> = {}): IbsCbsClassification => ({ code, cst: code.slice(0, 3), requires_taxation: true, regular_taxation: false, presumed_credit: false, deferral: false, ...over });
@@ -195,5 +195,17 @@ describe('Sugestão da tabela de correlação (Anexo VIII), nunca automática', 
   it('valores não aceitos, inativos ou impeditivos vêm marcados como não aplicáveis', () => {
     const s = buildSuggestion('990401', { service_item: '99.04.01', simples_activity: 'IMP', nbs: [], operation_indicators: [{ code: '030103' }], classifications: [{ code: '000001' }, { code: '999999' }] }, catalogs);
     expect(s.classificacao).toMatchObject({ aplicavel: false, motivo: IBSCBS_MESSAGES.realEstate }); expect(s.indicador_operacao).toMatchObject({ aplicavel: false }); expect(s.atividade_simples).toMatchObject({ aplicavel: false }); expect(s.aviso).toMatch(/impeditiva/);
+  });
+});
+
+describe('Exemplos publicados com o grupo IBSCBS (docs/exemplos/dps)', () => {
+  it('tributado (000001 / 100501) e sem tributação (410999) conferem com o montador e validam no XSD oficial do release 1', () => {
+    const saved = Object.entries(ibsCbsExamples());
+    for (const [name, v] of saved) { expect(readFileSync(`docs/exemplos/dps/${name}.xml`, 'utf8')).toBe(buildDps(v, 'nt009r1').xml); expect(() => buildDps(v, 'nt004')).toThrow(IBSCBS_MESSAGES.layoutWithoutIbsCbs); }
+    const taxed = readFileSync('docs/exemplos/dps/ibscbs-tributado.xml', 'utf8'), exemptXml = readFileSync('docs/exemplos/dps/ibscbs-sem-tributacao.xml', 'utf8');
+    expect(taxed).toContain('<IBSCBS><cIndOp>100501</cIndOp><indDest>0</indDest><valores><trib><CST>000</CST><cClassTrib>000001</cClassTrib><gIBSCBS></gIBSCBS></trib></valores></IBSCBS>');
+    expect(exemptXml).toContain('<IBSCBS><indDest>0</indDest><valores><trib><CST>410</CST><cClassTrib>410999</cClassTrib></trib></valores></IBSCBS>');
+    expect(exemptXml).not.toContain('cIndOp');
+    expect(run(saved.map(([n]) => `docs/exemplos/dps/${n}.xml`)).match(/NT 009 release 1, oficial/g)).toHaveLength(2);
   });
 });
