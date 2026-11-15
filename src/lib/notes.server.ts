@@ -43,18 +43,18 @@ export async function listReceivedNotes(db: DB, org: string, env: Env, companyId
   if (r.error) throw new Error('RECEIVED_LIST_FAILED'); return { cnpj, rows: r.data ?? [] };
 }
 
-export const invoiceXml = (db: DB, i: Pick<Invoice, 'id' | 'authorized_nfse_xml'>) => xmlOf(db, 'invoices', i.id, 'authorized_nfse', i.authorized_nfse_xml);
-export const documentXml = (db: DB, d: Pick<NfseDocument, 'id' | 'xml'>) => xmlOf(db, 'nfse_documents', d.id, 'xml', d.xml);
+export const invoiceXml = (db: DB, i: Pick<Invoice, 'id'>) => xmlOf(db, 'invoices', i.id, 'authorized_nfse');
+export const documentXml = (db: DB, d: Pick<NfseDocument, 'id'>) => xmlOf(db, 'nfse_documents', d.id, 'xml');
 /** Official XML of the latest event of a key and code received from the government (ADN/Sefin). */
 export async function documentEventXml(db: DB, env: Env, key: string, code: string) {
-  const r = await db.from('nfse_document_events').select('id,xml').eq('environment', env).eq('access_key', key).eq('code', code).order('sequence', { ascending: false }).limit(1).maybeSingle();
-  if (r.error) throw new Error('EVENT_READ_FAILED'); return r.data ? xmlOf(db, 'nfse_document_events', r.data.id, 'xml', r.data.xml) : null;
+  const r = await db.from('nfse_document_events').select('id').eq('environment', env).eq('access_key', key).eq('code', code).order('sequence', { ascending: false }).limit(1).maybeSingle();
+  if (r.error) throw new Error('EVENT_READ_FAILED'); return r.data ? xmlOf(db, 'nfse_document_events', r.data.id, 'xml') : null;
 }
 /** Official XML of a notem invoice event: the request's own copy, else the copy received from the government. */
 export async function invoiceEventXml(db: DB, inv: Pick<Invoice, 'id' | 'organization_id' | 'environment' | 'access_key'>, code: string) {
-  const r = await db.from('invoice_fiscal_events').select('id,event_xml').eq('invoice_id', inv.id).eq('organization_id', inv.organization_id).eq('code', code).eq('status', 'registered').order('registered_at', { ascending: false }).limit(1).maybeSingle();
+  const r = await db.from('invoice_fiscal_events').select('id').eq('invoice_id', inv.id).eq('organization_id', inv.organization_id).eq('code', code).eq('status', 'registered').order('registered_at', { ascending: false }).limit(1).maybeSingle();
   if (r.error) throw new Error('EVENT_READ_FAILED');
-  const own = r.data ? await xmlOf(db, 'invoice_fiscal_events', r.data.id, 'event', r.data.event_xml) : null;
+  const own = r.data ? await xmlOf(db, 'invoice_fiscal_events', r.data.id, 'event') : null;
   return own ?? (inv.access_key ? documentEventXml(db, inv.environment as Env, inv.access_key, code) : null);
 }
 
