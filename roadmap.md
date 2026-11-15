@@ -1,7 +1,8 @@
 # notem — Fase 1
 ## Fase C — NT 009, CNPJ alfanumérico e IBS/CBS
 - [x] Parte 1: perfis de leiaute nt004/nt009r1, data de vigência (admin plataforma, auditoria), escolha antes de cada envio, remontagem com mesmo número, leitores tolerantes, DANFSe (finalidade, destinatário), testes XSD nos dois perfis, exemplos e docs — pausa com relatório
-- [ ] Parte 2: CNPJ alfanumérico — plano aprovado (bloqueio produção antes da NT 009, recusa conversão, chave 9+14+27 com correção em memória só do TSChaveNFSe nos testes, mensagem clara para recusa de esquema da chave, defeito em docs/interno, API aceita máscara/minúsculas) — pausa com relatório
+- [x] Parte 2: CNPJ alfanumérico — plano aprovado (bloqueio produção antes da NT 009, recusa conversão, chave 9+14+27 com correção em memória só do TSChaveNFSe nos testes, mensagem clara para recusa de esquema da chave, defeito em docs/interno, API aceita máscara/minúsculas) — pausa com relatório
+- [ ] Publicar a Parte 2 — aguarda aprovação do relatório
 - [ ] Parte 3: IBS/CBS — aguarda aprovação da Parte 2
 ## Revisão de segurança — Etapa 2 (correções aprovadas em 15/11/2026)
 - [x] S-01 membro obrigatório nas notas do painel + teste
