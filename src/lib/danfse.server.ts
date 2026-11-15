@@ -2,7 +2,7 @@ import { PDFDocument, rgb, degrees, type PDFFont } from 'pdf-lib';
 import fontkit from '@pdf-lib/fontkit';
 import QRCode from 'qrcode';
 import { fonts } from '@/assets/danfse-fonts';
-import { finNFSeLabel,ibsCbsClassOf,destinationBlock,ibsCbsBaseAdjustmentOf,indOpOf } from './nfse-layout-read';
+import { finNFSeLabel,ibsCbsClassOf,destinationBlock,indOpOf,addDecimals,ibsCbsExclusionsOf } from './nfse-layout-read';
 import { parseDanfse,text,money,percent,dateXml,mask,phone,ibge,nationalTaxCode,serviceLocation,ownPisCofins,publicNfseUrl } from './danfse';
 const bytes=(s:string)=>Uint8Array.from(atob(s),c=>c.charCodeAt(0));
 export async function generateDanfse(xml:string,status:string,receipt=false){
@@ -40,11 +40,11 @@ export async function generateDanfse(xml:string,status:string,receipt=false){
  section('TRIBUTAÇÃO FEDERAL (EXCETO CBS)',[['IRRF',money(fed.vRetIRRF)],['Contribuição Previdenciária - Retida',money(fed.vRetCP)],['Contribuições Sociais - Retidas',money(fed.vRetCSLL)]]);
  if(ownPisCofins(d.dCompet))row([['PIS - Débito Apuração Própria',money(fed.piscofins?.vPis)],['COFINS - Débito Apuração Própria',money(fed.piscofins?.vCofins)],['Descrição Contrib. Sociais - Retidas','-']]);
  section('TRIBUTAÇÃO IBS/CBS',[['CST / cClassTrib',`${text(cls.cst)} / ${text(cls.cClassTrib)}`],['Indicador de Operação / Código IBGE Incidência / Município Incidência / Sigla UF',`${text(indOpOf(d))} / ${text(b.cLocalidadeIncid)} / ${text(b.xLocalidadeIncid)}`]]);
- row([['Exclusões e Reduções da Base de Cálculo',money(ibsCbsBaseAdjustmentOf(bv))],['Base de Cálculo Após Exclusões e Reduções',money(bv.vBC)],['Red. Alíquota IBS / Red. Alíquota CBS',`${percent(bv.uf?.pRedAliqUF)} / ${percent(bv.mun?.pRedAliqMun)} / ${percent(bv.fed?.pRedAliqCBS)}`],['Alíquota - IBS UF / IBS Mun',`${percent(bv.uf?.pIBSUF)} / ${percent(bv.mun?.pIBSMun)}`]]);
+ row([['Exclusões e Reduções da Base de Cálculo',money(n.IBSCBS?ibsCbsExclusionsOf(n):null)],['Base de Cálculo Após Exclusões e Reduções',money(bv.vBC)],['Red. Alíquota IBS / Red. Alíquota CBS',`${percent(bv.uf?.pRedAliqUF)} / ${percent(bv.mun?.pRedAliqMun)} / ${percent(bv.fed?.pRedAliqCBS)}`],['Alíquota - IBS UF / IBS Mun',`${percent(bv.uf?.pIBSUF)} / ${percent(bv.mun?.pIBSMun)}`]]);
  row([['Alíq. Efetiva Municipal - IBS',percent(bv.mun?.pAliqEfetMun)],['Valor Apurado Municipal - IBS',money(bt.gIBS?.gIBSMunTot?.vIBSMun)],['Alíq. Efetiva Estadual - IBS',percent(bv.uf?.pAliqEfetUF)],['Valor Apurado Estadual - IBS',money(bt.gIBS?.gIBSUFTot?.vIBSUF)]]);
  row([['Valor Total Apurado - IBS',money(bt.gIBS?.vIBSTot)],['Alíquota - CBS',percent(bv.fed?.pCBS)],['Alíquota Efetiva - CBS',percent(bv.fed?.pAliqEfetCBS)],['Valor Total Apurado - CBS',money(bt.gCBS?.vCBS)]]);
  section('VALOR TOTAL DA NFS-e',[['VALOR DA OPERAÇÃO / SERVIÇO',money(v.vServPrest?.vServ)],['Desconto Incondicionado',money(v.vDescCondIncond?.vDescIncond)],['Desconto Condicionado',money(v.vDescCondIncond?.vDescCond)]]);
- row([['Total das Retenções (ISSQN / Federais)',money(n.valores?.vTotalRet)],['VALOR LÍQUIDO DA NFS-e',money(n.valores?.vLiq)],['Total do IBS/CBS','-'],['VALOR LÍQUIDO DA NFS-e + IBS/CBS',money(bt.vTotNF)]]);
+ row([['Total das Retenções (ISSQN / Federais)',money(n.valores?.vTotalRet)],['VALOR LÍQUIDO DA NFS-e',money(n.valores?.vLiq)],['Total do IBS/CBS',money(addDecimals(text(bt.gIBS?.vIBSTot)==='-'?null:String(bt.gIBS.vIBSTot),text(bt.gCBS?.vCBS)==='-'?null:String(bt.gCBS.vCBS)))],['VALOR LÍQUIDO DA NFS-e + IBS/CBS',money(bt.vTotNF)]]);
  section('INFORMAÇÕES COMPLEMENTARES');const taxes=v.trib?.totTrib??{},spheres=taxes.pTotTrib??taxes.vTotTrib;const fmt=taxes.pTotTrib?percent:money;
  const approx=taxes.pTotTribSN!==undefined?`Totais aproximados dos Tributos cfe. Lei n° 12.741/2012: Simples Nacional: ${percent(taxes.pTotTribSN)};`:`Totais aproximados dos Tributos cfe. Lei n° 12.741/2012: Federais: ${fmt(spheres?.pTotTribFed??spheres?.vTotTribFed)}; Estaduais: ${fmt(spheres?.pTotTribEst??spheres?.vTotTribEst)}; Municipais: ${fmt(spheres?.pTotTribMun??spheres?.vTotTribMun)};`;
  const remaining=y-(receipt?49:18);const info=[d.serv?.infoCompl?.xInfComp,n.xOutInf,approx].filter(Boolean).join('\n\n');let size=6.5;while(size>4&&wrap(info,regular,size,W-6).length*(size+1.1)>remaining)size-=.25;

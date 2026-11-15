@@ -83,3 +83,12 @@ export function ibsCbsValuesOf(infNFSe: unknown): IbsCbsValues | null {
     receita_bruta_simples: s(first(v.vReceitaBrutaSN, obj(tot.gTribSN).vReceitaBrutaSN)), versao_calculadora: s(first(n.verCalcIBSCBS, g.verCalcIBSCBS)),
   };
 }
+/**
+ * NT 008 v1.02 "Exclusões e Reduções da Base de Cálculo": vDescIncond + base adjustment (vCalcReeRepRes / vCalcAjusteBCIBSCBS)
+ * + vISSQN + vPis + vCofins (sum of every field present); null when none is present.
+ */
+export function ibsCbsExclusionsOf(infNFSe: unknown): string | null {
+  const n = obj(infNFSe), d = obj(obj(n.DPS).infDPS), dv = obj(d.valores), pc = obj(obj(obj(dv.trib).tribFed).piscofins);
+  const str = (v: unknown) => (v === undefined || v === null || v === '' ? null : String(v));
+  return addDecimals(str(obj(dv.vDescCondIncond).vDescIncond), ibsCbsBaseAdjustmentOf(obj(n.IBSCBS).valores), str(obj(n.valores).vISSQN), str(pc.vPis), str(pc.vCofins));
+}
