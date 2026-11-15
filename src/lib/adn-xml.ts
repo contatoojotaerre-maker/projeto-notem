@@ -1,3 +1,4 @@
+import { ibsCbsValuesOf } from './nfse-layout-read';
 // Safe readers for documents distributed by the ADN/Sefin: decoding (base64/gzip), official NFS-e and event XML.
 import { XMLParser, XMLValidator } from 'fast-xml-parser';
 import { NFSE_ID_PATTERN, isAccessKey } from './fiscal-ids';
@@ -79,6 +80,7 @@ export function readNfse(xml: string): ParsedNfse | null {
       tomador: { documento: doc(toma), nif: str(toma['NIF']), nome: repairText(str(toma['xNome'])), email: str(toma['email']) },
       servico: { codigo_servico: str(cServ['cTribNac']), codigo_municipal: str(cServ['cTribMun']), descricao: repairText(str(cServ['xDescServ'])), local_prestacao: str(obj(serv['locPrest'])['cLocPrestacao']) },
       valores: { valor_servico: str(obj(dv['vServPrest'])['vServ']), base_calculo: str(val['vBC']), aliquota_iss: str(val['pAliqAplic']), valor_iss: str(val['vISSQN']), valor_liquido: str(val['vLiq']), iss_retido: ['2', '3'].includes(str(trib['tpRetISSQN']) ?? '1') },
+      ibs_cbs: ibsCbsValuesOf(info),
     },
     xml,
   };
