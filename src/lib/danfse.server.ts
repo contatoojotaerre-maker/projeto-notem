@@ -6,7 +6,7 @@ import { finNFSeLabel,ibsCbsClassOf,destinationBlock,ibsCbsBaseAdjustmentOf,indO
 import { parseDanfse,text,money,percent,dateXml,mask,phone,ibge,nationalTaxCode,serviceLocation,ownPisCofins,publicNfseUrl } from './danfse';
 const bytes=(s:string)=>Uint8Array.from(atob(s),c=>c.charCodeAt(0));
 export async function generateDanfse(xml:string,status:string,receipt=false){
- const n=parseDanfse(xml),d=n.DPS.infDPS,v=d.valores??{},mun=v.trib?.tribMun??{},fed=v.trib?.tribFed??{},b=n.IBSCBS??{},bi=d.IBSCBS??{},bv=b.valores??{},bt=b.totCIBS??{},cls=ibsCbsClassOf(d);
+ const n=parseDanfse(xml),d=n.DPS.infDPS,v=d.valores??{},mun=v.trib?.tribMun??{},fed=v.trib?.tribFed??{},b=n.IBSCBS??{},bv=b.valores??{},bt=b.totCIBS??{},cls=ibsCbsClassOf(d);
  const pdf=await PDFDocument.create();pdf.registerFontkit(fontkit);
  const regular=await pdf.embedFont(bytes(fonts.regular),{subset:true}),bold=await pdf.embedFont(bytes(fonts.bold),{subset:true});
  const page=pdf.addPage([595.28,841.89]);const W=575.28,left=10;let y=832;
