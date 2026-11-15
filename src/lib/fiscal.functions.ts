@@ -63,7 +63,8 @@ export const reserveDpsNumber = createServerFn({method:'POST'}).middleware([requ
  const r=await supabaseAdmin.rpc('reserve_dps_number',{_company_id:data.company_id,_organization_id:data.organization_id,_series:data.series,_environment:data.environment,_requested_by:context.userId});
  if(r.error)throw new Error('Não foi possível reservar o número DPS. Confira a série ou o limite da numeração.');
  return {number:r.data,definitive:true as const};
-});/** Anexo VIII suggestion for a national tax code: shown to the user, never applied automatically. */
+});
+/** Anexo VIII suggestion for a national tax code: shown to the user, never applied automatically. */
 export const suggestServiceIbsCbs = createServerFn({method:'POST'}).middleware([requireSupabaseAuth]).inputValidator(z.object({service_code:z.string().regex(/^\d{6}$/)})).handler(async({context,data})=>{
  const item=serviceItemOf(data.service_code);if(!item)return {suggestion:null};
  const c=await context.supabase.from('ibscbs_service_correlations').select('*').eq('service_item',item).maybeSingle();if(c.error)throw new Error('Não foi possível consultar a tabela de correlação.');
