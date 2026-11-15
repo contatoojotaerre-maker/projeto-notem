@@ -13,6 +13,8 @@ Leia antes `convencoes.md` e `empresas.md`. Cancelamento, análise fiscal do can
 - E0204/E0237: ISS retido pelo tomador exige CPF/CNPJ e endereço nacional completo (CEP, município IBGE, logradouro, número e bairro). A validação usa o cadastro copiado ou o tomador informado, antes da numeração.
 - Textos (nomes, endereços, e-mail, descrição, informações complementares) são normalizados antes de validar, conforme `convencoes.md` (seção 4.1). A nota guarda e envia o texto já normalizado; caracteres sem equivalente retornam `422 REGRA_DE_NEGOCIO` com o campo e a mensagem "contém caracteres não aceitos pela NFS-e", antes de numerar.
 - A numeração (série e número da DPS) é feita pela notem. Um número usado nunca é reaproveitado, mesmo se a nota for rejeitada.
+- CNPJ alfanumérico (emitente ou tomador): aceito em homologação. Em produção, só a partir da vigência do leiaute da NT 009; antes dela a nota é recusada antes de numerar (`422 REGRA_DE_NEGOCIO`, campo `empresa.cnpj` ou `tomador.documento`): "CNPJ alfanumérico só pode ser usado em produção a partir da vigência da NT 009 (dd/mm/aaaa)".
+- Substituição ou cancelamento de nota cuja chave tem letras: se o governo recusar por falha de esquema da chave (defeito conhecido no esquema oficial), a mensagem é "O governo recusou a chave de acesso com CNPJ alfanumérico por um defeito conhecido no esquema oficial. Tente novamente mais tarde ou use o Portal Nacional." O código e a mensagem originais do governo continuam em `detalhes`.
 
 ## 1. Emitir nota — `POST /notas`
 
@@ -69,7 +71,7 @@ A **alíquota do ISS** não é enviada pelo parceiro: o governo aplica a do muni
 | Campo | Regra |
 |---|---|
 | `tipo` | `pj`, `pf` ou `estrangeiro` |
-| `documento` | CNPJ (14) para `pj`; CPF (11) para `pf`; ausente para `estrangeiro` |
+| `documento` | CNPJ (14 posições, numérico ou alfanumérico) para `pj`; CPF (11 números) para `pf`; ausente para `estrangeiro`. Máscara e minúsculas são normalizadas |
 | `nif` | estrangeiro: número de identificação fiscal do país (ou `null` com `motivo_sem_nif`) |
 | `nome` | obrigatório |
 | `email`, `telefone`, `inscricao_municipal` | opcionais |

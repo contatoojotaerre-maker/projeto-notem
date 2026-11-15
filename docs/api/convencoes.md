@@ -33,7 +33,8 @@ Estas regras valem para **todas** as rotas. Em caso de dúvida, elas prevalecem 
 | Percentuais | texto, ponto decimal, até 2 casas | `"2.00"` |
 | Data | `AAAA-MM-DD` | `"2026-11-03"` |
 | Data e hora | ISO 8601 com fuso | `"2026-11-03T14:30:00-03:00"` |
-| CNPJ / CPF / CEP / telefone | somente números | `"11222333000181"` |
+| CNPJ | 14 posições, numérico ou alfanumérico (letras maiúsculas nas 12 primeiras, 2 dígitos verificadores numéricos). Entrada com máscara ou minúsculas é aceita e normalizada; as respostas trazem sempre 14 caracteres sem máscara | `"11222333000181"`, `"12ABC34501DE35"` |
+| CPF / CEP / telefone | somente números | `"52998224725"` |
 | Município | código IBGE de 7 dígitos | `"4212254"` |
 | País | código ISO de 2 letras | `"BR"` |
 | Booleanos | `true` / `false` | |

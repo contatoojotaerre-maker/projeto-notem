@@ -23,7 +23,8 @@
 | **DPS** | Declaração de Prestação de Serviço: o pedido de emissão enviado ao governo. Aprovada, gera a NFS-e. |
 | **Série / número da DPS** | Identificação sequencial da DPS. Séries atribuídas automaticamente a partir de 00900; faixa de aplicativo próprio: 00001 a 49999. Séries existentes são preservadas; números usados nunca são reaproveitados. |
 | **NFS-e** | Nota Fiscal de Serviço eletrônica autorizada pelo governo. |
-| **Chave de acesso da NFS-e** | Identificador oficial da nota, com 50 dígitos. |
+| **Chave de acesso da NFS-e** | Identificador oficial da nota, com 50 posições. Quando o emitente tem CNPJ alfanumérico, as 14 posições do CNPJ podem conter letras. |
+| **CNPJ alfanumérico** | Formato da Receita Federal para novas inscrições desde julho de 2026: 12 posições com números ou letras e 2 dígitos verificadores. A notem aceita os dois formatos. |
 | **DANFSe** | Representação em PDF da NFS-e. |
 | **Competência** | Data (mês) a que o serviço se refere. Não pode ser posterior à data de emissão. |
 | **Situação da nota** | Em processamento, em verificação, autorizada, rejeitada, cancelamento em análise, cancelada, substituída, cancelada pela prefeitura. |

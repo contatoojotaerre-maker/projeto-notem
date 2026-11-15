@@ -29,4 +29,4 @@ Só ocorre dentro de `sendInvoice`, depois de `claim_invoice_dispatch` (estado `
 - Destinatário: bloco próprio quando houver `dest`; "O DESTINATÁRIO É O PRÓPRIO TOMADOR/ADQUIRENTE DA OPERAÇÃO" quando `indDest = 0`; "DESTINATÁRIO DA OPERAÇÃO NÃO IDENTIFICADO NA NFS-e" só sem indicação.
 
 ## Outras mudanças do release 1 (para as próximas partes)
-CNPJ alfanumérico em `TSCNPJ`, chave de acesso e Ids de DPS/eventos (Parte 2); `cIndOp` opcional; `bensMoveis`, locação de imóveis e campos de ajuste; textos `TSDesc*`/`TSDescInfCompl` passam a exigir ao menos um caractere não branco (a notem já normaliza e recusa texto vazio).
+CNPJ alfanumérico em `TSCNPJ`, chave de acesso e Ids de DPS/eventos (Parte 2, ver `cnpj-alfanumerico.md`; o perfil `nt004` recusa CNPJ com letras e a conversão para ele também); `cIndOp` opcional; `bensMoveis`, locação de imóveis e campos de ajuste; textos `TSDesc*`/`TSDescInfCompl` passam a exigir ao menos um caractere não branco (a notem já normaliza e recusa texto vazio).
