@@ -8,17 +8,17 @@ import { readAuthorizedNfse } from '../lib/nfse-xml';
 import { fixture, examples } from './dps-fixtures';
 describe('DPS E1', () => {
   it('CNPJ usa tipo 2 e identificador de 45 caracteres', () => { const id = dpsIdentifier('4212254', '11222333000181', 1, '999999999999999'); expect(id).toBe('DPS421225421122233300018100001999999999999999'); expect(id).toHaveLength(45); });
-  it('valida exemplos e variações com apenas o defeito literal ^/$ da série corrigido em memória', () => {
+  it('leiaute anterior: valida exemplos e variações com apenas o defeito literal ^/$ da série corrigido em memória', () => {
     const folder = mkdtempSync(join(tmpdir(), 'dps-')); const variations = Object.values(examples()); const absent = fixture(); absent.customer = null; variations.push(absent); const withheld = fixture(); withheld.service.withholding = 2; withheld.fiscal.withheldRate = '2.00'; variations.push(withheld); const none = fixture(); none.fiscal.simples=2; none.fiscal.regime=null; none.fiscal.approximate = { mode: 'none' }; variations.push(none);
     const archive = 'docs/referencias/esquemas/nfse-esquemas_xsd-v1-01-20260209.zip'; const original = readFileSync(archive);
     try {
-      const files = variations.map((v, i) => { const p = join(folder, `${i}.xml`); writeFileSync(p, buildDps(v,'nt009r1').xml); return p; });
-      const saved = Object.keys(examples()).map(name => `docs/exemplos/dps/${name}.xml`);
+      const files = variations.map((v, i) => { const p = join(folder, `${i}.xml`); writeFileSync(p, buildDps(v,'nt004').xml); return p; });
+      const saved = Object.keys(examples()).map(name => `docs/exemplos/dps/leiaute-anterior/${name}.xml`);
       const result = execFileSync('python3', ['src/test/validate-dps-xsd.py', ...files, ...saved], { encoding: 'utf8' });
-      expect(result.match(/XSD 1.01 válido/g)).toHaveLength(files.length + 3);
+      expect(result.match(/XSD 1.01 válido/g)).toHaveLength(files.length + saved.length);
       expect(readFileSync(archive).equals(original)).toBe(true);
       expect(() => execFileSync('python3', ['src/test/validate-dps-xsd.py', '--official', ...files], { stdio: 'pipe' })).toThrow();
-      for (const [name, xml] of [['environment', buildDps(fixture(),'nt009r1').xml.replace('<tpAmb>2</tpAmb>', '<tpAmb>9</tpAmb>')], ['series', buildDps(fixture(),'nt009r1').xml.replace('<serie>1</serie>', '<serie>ABC</serie>')]]) {
+      for (const [name, xml] of [['environment', buildDps(fixture(),'nt004').xml.replace('<tpAmb>2</tpAmb>', '<tpAmb>9</tpAmb>')], ['series', buildDps(fixture(),'nt004').xml.replace('<serie>1</serie>', '<serie>ABC</serie>')]]) {
         const p = join(folder, `${name}.xml`); writeFileSync(p, xml ?? '');
         expect(() => execFileSync('python3', ['src/test/validate-dps-xsd.py', p], { stdio: 'pipe' })).toThrow();
       }
