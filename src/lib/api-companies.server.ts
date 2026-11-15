@@ -105,11 +105,18 @@ export async function postCertificate(ctx: ApiCtx): Promise<ApiResult> {
 }
 
 // ---------- Serviços ----------
-const SERVICE_SELECT = '*, service_codes(description)';
+const ibsCbsRuleMessages = new Set<string>(Object.values(IBSCBS_MESSAGES));
+/** atividade_simples only for ME/EPP (opSimpNac 3). */
+async function checkSimplesActivity(ctx: ApiCtx, companyId: string, activity: string | null | undefined) {
+  if (!activity) return; const f = await ctx.db.from('company_fiscal_settings').select('simples_nacional_option').eq('company_id', companyId).eq('organization_id', ctx.organization_id).maybeSingle();
+  if (f.error) throw new Error('FISCAL_READ_FAILED'); if (f.data?.simples_nacional_option !== 3) throw fail(422, 'REGRA_DE_NEGOCIO', [{ campo: 'classificacao_ibscbs.atividade_simples', mensagem: IBSCBS_MESSAGES.simplesActivityForbidden }]);
+}
+const SERVICE_SELECT = '*, service_codes(description), ibscbs_classifications(*), ibscbs_operation_indicators(code,active)';
 function serviceWriteError(e: { code?: string; message: string }): never {
   if(/E017[245]/.test(e.message))throw fail(422,'REGRA_DE_NEGOCIO',[{campo:'tributacao_iss',mensagem:e.message}]);
   if (e.code === '23505') throw fail(409, 'ID_EXTERNO_DUPLICADO');
   if (e.code === '23503') throw fail(422, 'REGRA_DE_NEGOCIO', [{ campo: 'codigo_servico', mensagem: 'Use códigos existentes nos catálogos oficiais.' }]);
+  if (e.code === 'P0001' && ibsCbsRuleMessages.has(e.message)) throw fail(422, 'REGRA_DE_NEGOCIO', [{ campo: /atividade/.test(e.message) ? 'classificacao_ibscbs.atividade_simples' : /indicador/.test(e.message) ? 'classificacao_ibscbs.indicador_operacao' : 'classificacao_ibscbs.codigo_classificacao', mensagem: e.message }]);
   if (e.code === '23514' || e.code === 'P0001') throw fail(422, 'REGRA_DE_NEGOCIO');
   throw new Error('SERVICE_WRITE_FAILED');
 }
@@ -119,7 +126,7 @@ export async function listServices(ctx: ApiCtx): Promise<ApiResult> {
   if (r.error) throw new Error('SERVICE_LIST_FAILED'); return { status: 200, body: page((r.data as unknown as ServiceRow[]).map(serviceOut), limite, offset) };
 }
 export async function createService(ctx: ApiCtx): Promise<ApiResult> {
-  const c = await loadCompany(ctx); const v = parseBody(serviceCreate, ctx.body); const row = serviceToDb(v, {});
+  const c = await loadCompany(ctx); const v = parseBody(serviceCreate, ctx.body); const row = serviceToDb(v, {}); await checkSimplesActivity(ctx, c.id, row.simples_activity_code);
   const r = await ctx.db.from('company_service_profiles').insert({ ...row, company_id: c.id, organization_id: ctx.organization_id, created_by: ctx.actor, ...apiAudit(ctx) } as never).select(SERVICE_SELECT).single();
   if (r.error) serviceWriteError(r.error); refresh(ctx, c.id); return { status: 201, body: serviceOut(r.data as unknown as ServiceRow) };
 }

@@ -1,7 +1,7 @@
 // Pure, client-safe translation between the public API v1 contract (Portuguese, readable values)
 // and the current database codes. Shared by API routes, the panel and tests.
 import { z } from 'zod';
-import { DEFAULT_IBSCBS_REQUIRED_FROM, ibsCbsMissingMessage, ibsCbsPendingWarning, serviceIbsCbsIssues, todayBr, type ServiceIbsCbs } from './ibscbs';
+import { DEFAULT_IBSCBS_REQUIRED_FROM, IBSCBS_REGIME_LABELS, allowedIbsCbsRegimes, ibsCbsMissingMessage, ibsCbsPendingWarning, serviceIbsCbsIssues, serviceNeedsReview, todayBr, type IbsCbsClassification, type ServiceIbsCbs } from './ibscbs';
 import { fiscalSchema, specialTaxRuleError, validReadinessCertificate } from './fiscal';
 import { agreementUnavailableMessage, certificateSituation } from './certificates';
 import { isValidCnpj, digits, normalizeCnpj } from './notem';
@@ -96,19 +96,21 @@ const rev = <T extends string | number>(m: Record<string, T>) => Object.fromEntr
 export const simplesMap = { nao_optante: 1, mei: 2, me_epp: 3 } as const;
 export const regimeMap = { dentro_do_simples: 1, iss_fora_do_simples: 2, tudo_fora_do_simples: 3 } as const;
 export const specialMap = { nenhum: 0, ato_cooperado: 1, estimativa: 2, microempresa_municipal: 3, notario_registrador: 4, profissional_autonomo: 5, sociedade_profissionais: 6, outros: 9 } as const;
+/** regApIBSCBSSN (ME/EPP only): pelo_simples = 1; cbs_simples_ibs_regular = 2; regime_regular = 3. */
+export const ibsCbsRegimeMap = { pelo_simples: 1, cbs_simples_ibs_regular: 2, regime_regular: 3 } as const;
 export const modeMap = { percentual_simples: 'percent_simples', percentual_por_esfera: 'percent_by_sphere', nao_informar: 'none' } as const;
 const keys = <T extends object>(o: T) => Object.keys(o) as [keyof T & string, ...(keyof T & string)[]];
 export const fiscalIn = z.object({
   simples_nacional: z.enum(keys(simplesMap)), regime_apuracao_simples: z.enum(keys(regimeMap)).nullable().optional(), regime_especial: z.enum(keys(specialMap)),
   tributos_aproximados: z.object({ modo: z.enum(keys(modeMap)), percentual_simples: pctIn.optional(), federal: pctIn.optional(), estadual: pctIn.optional(), municipal: pctIn.optional() }).strict(),
-  aliquota_iss_simples: pctIn.optional(), serie_dps: z.unknown().optional(), imprimir_canhoto_danfse: z.boolean().optional(),
+  aliquota_iss_simples: pctIn.optional(), serie_dps: z.unknown().optional(), imprimir_canhoto_danfse: z.boolean().optional(), regime_apuracao_ibscbs: z.enum(keys(ibsCbsRegimeMap)).nullable().optional(),
 }).strict();
-const fiscalFieldMap: Record<string, string> = { simples_nacional_option: 'simples_nacional', simples_nacional_regime: 'regime_apuracao_simples', special_tax_regime: 'regime_especial', approx_taxes_mode: 'tributos_aproximados.modo', approx_simples_percent: 'tributos_aproximados.percentual_simples', approx_federal_percent: 'tributos_aproximados.federal', approx_state_percent: 'tributos_aproximados.estadual', approx_municipal_percent: 'tributos_aproximados.municipal', simples_iss_withholding_percent: 'aliquota_iss_simples' };
+const fiscalFieldMap: Record<string, string> = { simples_nacional_option: 'simples_nacional', simples_nacional_regime: 'regime_apuracao_simples', special_tax_regime: 'regime_especial', approx_taxes_mode: 'tributos_aproximados.modo', approx_simples_percent: 'tributos_aproximados.percentual_simples', approx_federal_percent: 'tributos_aproximados.federal', approx_state_percent: 'tributos_aproximados.estadual', approx_municipal_percent: 'tributos_aproximados.municipal', simples_iss_withholding_percent: 'aliquota_iss_simples', ibscbs_simples_regime: 'regime_apuracao_ibscbs' };
 /** Converts contract values to DB codes and applies the same rules as the panel (E0713, ISS do Simples). */
 export function fiscalToDb(v: z.infer<typeof fiscalIn>, ids: { company_id: string; organization_id: string }, dps_series: number | null, receipt=false) {
   const n = (x: string | null | undefined) => (x === null || x === undefined ? null : Number(x)); const t = v.tributos_aproximados;
   const row = { ...ids, print_danfse_receipt:v.imprimir_canhoto_danfse??receipt, simples_nacional_option: simplesMap[v.simples_nacional], simples_nacional_regime: v.regime_apuracao_simples ? regimeMap[v.regime_apuracao_simples] : null, special_tax_regime: specialMap[v.regime_especial], dps_series,
-    approx_taxes_mode: modeMap[t.modo], approx_simples_percent: n(t.percentual_simples), approx_federal_percent: n(t.federal), approx_state_percent: n(t.estadual), approx_municipal_percent: n(t.municipal), simples_iss_withholding_percent: n(v.aliquota_iss_simples) };
+    approx_taxes_mode: modeMap[t.modo], approx_simples_percent: n(t.percentual_simples), approx_federal_percent: n(t.federal), approx_state_percent: n(t.estadual), approx_municipal_percent: n(t.municipal), simples_iss_withholding_percent: n(v.aliquota_iss_simples), ibscbs_simples_regime: v.regime_apuracao_ibscbs ? ibsCbsRegimeMap[v.regime_apuracao_ibscbs] : null };
   const r = fiscalSchema.safeParse(row);
   if (!r.success) throw fail(422, 'REGRA_DE_NEGOCIO', zodDetails(r.error, fiscalFieldMap));
   return r.data;
@@ -126,38 +128,54 @@ const fiscalConstraintMap: Record<string, { campo: string; mensagem: string }> =
   company_fiscal_settings_special_tax_regime_check: { campo: 'regime_especial', mensagem: 'Regime especial inválido.' },
   company_fiscal_settings_dps_series_check: { campo: 'serie_dps', mensagem: 'A série DPS deve estar entre 00001 e 49999.' },
 };
-const fiscalTriggerMap: [RegExp, string][] = [[/E017[245]/, 'regime_especial'], [/E071[023]/, 'tributos_aproximados.modo'], [/alíquota do ISS/i, 'aliquota_iss_simples'], [/série/i, 'serie_dps']];
+const fiscalTriggerMap: [RegExp, string][] = [[/IBS\/CBS/, 'regime_apuracao_ibscbs'], [/E017[245]/, 'regime_especial'], [/E071[023]/, 'tributos_aproximados.modo'], [/alíquota do ISS/i, 'aliquota_iss_simples'], [/série/i, 'serie_dps']];
 /** Maps a database refusal on company_fiscal_settings to the contract field; never returns "corpo". */
 export function fiscalDbDetail(e: { code?: string; message: string }): { campo: string; mensagem: string } | null {
   if (e.code === '23514') { const name = Object.keys(fiscalConstraintMap).sort((a, b) => b.length - a.length).find(k => e.message.includes(`"${k}"`)); return name ? fiscalConstraintMap[name] ?? null : null; }
   if (e.code === 'P0001') { const hit = fiscalTriggerMap.find(([re]) => re.test(e.message)); return hit ? { campo: hit[1], mensagem: e.message } : null; }
   return null;
 }
-export type FiscalRow = { simples_nacional_option: number; simples_nacional_regime: number | null; special_tax_regime: number; dps_series: number | null; approx_taxes_mode: string; approx_simples_percent: number | null; approx_federal_percent: number | null; approx_state_percent: number | null; approx_municipal_percent: number | null; simples_iss_withholding_percent: number | null };
+export type FiscalRow = { simples_nacional_option: number; simples_nacional_regime: number | null; special_tax_regime: number; dps_series: number | null; approx_taxes_mode: string; approx_simples_percent: number | null; approx_federal_percent: number | null; approx_state_percent: number | null; approx_municipal_percent: number | null; simples_iss_withholding_percent: number | null; ibscbs_simples_regime?: number | null };
 export function fiscalOut(s: FiscalRow) {
   return { imprimir_canhoto_danfse:('print_danfse_receipt' in s?s.print_danfse_receipt:false)===true, simples_nacional: rev(simplesMap)[s.simples_nacional_option] ?? null, regime_apuracao_simples: s.simples_nacional_regime === null ? null : rev(regimeMap)[s.simples_nacional_regime] ?? null, regime_especial: rev(specialMap)[s.special_tax_regime] ?? null,
     tributos_aproximados: { modo: rev(modeMap)[s.approx_taxes_mode] ?? null, percentual_simples: pct(s.approx_simples_percent), federal: pct(s.approx_federal_percent), estadual: pct(s.approx_state_percent), municipal: pct(s.approx_municipal_percent) },
-    aliquota_iss_simples: pct(s.simples_iss_withholding_percent), serie_dps: s.dps_series === null ? null : String(s.dps_series).padStart(5, '0') };
+    aliquota_iss_simples: pct(s.simples_iss_withholding_percent), regime_apuracao_ibscbs: s.ibscbs_simples_regime ? rev(ibsCbsRegimeMap)[s.ibscbs_simples_regime] ?? null : null, serie_dps: s.dps_series === null ? null : String(s.dps_series).padStart(5, '0') };
 }
 
 // ---------- Services ----------
 export const taxationMap = { tributavel: 1, imunidade: 2, exportacao: 3, nao_incidencia: 4 } as const;
 export const immunityMap = { nao_informado: 0, entes_federativos: 1, templos: 2, partidos_sindicatos_entidades: 3, livros_jornais_papel: 4, fonogramas_musicais: 5 } as const;
 export const withholdingMap = { nao_retido: 1, retido_tomador: 2, retido_intermediario: 3 } as const;
-const serviceBase = { id_externo: externalId.optional(), nome: z.string().trim().min(1).max(200), ativo: z.boolean(), codigo_servico: z.string().regex(/^\d{6}$/, 'Código nacional de 6 dígitos.'), codigo_municipal: text(20).nullable().optional(), codigo_nbs: z.string().regex(/^\d{9}$/, 'Código NBS de 9 dígitos.').nullable().optional(), descricao_padrao: text(2000).optional(), tributacao_iss: z.enum(keys(taxationMap)), tipo_imunidade: z.enum(keys(immunityMap)).nullable().optional(), retencao_iss: z.enum(keys(withholdingMap)), indicador_operacao_ibscbs: z.string().regex(/^\d{6}$/).nullable().optional(), numero_beneficio_municipal: text(50).nullable().optional(), descricao_servico: z.unknown().optional(), id: z.unknown().optional() };
+/** classificacao_ibscbs of a service: notem sends only the classification; the government calculates the values. */
+const ibsCbsServiceIn = z.object({ codigo_classificacao: z.string().regex(/^\d{6}$/, 'Classificação tributária de 6 dígitos.'), indicador_operacao: z.string().regex(/^\d{6}$/, 'Indicador de operação de 6 dígitos.').nullable().optional(), consumidor_final: z.boolean().optional(), atividade_simples: z.string().regex(/^(0[7-9]|1[0-4]|90)$/, 'Atividade do Simples: 07 a 14 ou 90.').nullable().optional(), cst: z.unknown().optional(), descricao: z.unknown().optional(), situacao: z.unknown().optional() }).strict();
+const serviceBase = { id_externo: externalId.optional(), nome: z.string().trim().min(1).max(200), ativo: z.boolean(), codigo_servico: z.string().regex(/^\d{6}$/, 'Código nacional de 6 dígitos.'), codigo_municipal: text(20).nullable().optional(), codigo_nbs: z.string().regex(/^\d{9}$/, 'Código NBS de 9 dígitos.').nullable().optional(), descricao_padrao: text(2000).optional(), tributacao_iss: z.enum(keys(taxationMap)), tipo_imunidade: z.enum(keys(immunityMap)).nullable().optional(), retencao_iss: z.enum(keys(withholdingMap)), indicador_operacao_ibscbs: z.string().regex(/^\d{6}$/).nullable().optional(), classificacao_ibscbs: ibsCbsServiceIn.nullable().optional(), numero_beneficio_municipal: text(50).nullable().optional(), descricao_servico: z.unknown().optional(), id: z.unknown().optional() };
 export const serviceCreate = z.object({ ...serviceBase, ativo: z.boolean().default(true) }).strict();
 export const servicePatch = z.object(serviceBase).partial().strict();
-export type ServiceRow = { id: string; external_id: string | null; name: string; active: boolean; service_code: string; municipal_tax_code: string | null; nbs_code: string | null; default_description: string; iss_taxation: number; immunity_type: number | null; iss_withholding: number; ibscbs_operation_indicator: string | null; municipal_benefit_number: string | null; service_codes?: { description: string } | null };
+export type ServiceRow = { id: string; external_id: string | null; name: string; active: boolean; service_code: string; municipal_tax_code: string | null; nbs_code: string | null; default_description: string; iss_taxation: number; immunity_type: number | null; iss_withholding: number; ibscbs_operation_indicator: string | null; municipal_benefit_number: string | null; ibscbs_classification?: string | null; ibscbs_final_consumer?: boolean; simples_activity_code?: string | null; service_codes?: { description: string } | null; ibscbs_classifications?: IbsCbsClassification | null; ibscbs_operation_indicators?: { code: string; active: boolean } | null };
 export function serviceOut(s: ServiceRow) {
   return { id: s.id, id_externo: s.external_id, nome: s.name, ativo: s.active, codigo_servico: s.service_code, descricao_servico: s.service_codes?.description ?? null, codigo_municipal: s.municipal_tax_code, codigo_nbs: s.nbs_code, descricao_padrao: s.default_description,
-    tributacao_iss: rev(taxationMap)[s.iss_taxation] ?? null, tipo_imunidade: s.immunity_type === null ? null : rev(immunityMap)[s.immunity_type] ?? null, retencao_iss: rev(withholdingMap)[s.iss_withholding] ?? null, indicador_operacao_ibscbs: s.ibscbs_operation_indicator, numero_beneficio_municipal: s.municipal_benefit_number };
+    tributacao_iss: rev(taxationMap)[s.iss_taxation] ?? null, tipo_imunidade: s.immunity_type === null ? null : rev(immunityMap)[s.immunity_type] ?? null, retencao_iss: rev(withholdingMap)[s.iss_withholding] ?? null,
+    classificacao_ibscbs: s.ibscbs_classification ? { codigo_classificacao: s.ibscbs_classification, cst: s.ibscbs_classifications?.cst ?? null, descricao: s.ibscbs_classifications?.description ?? null, indicador_operacao: s.ibscbs_operation_indicator, consumidor_final: s.ibscbs_final_consumer === true, atividade_simples: s.simples_activity_code ?? null, situacao: ibsCbsSituation(s) } : null,
+    /** @deprecated use classificacao_ibscbs.indicador_operacao */ indicador_operacao_ibscbs: s.ibscbs_operation_indicator, numero_beneficio_municipal: s.municipal_benefit_number };
+}
+function ibsCbsSituation(s: ServiceRow): 'completa' | 'pendente' | 'a_revisar' {
+  const v = { service_code: s.service_code, nbs_code: s.nbs_code, ibscbs_classification: s.ibscbs_classification, ibscbs_operation_indicator: s.ibscbs_operation_indicator, simples_activity_code: s.simples_activity_code, classification: s.ibscbs_classifications ?? null, indicator: s.ibscbs_operation_indicators ?? null };
+  return serviceNeedsReview(v) ? 'a_revisar' : serviceIbsCbsIssues(v).length ? 'pendente' : 'completa';
+}
+/** classificacao_ibscbs + obsolete indicador_operacao_ibscbs (kept for compatibility; 422 when both disagree). */
+function ibsCbsServiceToDb(v: z.infer<typeof servicePatch>, current: Partial<ServiceRow>) {
+  const c = v.classificacao_ibscbs, old = v.indicador_operacao_ibscbs;
+  if (c && old !== undefined && c.indicador_operacao !== undefined && (c.indicador_operacao ?? null) !== (old ?? null)) throw fail(422, 'REGRA_DE_NEGOCIO', [{ campo: 'indicador_operacao_ibscbs', mensagem: 'O campo indicador_operacao_ibscbs está obsoleto e diverge de classificacao_ibscbs.indicador_operacao. Envie apenas classificacao_ibscbs.' }]);
+  if (c === null) return { ibscbs_classification: null, ibscbs_operation_indicator: old !== undefined ? old : null, ibscbs_final_consumer: false, simples_activity_code: null };
+  if (c) return { ibscbs_classification: c.codigo_classificacao, ibscbs_operation_indicator: c.indicador_operacao !== undefined ? c.indicador_operacao : old !== undefined ? old : current.ibscbs_operation_indicator ?? null, ibscbs_final_consumer: c.consumidor_final ?? current.ibscbs_final_consumer ?? false, simples_activity_code: c.atividade_simples !== undefined ? c.atividade_simples : current.simples_activity_code ?? null };
+  return { ibscbs_operation_indicator: old !== undefined ? old : current.ibscbs_operation_indicator ?? null };
 }
 /** Merges a (partial) contract body into the stored row and validates with the panel's schema. */
 export function serviceToDb(v: z.infer<typeof servicePatch>, current: Partial<ServiceRow>) {
   const row = { name: v.nome ?? current.name, active: v.ativo ?? current.active ?? true, service_code: v.codigo_servico ?? current.service_code, municipal_tax_code: v.codigo_municipal !== undefined ? v.codigo_municipal : current.municipal_tax_code ?? null,
     nbs_code: v.codigo_nbs !== undefined ? v.codigo_nbs : current.nbs_code ?? null, default_description: v.descricao_padrao ?? current.default_description ?? '', iss_taxation: v.tributacao_iss ? taxationMap[v.tributacao_iss] : current.iss_taxation,
     immunity_type: v.tipo_imunidade !== undefined ? (v.tipo_imunidade === null ? null : immunityMap[v.tipo_imunidade]) : current.immunity_type ?? null, iss_withholding: v.retencao_iss ? withholdingMap[v.retencao_iss] : current.iss_withholding,
-    ibscbs_operation_indicator: v.indicador_operacao_ibscbs !== undefined ? v.indicador_operacao_ibscbs : current.ibscbs_operation_indicator ?? null, municipal_benefit_number: v.numero_beneficio_municipal !== undefined ? v.numero_beneficio_municipal : current.municipal_benefit_number ?? null };
+    ...ibsCbsServiceToDb(v, current), municipal_benefit_number: v.numero_beneficio_municipal !== undefined ? v.numero_beneficio_municipal : current.municipal_benefit_number ?? null };
   if ((row.iss_taxation === 2) !== (row.immunity_type !== null)) throw fail(422, 'REGRA_DE_NEGOCIO', [{ campo: 'tipo_imunidade', mensagem: 'Informe o tipo de imunidade somente com tributacao_iss "imunidade".' }]);
   return { ...row, ...(v.id_externo !== undefined ? { external_id: v.id_externo } : {}) };
 }
