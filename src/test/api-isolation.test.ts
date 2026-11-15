@@ -153,7 +153,8 @@ describe('isolamento entre organizações na API v1 (chave da organização A, I
   });
   it('controle: o mesmo detector acusa uma consulta sem filtro de organização', async () => {
     const leaks: string[] = []; const db = fakeDb(leaks);
-    await db.from('companies').select('*').eq('id', C).maybeSingle();
+    type Q = { select: (c: string) => { eq: (k: string, v: string) => { maybeSingle: () => PromiseLike<unknown> } } };
+    await (db.from('companies') as unknown as Q).select('*').eq('id', C).maybeSingle();
     expect(leaks.length).toBe(1);
   });
 });

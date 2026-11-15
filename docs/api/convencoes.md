@@ -18,6 +18,7 @@ Estas regras valem para **todas** as rotas. Em caso de dúvida, elas prevalecem 
 - **O ambiente é definido pela chave**. Não existe parâmetro de ambiente: com a chave de homologação, tudo acontece em homologação (notas sem validade fiscal); com a de produção, em produção.
 - A chave é exibida **uma única vez** ao ser criada. A notem guarda apenas uma impressão irreversível dela. Se perdida, gere outra e revogue a antiga.
 - Uma integração opera **todas as empresas da sua organização** (não há seleção de empresas por integração). Empresa de outra organização responde `404 NAO_ENCONTRADO`.
+- **Atenção — cadastro compartilhado entre ambientes.** Empresa, configuração fiscal, serviços, tomadores e certificado são **os mesmos** em homologação e produção (as notas são separadas). Uma alteração feita com a chave de homologação vale também para a produção. Por isso, toda alteração desses cadastros feita com chave de homologação fica registrada e aparece como aviso no painel da organização ("Serviço alterado pela chave de homologação da integração X") até um proprietário ou administrador marcar como lido. Recomendação: em testes, use uma empresa de testes ou evite alterar o cadastro com a chave de homologação.
 
 ## 3. Formato das mensagens
 - JSON em UTF-8: `Content-Type: application/json; charset=utf-8`.
@@ -110,13 +111,33 @@ Códigos específicos de cada rota (ex.: `CERTIFICADO_VENCIDO`) são documentado
 
 ## 8. Listas e paginação
 - Parâmetros: `limite` (padrão 50, máximo 100) e `cursor` (o `proximo_cursor` recebido).
+- Uma lista pode ser percorrida até 100.000 posições; para ir além, use filtros (por exemplo, período).
+- Filtros de período (`emitida_de`/`emitida_ate`) usam datas reais `AAAA-MM-DD`, com início anterior ou igual ao fim e no máximo 366 dias.
+- Buscas de texto (`busca`) aceitam de 2 a 150 caracteres.
 - `proximo_cursor = null` indica o fim da lista.
 - A ordem padrão é do mais recente para o mais antigo, salvo indicação na rota (catálogos: por nome/código).
 - O `cursor` é opaco: não o monte nem o interprete.
 
 ## 9. Limites de uso
-- Nenhum limite de uso está ativo no momento.
-- A verificação do município tem uma restrição específica: uma chamada por minuto por empresa e ambiente, conforme `empresas.md`; ao exceder, retorna `429` com `Retry-After` em segundos.
+Os limites contam **por chave e por ambiente** (homologação e produção são independentes), salvo indicação. Ao exceder, a resposta é `429 LIMITE_EXCEDIDO` com o cabeçalho `Retry-After` (segundos até poder tentar de novo).
+
+| O quê | Limite |
+|---|---|
+| Todas as chamadas | 120 por minuto e 30 a cada 10 segundos, por chave |
+| Todas as chamadas da organização (todas as chaves somadas) | 240 por minuto, por ambiente |
+| Listas (`GET /empresas`, `/notas`, `/catalogos/*`, serviços, tomadores, notas recebidas) | 60 por minuto |
+| Emissão e substituição de nota | 20 por minuto em produção, 10 em homologação; no máximo 2 ao mesmo tempo por empresa |
+| Cancelamento e pedido de análise | 10 por minuto; 1 de cada vez por nota |
+| Envio de certificado | 3 a cada 10 minutos por chave e 10 por dia por empresa |
+| Verificação do município | 1 por minuto por empresa e ambiente |
+| PDF | 20 por minuto; no máximo 2 ao mesmo tempo |
+| XML | 60 por minuto |
+| Situação da sincronização | 30 por minuto |
+| Chamadas sem chave válida | 30 por minuto por endereço de origem |
+
+- Os valores acima são os iniciais. A notem pode ajustá-los para uma organização específica; nesse caso o ajuste vale para todas as chaves dela.
+- Operações simultâneas acima do permitido também recebem `429` (com `Retry-After: 5`). Reenvie com a **mesma** `Idempotency-Key`.
+- Corpo da requisição: no máximo 200 KB; acima disso, `413 REQUISICAO_INVALIDA`.
 
 ## 10. Webhooks (visão geral; detalhes em documento próprio)
 - A notem avisa o sistema parceiro sobre acontecimentos (ex.: `nota.autorizada`, `nota.cancelada`, `certificado.vencendo`).
@@ -126,6 +147,8 @@ Códigos específicos de cada rota (ex.: `CERTIFICADO_VENCIDO`) são documentado
 
 ## 11. Segurança
 - Somente HTTPS.
+- A API é para uso entre servidores: não há liberação de CORS para navegadores. Pedidos `OPTIONS` recebem `204` sem permissões de origem.
+- Os registros de requisições guardam o mínimo: documentos aparecem mascarados (só os 2 últimos dígitos), e-mail, telefone e endereço são omitidos, e XML/PDF aparecem só como tipo e tamanho. Ficam disponíveis por 90 dias para proprietário, administrador e desenvolvedor da organização.
 - Nunca envie a chave em parâmetros de URL.
 - Certificados digitais enviados pela API nunca são devolvidos em nenhuma resposta.
 

@@ -1,17 +1,19 @@
 # notem — Fase 1
 ## Revisão de segurança — Etapa 2 (correções aprovadas em 15/11/2026)
-- [ ] S-01 membro obrigatório nas notas externas do painel + teste
-- [ ] S-02 cadastro público desligado (confirmado na configuração pública) + teste permanente
-- [ ] S-03 limites de uso por chave/ambiente (429 + Retry-After), estrutura de ajuste por organização, convencoes.md
-- [ ] S-04 auditoria e alerta no painel de alterações feitas por chave de homologação; risco em convencoes.md
-- [ ] S-05 registros: metadados nos downloads, mascarar documentos, sem contato/endereço; leitura owner/admin/developer
-- [ ] S-06 convites com validade de 7 dias e revogação registrada
-- [ ] S-07 atualizar bibliotecas (zod v4 em etapa separada se for grande)
-- [ ] S-08 limite de corpo durante a leitura (413)
-- [ ] S-09 revogar concessões amplas; S-10 cabeçalhos CSP/frame + OPTIONS; S-11 mensagens públicas fixas; S-12 liberar idempotência; S-13 tetos de paginação/filtros; S-14 retenção; S-15 OIDC sub/exp; S-16 auditoria admin; S-17 última organização; S-18 chave webhook só servidor; S-24 /status no runtime
-- [ ] S-23 passo a passo de rotação da conta notem-painel (sem executar)
-- [ ] Matriz de isolamento na suíte + teste /api/v1 com IDs de outra organização (404)
-- [ ] Publicar e relatar verificado/não verificado
+- [x] S-01 membro obrigatório nas notas do painel + teste
+- [x] S-02 cadastro público desligado (configuração pública) + teste permanente
+- [x] S-03 limites de uso (429 + Retry-After), ajuste por organização pronto sem tela, convencoes.md; testes unitários e de banco
+- [x] S-04 auditoria e alerta no painel das alterações por chave de homologação; risco em convencoes.md
+- [x] S-05 registros mínimos (downloads só tipo/tamanho, documentos mascarados, sem contato/endereço); leitura owner/admin/developer
+- [x] S-06 convites com validade de 7 dias, lista e revogação registrada
+- [x] S-07 bibliotecas atualizadas (vite, TanStack/seroval, vitest e transitivas)
+- [ ] S-07b zod v3 → v4 em etapa separada (64 pontos em 17 arquivos; muda mensagens de erro da API) — aguarda aprovação
+- [x] S-08 corpo limitado a 200 KB durante a leitura (413)
+- [x] S-09..S-18, S-24 (concessões, cabeçalhos, mensagens fixas, idempotência, tetos, retenção, OIDC, auditoria admin, última organização, chave webhook, /status)
+- [x] S-23 passo a passo de rotação da conta notem-painel entregue (execução fica com o proprietário)
+- [x] Matriz de isolamento permanente (1.225 verificações, 0 falhas) + teste /api/v1 com IDs de outra organização (404)
+- [x] Publicado e conferido no domínio oficial (cabeçalhos, OPTIONS 204, 401 com X-Request-Id)
+- [ ] Telas autenticadas (alerta de homologação, convites pendentes, registros) — sem sessão de teste no Supabase externo; conferência do proprietário
 ## Fase 5 — Cancelamento, análise fiscal e substituição
 - [x] Plano aprovado com ajustes; transmissor/ intocado.
 - [x] Parte 1: montador de eventos e101101/e101103 e grupo subst, testes XSD (268 testes OK), exemplos em docs/exemplos/eventos/.
