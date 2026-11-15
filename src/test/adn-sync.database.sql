@@ -104,15 +104,15 @@ BEGIN
   IF (SELECT status FROM public.invoices WHERE id=b.id)<>'authorized' THEN RAISE EXCEPTION 'TEST_FAIL_env_isolation'; END IF;
 
   -- A notem request awaiting confirmation is confirmed (not "outside"); an already registered one is not duplicated.
-  INSERT INTO public.invoice_fiscal_events(invoice_id,organization_id,company_id,environment,origin,requested_by,code,sequence,reason,justification,idempotency_key,request_hash,request_id,status,unsigned_xml)
-   VALUES(b.id,b.organization_id,b.company_id,b.environment,'panel',t.created_by,'101101',1,'erro_emissao','Teste de confirmação pelo ADN.','db-adn-1','h','PRE'||b.access_key||'101101','verifying','<x/>') RETURNING * INTO f;
+  INSERT INTO public.invoice_fiscal_events(invoice_id,organization_id,company_id,environment,origin,requested_by,code,sequence,reason,justification,idempotency_key,request_hash,request_id,status)
+   VALUES(b.id,b.organization_id,b.company_id,b.environment,'panel',t.created_by,'101101',1,'erro_emissao','Teste de confirmação pelo ADN.','db-adn-1','h','PRE'||b.access_key||'101101','verifying') RETURNING * INTO f;
   UPDATE public.invoices SET pending_operation='{"tipo":"cancelamento","estado":"em_verificacao"}' WHERE id=b.id;
   res := public.store_nfse_event('production', evt || jsonb_build_object('access_key',b.access_key,'code','101101'), 'adn_dfe');
   SELECT * INTO b FROM public.invoices WHERE id=b.id; SELECT * INTO f FROM public.invoice_fiscal_events WHERE id=f.id;
   IF b.status<>'cancelled' OR b.pending_operation IS NOT NULL OR f.status<>'registered' OR (b.cancellation->>'registrado_fora_da_notem')::boolean OR b.cancellation->>'justificativa'<>'Teste de confirmação pelo ADN.' THEN RAISE EXCEPTION 'TEST_FAIL_confirm_notem'; END IF;
   IF NOT (SELECT requested_by_notem FROM public.nfse_document_events WHERE environment='production' AND access_key=b.access_key AND code='101101') OR NOT EXISTS (SELECT 1 FROM public.invoice_events WHERE invoice_id=b.id AND type='cancellation_registered') THEN RAISE EXCEPTION 'TEST_FAIL_confirm_flags'; END IF;
-  INSERT INTO public.invoice_fiscal_events(invoice_id,organization_id,company_id,environment,origin,requested_by,code,sequence,reason,justification,idempotency_key,request_hash,request_id,status,unsigned_xml,registered_at)
-   VALUES(c.id,c.organization_id,c.company_id,c.environment,'panel',t.created_by,'101101',1,'erro_emissao','Teste já registrado pela notem.','db-adn-2','h','PRE'||c.access_key||'101101','registered','<x/>',now());
+  INSERT INTO public.invoice_fiscal_events(invoice_id,organization_id,company_id,environment,origin,requested_by,code,sequence,reason,justification,idempotency_key,request_hash,request_id,status,registered_at)
+   VALUES(c.id,c.organization_id,c.company_id,c.environment,'panel',t.created_by,'101101',1,'erro_emissao','Teste já registrado pela notem.','db-adn-2','h','PRE'||c.access_key||'101101','registered',now());
   UPDATE public.invoices SET status='cancelled' WHERE id=c.id;
   SELECT count(*) INTO tl FROM public.invoice_events WHERE invoice_id=c.id;
   res := public.store_nfse_event('production', evt || jsonb_build_object('access_key',c.access_key,'code','101101'), 'adn_dfe');
