@@ -14,6 +14,42 @@ export type Database = {
   }
   public: {
     Tables: {
+      admin_audit_events: {
+        Row: {
+          action: string
+          actor_id: string | null
+          actor_is_platform_admin: boolean
+          created_at: string
+          details: Json
+          id: string
+          organization_id: string | null
+          target_id: string | null
+          target_type: string
+        }
+        Insert: {
+          action: string
+          actor_id?: string | null
+          actor_is_platform_admin?: boolean
+          created_at?: string
+          details?: Json
+          id?: string
+          organization_id?: string | null
+          target_id?: string | null
+          target_type: string
+        }
+        Update: {
+          action?: string
+          actor_id?: string | null
+          actor_is_platform_admin?: boolean
+          created_at?: string
+          details?: Json
+          id?: string
+          organization_id?: string | null
+          target_id?: string | null
+          target_type?: string
+        }
+        Relationships: []
+      }
       adn_distributions: {
         Row: {
           access_key: string | null
@@ -110,6 +146,27 @@ export type Database = {
         }
         Relationships: []
       }
+      api_concurrency_slots: {
+        Row: {
+          lease_until: string
+          scope: string
+          slot: number
+          token: string
+        }
+        Insert: {
+          lease_until: string
+          scope: string
+          slot: number
+          token: string
+        }
+        Update: {
+          lease_until?: string
+          scope?: string
+          slot?: number
+          token?: string
+        }
+        Relationships: []
+      }
       api_idempotency_keys: {
         Row: {
           body_hash: string
@@ -153,6 +210,65 @@ export type Database = {
             columns: ["integration_id"]
             isOneToOne: false
             referencedRelation: "integrations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      api_rate_counters: {
+        Row: {
+          bucket: string
+          hits: number
+          scope: string
+          window_start: string
+        }
+        Insert: {
+          bucket: string
+          hits?: number
+          scope: string
+          window_start: string
+        }
+        Update: {
+          bucket?: string
+          hits?: number
+          scope?: string
+          window_start?: string
+        }
+        Relationships: []
+      }
+      api_rate_limit_overrides: {
+        Row: {
+          bucket: string
+          created_at: string
+          max_hits: number
+          organization_id: string
+          updated_at: string
+          updated_by: string | null
+          window_seconds: number
+        }
+        Insert: {
+          bucket: string
+          created_at?: string
+          max_hits: number
+          organization_id: string
+          updated_at?: string
+          updated_by?: string | null
+          window_seconds: number
+        }
+        Update: {
+          bucket?: string
+          created_at?: string
+          max_hits?: number
+          organization_id?: string
+          updated_at?: string
+          updated_by?: string | null
+          window_seconds?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "api_rate_limit_overrides_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
             referencedColumns: ["id"]
           },
         ]
@@ -1069,10 +1185,13 @@ export type Database = {
           accepted_by: string | null
           created_at: string
           email: string
+          expires_at: string
           id: string
           invited_by: string
           organization_id: string
           requires_explicit_acceptance: boolean
+          revoked_at: string | null
+          revoked_by: string | null
           role: Database["public"]["Enums"]["org_role"]
           status: Database["public"]["Enums"]["invitation_status"]
           updated_at: string
@@ -1082,10 +1201,13 @@ export type Database = {
           accepted_by?: string | null
           created_at?: string
           email: string
+          expires_at?: string
           id?: string
           invited_by: string
           organization_id: string
           requires_explicit_acceptance?: boolean
+          revoked_at?: string | null
+          revoked_by?: string | null
           role: Database["public"]["Enums"]["org_role"]
           status?: Database["public"]["Enums"]["invitation_status"]
           updated_at?: string
@@ -1095,10 +1217,13 @@ export type Database = {
           accepted_by?: string | null
           created_at?: string
           email?: string
+          expires_at?: string
           id?: string
           invited_by?: string
           organization_id?: string
           requires_explicit_acceptance?: boolean
+          revoked_at?: string | null
+          revoked_by?: string | null
           role?: Database["public"]["Enums"]["org_role"]
           status?: Database["public"]["Enums"]["invitation_status"]
           updated_at?: string
@@ -1990,6 +2115,79 @@ export type Database = {
           },
         ]
       }
+      sandbox_change_audit: {
+        Row: {
+          acknowledged_at: string | null
+          acknowledged_by: string | null
+          action: string
+          company_id: string | null
+          created_at: string
+          id: string
+          integration_id: string | null
+          integration_name: string
+          item: string
+          key_id: string | null
+          method: string
+          organization_id: string
+          path: string
+          request_id: string
+        }
+        Insert: {
+          acknowledged_at?: string | null
+          acknowledged_by?: string | null
+          action: string
+          company_id?: string | null
+          created_at?: string
+          id?: string
+          integration_id?: string | null
+          integration_name: string
+          item: string
+          key_id?: string | null
+          method: string
+          organization_id: string
+          path: string
+          request_id: string
+        }
+        Update: {
+          acknowledged_at?: string | null
+          acknowledged_by?: string | null
+          action?: string
+          company_id?: string | null
+          created_at?: string
+          id?: string
+          integration_id?: string | null
+          integration_name?: string
+          item?: string
+          key_id?: string | null
+          method?: string
+          organization_id?: string
+          path?: string
+          request_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "sandbox_change_audit_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "sandbox_change_audit_integration_id_fkey"
+            columns: ["integration_id"]
+            isOneToOne: false
+            referencedRelation: "integrations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "sandbox_change_audit_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       service_codes: {
         Row: {
           code: string
@@ -2399,6 +2597,12 @@ export type Database = {
         }
         Returns: number
       }
+      api_rate_check: { Args: { _org: string; _rules: Json }; Returns: Json }
+      api_slot_acquire: {
+        Args: { _max: number; _scope: string; _ttl: number }
+        Returns: string
+      }
+      api_slot_release: { Args: { _token: string }; Returns: undefined }
       apply_nfse_event: { Args: { _id: string }; Returns: string }
       approximate_tax_rule_error: {
         Args: { _mode: string; _option: number }
