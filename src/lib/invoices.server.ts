@@ -4,7 +4,9 @@ import { callTransmissor,TransmissorError } from './transmissor.server';
 import { readAuthorizedNfse } from './nfse-xml';
 import { governmentErrors,invoiceOut,verificationDecision,type Invoice,type Transmission,type GovernmentReply } from './invoices';
 import { explicitExternalDps } from './external-dps';
-import { invoiceDpsXml,putXml,putXmlOptional,type XmlRef } from './xml-files.server';
+import { dpsWithNumber,putXml,putXmlOptional,xmlOf,type XmlRef } from './xml-files.server';
+import { convertDpsLayout,detectDpsLayout } from './dps-layout';
+import { currentDpsLayout } from './platform-settings.server';
 
 async function payload(db:DB,i:Invoice){return transmissorPayload(db,i,'assinatura/transmissão ou consulta da nota '+i.id);}
 export async function transmissorPayload(db:DB,i:Pick<Invoice,'id'|'company_id'|'organization_id'|'created_by'|'environment'>,purpose:string,actor=i.created_by){
@@ -48,10 +50,26 @@ export async function applyGovernmentReply(db:DB,i:Invoice,res:Transmission,requ
 }
 /** A timeout/network failure is ambiguous: never assume the fiscal request was not sent. */
 export function definitelyNotSent(e:unknown){return e instanceof TransmissorError&&(e.code==='CREDENCIAL'||(e.status!==undefined&&[400,422].includes(e.status)&&['DPS_INVALIDA','EVENTO_INVALIDO','ENVELOPE_INVALIDO','REQUISICAO_INVALIDA','AUDITORIA_INDISPONIVEL'].includes(e.code)));}
+/**
+ * DPS about to be sent, in the layout in force right now. Runs only under the dispatch lease of a path that already
+ * allows sending (first send, certain non-send, E0014 advance). When the stored base is in another layout it is rebuilt
+ * with the same number and values, stored, and its reference replaced atomically before anything is sent.
+ */
+export async function dpsForSending(db:DB,i:Invoice,now=Date.now()):Promise<string>{
+ const base=await xmlOf(db,'invoices',i.id,'unsigned_dps');if(!base)throw new Error('DPS_BASE_AUSENTE');
+ const target=await currentDpsLayout(db,i.environment as 'sandbox'|'production',now);const source=detectDpsLayout(base);
+ if(source===target)return dpsWithNumber(base,i.dps_id,i.dps_number);
+ if(!i.claim_token)throw new Error('DPS_LEASE_AUSENTE');
+ const rebuilt=convertDpsLayout(base,target);
+ const file=await putXml(db,i.environment as 'sandbox'|'production','invoices',i.id,'unsigned_dps',rebuilt);
+ const r=await db.rpc('replace_invoice_dps_base',{_id:i.id,_org:i.organization_id,_token:i.claim_token,_file:file as Json,_from:source,_to:target});
+ if(r.error||r.data!==true)throw new Error('DPS_LAYOUT_REPLACE_FAILED');
+ return dpsWithNumber(rebuilt,i.dps_id,i.dps_number);
+}
 export async function sendInvoice(db:DB,i:Invoice,request?:Request,deadline=Date.now()+20000):Promise<Invoice>{
  const claim=await db.rpc('claim_invoice_dispatch',{_id:i.id,_org:i.organization_id});if(claim.error)throw new Error('INVOICE_CLAIM_FAILED');const claimed=claim.data?.[0];if(!claimed){const r=await db.from('invoices').select('*').eq('id',i.id).eq('organization_id',i.organization_id).single();if(r.error)throw new Error('INVOICE_READ_FAILED');return r.data;}
  // The DPS is read (and its hash checked) before sending: an unreadable file is a certain "not sent", never an ambiguity.
- let dpsXml:string;try{dpsXml=await invoiceDpsXml(db,claimed);}catch{console.error('INVOICE_DPS_FILE_UNAVAILABLE',claimed.id);return persistInvoiceResult(db,claimed,{status:'processing',dispatch_state:'not_sent',message:'Envio não realizado. Tente novamente com a mesma Idempotency-Key.'},'not_sent',request);}
+ let dpsXml:string;try{dpsXml=await dpsForSending(db,claimed);}catch{console.error('INVOICE_DPS_FILE_UNAVAILABLE',claimed.id);return persistInvoiceResult(db,claimed,{status:'processing',dispatch_state:'not_sent',message:'Envio não realizado. Tente novamente com a mesma Idempotency-Key.'},'not_sent',request);}
  let res:Transmission;
  try{const base=await payload(db,claimed);res=await callTransmissor<Transmission>('/v1/nfse/emitir',{...base,dps_xml:dpsXml,tempo_limite_segundos:Math.max(1,Math.min(18,Math.floor((deadline-Date.now())/1000)))});}
  catch(e){return persistInvoiceResult(db,claimed,{status:definitelyNotSent(e)?'processing':'verifying',dispatch_state:definitelyNotSent(e)?'not_sent':'uncertain',message:definitelyNotSent(e)?'Envio não realizado. Tente novamente com a mesma Idempotency-Key.':'Aguardando confirmação do governo.'},definitelyNotSent(e)?'not_sent':'verifying',request);}
