@@ -52,7 +52,7 @@ export function CertificateTab({ companyId, organizationId, canUse }: { companyI
   </div>;
 }
 
-const readinessLabels: Record<string, string> = { empresa_ativa: 'Empresa ativa', certificado: 'Certificado válido', configuracao_fiscal: 'Configuração fiscal', servico_ativo: 'Serviço ativo', municipio: 'Município' };
+const readinessLabels: Record<string, string> = { empresa_ativa: 'Empresa ativa', certificado: 'Certificado válido', configuracao_fiscal: 'Configuração fiscal', servico_ativo: 'Serviço ativo', classificacao_ibscbs: 'Classificação IBS/CBS', municipio: 'Município' };
 export function ReadinessTab({ companyId, organizationId, canUse,cnpj }: { companyId: string; organizationId: string; canUse: boolean;cnpj:string }) {
   const {data:fiscal}=useSuspenseQuery(fiscalQuery(companyId,organizationId));
   const { profile } = useWorkspace(); const environment = (profile?.environment ?? 'production') as 'production' | 'sandbox';
