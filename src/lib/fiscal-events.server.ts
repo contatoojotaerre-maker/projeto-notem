@@ -10,6 +10,7 @@ import { transmissorPayload, definitelyNotSent } from './invoices.server';
 import { brasiliaNow, buildFiscalEvent, cancelReasons, justificationError, type CancelReason } from './fiscal-events';
 import { FISCAL_TEXT_MESSAGE, fiscalTextAccepted, normalizeFiscalText } from './fiscal-text';
 import { eventsFromReply } from './adn-xml';
+import { putXml, putXmlOptional, xmlOf } from './xml-files.server';
 
 /** After an "event already exists" refusal, applies every official event of the key (ADN); failures never block the reply. */
 async function refreshOtherEvents(db: DB, inv: Invoice) {
@@ -41,6 +42,12 @@ async function loadInvoice(db: DB, id: string, org: string) { const r = await db
 
 export async function finishEvent(db: DB, e: FiscalEvent, inv: Invoice, patch: Patch, request?: Request): Promise<Outcome> {
   if (!e.claim_token) throw new Error('EVENT_LEASE_MISSING');
+  // XML goes to private files; the RPC receives only references. Without the official file the event is not
+  // confirmed yet: it stays in verification and the next consult stores it (never re-sent).
+  const signedRef = await putXmlOptional(db, e.environment, 'invoice_fiscal_events', e.id, 'signed', patch.signed_xml);
+  let eventRef: Awaited<ReturnType<typeof putXml>> | undefined;
+  if (patch.event_xml) { try { eventRef = await putXml(db, e.environment, 'invoice_fiscal_events', e.id, 'event', patch.event_xml); } catch { console.error('EVENT_XML_STORE_FAILED', e.id); patch = { status: 'verifying', ...patch.government_response !== undefined ? { government_response: patch.government_response } : {} }; } }
+  const { signed_xml: _s, event_xml: _x, ...rpcPatch } = patch; void _s; void _x;
   const cancel = e.code === '101101'; const tipo = cancel ? 'cancelamento' : 'analise_cancelamento';
   const official = patch.event_xml ?? null;
   const officialReason = official ? reasonByCode[tagValue(official, 'cMotivo') ?? ''] : undefined; const officialText = official ? tagValue(official, 'xMotivo') : null;
@@ -55,7 +62,7 @@ export async function finishEvent(db: DB, e: FiscalEvent, inv: Invoice, patch: P
   const firstError = errors[0] && typeof errors[0] === 'object' ? (errors[0] as Record<string, unknown>)['mensagem'] : null;
   const message = patch.status === 'registered' ? (cancel ? (patch.registered_outside ? 'Cancelamento registrado fora da notem.' : 'Cancelamento registrado pelo governo.') : 'Pedido de análise fiscal registrado; aguardando decisão da prefeitura.') : patch.status === 'verifying' ? 'Aguardando confirmação do governo; não repita o pedido com outra chave.' : patch.status === 'rejected' ? String(firstError ?? 'O governo recusou o pedido.') : patch.status === 'not_registered' ? 'O governo não registrou o pedido; a nota segue autorizada.' : 'Pedido não enviado. Tente novamente com a mesma chave.';
   const webhook = patch.status === 'registered' ? (cancel ? 'nota.cancelada' : 'nota.cancelamento_em_analise') : null;
-  const r = await db.rpc('finish_fiscal_event', { _id: e.id, _token: e.claim_token, _patch: patch as unknown as Json, _invoice: { pending_operation: pending, cancellation } as Json, _nota: invoiceOut(next) as Json, _timeline: timeline, _message: message, ...webhook ? { _webhook: webhook } : {} });
+  const r = await db.rpc('finish_fiscal_event', { _id: e.id, _token: e.claim_token, _patch: { ...rpcPatch, files: { ...signedRef ? { signed: signedRef } : {}, ...eventRef ? { event: eventRef } : {} } } as unknown as Json, _invoice: { pending_operation: pending, cancellation } as Json, _nota: invoiceOut(next) as Json, _timeline: timeline, _message: message, ...webhook ? { _webhook: webhook } : {} });
   if (r.error) throw new Error('EVENT_FINISH_FAILED');
   const current = r.data ?? (await db.from('invoice_fiscal_events').select('*').eq('id', e.id).single()).data;
   if (!current) throw new Error('EVENT_READ_FAILED');
@@ -105,9 +112,13 @@ export async function applyEventReply(db: DB, e: FiscalEvent, inv: Invoice, res:
   return finishEvent(db, e, inv, { ...signed, status: 'verifying', government_response: replySummary(reply) }, request);
 }
 
-export async function sendFiscalEvent(db: DB, e: FiscalEvent, inv: Invoice, request?: Request): Promise<Outcome> {
+export async function sendFiscalEvent(db: DB, e: FiscalEvent, inv: Invoice, request?: Request, unsigned?: string): Promise<Outcome> {
+  // The request XML is read before sending: an unreadable file is a certain "not sent", never an ambiguity.
+  let xml: string | null = unsigned ?? null;
+  if (!xml) { try { xml = await xmlOf(db, 'invoice_fiscal_events', e.id, 'unsigned'); } catch { xml = null; } }
+  if (!xml) { console.error('EVENT_XML_FILE_UNAVAILABLE', e.id); return finishEvent(db, e, inv, { status: 'not_sent' }, request); }
   let res: EventReply;
-  try { const base = await transmissorPayload(db, inv, `evento ${e.code} da nota ${inv.id}`, e.requested_by); res = await callTransmissor<EventReply>('/v1/nfse/evento', { ...base, chave_acesso: inv.access_key, evento_xml: e.unsigned_xml, tempo_limite_segundos: 18 }); }
+  try { const base = await transmissorPayload(db, inv, `evento ${e.code} da nota ${inv.id}`, e.requested_by); res = await callTransmissor<EventReply>('/v1/nfse/evento', { ...base, chave_acesso: inv.access_key, evento_xml: xml, tempo_limite_segundos: 18 }); }
   catch (err) { return finishEvent(db, e, inv, { status: definitelyNotSent(err) ? 'not_sent' : 'verifying' }, request); }
   return applyEventReply(db, e, inv, res, request);
 }
@@ -142,7 +153,9 @@ export async function requestFiscalEvent(a: EventRequest): Promise<Outcome> {
   let built: { id: string; xml: string };
   try { built = buildFiscalEvent({ code, environment: inv.environment, accessKey: inv.access_key, authorCnpj: cnpj, occurredAt: brasiliaNow(), reason: v.motivo, justification }); }
   catch (err) { throw fail(422, 'REGRA_DE_NEGOCIO', [{ campo: 'nota', mensagem: err instanceof Error ? err.message : 'Pedido inválido.' }]); }
-  const r = await db.rpc('create_fiscal_event_request', { _payload: { organization_id: a.organization_id, environment: a.environment, integration_id: a.integration_id, origin: a.origin, requested_by: a.actor, invoice_id: inv.id, code, reason: v.motivo, justification, idempotency_key: a.idempotency_key, request_hash: a.request_hash, request_id: built.id, unsigned_xml: built.xml } as Json });
+  let unsignedFile;
+  try { unsignedFile = await putXml(db, a.environment, 'invoice_fiscal_events', inv.id, `unsigned-${code}`, built.xml); } catch { throw new Error('EVENT_XML_STORE_FAILED'); }
+  const r = await db.rpc('create_fiscal_event_request', { _payload: { organization_id: a.organization_id, environment: a.environment, integration_id: a.integration_id, origin: a.origin, requested_by: a.actor, invoice_id: inv.id, code, reason: v.motivo, justification, idempotency_key: a.idempotency_key, request_hash: a.request_hash, request_id: built.id, unsigned_xml: built.xml, unsigned_file: unsignedFile } as Json });
   if (r.error) {
     const m = r.error.message;
     if (m.includes('IDEMPOTENCIA_CONFLITO')) throw fail(409, 'IDEMPOTENCIA_CONFLITO');
@@ -154,7 +167,7 @@ export async function requestFiscalEvent(a: EventRequest): Promise<Outcome> {
   }
   const out = r.data as { created: boolean; event: FiscalEvent };
   if (!out.created) return { event: out.event, invoice: await loadInvoice(db, inv.id, a.organization_id) };
-  return sendFiscalEvent(db, out.event, inv, a.request);
+  return sendFiscalEvent(db, out.event, inv, a.request, built.xml);
 }
 
 /** API mapping: 200 registered, 202 awaiting confirmation, 422 refused, 503 not sent. */
