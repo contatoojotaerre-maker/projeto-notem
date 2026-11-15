@@ -13,6 +13,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { requestPanelFiscalEvent, substitutePanelInvoice } from '@/lib/invoices.functions';
 import { FISCAL_TEXT_MESSAGE, fiscalTextAccepted, normalizeFiscalText } from '@/lib/fiscal-text';
 import type { Env } from '@/lib/api-contract';
+import { normalizeCnpj } from '@/lib/notem';
 
 export const cancelReasonLabels: Record<string, string> = { erro_emissao: 'Erro na emissão', servico_nao_prestado: 'Serviço não prestado', outros: 'Outros' };
 export const substitutionReasonLabels: Record<string, string> = { desenquadramento_simples: 'Desenquadramento do Simples Nacional', enquadramento_simples: 'Enquadramento no Simples Nacional', inclusao_imunidade_isencao: 'Inclusão retroativa de imunidade ou isenção', exclusao_imunidade_isencao: 'Exclusão retroativa de imunidade ou isenção', rejeicao_tomador_intermediario: 'Rejeição pelo tomador ou intermediário', outros: 'Outros' };
@@ -63,7 +64,7 @@ function SubstituteDialog(p: Props & { idempotencyKey: string; busy: boolean; re
   const decimal = /^\d{1,15}\.\d{2}$/; const valid = f.reason && justificationOk(f.justification) && f.profile && f.description.trim() && decimal.test(f.service) && decimal.test(f.unconditional) && decimal.test(f.conditional) && /^\d{7}$/.test(f.location) && confirmed;
   function body() {
     const out: Record<string, unknown> = { motivo: f.reason, justificativa: f.justification, servico_id: f.profile, competencia: f.competence, descricao: f.description, valores: { servico: f.service, ...Number(f.unconditional) > 0 ? { desconto_incondicionado: f.unconditional } : {}, ...Number(f.conditional) > 0 ? { desconto_condicionado: f.conditional } : {} }, retencao_iss: f.withholding, local_prestacao: { codigo_municipio: f.location }, informacoes_complementares: f.complementary.trim() ? f.complementary : null };
-    if (customer) out['tomador'] = { ...customer, nome: f.name, email: f.email.trim() ? f.email.trim() : null, ...customer['tipo'] === 'estrangeiro' ? {} : { documento: f.document.replace(/\D/g, '') } };
+    if (customer) out['tomador'] = { ...customer, nome: f.name, email: f.email.trim() ? f.email.trim() : null, ...customer['tipo'] === 'estrangeiro' ? {} : { documento: normalizeCnpj(f.document) } };
     return out;
   }
   const field = (id: string, label: string, el: React.ReactNode, hint?: string) => <div className="space-y-2"><label htmlFor={id} className="text-sm font-medium">{label}</label>{el}{hint && <p className="text-xs text-muted-foreground">{hint}</p>}</div>;
@@ -85,7 +86,7 @@ function SubstituteDialog(p: Props & { idempotencyKey: string; busy: boolean; re
         </div>
         {customer ? <div className="grid gap-5 sm:grid-cols-2"><p className="text-sm font-medium sm:col-span-2">Tomador</p>
           {field('sub-name', 'Nome', <Input id="sub-name" value={f.name} onChange={e => set('name')(e.target.value)} />)}
-          {customer['tipo'] !== 'estrangeiro' && field('sub-document', customer['tipo'] === 'pf' ? 'CPF' : 'CNPJ', <Input id="sub-document" inputMode="numeric" value={f.document} disabled={lock.simples} onChange={e => set('document')(e.target.value)} />, lock.simples ? locked('MEI e ME/EPP não podem alterar o documento do tomador (E0061).') : undefined)}
+          {customer['tipo'] !== 'estrangeiro' && field('sub-document', customer['tipo'] === 'pf' ? 'CPF' : 'CNPJ', <Input id="sub-document" inputMode={customer['tipo'] === 'pf' ? 'numeric' : 'text'} autoCapitalize="characters" value={f.document} disabled={lock.simples} onChange={e => set('document')(e.target.value)} />, lock.simples ? locked('MEI e ME/EPP não podem alterar o documento do tomador (E0061).') : undefined)}
           {field('sub-email', 'E-mail', <Input id="sub-email" type="email" value={f.email} onChange={e => set('email')(e.target.value)} />)}
           <p className="text-xs text-muted-foreground sm:col-span-2">O endereço do tomador é mantido. Para trocar o tomador por completo, use a API.</p></div> : <p className="text-sm text-muted-foreground">A nota original não tem tomador; a substituta também não terá.</p>}
         {field('sub-complementary', 'Informações complementares', <Textarea id="sub-complementary" rows={2} value={f.complementary} onChange={e => set('complementary')(e.target.value)} />)}

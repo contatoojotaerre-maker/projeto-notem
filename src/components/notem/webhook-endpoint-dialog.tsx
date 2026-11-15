@@ -9,6 +9,7 @@ import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, Command
 import { cn } from '@/lib/utils'
 import { webhookInput, webhookTypes, eventLabels, userMessage, webhookGroups, groupEvents, groupState, subscriptionMatches, type WebhookSubscription } from '@/lib/webhooks'
 import { WebhookCurlExample } from './webhook-curl-example'
+import { normalizeCnpj } from '@/lib/notem';
 
 export type Company = { id: string; legal_name: string; cnpj: string }
 export type WebhookForm = { id?: string; url: string; description: string; events: WebhookSubscription[]; company_id: string | null; auth_header: string; auth_value: string; auth_clear: boolean; auth_configured: boolean }
@@ -71,7 +72,7 @@ function Body({ form: initial, onClose, onSave, companies, org, integration, env
             <Popover open={companyOpen} onOpenChange={setCompanyOpen}>
               <PopoverTrigger asChild><Button type="button" variant="outline" role="combobox" aria-expanded={companyOpen} aria-label="Empresa" className="w-full justify-between font-normal"><span className="truncate">{company ? `${company.legal_name} · ${company.cnpj}` : 'Todas as empresas autorizadas'}</span><ChevronsUpDown className="opacity-50" /></Button></PopoverTrigger>
               <PopoverContent className="p-0 w-[--radix-popover-trigger-width]" align="start">
-                <Command filter={(value, search) => value.toLowerCase().includes(search.toLowerCase()) || (search.replace(/\D/g, '') && value.includes(search.replace(/\D/g, ''))) ? 1 : 0}>
+                <Command filter={(value, search) => value.toLowerCase().includes(search.toLowerCase()) || (normalizeCnpj(search) && value.toUpperCase().includes(normalizeCnpj(search))) ? 1 : 0}>
                   <CommandInput placeholder="Buscar por nome ou CNPJ" />
                   <CommandList><CommandEmpty>Nenhuma empresa encontrada</CommandEmpty><CommandGroup>
                     <CommandItem value="todas as empresas autorizadas" onSelect={() => { setForm({ ...form, company_id: null }); setCompanyOpen(false) }}><Check className={cn(form.company_id ? 'opacity-0' : 'opacity-100')} />Todas as empresas autorizadas</CommandItem>
