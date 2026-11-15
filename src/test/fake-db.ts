@@ -4,7 +4,7 @@ export function tableDb(tables: Record<string, unknown>, rpc: (name: string, arg
   const calls: { name: string; args: Record<string, unknown> }[] = []; const inserts: { table: string; row: unknown }[] = [];
   const builder = (table: string) => {
     const b: Record<string, unknown> = {};
-    for (const m of ['select', 'eq', 'is', 'order', 'limit', 'range', 'gte', 'lte', 'lt', 'match', 'ilike', 'update']) b[m] = () => b;
+    for (const m of ['select', 'eq', 'is', 'in', 'or', 'not', 'order', 'limit', 'range', 'gte', 'lte', 'lt', 'match', 'ilike', 'update', 'upsert']) b[m] = () => b;
     const value = () => { const v = tables[table]; return typeof v === 'function' ? (v as () => unknown)() : v ?? null; };
     b['maybeSingle'] = async () => ({ data: value(), error: null }); b['single'] = b['maybeSingle'];
     b['insert'] = async (row: unknown) => { inserts.push({ table, row }); return { error: null }; };
