@@ -160,7 +160,8 @@ export async function listInvoices(ctx:ApiCtx){const {limite,offset}=pageParams(
  const origin=p.get('origem');if(origin&&!['notem','externa'].includes(origin))throw fail(400,'REQUISICAO_INVALIDA',[{campo:'origem',mensagem:'Use notem ou externa.'}]);
  const dates:Record<string,string|null>={emitida_de:null,emitida_ate:null};
  for(const field of ['emitida_de','emitida_ate'] as const){const date=p.get(field);if(date){if(!/^\d{4}-\d{2}-\d{2}$/.test(date)||!Number.isFinite(Date.parse(date)))throw fail(400,'REQUISICAO_INVALIDA',[{campo:field,mensagem:'Informe data válida no formato AAAA-MM-DD.'}]);dates[field]=field==='emitida_de'?`${date}T00:00:00-03:00`:`${date}T23:59:59.999-03:00`;}}
- const r=await ctx.db.rpc('list_org_notes',{_org:ctx.organization_id,_env:ctx.env,_company:company??undefined,_origin:origin??undefined,_status:dbStatus??undefined,_from:dates['emitida_de']??undefined,_to:dates['emitida_ate']??undefined,_external_id:p.get('id_externo')??undefined,_taker:p.get('tomador_documento')??undefined,_limit:limite+1,_offset:offset});
+ const args=Object.fromEntries(Object.entries({_company:company,_origin:origin,_status:dbStatus,_from:dates['emitida_de'],_to:dates['emitida_ate'],_external_id:p.get('id_externo'),_taker:p.get('tomador_documento')}).filter(([,v])=>v!=null)) as Record<string,string>;
+ const r=await ctx.db.rpc('list_org_notes',{_org:ctx.organization_id,_env:ctx.env,...args,_limit:limite+1,_offset:offset});
  if(r.error)throw new Error('INVOICES_LIST_FAILED');
  const rows=r.data??[];const own=rows.filter(x=>x.origin==='notem').map(x=>x.id),ext=rows.filter(x=>x.origin==='externa').map(x=>x.id);
  const [inv,docs]=await Promise.all([own.length?ctx.db.from('invoices').select('*').eq('organization_id',ctx.organization_id).in('id',own):Promise.resolve({data:[],error:null}),ext.length?ctx.db.from('nfse_documents').select('*').in('id',ext):Promise.resolve({data:[],error:null})]);

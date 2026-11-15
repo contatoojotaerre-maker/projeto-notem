@@ -31,7 +31,7 @@ export async function loadReceivedNote(db: DB, org: string, env: Env, companyId:
   const r = await db.from('nfse_documents').select('*').eq('id', id).eq('environment', env).or(`taker_document.eq.${cnpj},intermediary_document.eq.${cnpj}`).maybeSingle();
   if (r.error) throw new Error('DOCUMENT_READ_FAILED'); return r.data ? { doc: r.data, cnpj } : null;
 }
-export type ReceivedFilters = { status?: string | null; from?: string | null; to?: string | null; provider?: string | null };
+export type ReceivedFilters = { status?: string | null | undefined; from?: string | null | undefined; to?: string | null | undefined; provider?: string | null | undefined };
 export async function listReceivedNotes(db: DB, org: string, env: Env, companyId: string, f: ReceivedFilters, limit: number, offset: number) {
   const c = await db.from('companies').select('id,cnpj').eq('id', companyId).eq('organization_id', org).maybeSingle();
   if (c.error) throw new Error('COMPANY_READ_FAILED'); if (!c.data) return null; const cnpj = digits(c.data.cnpj);
