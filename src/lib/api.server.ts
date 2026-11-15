@@ -2,7 +2,8 @@
 // sanitized request log (with company) and background work through the request-scoped waitUntil.
 import type { SupabaseClient } from '@supabase/supabase-js';
 import type { Database, Json } from '@/integrations/supabase/types';
-import { hashKey, keyEnvironment, sanitizeBody } from './integrations';
+import { hashKey, keyEnvironment, sanitizeLog } from './integrations';
+import { anonymousRules, limitMessages, limitRules, sandboxChange, type RateRule, type SlotRule } from './api-policy';
 import { ApiFailure, bodyHash, defaultMessages, fail, idempotencyKey, type Env } from './api-contract';
 
 export type DB = SupabaseClient<Database>;
@@ -17,7 +18,43 @@ export function errorBody(id: string, e: ApiFailure) { return { erro: { codigo: 
 export function logBody(path: string, body: unknown): Json | null {
   if (body === undefined || body === null) return null;
   if (/\/certificado$/.test(path) && typeof body === 'object') return { arquivo_base64: '[REMOVIDO]', senha: '[REMOVIDO]' };
-  return sanitizeBody(body);
+  return sanitizeLog(body);
+}
+/** Response log: downloads keep only type and size; JSON goes through the log minimizer. */
+export function logResponse(body: unknown, contentType: string | null): Json | null {
+  if (body === undefined || body === null) return null;
+  if (body instanceof Uint8Array) return { arquivo: contentType?.includes('pdf') ? 'pdf' : 'binario', bytes: body.byteLength };
+  if (typeof body === 'string' && contentType?.startsWith('application/xml')) return { arquivo: 'xml', bytes: new TextEncoder().encode(body).length };
+  return sanitizeLog(body);
+}
+/** Reads the body counting bytes and stops as soon as the limit is passed (413), without buffering oversized requests. */
+export async function readLimitedBody(request: Request, max = MAX_BODY): Promise<string> {
+  const tooLarge = () => { const e = fail(413, 'REQUISICAO_INVALIDA', [{ campo: 'corpo', mensagem: 'Corpo maior que 200 KB.' }]); return e; };
+  const declared = Number(request.headers.get('content-length') ?? '');
+  if (Number.isFinite(declared) && declared > max) throw tooLarge();
+  if (!request.body) return '';
+  const reader = request.body.getReader(); const chunks: Uint8Array[] = []; let total = 0;
+  for (;;) {
+    const { done, value } = await reader.read(); if (done) break;
+    total += value.byteLength; if (total > max) { await reader.cancel().catch(() => {}); throw tooLarge(); }
+    chunks.push(value);
+  }
+  const all = new Uint8Array(total); let at = 0; for (const c of chunks) { all.set(c, at); at += c.byteLength; }
+  return new TextDecoder().decode(all);
+}
+const ipOf = (r: Request) => r.headers.get('cf-connecting-ip') ?? r.headers.get('x-forwarded-for')?.split(',')[0]?.trim() ?? 'desconhecido';
+/** Counts the request against its limits; fails open (logged) if the counter itself is unavailable. */
+async function checkLimits(db: DB, org: string | null, rules: RateRule[], requestId: string) {
+  const r = await db.rpc('api_rate_check', { _org: org as string, _rules: rules as unknown as Json });
+  if (r.error) { console.error('API_RATE_CHECK_FAILED', requestId); return; }
+  const v = r.data as { allowed?: boolean; bucket?: string; retry_after?: number } | null;
+  if (v && v.allowed === false) { const e = fail(429, 'LIMITE_EXCEDIDO', [], v.bucket ? limitMessages[v.bucket] : undefined); e.headers = { 'Retry-After': String(Math.max(1, v.retry_after ?? 1)) }; throw e; }
+}
+async function acquireSlot(db: DB, slot: SlotRule, requestId: string): Promise<string | null> {
+  const r = await db.rpc('api_slot_acquire', { _scope: slot.scope, _max: slot.max, _ttl: slot.ttl });
+  if (r.error) { console.error('API_SLOT_FAILED', requestId); return null; }
+  if (!r.data) { const e = fail(429, 'LIMITE_EXCEDIDO', [], limitMessages['simultaneas']); e.headers = { 'Retry-After': '5' }; throw e; }
+  return r.data as string;
 }
 
 async function authenticate(db: DB, request: Request) {
@@ -45,15 +82,19 @@ export function apiRoute(handlers: Partial<Record<'GET' | 'POST' | 'PATCH' | 'PU
     let identity: { organization_id: string; integration_id: string; key_id: string; environment: Env } | undefined;
     let companyId: string | null = params['id'] && /^[0-9a-f-]{36}$/i.test(params['id']) ? params['id'] : null;
     let status = 500; let body: unknown; let headers: Record<string, string> = {}; let requestBody: unknown = null; let replayed = false;
+    let slotToken: string | null = null; let claimed: { integration_id: string; environment: Env; key: string } | null = null; let integrationName = '';
     try {
       const auth = await authenticate(db, request); identity = auth.identity as typeof identity;
-      if (auth.error) throw auth.error;
+      if (auth.error) { await checkLimits(db, null, anonymousRules(await hashKey(ipOf(request))), requestId); throw auth.error; }
       const handler = handlers[request.method as keyof typeof handlers]; if (!handler) throw fail(405, 'REQUISICAO_INVALIDA', [], defaultMessages['METODO_NAO_PERMITIDO']);
       let raw = '';
       if (request.method !== 'GET' && request.method !== 'DELETE') {
-        raw = await request.text(); if (new TextEncoder().encode(raw).length > MAX_BODY) throw fail(400, 'REQUISICAO_INVALIDA', [{ campo: 'corpo', mensagem: 'Corpo maior que 200 KB.' }]);
+        raw = await readLimitedBody(request);
         try { requestBody = raw ? JSON.parse(raw) : {}; } catch { throw fail(400, 'REQUISICAO_INVALIDA', [{ campo: 'corpo', mensagem: 'JSON inválido.' }]); }
       }
+      const limits = limitRules({ method: request.method, path: url.pathname, env: auth.env!, organization_id: identity!.organization_id, key_id: identity!.key_id, params, body: requestBody });
+      await checkLimits(db, identity!.organization_id, limits.rules, requestId);
+      if (limits.slot) slotToken = await acquireSlot(db, limits.slot, requestId);
       // Issuance, substitution and fiscal events keep a durable key/hash association in the database, not the 24-hour cache.
       const invoiceIssuance=request.method==='POST'&&/^\/api\/v1\/notas(\/[^/]+\/(cancelar|solicitar-analise-cancelamento|substituir))?$/.test(url.pathname.replace(/\/$/,''));
       const key = MUTATING.has(request.method)&&!invoiceIssuance ? idempotencyKey(request.headers.get('idempotency-key')) : null;
@@ -62,6 +103,7 @@ export function apiRoute(handlers: Partial<Record<'GET' | 'POST' | 'PATCH' | 'PU
         const scope = { integration_id: auth.integration!.id, environment: auth.env!, key };
         await db.from('api_idempotency_keys').delete().match(scope).lt('expires_at', new Date().toISOString());
         const claim = await db.from('api_idempotency_keys').insert({ ...scope, method: request.method, path: url.pathname, body_hash: hash });
+        if (!claim.error) claimed = scope;
         if (claim.error) {
           if (claim.error.code !== '23505') throw new Error('IDEMPOTENCY_FAILED');
           const prior = await db.from('api_idempotency_keys').select('body_hash,status_code,response_body').match(scope).single();
@@ -75,16 +117,29 @@ export function apiRoute(handlers: Partial<Record<'GET' | 'POST' | 'PATCH' | 'PU
         const ctx: ApiCtx = { db, requestId, request, url, params, body: requestBody, env: auth.env!, organization_id: identity!.organization_id, integration_id: auth.integration!.id, integration_name: auth.integration!.name, actor: auth.integration!.created_by, background, setCompany: id => { companyId = id; } };
         try { const r = await handler(ctx); status = r.status; body = r.body; headers = r.headers ?? {}; }
         catch (e) { if (e instanceof ApiFailure) { status = e.status; body = errorBody(requestId, e); headers = e.headers; } else throw e; }
-        if (key) { const scope = { integration_id: auth.integration!.id, environment: auth.env!, key }; if (status >= 500) await db.from('api_idempotency_keys').delete().match(scope); else await db.from('api_idempotency_keys').update({ status_code: status, response_body: (body ?? null) as Json }).match(scope); }
+        if (key) { const scope = { integration_id: auth.integration!.id, environment: auth.env!, key }; if (status >= 500) await db.from('api_idempotency_keys').delete().match(scope); else await db.from('api_idempotency_keys').update({ status_code: status, response_body: (body ?? null) as Json }).match(scope); claimed = null; }
+        integrationName = auth.integration!.name;
       }
     } catch (e) {
       if (e instanceof ApiFailure) { status = e.status; body = errorBody(requestId, e); headers = e.headers; }
       else { status = 500; body = errorBody(requestId, fail(500, 'ERRO_INTERNO')); console.error('API_FAILED', requestId, e instanceof Error ? e.message : 'unknown'); }
+      // An unexpected failure never leaves the Idempotency-Key "in progress": the partner can retry with the same key.
+      if (claimed) { const c = claimed; claimed = null; try { const d = await db.from('api_idempotency_keys').delete().match(c).is('status_code', null); if (d.error) console.error('API_IDEMPOTENCY_RELEASE_FAILED', requestId); } catch { console.error('API_IDEMPOTENCY_RELEASE_FAILED', requestId); } }
+    } finally {
+      if (slotToken) { const t = slotToken; slotToken = null; try { const r = await db.rpc('api_slot_release', { _token: t }); if (r.error) console.error('API_SLOT_RELEASE_FAILED', requestId); } catch { console.error('API_SLOT_RELEASE_FAILED', requestId); } }
     }
     const out = new Headers({ 'X-Request-Id': requestId, 'Cache-Control': 'no-store', ...headers });
     if (replayed) out.set('Idempotent-Replayed', 'true');
-    const persist = async () => { try { const errorCode = status >= 400 ? (body as { erro?: { codigo?: string } })?.erro?.codigo ?? null : null; const r = await db.from('api_request_logs').insert({ id: requestId, ...(identity ?? {}), company_id: companyId, method: request.method, path: url.pathname, status_code: status, error_code: errorCode, duration_ms: Math.round(performance.now() - started), request_body: logBody(url.pathname, requestBody), response_body: body === undefined||body instanceof Uint8Array ? null : sanitizeBody(body) }); if (r.error) console.error('API_LOG_FAILED', requestId); } catch { console.error('API_LOG_FAILED', requestId); } };
+    const persist = async () => { try { const errorCode = status >= 400 ? (body as { erro?: { codigo?: string } })?.erro?.codigo ?? null : null; const r = await db.from('api_request_logs').insert({ id: requestId, ...(identity ?? {}), company_id: companyId, method: request.method, path: url.pathname, status_code: status, error_code: errorCode, duration_ms: Math.round(performance.now() - started), request_body: logBody(url.pathname, requestBody), response_body: logResponse(body, out.get('Content-Type')) }); if (r.error) console.error('API_LOG_FAILED', requestId); } catch { console.error('API_LOG_FAILED', requestId); } };
     background(persist());
+    // Registration changed with a sandbox key affects production too: keep an audit row the panel shows as an alert.
+    const change = identity && identity.environment === 'sandbox' && !replayed && status >= 200 && status < 300 ? sandboxChange(request.method, url.pathname) : null;
+    if (change && identity) {
+      const createdId = (body && typeof body === 'object' && 'id' in body && typeof (body as { id: unknown }).id === 'string') ? (body as { id: string }).id : null;
+      const company = change.item === 'empresa' && change.action === 'criado' ? createdId : companyId;
+      const who = identity;
+      background((async () => { const r = await db.from('sandbox_change_audit').insert({ organization_id: who.organization_id, integration_id: who.integration_id, integration_name: integrationName || 'Integração', key_id: who.key_id, company_id: change.action === 'excluido' ? null : company, item: change.item, action: change.action, method: request.method, path: url.pathname, request_id: requestId }); if (r.error) console.error('API_SANDBOX_AUDIT_FAILED', requestId); })());
+    }
     if (pending.length) await Promise.all(pending);
     if (body === undefined || status === 204) return new Response(null, { status, headers: out });
     if(body instanceof Uint8Array)return new Response(new Blob([new Uint8Array(body)],{type:out.get('Content-Type')??'application/octet-stream'}),{status,headers:out});

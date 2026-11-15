@@ -100,7 +100,40 @@ export const inviteFirstMember = createServerFn({method:'POST'}).middleware([req
   const members=await supabaseAdmin.from('organization_members').select('id',{count:'exact',head:true}).eq('organization_id',data.organization_id);if(members.error){console.error('notem: database error',members.error.code);throw new Error('Não foi possível carregar ou salvar os dados. Tente novamente.')};if(members.count)throw new Error('Esta organização já tem membros. Convites adicionais estarão disponíveis em uma próxima fase.');
   let exists=false;
   for(let page=1;;page++) {const users=await supabaseAdmin.auth.admin.listUsers({page,perPage:1000});if(users.error)throw new Error('Não foi possível verificar o convite.');if(users.data.users.some(u=>u.email?.toLowerCase()===data.email)){exists=true;break;}if(users.data.users.length<1000)break;}
+  // An expired invitation no longer blocks a new one for the same e-mail.
+  await supabaseAdmin.from('invitations').update({status:'revoked',revoked_at:new Date().toISOString()}).eq('organization_id',data.organization_id).eq('email',data.email).eq('status','pending').lt('expires_at',new Date().toISOString());
   const result=await supabaseAdmin.from('invitations').insert({...data,invited_by:context.userId,requires_explicit_acceptance:exists}).select('id').single();if(result.error)throw new Error(result.error.code==='23505'?'Já existe um convite pendente para este e-mail.':'Não foi possível enviar o convite. Tente novamente.');
   if(!exists){const sent=await supabaseAdmin.auth.admin.inviteUserByEmail(data.email,{redirectTo:appLink('/definir-senha')});if(sent.error){await supabaseAdmin.from('invitations').update({status:'revoked'}).eq('id',result.data.id);throw new Error('O e-mail não foi enviado. Verifique as configurações de envio no Supabase e tente novamente.');}}
   return {existing:exists,notice:exists?'Convite pendente. O usuário poderá aceitá-lo ao entrar. O aviso por e-mail aguarda a configuração do domínio de envio.':'Convite enviado por e-mail.'};
+});
+
+/** Pending invitations (platform administration), with their expiry. */
+export const getPendingInvitations = createServerFn({method:'POST'}).middleware([requireSupabaseAuth]).handler(async({context})=>{
+  const allowed=await context.supabase.rpc('is_platform_admin');if(allowed.error||!allowed.data)throw new Error('Acesso não autorizado.');
+  const r=await context.supabase.from('invitations').select('id,organization_id,email,role,created_at,expires_at').eq('status','pending').order('created_at',{ascending:false}).limit(200);
+  if(r.error){console.error('notem: database error',r.error.code);throw new Error('Não foi possível carregar os convites.');}
+  return r.data??[];
+});
+/** Revokes a pending invitation; who revoked is recorded (also in the administrative trail). */
+export const revokeInvitation = createServerFn({method:'POST'}).middleware([requireSupabaseAuth]).inputValidator(z.object({id:z.string().uuid()})).handler(async({context,data})=>{
+  const allowed=await context.supabase.rpc('is_platform_admin');if(allowed.error||!allowed.data)throw new Error('Acesso não autorizado.');
+  const {supabaseAdmin}=await import('@/integrations/supabase/client.server');
+  const r=await supabaseAdmin.from('invitations').update({status:'revoked',revoked_at:new Date().toISOString(),revoked_by:context.userId}).eq('id',data.id).eq('status','pending').select('id').maybeSingle();
+  if(r.error){console.error('notem: database error',r.error.code);throw new Error('Não foi possível revogar o convite.');}
+  if(!r.data)throw new Error('Este convite não está mais pendente.');
+  return {ok:true};
+});
+/** Registration changes made with sandbox keys that the organization has not acknowledged yet (last 30 days). */
+export const getSandboxChanges = createServerFn({method:'POST'}).middleware([requireSupabaseAuth]).inputValidator(z.object({organization_id:z.string().uuid()})).handler(async({context,data})=>{
+  const since=new Date(Date.now()-30*86400000).toISOString();
+  const [rows,manage,admin]=await Promise.all([
+    context.supabase.from('sandbox_change_audit').select('id,item,action,integration_name,company_id,created_at,companies(legal_name)').eq('organization_id',data.organization_id).is('acknowledged_at',null).gte('created_at',since).order('created_at',{ascending:false}).limit(20),
+    context.supabase.rpc('has_org_role',{org_id:data.organization_id,roles:['owner','admin']}),context.supabase.rpc('is_platform_admin')]);
+  if(rows.error){console.error('notem: database error',rows.error.code);throw new Error('Não foi possível carregar os avisos.');}
+  return {rows:(rows.data??[]).map(r=>({id:r.id,item:r.item,action:r.action,integration:r.integration_name,company:(r.companies as {legal_name?:string}|null)?.legal_name??null,created_at:r.created_at})),canAcknowledge:manage.data===true||admin.data===true};
+});
+export const acknowledgeSandboxChanges = createServerFn({method:'POST'}).middleware([requireSupabaseAuth]).inputValidator(z.object({organization_id:z.string().uuid(),ids:z.array(z.string().uuid()).min(1).max(50)})).handler(async({context,data})=>{
+  const r=await context.supabase.from('sandbox_change_audit').update({acknowledged_at:new Date().toISOString(),acknowledged_by:context.userId}).eq('organization_id',data.organization_id).in('id',data.ids).is('acknowledged_at',null).select('id');
+  if(r.error){console.error('notem: database error',r.error.code);throw new Error('Somente proprietários e administradores podem marcar os avisos como lidos.');}
+  return {count:r.data?.length??0};
 });

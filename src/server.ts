@@ -44,18 +44,47 @@ function isH3SwallowedErrorBody(body: string): boolean {
   }
 }
 
+/** Official domains cannot be framed; preview hosts stay embeddable by the Lovable editor. */
+export function securityHeaders(url: URL, headers: Headers) {
+  const official = /(^|\.)notemfiscal\.com\.br$/.test(url.hostname);
+  const ancestors = official ? "'none'" : "'self' https://lovable.dev https://*.lovable.dev https://*.lovable.app";
+  headers.set("Content-Security-Policy", `base-uri 'self'; object-src 'none'; form-action 'self'; frame-ancestors ${ancestors}`);
+  if (official) headers.set("X-Frame-Options", "DENY");
+  headers.set("X-Content-Type-Options", "nosniff");
+  headers.set("Referrer-Policy", "strict-origin-when-cross-origin");
+  headers.set("Permissions-Policy", "camera=(), microphone=(), geolocation=(), payment=()");
+  return headers;
+}
+
+function withSecurityHeaders(request: Request, response: Response): Response {
+  try {
+    const headers = securityHeaders(new URL(request.url), new Headers(response.headers));
+    return new Response(response.body, { status: response.status, statusText: response.statusText, headers });
+  } catch {
+    return response;
+  }
+}
+
+/** The partner API is server-to-server: preflight gets an explicit answer without CORS permissions. */
+function apiPreflight(request: Request): Response | null {
+  if (request.method !== "OPTIONS" || !new URL(request.url).pathname.startsWith("/api/")) return null;
+  return new Response(null, { status: 204, headers: { Allow: "GET, POST, PATCH, PUT, DELETE", "Cache-Control": "no-store" } });
+}
+
 export default {
   async fetch(request: Request, env: unknown, ctx: unknown) {
     try {
+      const preflight = apiPreflight(request);
+      if (preflight) return withSecurityHeaders(request, preflight);
       const handler = await getServerEntry();
       const response = await handler.fetch(request, env, ctx);
-      return await normalizeCatastrophicSsrResponse(response);
+      return withSecurityHeaders(request, await normalizeCatastrophicSsrResponse(response));
     } catch (error) {
       console.error(error);
-      return new Response(renderErrorPage(), {
+      return withSecurityHeaders(request, new Response(renderErrorPage(), {
         status: 500,
         headers: { "content-type": "text/html; charset=utf-8" },
-      });
+      }));
     }
   },
 };

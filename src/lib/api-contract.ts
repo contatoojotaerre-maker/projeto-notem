@@ -35,11 +35,35 @@ export function zodDetails(e: z.ZodError, map: Record<string, string> = {}): Det
 }
 export function parseBody<T>(schema: z.ZodType<T>, value: unknown): T { const r = schema.safeParse(value); if (!r.success) throw fail(400, 'REQUISICAO_INVALIDA', zodDetails(r.error)); return r.data; }
 
-// ---------- Pagination ----------
+// ---------- Pagination and filters ----------
+/** Deepest position reachable with the cursor; narrow the filters to go further. */
+export const MAX_OFFSET = 100_000;
+export const MAX_SEARCH = 150;
+export const MAX_RANGE_DAYS = 366;
+/** Text search parameter: 2 to 150 characters. */
+export function searchParam(url: URL, field = 'busca'): string {
+  const v = (url.searchParams.get(field) ?? '').trim();
+  if (v && v.length < 2) throw fail(400, 'REQUISICAO_INVALIDA', [{ campo: field, mensagem: 'Digite pelo menos 2 caracteres.' }]);
+  if (v.length > MAX_SEARCH) throw fail(400, 'REQUISICAO_INVALIDA', [{ campo: field, mensagem: `Use no máximo ${MAX_SEARCH} caracteres.` }]);
+  return v;
+}
+/** Calendar-exact AAAA-MM-DD (rejects 2026-02-30). */
+export function isCalendarDate(v: string) { if (!/^\d{4}-\d{2}-\d{2}$/.test(v)) return false; const d = new Date(`${v}T00:00:00Z`); return Number.isFinite(d.getTime()) && d.toISOString().slice(0, 10) === v; }
+/** Inclusive date filter in Brasília time; start ≤ end and at most 366 days when both are given. */
+export function dateRange(url: URL, fromField: string, toField: string): { from: string | null; to: string | null } {
+  const from = url.searchParams.get(fromField), to = url.searchParams.get(toField);
+  for (const [f, v] of [[fromField, from], [toField, to]] as const) if (v && !isCalendarDate(v)) throw fail(400, 'REQUISICAO_INVALIDA', [{ campo: f, mensagem: 'Informe data válida no formato AAAA-MM-DD.' }]);
+  if (from && to) {
+    const days = (Date.parse(`${to}T00:00:00Z`) - Date.parse(`${from}T00:00:00Z`)) / 86_400_000;
+    if (days < 0) throw fail(400, 'REQUISICAO_INVALIDA', [{ campo: toField, mensagem: `A data final deve ser igual ou posterior a ${fromField}.` }]);
+    if (days > MAX_RANGE_DAYS - 1) throw fail(400, 'REQUISICAO_INVALIDA', [{ campo: toField, mensagem: `O período pode ter no máximo ${MAX_RANGE_DAYS} dias.` }]);
+  }
+  return { from: from ? `${from}T00:00:00-03:00` : null, to: to ? `${to}T23:59:59.999-03:00` : null };
+}
 export function pageParams(url: URL) {
   const limite = Number(url.searchParams.get('limite') ?? 50); const raw = url.searchParams.get('cursor');
   if (!Number.isInteger(limite) || limite < 1 || limite > 100) throw fail(400, 'REQUISICAO_INVALIDA', [{ campo: 'limite', mensagem: 'Use um número de 1 a 100.' }]);
-  let offset = 0; if (raw) { try { const o = JSON.parse(atob(raw)) as { o?: unknown }; if (typeof o.o !== 'number' || o.o < 0 || !Number.isInteger(o.o)) throw 0; offset = o.o; } catch { throw fail(400, 'REQUISICAO_INVALIDA', [{ campo: 'cursor', mensagem: 'Cursor inválido.' }]); } }
+  let offset = 0; if (raw) { try { const o = JSON.parse(atob(raw)) as { o?: unknown }; if (typeof o.o !== 'number' || o.o < 0 || !Number.isSafeInteger(o.o) || o.o > MAX_OFFSET) throw 0; offset = o.o; } catch { throw fail(400, 'REQUISICAO_INVALIDA', [{ campo: 'cursor', mensagem: 'Cursor inválido.' }]); } }
   return { limite, offset };
 }
 export function page<T>(rows: T[], limite: number, offset: number) { const more = rows.length > limite; return { dados: rows.slice(0, limite), proximo_cursor: more ? btoa(JSON.stringify({ o: offset + limite })) : null }; }

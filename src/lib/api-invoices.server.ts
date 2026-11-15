@@ -1,7 +1,8 @@
+import { ruleMessage } from './rule-error';
 import type { Json } from '@/integrations/supabase/types';
 import { type ApiCtx,type ApiResult } from './api.server';
 import { z } from 'zod';
-import { ApiFailure,bodyHash,fail,idempotencyKey,page,pageParams,parseBody,pct,withholdingMap,type Detail,type Env } from './api-contract';
+import { ApiFailure,bodyHash,dateRange,MAX_SEARCH,fail,idempotencyKey,page,pageParams,parseBody,pct,withholdingMap,type Detail,type Env } from './api-contract';
 import { invoiceRequest,invoiceOut,replayDecision,invoiceStatuses,rejectionGuidance,type Invoice,type InvoiceRequest } from './invoices';
 import { justificationError,substitutionReasons,type SubstitutionReason } from './fiscal-events';
 import { FISCAL_TEXT_MESSAGE,fiscalTextAccepted,normalizeCustomerText,normalizeFields,normalizeFiscalText } from './fiscal-text';
@@ -67,7 +68,7 @@ export async function issueInvoice(ctx:IssueCtx,v:InvoiceRequest,key:string,hash
   const rule=substitutionRuleError(input.fiscal.simples,{competence:o.competence,serviceCode:String(os['service_code']??''),municipalCode:(os['municipal_tax_code'] as string|null)??null,location:String(loc['codigo_municipio']??''),customerDocument:docOf(o.customer_snapshot),serviceValue:String(sent['servico']??'')},{competence:input.competence,serviceCode:s.service_code,municipalCode:s.municipal_tax_code,location:input.service.municipality??c.municipality_ibge_code,customerDocument:docOf(customer),serviceValue:input.values.service});
   if(rule)throw fail(422,'REGRA_DE_NEGOCIO',[rule]);
  }
- try{buildDps({...input,number:'1'});}catch(e){const message=e instanceof Error?e.message:'Confira os dados fiscais.';throw fail(422,'REGRA_DE_NEGOCIO',[{campo:/E0042/.test(message)?'substituicao':/E0202|própria/.test(message)?'tomador.documento':/E0204/.test(message)?'tomador.documento':/E0237/.test(message)?'tomador.endereco':/E017/.test(message)?'configuracao_fiscal.regime_especial':/E071/.test(message)?'configuracao_fiscal.tributos_aproximados':/justificativa/i.test(message)?'justificativa':'nota',mensagem:message}]);}
+ try{buildDps({...input,number:'1'});}catch(e){const message=ruleMessage(e,'Confira os dados fiscais da nota.');throw fail(422,'REGRA_DE_NEGOCIO',[{campo:/E0042/.test(message)?'substituicao':/E0202|própria/.test(message)?'tomador.documento':/E0204/.test(message)?'tomador.documento':/E0237/.test(message)?'tomador.endereco':/E017/.test(message)?'configuracao_fiscal.regime_especial':/E071/.test(message)?'configuracao_fiscal.tributos_aproximados':/justificativa/i.test(message)?'justificativa':'nota',mensagem:message}]);}
  for(const [table,,value,field] of [['municipalities','ibge_code',customer?.endereco?.codigo_municipio,'tomador.endereco.codigo_municipio'],['countries','iso2',customer?.endereco?.pais,'tomador.endereco.pais'],['municipalities','ibge_code',input.service.municipality,'local_prestacao.codigo_municipio']] as const){if(value){const found=table==='countries'?await ctx.db.from('countries').select('iso2').eq('iso2',value).maybeSingle():await ctx.db.from('municipalities').select('ibge_code').eq('ibge_code',value).maybeSingle();if(found.error)throw new Error('CATALOG_READ_FAILED');if(!found.data)throw fail(422,'REGRA_DE_NEGOCIO',[{campo:field,mensagem:'Código não encontrado no catálogo oficial.'}]);}}
  const {readiness}=await loadReadiness(ctx.db,c.id,ctx.env);if(!readiness.pronta_para_emitir)throw fail(422,'EMPRESA_NAO_PRONTA',readiness.itens.filter(i=>i.ok!==true).map(i=>({campo:i.item,mensagem:i.mensagem})));
  let created:Invoice|null=null;
@@ -160,8 +161,8 @@ export async function listInvoices(ctx:ApiCtx){const {limite,offset}=pageParams(
  const external=p.get('empresa_id_externo');if(external){const c=await ctx.db.from('companies').select('id').eq('organization_id',ctx.organization_id).eq('external_id',external).maybeSingle();if(c.error)throw new Error('COMPANY_READ_FAILED');if(!c.data)return {status:200,body:page([],limite,offset)};company=c.data.id;}
  const status=p.get('situacao');let dbStatus:string|null=null;if(status){dbStatus=Object.entries(invoiceStatuses).find(([,label])=>label===status)?.[0]??null;if(!dbStatus)throw fail(400,'REQUISICAO_INVALIDA',[{campo:'situacao',mensagem:'Situação inválida.'}]);}
  const origin=p.get('origem');if(origin&&!['notem','externa'].includes(origin))throw fail(400,'REQUISICAO_INVALIDA',[{campo:'origem',mensagem:'Use notem ou externa.'}]);
- const dates:Record<string,string|null>={emitida_de:null,emitida_ate:null};
- for(const field of ['emitida_de','emitida_ate'] as const){const date=p.get(field);if(date){if(!/^\d{4}-\d{2}-\d{2}$/.test(date)||!Number.isFinite(Date.parse(date)))throw fail(400,'REQUISICAO_INVALIDA',[{campo:field,mensagem:'Informe data válida no formato AAAA-MM-DD.'}]);dates[field]=field==='emitida_de'?`${date}T00:00:00-03:00`:`${date}T23:59:59.999-03:00`;}}
+ const range=dateRange(ctx.url,'emitida_de','emitida_ate');const dates:Record<string,string|null>={emitida_de:range.from,emitida_ate:range.to};
+ for(const field of ['id_externo','tomador_documento'] as const){const v=p.get(field);if(v&&v.length>MAX_SEARCH)throw fail(400,'REQUISICAO_INVALIDA',[{campo:field,mensagem:`Use no máximo ${MAX_SEARCH} caracteres.`}]);}
  const args=Object.fromEntries(Object.entries({_company:company,_origin:origin,_status:dbStatus,_from:dates['emitida_de'],_to:dates['emitida_ate'],_external_id:p.get('id_externo'),_taker:p.get('tomador_documento')}).filter(([,v])=>v!=null)) as Record<string,string>;
  const r=await ctx.db.rpc('list_org_notes',{_org:ctx.organization_id,_env:ctx.env,...args,_limit:limite+1,_offset:offset});
  if(r.error)throw new Error('INVOICES_LIST_FAILED');

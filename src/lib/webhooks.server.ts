@@ -6,6 +6,8 @@ import { sanitizeBody } from './integrations'
 type DB=SupabaseClient<Database>
 type Envelope={version:string,nonce:string,data:string}
 const enc=new TextEncoder()
+/** Server-only: master key of the webhook secret envelopes. */
+export function webhookMasterKey(){const master=process.env['WEBHOOK_ENCRYPTION_KEY'];if(!master)throw new Error('Proteção dos segredos não configurada.');return master}
 const b64=(v:Uint8Array)=>{let s='';for(const b of v)s+=String.fromCharCode(b);return btoa(s)}
 const bytes=(v:string)=>Uint8Array.from(atob(v),c=>c.charCodeAt(0))
 async function cipherKey(secret:string){return crypto.subtle.importKey('raw',await crypto.subtle.digest('SHA-256',enc.encode(secret)),'AES-GCM',false,['encrypt','decrypt'])}
