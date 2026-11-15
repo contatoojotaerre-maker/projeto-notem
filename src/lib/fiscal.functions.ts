@@ -2,7 +2,7 @@ import { createServerFn } from '@tanstack/react-start';
 import { requireSupabaseAuth } from '@/integrations/supabase/auth-middleware';
 import { z } from 'zod';
 import { catalogNames, fiscalIds, fiscalSchema, serviceProfileSchema, seriesSchema,specialTaxRuleError } from './fiscal';
-import { IBSCBS_MESSAGES, buildSuggestion, ibsCbsServiceRuleError, serviceItemOf, type Correlation, type IbsCbsClassification, type OperationIndicator } from './ibscbs';
+import { IBSCBS_MESSAGES, ibsCbsServiceRuleError } from './ibscbs';
 const ruleMessages=new Set<string>(Object.values(IBSCBS_MESSAGES));
 
 export const getCompanyFiscal = createServerFn({method:'POST'}).middleware([requireSupabaseAuth]).inputValidator(fiscalIds).handler(async({context,data})=>{
@@ -66,11 +66,6 @@ export const reserveDpsNumber = createServerFn({method:'POST'}).middleware([requ
 });
 /** Anexo VIII suggestion for a national tax code: shown to the user, never applied automatically. */
 export const suggestServiceIbsCbs = createServerFn({method:'POST'}).middleware([requireSupabaseAuth]).inputValidator(z.object({service_code:z.string().regex(/^\d{6}$/)})).handler(async({context,data})=>{
- const item=serviceItemOf(data.service_code);if(!item)return {suggestion:null};
- const c=await context.supabase.from('ibscbs_service_correlations').select('*').eq('service_item',item).maybeSingle();if(c.error)throw new Error('Não foi possível consultar a tabela de correlação.');
- if(!c.data)return {suggestion:null};
- const corr=c.data as unknown as Correlation;const nbsCodes=corr.nbs.map(n=>n.code);
- const [cls,ind,nbs]=await Promise.all([context.supabase.from('ibscbs_classifications').select('*').in('code',corr.classifications.map(x=>x.code).concat('000000')),context.supabase.from('ibscbs_operation_indicators').select('code,active,incidence_location').in('code',corr.operation_indicators.map(x=>x.code).concat('000000')),context.supabase.from('nbs_codes').select('code').in('code',nbsCodes.concat('000000000'))]);
- if(cls.error||ind.error||nbs.error)throw new Error('Não foi possível consultar os catálogos.');
- return {suggestion:buildSuggestion(data.service_code,corr,{classifications:new Map((cls.data as IbsCbsClassification[]).map(x=>[x.code,x])),indicators:new Map((ind.data as OperationIndicator[]).map(x=>[x.code,x])),nbs:new Set(nbs.data.map(x=>x.code))})};
+ const {loadIbsCbsSuggestion}=await import('./ibscbs.server');
+ try{return {suggestion:await loadIbsCbsSuggestion(context.supabase,data.service_code)};}catch{throw new Error('Não foi possível consultar a tabela de correlação.');}
 });
