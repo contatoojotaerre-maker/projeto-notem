@@ -3206,6 +3206,7 @@ export type Database = {
         }
         Returns: string
       }
+      normalize_cnpj: { Args: { value: string }; Returns: string }
       normalize_municipality_name: { Args: { value: string }; Returns: string }
       org_proven_cnpj: {
         Args: { _cnpj: string; _org: string }

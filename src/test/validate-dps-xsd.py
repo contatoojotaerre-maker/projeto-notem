@@ -18,6 +18,16 @@ else:
     raise RuntimeError('Leiaute não suportado: ' + layout)
 
 parser = etree.XMLParser(resolve_entities=False, no_network=True, load_dtd=False)
+fixed_key = layout == 'nt009r1' and '--chave-corrigida' in sys.argv
+if fixed_key:
+    # Official defect (confirmed by the owner with an independent validator): TSChaveNFSe admits letters at
+    # positions 7-20, but the CNPJ occupies 10-23 (as TSIdNFSe, TSIdDPS, TSIdPedRegEvt and TSIdEvento state).
+    # Approved: correct ONLY this pattern, in memory and only when requested; the files stay intact.
+    original = sources['tiposSimples_v1.01.xsd']
+    old = b'value="[0-9]{6}([0-9A-Z]{14})[0-9]{30}"'
+    if original.count(old) != 1:
+        raise RuntimeError('Padrão oficial de TSChaveNFSe mudou; revisar correção isolada da chave.')
+    sources['tiposSimples_v1.01.xsd'] = original.replace(old, b'value="[0-9]{9}([0-9A-Z]{14})[0-9]{27}"', 1)
 if layout == 'nt004' and '--official' not in sys.argv:
     # Official defect: ^/$ are literals in XSD regex, not anchors. The owner
     # approved correcting ONLY TSSerieDPS in memory. Never edit the official ZIP
@@ -51,6 +61,6 @@ for file in [arg for arg in sys.argv[1:] if not arg.startswith('--')]:
     document = etree.parse(file, etree.XMLParser(resolve_entities=False, no_network=True, load_dtd=False))
     schema.assertValid(document)
     if layout == 'nt009r1':
-        print(Path(file).name + ': XSD 1.01 válido (NT 009 release 1, oficial)')
+        print(Path(file).name + ': XSD 1.01 válido (NT 009 release 1, ' + ('TSChaveNFSe corrigido somente em memória)' if fixed_key else 'oficial)'))
     else:
         print(Path(file).name + ': XSD 1.01 válido' + (' (original)' if '--official' in sys.argv else ' (série corrigida somente em memória)'))

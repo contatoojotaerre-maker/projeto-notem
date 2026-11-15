@@ -1,5 +1,6 @@
 // Safe readers for documents distributed by the ADN/Sefin: decoding (base64/gzip), official NFS-e and event XML.
 import { XMLParser, XMLValidator } from 'fast-xml-parser';
+import { NFSE_ID_PATTERN, isAccessKey } from './fiscal-ids';
 
 /** ADN event names → official event codes (evento_v1.01). Names without an XSD type keep their ADN name. */
 export const adnEventCodes: Record<string, string> = {
@@ -63,7 +64,7 @@ export type ParsedNfse = { access_key: string; nfse_number: string | null; dps_i
 export function readNfse(xml: string): ParsedNfse | null {
   if (!xml.includes('http://www.sped.fazenda.gov.br/nfse')) return null;
   const root = parseSafe(xml); const info = obj(obj(root?.['NFSe'])['infNFSe']);
-  const id = str(info['@_Id']); if (!id || !/^NFS\d{50}$/.test(id)) return null;
+  const id = str(info['@_Id']); if (!id || !NFSE_ID_PATTERN.test(id)) return null;
   const dps = obj(obj(info['DPS'])['infDPS']); const prest = obj(dps['prest']); const toma = obj(dps['toma']); const interm = obj(dps['interm']);
   const emit = obj(info['emit']); const serv = obj(dps['serv']); const cServ = obj(serv['cServ']); const val = obj(info['valores']); const dv = obj(dps['valores']);
   const trib = obj(obj(dv['trib'])['tribMun']);
@@ -90,7 +91,7 @@ export function readEvent(xml: string, meta: { access_key?: unknown; type?: unkn
   const info = obj(obj(root?.['evento'])['infEvento']); const ped = obj(obj(info['pedRegEvento'])['infPedReg']);
   const detailKey = Object.keys(ped).find(k => /^e\d{6}$/.test(k)); const detail = obj(detailKey ? ped[detailKey] : null);
   const key = str(ped['chNFSe']) ?? str(meta.access_key); const code = detailKey ? detailKey.slice(1) : eventCode(meta.type);
-  if (!key || !/^\d{50}$/.test(key) || !code) return null;
+  if (!key || !isAccessKey(key) || !code) return null;
   if (root === null && !meta.type) return null;
   const seq = Number(str(info['nSeqEvento']) ?? meta.sequence ?? 1);
   return {
@@ -108,7 +109,7 @@ export async function readDistributed(it: Item): Promise<DistributedItem> {
   const rawNsu = Number(pick(it, 'NSU', 'nsu')); const nsu = Number.isSafeInteger(rawNsu) && rawNsu >= 0 ? rawNsu : null;
   const type = str(pick(it, 'TipoDocumento', 'tipoDocumento')); const evType = str(pick(it, 'TipoEvento', 'tipoEvento'));
   const key = str(pick(it, 'ChaveAcesso', 'chaveAcesso')); const at = iso(pick(it, 'DataHoraGeracao', 'dataHoraGeracao', 'dataHoraRecebimento'));
-  const out: DistributedItem = { nsu, document_type: type, event_type: evType, access_key: key && /^\d{50}$/.test(key) ? key : null, generated_at: at };
+  const out: DistributedItem = { nsu, document_type: type, event_type: evType, access_key: isAccessKey(key) ? key : null, generated_at: at };
   const xml = await decodeXml(pick(it, 'Xml', 'xml', 'ArquivoXml', 'arquivoXml'));
   if (!xml) return out;
   const isEvent = type ? /EVENTO/i.test(type) && !/PEDIDO/i.test(type) : evType !== null || /<evento[\s>]/.test(xml);

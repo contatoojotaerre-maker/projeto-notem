@@ -4,6 +4,7 @@ import { certificateIn, certificateOut, companyCreate, companyIn, companyOut, co
 import { CNPJ_LOCK_MESSAGE, validReadinessCertificate,specialTaxRuleError } from './fiscal';
 import { AGREEMENT_COOLDOWN_MS, MAX_CERTIFICATE_BYTES, toTransmissorEnvironment } from './certificates';
 import { municipalitySearchTerm } from './municipality-search';
+import { normalizeCnpj } from './notem';
 
 const COMPANY_SELECT = '*, municipalities(name)';
 const refresh = (ctx: ApiCtx, companyId: string) => ctx.background(import('./readiness.server').then(m => m.refreshReadiness(ctx.db, companyId, { request: ctx.request })));
@@ -21,7 +22,7 @@ async function existingByCnpj(ctx: ApiCtx, cnpj: string) { const r = await ctx.d
 export async function listCompanies(ctx: ApiCtx): Promise<ApiResult> {
   const { limite, offset } = pageParams(ctx.url); const q = ctx.url.searchParams;
   let query = ctx.db.from('companies').select(COMPANY_SELECT).eq('organization_id', ctx.organization_id);
-  if (q.get('cnpj')) query = query.eq('cnpj', q.get('cnpj')!.replace(/\D/g, ''));
+  if (q.get('cnpj')) query = query.eq('cnpj', normalizeCnpj(q.get('cnpj')!));
   if (q.get('id_externo')) query = query.eq('external_id', q.get('id_externo')!);
   const ativa = q.get('ativa'); if (ativa !== null) { if (!['true', 'false'].includes(ativa)) throw fail(400, 'REQUISICAO_INVALIDA', [{ campo: 'ativa', mensagem: 'Use true ou false.' }]); query = query.eq('active', ativa === 'true'); }
   const busca = searchParam(ctx.url); if (busca) { const term = `%${busca.replace(/[%_,()]/g, ' ')}%`; query = query.or(`legal_name.ilike.${term},trade_name.ilike.${term}`); }

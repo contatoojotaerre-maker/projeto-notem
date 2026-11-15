@@ -1,12 +1,17 @@
 // DPS layout profiles. One builder (dps.ts) emits every profile; the differences live only here.
 // nt004 = layout of the XSD of 09/02/2026; nt009r1 = NT 009 release 1 (restricted production since 20/10/2026).
 export type DpsLayout = 'nt004' | 'nt009r1';
-export const DPS_LAYOUTS: Record<DpsLayout, { label: string; finNFSe: boolean; cServOrder: readonly string[] }> = {
-  nt004: { label: 'Leiaute atual (XSD de 09/02/2026)', finNFSe: false, cServOrder: ['cTribNac', 'cTribMun', 'xDescServ', 'cNBS', 'cIntContrib'] },
-  nt009r1: { label: 'NT 009 (release 1)', finNFSe: true, cServOrder: ['cTribNac', 'cTribMun', 'cNBS', 'cIntContrib', 'xDescServ'] },
+export const DPS_LAYOUTS: Record<DpsLayout, { label: string; finNFSe: boolean; alphanumericCnpj: boolean; cServOrder: readonly string[] }> = {
+  nt004: { label: 'Leiaute atual (XSD de 09/02/2026)', finNFSe: false, alphanumericCnpj: false, cServOrder: ['cTribNac', 'cTribMun', 'xDescServ', 'cNBS', 'cIntContrib'] },
+  nt009r1: { label: 'NT 009 (release 1)', finNFSe: true, alphanumericCnpj: true, cServOrder: ['cTribNac', 'cTribMun', 'cNBS', 'cIntContrib', 'xDescServ'] },
 };
 /** Default production start of NT 009 release 1: 01/12/2026 00:00 in Brasília (UTC-3). */
 export const DEFAULT_NT009R1_PRODUCTION_START = '2026-12-01T03:00:00.000Z';
+/** The previous XSD only accepts numeric CNPJ, key and Ids: the API appends the configured start date to this message. */
+export const ALPHANUMERIC_CNPJ_LAYOUT_MESSAGE = 'CNPJ alfanumérico só pode ser usado em produção a partir da vigência da NT 009';
+export const ALPHANUMERIC_CNPJ_CONVERSION_ERROR = 'DPS_CNPJ_ALFANUMERICO_LEIAUTE_ANTERIOR';
+/** True when the DPS carries letters in its Id or in any CNPJ / replaced key (only the NT 009 layout accepts them). */
+export function dpsHasAlphanumericCnpj(xml: string) { return /Id="DPS[^"]*[A-Z][^"]*"/.test(xml) || /<(CNPJ|chSubstda)>[^<]*[A-Z][^<]*<\//.test(xml); }
 /** finNFSe sent by notem: 0 = regular NFS-e (credit/debit notes are not issued). */
 export const REGULAR_FIN_NFSE = '0';
 
@@ -36,6 +41,7 @@ export function orderCServ(children: Record<string, string>, layout: DpsLayout) 
  */
 export function convertDpsLayout(xml: string, target: DpsLayout): string {
   const source = detectDpsLayout(xml); if (source === target) return xml;
+  if (!DPS_LAYOUTS[target].alphanumericCnpj && dpsHasAlphanumericCnpj(xml)) throw new Error(ALPHANUMERIC_CNPJ_CONVERSION_ERROR);
   let out = xml;
   if (DPS_LAYOUTS[target].finNFSe) {
     const [, b] = header(out); const rej = out.indexOf('<chNFSeRej>'); const at = rej >= 0 && rej < b ? rej : b;

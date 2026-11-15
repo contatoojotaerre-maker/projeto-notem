@@ -5,8 +5,9 @@ import type { Env } from './api-contract';
 import type { Invoice } from './invoices';
 import { syncStatusOut, type NfseDocument, type SyncCursor } from './nfse-documents';
 import { xmlOf } from './xml-files.server';
+import { normalizeCnpj } from './notem';
 
-const digits = (v: string) => v.replace(/\D/g, '');
+const digits = normalizeCnpj;
 export async function proven(db: DB, org: string, cnpj: string | null) {
   if (!cnpj) return false; const r = await db.rpc('org_proven_cnpj', { _org: org, _cnpj: cnpj }); if (r.error) throw new Error('PROOF_READ_FAILED'); return r.data === true;
 }

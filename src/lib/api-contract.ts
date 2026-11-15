@@ -3,7 +3,7 @@
 import { z } from 'zod';
 import { fiscalSchema, specialTaxRuleError, validReadinessCertificate } from './fiscal';
 import { agreementUnavailableMessage, certificateSituation } from './certificates';
-import { isValidCnpj, digits } from './notem';
+import { isValidCnpj, digits, normalizeCnpj } from './notem';
 
 export type Env = 'sandbox' | 'production';
 export const envLabel = (e: Env) => (e === 'sandbox' ? 'homologacao' : 'producao');
@@ -72,7 +72,7 @@ export function page<T>(rows: T[], limite: number, offset: number) { const more 
 const text = (max: number) => z.string().max(max);
 export const externalId = z.string().trim().min(1).max(100).nullable();
 const address = z.object({ cep: z.string().regex(/^\d{8}$/, 'CEP com 8 números.'), logradouro: text(200), numero: text(30), complemento: text(100).nullable().optional(), bairro: text(100), codigo_municipio: z.string().regex(/^\d{7}$/, 'Código IBGE de 7 dígitos.') }).strict();
-const companyBase = { id_externo: externalId.optional(), cnpj: z.string().regex(/^\d{14}$/, 'CNPJ com 14 números.').refine(isValidCnpj, 'CNPJ inválido.'), razao_social: z.string().trim().min(1).max(200), nome_fantasia: text(200).optional(), inscricao_municipal: text(50).optional(), email: z.union([z.string().email('E-mail inválido.'), z.literal('')]).optional(), telefone: z.string().regex(/^\d{0,15}$/, 'Somente números.').optional(), ativa: z.boolean().optional() };
+const companyBase = { id_externo: externalId.optional(), cnpj: z.string().max(18).transform(normalizeCnpj).refine(v => v.length === 14, 'CNPJ com 14 caracteres.').refine(isValidCnpj, 'CNPJ inválido.'), razao_social: z.string().trim().min(1).max(200), nome_fantasia: text(200).optional(), inscricao_municipal: text(50).optional(), email: z.union([z.string().email('E-mail inválido.'), z.literal('')]).optional(), telefone: z.string().regex(/^\d{0,15}$/, 'Somente números.').optional(), ativa: z.boolean().optional() };
 export const companyCreate = z.object({ ...companyBase, endereco: address }).strict();
 export const companyPatch = z.object({ ...companyBase, endereco: address.partial().strict() }).partial().strict();
 export type CompanyRow = { id: string; external_id: string | null; cnpj: string; legal_name: string; trade_name: string; municipal_registration: string; email: string; phone: string; postal_code: string; street: string; number: string; complement: string; district: string; municipality_ibge_code: string; state: string; active: boolean; created_at: string; updated_at: string; municipalities?: { name: string } | null };
@@ -83,7 +83,7 @@ export function companyOut(c: CompanyRow) {
 }
 export function companyIn(v: z.infer<typeof companyPatch>) {
   const r: Record<string, unknown> = {};
-  if (v.id_externo !== undefined) r['external_id'] = v.id_externo; if (v.cnpj !== undefined) r['cnpj'] = digits(v.cnpj); if (v.razao_social !== undefined) r['legal_name'] = v.razao_social;
+  if (v.id_externo !== undefined) r['external_id'] = v.id_externo; if (v.cnpj !== undefined) r['cnpj'] = normalizeCnpj(v.cnpj); if (v.razao_social !== undefined) r['legal_name'] = v.razao_social;
   if (v.nome_fantasia !== undefined) r['trade_name'] = v.nome_fantasia; if (v.inscricao_municipal !== undefined) r['municipal_registration'] = v.inscricao_municipal; if (v.email !== undefined) r['email'] = v.email;
   if (v.telefone !== undefined) r['phone'] = v.telefone; if (v.ativa !== undefined) r['active'] = v.ativa;
   const e = v.endereco; if (e) { if (e.cep !== undefined) r['postal_code'] = e.cep; if (e.logradouro !== undefined) r['street'] = e.logradouro; if (e.numero !== undefined) r['number'] = e.numero; if (e.complemento !== undefined) r['complement'] = e.complemento ?? ''; if (e.bairro !== undefined) r['district'] = e.bairro; if (e.codigo_municipio !== undefined) r['municipality_ibge_code'] = e.codigo_municipio; }

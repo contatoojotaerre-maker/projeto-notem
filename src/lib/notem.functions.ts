@@ -2,7 +2,7 @@ import { createServerFn } from '@tanstack/react-start';
 import { z } from 'zod';
 import { appLink } from '@/lib/app-url';
 import { requireSupabaseAuth } from '@/integrations/supabase/auth-middleware';
-import { companySchema, roles, organizationSchema } from './notem';
+import { companySchema, normalizeCnpj, roles, organizationSchema } from './notem';
 import { municipalitySearchTerm } from './municipality-search';
 import { CNPJ_LOCK_MESSAGE } from './fiscal';
 
@@ -45,7 +45,7 @@ export const updatePreferences = createServerFn({ method: 'POST' }).middleware([
 export const getCompanies = createServerFn({method:'POST'}).middleware([requireSupabaseAuth]).inputValidator(z.object({organization_id:z.string().uuid(),search:z.string().default(''),page:z.number().int().min(0).default(0)})).handler(async ({context,data}) => {
   let query=context.supabase.from('companies').select('*',{count:'exact'}).eq('organization_id',data.organization_id).order('legal_name').range(data.page*30,data.page*30+29);
   const search=data.search.replace(/[%_,().]/g,'').trim();
-  if(search) query=query.or(`legal_name.ilike.%${search}%,trade_name.ilike.%${search}%,cnpj.ilike.%${search}%`);
+  if(search){const cnpj=normalizeCnpj(search);query=query.or(`legal_name.ilike.%${search}%,trade_name.ilike.%${search}%,cnpj.ilike.%${search}%${cnpj&&cnpj!==search?`,cnpj.ilike.%${cnpj}%`:''}`);}
   const result=await query; if(result.error) {console.error('notem: database error',result.error.code);throw new Error('Não foi possível carregar ou salvar os dados. Tente novamente.')}; return {rows:result.data ?? [],count:result.count ?? 0};
 });
 export const getCompany = createServerFn({method:'POST'}).middleware([requireSupabaseAuth]).inputValidator(z.object({id:z.string().uuid(),organization_id:z.string().uuid()})).handler(async({context,data})=>{

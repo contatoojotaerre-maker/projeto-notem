@@ -1,5 +1,5 @@
 import { z } from 'zod';
-import { isValidCnpj } from './notem';
+import { CNPJ_PATTERN, isValidCnpj, normalizeCnpj } from './notem';
 
 export function validCpf(value: string) {
   if (!/^\d{11}$/.test(value) || /^(\d)\1{10}$/.test(value)) return false;
@@ -12,10 +12,10 @@ export const customerAddress = z.object({
   pais: z.string().regex(/^[A-Z]{2}$/, 'Informe país ISO de duas letras.').optional(), cidade: nullableText(60), endereco_livre: nullableText(255), codigo_postal: nullableText(11), estado_provincia_regiao: nullableText(60),
 }).strict();
 export const customerSchema = z.object({
-  tipo: z.enum(['pj', 'pf', 'estrangeiro']), documento: nullableText(14), nif: nullableText(40), motivo_sem_nif: z.enum(['dispensado', 'nao_exigido']).nullable().optional(), nome: z.string().trim().min(1, 'Informe o nome.').max(150), email: z.string().email('E-mail inválido.').max(80).nullable().optional(), telefone: z.string().regex(/^\d{6,20}$/, 'Telefone com 6 a 20 números.').nullable().optional(), inscricao_municipal: nullableText(15), endereco: customerAddress.nullable().optional(),
+  tipo: z.enum(['pj', 'pf', 'estrangeiro']), documento: z.string().trim().max(18).transform(v => normalizeCnpj(v) || null).nullable().optional(), nif: nullableText(40), motivo_sem_nif: z.enum(['dispensado', 'nao_exigido']).nullable().optional(), nome: z.string().trim().min(1, 'Informe o nome.').max(150), email: z.string().email('E-mail inválido.').max(80).nullable().optional(), telefone: z.string().regex(/^\d{6,20}$/, 'Telefone com 6 a 20 números.').nullable().optional(), inscricao_municipal: nullableText(15), endereco: customerAddress.nullable().optional(),
 }).strict().superRefine((c, ctx) => {
   const issue = (path: string[], message: string) => ctx.addIssue({ code: 'custom', path, message });
-  if (c.tipo === 'pj' && (!c.documento || !/^\d{14}$/.test(c.documento) || !isValidCnpj(c.documento))) issue(['documento'], 'CNPJ inválido.');
+  if (c.tipo === 'pj' && (!c.documento || !CNPJ_PATTERN.test(c.documento) || !isValidCnpj(c.documento))) issue(['documento'], 'CNPJ inválido.');
   if (c.tipo === 'pf' && (!c.documento || !validCpf(c.documento))) issue(['documento'], 'CPF inválido.');
   if (c.tipo === 'estrangeiro') {
     if (c.documento) issue(['documento'], 'Estrangeiro não usa CPF/CNPJ.');

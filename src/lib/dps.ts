@@ -1,10 +1,10 @@
 import { z } from 'zod';
 import { customerSchema, type Customer } from './customers';
-import { isValidCnpj } from './notem';
+import { CNPJ_PATTERN, isAlphanumericCnpj, isValidCnpj, normalizeCnpj } from './notem';
 import { RuleError } from './rule-error';
 import { approximateTaxRuleError, specialTaxRuleError } from './fiscal';
 import { FISCAL_TEXT_MESSAGE, fiscalTextAccepted } from './fiscal-text';
-import { DPS_LAYOUTS, REGULAR_FIN_NFSE, orderCServ, type DpsLayout } from './dps-layout';
+import { ALPHANUMERIC_CNPJ_LAYOUT_MESSAGE, DPS_LAYOUTS, REGULAR_FIN_NFSE, orderCServ, type DpsLayout } from './dps-layout';
 import { accessKeyIssuer, justificationError, substitutionReasons, type SubstitutionReason } from './fiscal-events';
 
 export const fiscalDecimal = z.string().regex(/^\d{1,15}\.\d{2}$/, 'Use texto decimal com duas casas.');
@@ -19,7 +19,7 @@ export type DpsInput = {
   substitution?: { accessKey: string; reason: SubstitutionReason; justification: string } | null;
 };
 export function dpsIdentifier(municipality: string, cnpj: string, series: number, number: string) {
-  if (!/^\d{7}$/.test(municipality) || !/^\d{14}$/.test(cnpj) || !isValidCnpj(cnpj) || !Number.isInteger(series) || series < 1 || series > 49999 || !/^[1-9]\d{0,14}$/.test(number)) throw new RuleError('Identificador DPS inválido.');
+  if (!/^\d{7}$/.test(municipality) || !CNPJ_PATTERN.test(cnpj) || !isValidCnpj(cnpj) || !Number.isInteger(series) || series < 1 || series > 49999 || !/^[1-9]\d{0,14}$/.test(number)) throw new RuleError('Identificador DPS inválido.');
   return `DPS${municipality}2${cnpj}${String(series).padStart(5, '0')}${number.padStart(15, '0')}`;
 }
 const escape = (v: string | number) => String(v).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&apos;');
@@ -34,9 +34,12 @@ function customerXml(c: Customer) {
   const document = c.tipo === 'pj' ? tag('CNPJ', c.documento) : c.tipo === 'pf' ? tag('CPF', c.documento) : c.nif ? tag('NIF', c.nif) : tag('cNaoNIF', c.motivo_sem_nif === 'dispensado' ? 1 : 2);
   return group('toma', document + tag('IM', c.inscricao_municipal) + tag('xNome', c.nome) + address + tag('fone', c.telefone) + tag('email', c.email));
 }
+/** Provider or PJ taker with letters in the CNPJ (the replaced key carries the provider CNPJ). */
+export function dpsInputHasAlphanumericCnpj(input: Pick<DpsInput, 'provider' | 'customer'>) { return isAlphanumericCnpj(input.provider.cnpj) || (input.customer?.tipo === 'pj' && isAlphanumericCnpj(input.customer.documento)); }
 /** Builds the DPS in the given layout profile (see dps-layout.ts); the layout is always explicit. */
 export function buildDps(input: DpsInput, layout: DpsLayout) {
   if (!DPS_LAYOUTS[layout]) throw new RuleError('Leiaute da DPS inválido.');
+  if (!DPS_LAYOUTS[layout].alphanumericCnpj && dpsInputHasAlphanumericCnpj(input)) throw new RuleError(`${ALPHANUMERIC_CNPJ_LAYOUT_MESSAGE}.`);
   validateDpsBeforeNumbering(input);
   const { provider: p, fiscal: f, service: s } = input;
   const id = dpsIdentifier(p.municipality, p.cnpj, input.series, input.number);
@@ -77,7 +80,7 @@ function substitutionXml(v: NonNullable<DpsInput['substitution']>, p: DpsInput['
 /** Mandatory preflight before definitive numbering; Part 3 must use this boundary. */
 export function validateDpsBeforeNumbering(input: Pick<DpsInput,'provider'|'customer'|'fiscal'> & {service?:DpsInput['service']}): void {
  const c=input.customer;
- if(c&&(c.tipo==='pj'||c.tipo==='pf')&&c.documento?.replace(/\D/g,'')===input.provider.cnpj.replace(/\D/g,'')) throw new RuleError('O tomador não pode ser a própria empresa emitente');
+ if(c&&(c.tipo==='pj'||c.tipo==='pf')&&c.documento&&normalizeCnpj(c.documento)===normalizeCnpj(input.provider.cnpj)) throw new RuleError('O tomador não pode ser a própria empresa emitente');
  const error=approximateTaxRuleError(input.fiscal.simples,input.fiscal.approximate.mode);
  if(error) throw new RuleError(error);
  const special=specialTaxRuleError(input.fiscal.simples,input.fiscal.regime,input.fiscal.special,input.service?.taxation);

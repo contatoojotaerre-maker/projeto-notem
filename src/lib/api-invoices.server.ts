@@ -6,7 +6,8 @@ import { ApiFailure,bodyHash,dateRange,MAX_SEARCH,fail,idempotencyKey,page,pageP
 import { invoiceRequest,invoiceOut,replayDecision,invoiceStatuses,rejectionGuidance,type Invoice,type InvoiceRequest } from './invoices';
 import { justificationError,substitutionReasons,type SubstitutionReason } from './fiscal-events';
 import { FISCAL_TEXT_MESSAGE,fiscalTextAccepted,normalizeCustomerText,normalizeFields,normalizeFiscalText } from './fiscal-text';
-import { buildDps,reserveValidatedDps,type DpsInput } from './dps';
+import { buildDps,dpsInputHasAlphanumericCnpj,reserveValidatedDps,type DpsInput } from './dps';
+import { ALPHANUMERIC_CNPJ_LAYOUT_MESSAGE,DPS_LAYOUTS } from './dps-layout';
 import type { DpsLayout } from './dps-layout';
 import { customerSchema,type Customer } from './customers';
 import { fiscalSchema } from './fiscal';
@@ -14,6 +15,7 @@ import { loadReadiness } from './readiness.server';
 import { sendInvoice } from './invoices.server';
 import { pdfStatuses } from './danfse';
 import { generateDanfse } from './danfse.server';
+import { isAlphanumericCnpj,normalizeCnpj } from './notem';
 
 export function invoiceResponse(i:Invoice):ApiResult{
  if(i.status==='authorized')return {status:201,body:invoiceOut(i)};
@@ -71,6 +73,8 @@ export async function issueInvoice(ctx:IssueCtx,v:InvoiceRequest,key:string,hash
  }
  // Layout in force at request time for the preflight and base; it is decided again right before each send.
  let layout:DpsLayout;try{const {currentDpsLayout}=await import('./platform-settings.server');layout=await currentDpsLayout(ctx.db,ctx.env);}catch{throw new Error('PLATFORM_SETTINGS_READ_FAILED');}
+ // The previous layout only accepts numeric CNPJ: refuse before numbering, naming the configured NT 009 start.
+ if(!DPS_LAYOUTS[layout].alphanumericCnpj&&dpsInputHasAlphanumericCnpj(input)){const {nt009ProductionStart}=await import('./platform-settings.server');let start:string;try{start=await nt009ProductionStart(ctx.db);}catch{throw new Error('PLATFORM_SETTINGS_READ_FAILED');}const day=new Date(Date.parse(start)-3*3600_000).toISOString().slice(0,10).split('-').reverse().join('/');throw fail(422,'REGRA_DE_NEGOCIO',[{campo:isAlphanumericCnpj(input.provider.cnpj)?'empresa.cnpj':'tomador.documento',mensagem:`${ALPHANUMERIC_CNPJ_LAYOUT_MESSAGE} (${day}).`}]);}
  try{buildDps({...input,number:'1'},layout);}catch(e){const message=ruleMessage(e,'Confira os dados fiscais da nota.');throw fail(422,'REGRA_DE_NEGOCIO',[{campo:/E0042/.test(message)?'substituicao':/E0202|própria/.test(message)?'tomador.documento':/E0204/.test(message)?'tomador.documento':/E0237/.test(message)?'tomador.endereco':/E017/.test(message)?'configuracao_fiscal.regime_especial':/E071/.test(message)?'configuracao_fiscal.tributos_aproximados':/justificativa/i.test(message)?'justificativa':'nota',mensagem:message}]);}
  for(const [table,,value,field] of [['municipalities','ibge_code',customer?.endereco?.codigo_municipio,'tomador.endereco.codigo_municipio'],['countries','iso2',customer?.endereco?.pais,'tomador.endereco.pais'],['municipalities','ibge_code',input.service.municipality,'local_prestacao.codigo_municipio']] as const){if(value){const found=table==='countries'?await ctx.db.from('countries').select('iso2').eq('iso2',value).maybeSingle():await ctx.db.from('municipalities').select('ibge_code').eq('ibge_code',value).maybeSingle();if(found.error)throw new Error('CATALOG_READ_FAILED');if(!found.data)throw fail(422,'REGRA_DE_NEGOCIO',[{campo:field,mensagem:'Código não encontrado no catálogo oficial.'}]);}}
  const {readiness}=await loadReadiness(ctx.db,c.id,ctx.env);if(!readiness.pronta_para_emitir)throw fail(422,'EMPRESA_NAO_PRONTA',readiness.itens.filter(i=>i.ok!==true).map(i=>({campo:i.item,mensagem:i.mensagem})));
@@ -166,7 +170,7 @@ export async function listInvoices(ctx:ApiCtx){const {limite,offset}=pageParams(
  const origin=p.get('origem');if(origin&&!['notem','externa'].includes(origin))throw fail(400,'REQUISICAO_INVALIDA',[{campo:'origem',mensagem:'Use notem ou externa.'}]);
  const range=dateRange(ctx.url,'emitida_de','emitida_ate');const dates:Record<string,string|null>={emitida_de:range.from,emitida_ate:range.to};
  for(const field of ['id_externo','tomador_documento'] as const){const v=p.get(field);if(v&&v.length>MAX_SEARCH)throw fail(400,'REQUISICAO_INVALIDA',[{campo:field,mensagem:`Use no máximo ${MAX_SEARCH} caracteres.`}]);}
- const args=Object.fromEntries(Object.entries({_company:company,_origin:origin,_status:dbStatus,_from:dates['emitida_de'],_to:dates['emitida_ate'],_external_id:p.get('id_externo'),_taker:p.get('tomador_documento')}).filter(([,v])=>v!=null)) as Record<string,string>;
+ const args=Object.fromEntries(Object.entries({_company:company,_origin:origin,_status:dbStatus,_from:dates['emitida_de'],_to:dates['emitida_ate'],_external_id:p.get('id_externo'),_taker:p.get('tomador_documento')?normalizeCnpj(p.get('tomador_documento')!):null}).filter(([,v])=>v!=null)) as Record<string,string>;
  const r=await ctx.db.rpc('list_org_notes',{_org:ctx.organization_id,_env:ctx.env,...args,_limit:limite+1,_offset:offset});
  if(r.error)throw new Error('INVOICES_LIST_FAILED');
  const rows=r.data??[];const own=rows.filter(x=>x.origin==='notem').map(x=>x.id),ext=rows.filter(x=>x.origin==='externa').map(x=>x.id);

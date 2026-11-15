@@ -2,6 +2,7 @@
 // role functions) before any service-role work; the database repeats the role check in request_adn_sync.
 import type { SupabaseClient } from '@supabase/supabase-js';
 import type { Database } from '@/integrations/supabase/types';
+import { normalizeCnpj } from './notem';
 
 type Caller = SupabaseClient<Database>;
 /** Only these organization roles (plus the platform administrator) may start a synchronization. */
@@ -20,7 +21,7 @@ export async function startCompanySync(caller: Caller, userId: string, data: Syn
   if (!await canRequestSync(caller, data.organization_id)) return { ok: false, mensagem: SYNC_DENIED };
   const c = await caller.from('companies').select('id,cnpj').eq('id', data.company_id).eq('organization_id', data.organization_id).maybeSingle();
   if (c.error || !c.data) return { ok: false, mensagem: 'Empresa não encontrada ou acesso não autorizado.' };
-  const cnpj = c.data.cnpj.replace(/\D/g, '');
+  const cnpj = normalizeCnpj(c.data.cnpj);
   const { supabaseAdmin } = await import('@/integrations/supabase/client.server'); const { proven } = await import('./notes.server');
   if (!await proven(supabaseAdmin, data.organization_id, cnpj)) return { ok: false, mensagem: 'Cadastre o certificado digital desta empresa antes de sincronizar.' };
   const { requestAdnSync, SyncRequestError } = await import('./adn-sync.server');

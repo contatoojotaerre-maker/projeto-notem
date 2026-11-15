@@ -2,6 +2,7 @@ import { createServerFn } from '@tanstack/react-start';
 import { z } from 'zod';
 import { requireSupabaseAuth } from '@/integrations/supabase/auth-middleware';
 import { MAX_CERTIFICATE_BYTES, AGREEMENT_COOLDOWN_MS, toTransmissorEnvironment, translateTransmissorError, stripSensitive } from './certificates';
+import { normalizeCnpj } from './notem';
 
 type Ctx = { supabase: any; userId: string };
 const ids = z.object({ company_id: z.string().uuid(), organization_id: z.string().uuid() });
@@ -37,13 +38,13 @@ export const uploadCertificate = createServerFn({ method: 'POST' }).middleware([
   const audit = (result: string) => supabaseAdmin.from('certificate_audit_events').insert({ company_id: company.id, organization_id: company.organization_id, user_id: context.userId, action: 'failed', purpose: 'envio de certificado', result });
   let prepared: Prepared;
   try {
-    prepared = await callTransmissor<Prepared>('/v1/certificados/preparar', { organizacao_id: company.organization_id, empresa_id: company.id, cnpj_esperado: company.cnpj.replace(/\D/g, ''), pfx_base64: bytesToBase64(new Uint8Array(await data.file.arrayBuffer())), senha: data.password });
+    prepared = await callTransmissor<Prepared>('/v1/certificados/preparar', { organizacao_id: company.organization_id, empresa_id: company.id, cnpj_esperado: normalizeCnpj(company.cnpj), pfx_base64: bytesToBase64(new Uint8Array(await data.file.arrayBuffer())), senha: data.password });
   } catch (e) {
     const code = e instanceof TransmissorError ? e.code : 'INDISPONIVEL';
     await audit(code); throw new Error(translateTransmissorError(code));
   }
   const m = prepared.metadados;
-  const r = await supabaseAdmin.rpc('replace_company_certificate', { _company_id: company.id, _organization_id: company.organization_id, _user_id: context.userId, _holder: m.titular, _cnpj: m.cnpj, _issuer: m.emissor, _serial: m.numero_serie, _valid_from: m.valido_de, _valid_until: m.valido_ate, _key_version: prepared.envelope.versao_chave, _nonce: prepared.envelope.nonce, _data: prepared.envelope.dados });
+  const r = await supabaseAdmin.rpc('replace_company_certificate', { _company_id: company.id, _organization_id: company.organization_id, _user_id: context.userId, _holder: m.titular, _cnpj: normalizeCnpj(m.cnpj), _issuer: m.emissor, _serial: m.numero_serie, _valid_from: m.valido_de, _valid_until: m.valido_ate, _key_version: prepared.envelope.versao_chave, _nonce: prepared.envelope.nonce, _data: prepared.envelope.dados });
   if (r.error) { console.error('certificate: replace failed', r.error.code); await audit('ERRO_GRAVACAO'); throw new Error('Não foi possível guardar o certificado. O anterior foi mantido.'); }
   { const { panelRefreshReadiness } = await import('./readiness.server'); await panelRefreshReadiness(company.id); }
   return stripSensitive({ holder: m.titular, cnpj: m.cnpj, issuer: m.emissor, serial_number: m.numero_serie, valid_from: m.valido_de, valid_until: m.valido_ate });

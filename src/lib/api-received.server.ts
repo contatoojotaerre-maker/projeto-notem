@@ -5,6 +5,7 @@ import { invoiceStatuses } from './invoices';
 import { pdfStatuses } from './danfse';
 import { receivedOut } from './nfse-documents';
 import { companySyncStatus, documentXml, listReceivedNotes, loadReceivedNote } from './notes.server';
+import { CNPJ_PATTERN, normalizeCnpj } from './notem';
 
 const uuid = (v: string | undefined) => !!v && /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(v);
 function companyId(ctx: ApiCtx) { const id = ctx.params['id']; if (!uuid(id)) throw fail(404, 'NAO_ENCONTRADO'); ctx.setCompany(id!); return id!; }
@@ -16,7 +17,7 @@ export async function listReceived(ctx: ApiCtx): Promise<ApiResult> {
   const id = companyId(ctx); const { limite, offset } = pageParams(ctx.url); const p = ctx.url.searchParams;
   const status = p.get('situacao'); const dbStatus = status ? Object.entries(invoiceStatuses).find(([, l]) => l === status)?.[0] : null;
   if (status && !dbStatus) throw fail(400, 'REQUISICAO_INVALIDA', [{ campo: 'situacao', mensagem: 'Situação inválida.' }]);
-  const provider = p.get('prestador_cnpj'); if (provider && !/^\d{14}$/.test(provider)) throw fail(400, 'REQUISICAO_INVALIDA', [{ campo: 'prestador_cnpj', mensagem: 'Informe o CNPJ com 14 números.' }]);
+  const rawProvider = p.get('prestador_cnpj'); const provider = rawProvider ? normalizeCnpj(rawProvider) : null; if (rawProvider && (rawProvider.length > 18 || !CNPJ_PATTERN.test(provider ?? ''))) throw fail(400, 'REQUISICAO_INVALIDA', [{ campo: 'prestador_cnpj', mensagem: 'Informe o CNPJ com 14 caracteres.' }]);
   const dr = dateRange(ctx.url, 'emitida_de', 'emitida_ate'); const range: Record<string, string | null> = { emitida_de: dr.from, emitida_ate: dr.to };
   const r = await listReceivedNotes(ctx.db, ctx.organization_id, ctx.env, id, { status: dbStatus ?? null, provider, from: range['emitida_de'], to: range['emitida_ate'] }, limite, offset);
   if (!r) throw fail(404, 'NAO_ENCONTRADO');
