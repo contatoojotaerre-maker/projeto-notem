@@ -38,6 +38,7 @@ Rotas para o sistema parceiro cadastrar e preparar as empresas emitentes, sem qu
 }
 ```
 - `municipio` e `uf` são preenchidos pela notem a partir de `codigo_municipio` (não enviar).
+- `cnpj`: 14 posições, numérico (`11222333000181`) ou alfanumérico (`12ABC34501DE35`). Máscara e minúsculas são aceitas na entrada (`12.abc.345/01de-35`); a resposta traz sempre o valor normalizado. O filtro `?cnpj=` aceita o mesmo formato.
 - `cnpj` é imutável depois que a empresa recebe certificado ou série de numeração (`409 CNPJ_IMUTAVEL`).
 - `id_externo` é único por organização (`409 ID_EXTERNO_DUPLICADO`). Pode ser definido ou trocado apenas pela API.
 
