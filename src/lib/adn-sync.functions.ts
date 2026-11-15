@@ -16,22 +16,15 @@ const companyScope = z.object({ organization_id: z.string().uuid(), company_id: 
 export const getCompanySync = createServerFn({ method: 'POST' }).middleware([requireSupabaseAuth]).inputValidator(companyScope).handler(async ({ context, data }) => {
   const c = await context.supabase.from('companies').select('id').eq('id', data.company_id).eq('organization_id', data.organization_id).maybeSingle();
   if (c.error || !c.data) throw new Error('Empresa não encontrada ou acesso não autorizado.');
-  const [{ supabaseAdmin }, { companySyncStatus }, canSync] = await Promise.all([import('@/integrations/supabase/client.server'), import('./notes.server'), hasRole(context.supabase, data.organization_id, ['owner', 'admin'])]);
+  const [{ supabaseAdmin }, { companySyncStatus }, { canRequestSync }] = await Promise.all([import('@/integrations/supabase/client.server'), import('./notes.server'), import('./adn-sync-request.server')]);
+  const canSync = await canRequestSync(context.supabase, data.organization_id);
   const out = await Promise.all(envs.map(async environment => { const r = await companySyncStatus(supabaseAdmin, data.organization_id, data.company_id, environment); if (!r) throw new Error('Empresa não encontrada.'); return { environment, ...r }; }));
   return { canSync, environments: out };
 });
 
 export const requestCompanySync = createServerFn({ method: 'POST' }).middleware([requireSupabaseAuth]).inputValidator(companyScope.extend({ environment: z.enum(envs), option: z.string().regex(/^(news|period:(1|3|6|12|24))$/) })).handler(async ({ context, data }) => {
-  if (!await hasRole(context.supabase, data.organization_id, ['owner', 'admin'])) return { ok: false as const, mensagem: 'Somente proprietário, administrador da organização ou administrador da plataforma podem sincronizar.' };
-  const c = await context.supabase.from('companies').select('id,cnpj').eq('id', data.company_id).eq('organization_id', data.organization_id).maybeSingle();
-  if (c.error || !c.data) return { ok: false as const, mensagem: 'Empresa não encontrada ou acesso não autorizado.' };
-  const cnpj = c.data.cnpj.replace(/\D/g, '');
-  const { supabaseAdmin } = await import('@/integrations/supabase/client.server'); const { proven } = await import('./notes.server');
-  if (!await proven(supabaseAdmin, data.organization_id, cnpj)) return { ok: false as const, mensagem: 'Cadastre o certificado digital desta empresa antes de sincronizar.' };
-  const { requestAdnSync, SyncRequestError } = await import('./adn-sync.server');
-  const [mode, months] = data.option === 'news' ? ['news', null] as const : ['period', Number(data.option.split(':')[1])] as const;
-  try { const r = await requestAdnSync(supabaseAdmin, { cnpj, environment: data.environment, mode, months, actor: context.userId, organization_id: data.organization_id }); return { ok: true as const, imported: r.imported, failed: r.failed > 0 }; }
-  catch (e) { if (e instanceof SyncRequestError) return { ok: false as const, mensagem: e.userMessage, retryAt: e.retryAt ?? null }; console.error('PANEL_SYNC_FAILED'); return { ok: false as const, mensagem: 'Não foi possível iniciar a sincronização. Tente novamente.' }; }
+  const { startCompanySync } = await import('./adn-sync-request.server');
+  return startCompanySync(context.supabase, context.userId, data);
 });
 
 /** "Atualizar com o governo": every official event of the key, at most once every 5 minutes per note. */
