@@ -47,15 +47,15 @@ describe('Pedido de registro de evento', () => {
 
 describe('Grupo subst da DPS', () => {
   it('fica após cLocEmi e antes de prest, com motivo de dois dígitos', () => {
-    const xml = buildDps(substituteFixture()).xml;
+    const xml = buildDps(substituteFixture(),'nt009r1').xml;
     expect(xml).toContain(`<cLocEmi>4212254</cLocEmi><subst><chSubstda>${exampleKey}</chSubstda><cMotivo>99</cMotivo><xMotivo>`);
     expect(xml.indexOf('</subst>')).toBeLessThan(xml.indexOf('<prest>'));
   });
   it('E0042: chave de outra empresa ou município é recusada', () => {
-    const other = substituteFixture(); other.provider.cnpj = '12345678000195'; expect(() => buildDps(other)).toThrow('E0042');
-    const city = substituteFixture(); city.provider.municipality = '4205407'; expect(() => buildDps(city)).toThrow('E0042');
+    const other = substituteFixture(); other.provider.cnpj = '12345678000195'; expect(() => buildDps(other,'nt009r1')).toThrow('E0042');
+    const city = substituteFixture(); city.provider.municipality = '4205407'; expect(() => buildDps(city,'nt009r1')).toThrow('E0042');
   });
-  it('justificativa obrigatória mesmo fora do motivo 99', () => { const v = substituteFixture(); v.substitution!.reason = 'desenquadramento_simples'; v.substitution!.justification = 'curta'; expect(() => buildDps(v)).toThrow('15 a 255'); });
+  it('justificativa obrigatória mesmo fora do motivo 99', () => { const v = substituteFixture(); v.substitution!.reason = 'desenquadramento_simples'; v.substitution!.justification = 'curta'; expect(() => buildDps(v,'nt009r1')).toThrow('15 a 255'); });
 });
 
 describe('XSD oficial dos eventos', () => {
@@ -67,7 +67,7 @@ describe('XSD oficial dos eventos', () => {
       expect(validate('pedRegEvento', events).match(/XSD 1.01 válido/g)).toHaveLength(events.length);
       // Event schemas do not use TSSerieDPS: they also pass the untouched official schema.
       expect(validate('pedRegEvento', events, true).match(/XSD 1.01 válido/g)).toHaveLength(events.length);
-      const dps = join(folder, 'substituta.xml'); const dpsXml = buildDps(substituteFixture()).xml; writeFileSync(dps, dpsXml);
+      const dps = join(folder, 'substituta.xml'); const dpsXml = buildDps(substituteFixture(),'nt009r1').xml; writeFileSync(dps, dpsXml);
       expect(readFileSync('docs/exemplos/eventos/dps-substituta.xml', 'utf8')).toBe(dpsXml);
       expect(validate('DPS', [dps])).toContain('XSD 1.01 válido');
       const base = buildFiscalEvent(eventFixture()).xml;

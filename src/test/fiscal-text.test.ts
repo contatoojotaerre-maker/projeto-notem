@@ -25,7 +25,7 @@ describe('Normalização de texto colado de editores', () => {
     expect(normalizeCustomerText(c)).toEqual([{ campo: 'tomador.endereco.bairro', mensagem: FISCAL_TEXT_MESSAGE }]);
     expect(c.nome).toBe("Tomador 'A' - LTDA"); expect(c.endereco.logradouro).toBe('Rua "Central"');
   });
-  it('montador da DPS recusa texto não aceito como última barreira', () => { const v = fixture(); v.service.description = 'Serviço 🚗'; expect(() => buildDps(v)).toThrow(FISCAL_TEXT_MESSAGE); });
+  it('montador da DPS recusa texto não aceito como última barreira', () => { const v = fixture(); v.service.description = 'Serviço 🚗'; expect(() => buildDps(v,'nt009r1')).toThrow(FISCAL_TEXT_MESSAGE); });
   it('montador do evento recusa justificativa com emoji', () => { const v = eventFixture(); v.justification = 'Cancelamento solicitado pelo cliente 😀'; expect(() => buildFiscalEvent(v)).toThrow(); });
 });
 
