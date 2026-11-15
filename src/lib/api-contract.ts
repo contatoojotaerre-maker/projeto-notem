@@ -1,6 +1,7 @@
 // Pure, client-safe translation between the public API v1 contract (Portuguese, readable values)
 // and the current database codes. Shared by API routes, the panel and tests.
 import { z } from 'zod';
+import { DEFAULT_IBSCBS_REQUIRED_FROM, ibsCbsMissingMessage, ibsCbsPendingWarning, serviceIbsCbsIssues, todayBr, type ServiceIbsCbs } from './ibscbs';
 import { fiscalSchema, specialTaxRuleError, validReadinessCertificate } from './fiscal';
 import { agreementUnavailableMessage, certificateSituation } from './certificates';
 import { isValidCnpj, digits, normalizeCnpj } from './notem';
@@ -177,7 +178,7 @@ export function expiryMilestone(validUntil: string, now = Date.now()): '30' | '1
 }
 
 // ---------- Readiness ----------
-export type ReadinessInput = { company: { active: boolean; cnpj: string }; certificates: { status: string; cnpj: string; valid_from: string; valid_until: string }[]; settings: Record<string, unknown> | null; services: { active: boolean;iss_taxation?:number }[]; lastQuery: { created_at: string; http_status: number | null; response_body: string | null; error_code: string | null } | null };
+export type ReadinessInput = { company: { active: boolean; cnpj: string }; certificates: { status: string; cnpj: string; valid_from: string; valid_until: string }[]; settings: Record<string, unknown> | null; services: ({ active: boolean;iss_taxation?:number } & Partial<ServiceIbsCbs>)[]; ibsCbsRequiredFrom?: string; lastQuery: { created_at: string; http_status: number | null; response_body: string | null; error_code: string | null } | null };
 export type ReadinessItem = { item: string; ok: boolean | null; mensagem: string; verificado_em?: string | null };
 const dateBr = (v: string) => new Date(v).toLocaleDateString('pt-BR', { timeZone: 'America/Sao_Paulo' });
 export function computeReadiness(env: Env, i: ReadinessInput, now = Date.now()) {
@@ -203,8 +204,15 @@ export function computeReadiness(env: Env, i: ReadinessInput, now = Date.now()) 
     { item: 'servico_ativo', ok: active > 0, mensagem: active > 0 ? `${active} ${active === 1 ? 'serviço ativo' : 'serviços ativos'}.` : 'Nenhum serviço ativo.' },
     municipio,
   ];
+  // IBS/CBS: before the obligation date only a warning (never blocks); from it, the classification is a readiness item.
+  const avisos: { item: string; mensagem: string }[] = [];
+  const requiredFrom = i.ibsCbsRequiredFrom ?? DEFAULT_IBSCBS_REQUIRED_FROM;
+  const pendingIbs = i.services.filter(s => s.active && s.service_code).filter(s => serviceIbsCbsIssues(s as ServiceIbsCbs).length > 0).length;
+  if (todayBr(now) >= requiredFrom) itens.splice(4, 0, { item: 'classificacao_ibscbs', ok: pendingIbs === 0, mensagem: pendingIbs === 0 ? 'Classificação IBS/CBS completa nos serviços ativos.' : `${ibsCbsMissingMessage(requiredFrom)} Pendente em ${pendingIbs} ${pendingIbs === 1 ? 'serviço ativo' : 'serviços ativos'}.` });
+  else if (pendingIbs > 0) avisos.push({ item: 'classificacao_ibscbs', mensagem: ibsCbsPendingWarning(requiredFrom) });
+  if (Number(i.settings?.['simples_nacional_option']) === 3 && i.services.some(s => s.active && s.service_code && !s.simples_activity_code)) avisos.push({ item: 'atividade_simples', mensagem: 'Informe a atividade do Simples Nacional nos serviços ativos: ela será obrigatória no próximo leiaute da NFS-e.' });
   const pendencias = itens.filter(x => x.ok !== true).map(x => x.item);
-  return { ambiente: envLabel(env), pronta_para_emitir: pendencias.length === 0, itens, pendencias };
+  return { ambiente: envLabel(env), pronta_para_emitir: pendencias.length === 0, itens, pendencias, avisos };
 }
 
 // ---------- Idempotency ----------
