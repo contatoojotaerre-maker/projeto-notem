@@ -47,21 +47,32 @@ export function notemMessage(i: IssueKind): string {
   }
 }
 
-/** zod 3 issue → IssueKind. `data` is the input being validated. */
-function kindOf(issue: z.ZodIssueOptionalMessage, data: unknown): IssueKind {
+type Issue = z.core.$ZodRawIssue;
+const values = (vs: readonly unknown[]) => vs.map(String);
+
+/** zod 4 issue → IssueKind (the input travels on the issue). */
+function kindOf(issue: Issue): IssueKind {
+  const missing = issue.input === undefined;
   switch (issue.code) {
-    case 'invalid_type': return issue.received === 'undefined' ? { kind: 'required' } : { kind: 'type', expected: issue.expected };
-    case 'invalid_enum_value': return data === undefined ? { kind: 'required' } : { kind: 'value', options: issue.options.map(String) };
-    case 'invalid_literal': return data === undefined ? { kind: 'required' } : { kind: 'value', options: [String(issue.expected)] };
-    case 'invalid_union': return data === undefined ? { kind: 'required' } : { kind: 'other' };
+    case 'invalid_type': return missing ? { kind: 'required' } : { kind: 'type', expected: String(issue.expected) };
+    case 'invalid_value': return missing ? { kind: 'required' } : { kind: 'value', options: values(issue.values) };
+    case 'invalid_union': return missing ? { kind: 'required' } : { kind: 'other' };
     case 'unrecognized_keys': return { kind: 'keys', keys: issue.keys };
-    case 'too_small': return { kind: 'size', dir: 'min', origin: issue.type, limit: issue.minimum, inclusive: issue.inclusive };
-    case 'too_big': return { kind: 'size', dir: 'max', origin: issue.type, limit: issue.maximum, inclusive: issue.inclusive };
-    case 'invalid_string': return { kind: 'format', format: typeof issue.validation === 'string' ? issue.validation : 'other' };
+    case 'too_small': return { kind: 'size', dir: 'min', origin: String(issue.origin), limit: issue.minimum, inclusive: issue.inclusive ?? true };
+    case 'too_big': return { kind: 'size', dir: 'max', origin: String(issue.origin), limit: issue.maximum, inclusive: issue.inclusive ?? true };
+    case 'invalid_format': return { kind: 'format', format: issue.format };
     default: return { kind: 'other' };
   }
 }
 
-z.setErrorMap((issue, ctx) => ({ message: notemMessage(kindOf(issue, ctx.data)) }));
+z.config({ customError: issue => notemMessage(kindOf(issue as Issue)) });
+
+/** E-mail rule of notem (the zod 3 rule, kept explicitly so a zod update never changes it). */
+export const EMAIL_PATTERN = /^(?!\.)(?!.*\.\.)([A-Z0-9_'+\-.]*)[A-Z0-9_+-]@([A-Z0-9][A-Z0-9-]*\.)+[A-Z]{2,}$/i;
+export const email = (message?: string) => z.email({ pattern: EMAIL_PATTERN, ...(message ? { error: message } : {}) });
+
+/** ISO date-time in UTC (Z required, seconds optional, any fraction): the criterion used before zod 4. */
+export const DATETIME_PATTERN = /^((\d\d[2468][048]|\d\d[13579][26]|\d\d0[48]|[02468][048]00|[13579][26]00)-02-29|\d{4}-((0[13578]|1[02])-(0[1-9]|[12]\d|3[01])|(0[469]|11)-(0[1-9]|[12]\d|30)|(02)-(0[1-9]|1\d|2[0-8])))T([01]\d|2[0-3]):[0-5]\d(:[0-5]\d(\.\d+)?)?Z$/;
+export const isoDateTime = () => z.string().regex(DATETIME_PATTERN, 'Data e hora inválidas.');
 
 export { z };
