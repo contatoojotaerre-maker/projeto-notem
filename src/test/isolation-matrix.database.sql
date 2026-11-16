@@ -115,6 +115,7 @@ BEGIN
   EXECUTE r->>'q' INTO n USING T, tcnpj, NULL::uuid; base := base || jsonb_build_object(r->>'n', n);
  END LOOP;
 
+ notes := notes || ('base integracao: prod='||(base->>'org_integration_summary(T, producao)')||' homolog='||(base->>'org_integration_summary(T, homologacao)'));
  notes := notes || ('base IBS/CBS: '||(SELECT string_agg(key||'='||value,', ') FROM jsonb_each_text(base) WHERE key ~ '(IBS|ibscbs|Anexo|catalogo|platform_settings)'));
  IF coalesce((base->>'servicos: colunas IBS/CBS')::bigint,0)=0 THEN notes := notes || 'IBS/CBS service columns empty at baseline'::text; END IF;
  IF coalesce((base->>'catalogo ibscbs_classifications')::bigint,0)=0 THEN notes := notes || 'IBS/CBS catalog empty at baseline'::text; END IF;
