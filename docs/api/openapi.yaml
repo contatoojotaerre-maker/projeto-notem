@@ -1053,8 +1053,8 @@ webhooks:
               tipo: webhook.teste
               criado_em: '2026-11-05T00:00:00Z'
               ambiente: homologacao
-              organizacao_id: '00000000-0000-0000-0000-000000000001'
-              integracao_id: '00000000-0000-0000-0000-000000000002'
+              organizacao_id: '00000000-0000-4000-8000-000000000001'
+              integracao_id: '00000000-0000-4000-8000-000000000002'
               dados: {}
       responses:
         '200':
