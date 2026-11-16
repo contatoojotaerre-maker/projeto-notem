@@ -1,0 +1,438 @@
+{
+  "origem": "Chromium real carregando os formulários pelo servidor de desenvolvimento",
+  "formularios": {
+    "empresa: formulário vazio": {
+      "exibida": "Campo obrigatório.",
+      "detalhes": [
+        {
+          "campo": "organization_id",
+          "mensagem": "Campo obrigatório."
+        },
+        {
+          "campo": "cnpj",
+          "mensagem": "Campo obrigatório."
+        },
+        {
+          "campo": "legal_name",
+          "mensagem": "Campo obrigatório."
+        },
+        {
+          "campo": "email",
+          "mensagem": "Campo obrigatório."
+        },
+        {
+          "campo": "phone",
+          "mensagem": "Campo obrigatório."
+        },
+        {
+          "campo": "postal_code",
+          "mensagem": "Campo obrigatório."
+        },
+        {
+          "campo": "street",
+          "mensagem": "Campo obrigatório."
+        },
+        {
+          "campo": "number",
+          "mensagem": "Campo obrigatório."
+        },
+        {
+          "campo": "complement",
+          "mensagem": "Campo obrigatório."
+        },
+        {
+          "campo": "district",
+          "mensagem": "Campo obrigatório."
+        },
+        {
+          "campo": "municipality_ibge_code",
+          "mensagem": "Campo obrigatório."
+        }
+      ]
+    },
+    "empresa: razão social vazia (mensagem da notem)": {
+      "exibida": "Informe a razão social.",
+      "detalhes": [
+        {
+          "campo": "legal_name",
+          "mensagem": "Informe a razão social."
+        }
+      ]
+    },
+    "empresa: e-mail inválido (mensagem da notem)": {
+      "exibida": "E-mail inválido.",
+      "detalhes": [
+        {
+          "campo": "email",
+          "mensagem": "E-mail inválido."
+        }
+      ]
+    },
+    "empresa: e-mail com + e .com.br": "OK",
+    "empresa: e-mail com subdomínio": "OK",
+    "empresa: UUID inválido": {
+      "exibida": "Identificador inválido (UUID).",
+      "detalhes": [
+        {
+          "campo": "organization_id",
+          "mensagem": "Identificador inválido (UUID)."
+        }
+      ]
+    },
+    "empresa: UUID fora do padrão": {
+      "exibida": "Identificador inválido (UUID).",
+      "detalhes": [
+        {
+          "campo": "organization_id",
+          "mensagem": "Identificador inválido (UUID)."
+        }
+      ]
+    },
+    "empresa: município sem 7 dígitos (mensagem da notem)": {
+      "exibida": "Selecione um município.",
+      "detalhes": [
+        {
+          "campo": "municipality_ibge_code",
+          "mensagem": "Selecione um município."
+        }
+      ]
+    },
+    "empresa: tipo errado": {
+      "exibida": "Informe um texto.",
+      "detalhes": [
+        {
+          "campo": "street",
+          "mensagem": "Informe um texto."
+        }
+      ]
+    },
+    "organização: vazia": {
+      "exibida": "Campo obrigatório.",
+      "detalhes": [
+        {
+          "campo": "name",
+          "mensagem": "Campo obrigatório."
+        },
+        {
+          "campo": "type",
+          "mensagem": "Selecione o tipo de organização."
+        }
+      ]
+    },
+    "organização: tipo inválido (mensagem da notem)": {
+      "exibida": "Selecione o tipo de organização.",
+      "detalhes": [
+        {
+          "campo": "type",
+          "mensagem": "Selecione o tipo de organização."
+        }
+      ]
+    },
+    "configuração fiscal: vazia": {
+      "exibida": "Campo obrigatório.",
+      "detalhes": [
+        {
+          "campo": "company_id",
+          "mensagem": "Campo obrigatório."
+        },
+        {
+          "campo": "organization_id",
+          "mensagem": "Campo obrigatório."
+        },
+        {
+          "campo": "simples_nacional_option",
+          "mensagem": "Campo obrigatório."
+        },
+        {
+          "campo": "simples_nacional_regime",
+          "mensagem": "Campo obrigatório."
+        },
+        {
+          "campo": "special_tax_regime",
+          "mensagem": "Campo obrigatório."
+        },
+        {
+          "campo": "dps_series",
+          "mensagem": "Campo obrigatório."
+        },
+        {
+          "campo": "approx_taxes_mode",
+          "mensagem": "Campo obrigatório."
+        },
+        {
+          "campo": "approx_simples_percent",
+          "mensagem": "Campo obrigatório."
+        },
+        {
+          "campo": "approx_federal_percent",
+          "mensagem": "Campo obrigatório."
+        },
+        {
+          "campo": "approx_state_percent",
+          "mensagem": "Campo obrigatório."
+        },
+        {
+          "campo": "approx_municipal_percent",
+          "mensagem": "Campo obrigatório."
+        }
+      ]
+    },
+    "configuração fiscal: inteiro com fração": {
+      "exibida": "Informe um número inteiro.",
+      "detalhes": [
+        {
+          "campo": "simples_nacional_option",
+          "mensagem": "Informe um número inteiro."
+        },
+        {
+          "campo": "approx_taxes_mode",
+          "mensagem": "Confira os percentuais exigidos para o modo escolhido."
+        }
+      ]
+    },
+    "configuração fiscal: número acima do limite": {
+      "exibida": "Informe um valor menor ou igual a 3.",
+      "detalhes": [
+        {
+          "campo": "simples_nacional_option",
+          "mensagem": "Informe um valor menor ou igual a 3."
+        },
+        {
+          "campo": "approx_taxes_mode",
+          "mensagem": "Confira os percentuais exigidos para o modo escolhido."
+        }
+      ]
+    },
+    "configuração fiscal: percentual acima de 100": {
+      "exibida": "Informe um valor menor ou igual a 100.",
+      "detalhes": [
+        {
+          "campo": "approx_federal_percent",
+          "mensagem": "Informe um valor menor ou igual a 100."
+        }
+      ]
+    },
+    "configuração fiscal: regime especial fora da lista": {
+      "exibida": "Valor inválido.",
+      "detalhes": [
+        {
+          "campo": "special_tax_regime",
+          "mensagem": "Valor inválido."
+        },
+        {
+          "campo": "special_tax_regime",
+          "mensagem": "Para MEI, o regime especial deve ser Nenhum (E0174)."
+        }
+      ]
+    },
+    "configuração fiscal: série acima de 49999": {
+      "exibida": "Informe um valor menor ou igual a 49.999.",
+      "detalhes": [
+        {
+          "campo": "dps_series",
+          "mensagem": "Informe um valor menor ou igual a 49.999."
+        }
+      ]
+    },
+    "configuração fiscal: ISS do Simples abaixo do mínimo (mensagem da notem)": {
+      "exibida": "A alíquota do ISS deve ser pelo menos 1,80%.",
+      "detalhes": [
+        {
+          "campo": "simples_iss_withholding_percent",
+          "mensagem": "A alíquota do ISS deve ser pelo menos 1,80%."
+        }
+      ]
+    },
+    "configuração fiscal: modo inválido": {
+      "exibida": "Valor inválido. Use: percent_simples, percent_by_sphere ou none.",
+      "detalhes": [
+        {
+          "campo": "approx_taxes_mode",
+          "mensagem": "Valor inválido. Use: percent_simples, percent_by_sphere ou none."
+        }
+      ]
+    },
+    "serviço: nome vazio": {
+      "exibida": "Informe um valor.",
+      "detalhes": [
+        {
+          "campo": "name",
+          "mensagem": "Informe um valor."
+        }
+      ]
+    },
+    "serviço: nome longo": {
+      "exibida": "Use no máximo 200 caracteres.",
+      "detalhes": [
+        {
+          "campo": "name",
+          "mensagem": "Use no máximo 200 caracteres."
+        }
+      ]
+    },
+    "serviço: código de serviço sem 6 dígitos": {
+      "exibida": "Formato inválido.",
+      "detalhes": [
+        {
+          "campo": "service_code",
+          "mensagem": "Formato inválido."
+        }
+      ]
+    },
+    "serviço: imunidade (regra da notem)": {
+      "exibida": "Informe o tipo de imunidade somente para tributação por imunidade.",
+      "detalhes": [
+        {
+          "campo": "immunity_type",
+          "mensagem": "Informe o tipo de imunidade somente para tributação por imunidade."
+        }
+      ]
+    },
+    "webhook: vazio": {
+      "exibida": "Campo obrigatório.",
+      "detalhes": [
+        {
+          "campo": "organization_id",
+          "mensagem": "Campo obrigatório."
+        },
+        {
+          "campo": "integration_id",
+          "mensagem": "Campo obrigatório."
+        },
+        {
+          "campo": "environment",
+          "mensagem": "Campo obrigatório."
+        },
+        {
+          "campo": "url",
+          "mensagem": "Campo obrigatório."
+        },
+        {
+          "campo": "events",
+          "mensagem": "Campo obrigatório."
+        }
+      ]
+    },
+    "webhook: sem eventos (mensagem da notem)": {
+      "exibida": "Escolha pelo menos um evento.",
+      "detalhes": [
+        {
+          "campo": "events",
+          "mensagem": "Escolha pelo menos um evento."
+        }
+      ]
+    },
+    "webhook: evento inválido": {
+      "exibida": "Valor inválido. Use: webhook.teste, nota.autorizada, nota.rejeitada, nota.cancelada, nota.cancelamento_em_analise, nota.cancelamento_indeferido, nota.substituida, nota.cancelada_prefeitura, nota.bloqueada_prefeitura, nota.desbloqueada_prefeitura, nota.manifestacao, empresa.situacao_alterada, certificado.vencendo, certificado.vencido, municipio.disponivel, nota.*, empresa.*, certificado.* ou municipio.*.",
+      "detalhes": [
+        {
+          "campo": "events.0",
+          "mensagem": "Valor inválido. Use: webhook.teste, nota.autorizada, nota.rejeitada, nota.cancelada, nota.cancelamento_em_analise, nota.cancelamento_indeferido, nota.substituida, nota.cancelada_prefeitura, nota.bloqueada_prefeitura, nota.desbloqueada_prefeitura, nota.manifestacao, empresa.situacao_alterada, certificado.vencendo, certificado.vencido, municipio.disponivel, nota.*, empresa.*, certificado.* ou municipio.*."
+        }
+      ]
+    },
+    "webhook: eventos demais": {
+      "exibida": "Informe no máximo 18 itens.",
+      "detalhes": [
+        {
+          "campo": "events",
+          "mensagem": "Informe no máximo 18 itens."
+        }
+      ]
+    },
+    "webhook: descrição longa": {
+      "exibida": "Use no máximo 2.000 caracteres.",
+      "detalhes": [
+        {
+          "campo": "description",
+          "mensagem": "Use no máximo 2.000 caracteres."
+        }
+      ]
+    },
+    "webhook: endereço inválido (mensagem da notem)": {
+      "exibida": "Informe um endereço HTTPS público, sem credenciais.",
+      "detalhes": [
+        {
+          "campo": "url",
+          "mensagem": "Informe um endereço HTTPS público, sem credenciais."
+        }
+      ]
+    },
+    "webhook: ambiente inválido": {
+      "exibida": "Valor inválido. Use: sandbox ou production.",
+      "detalhes": [
+        {
+          "campo": "environment",
+          "mensagem": "Valor inválido. Use: sandbox ou production."
+        }
+      ]
+    },
+    "webhook: ativo como texto": {
+      "exibida": "Informe true ou false.",
+      "detalhes": [
+        {
+          "campo": "auth_clear",
+          "mensagem": "Informe true ou false."
+        }
+      ]
+    },
+    "integração: vazia": {
+      "exibida": "Campo obrigatório.",
+      "detalhes": [
+        {
+          "campo": "organization_id",
+          "mensagem": "Campo obrigatório."
+        },
+        {
+          "campo": "name",
+          "mensagem": "Campo obrigatório."
+        }
+      ]
+    },
+    "integração: escopo diferente de all": {
+      "exibida": "Valor inválido. Use: all.",
+      "detalhes": [
+        {
+          "campo": "company_scope",
+          "mensagem": "Valor inválido. Use: all."
+        }
+      ]
+    },
+    "integração: empresas selecionadas": {
+      "exibida": "Informe no máximo 0 itens.",
+      "detalhes": [
+        {
+          "campo": "company_ids",
+          "mensagem": "Informe no máximo 0 itens."
+        }
+      ]
+    },
+    "integração: nome longo": {
+      "exibida": "Use no máximo 100 caracteres.",
+      "detalhes": [
+        {
+          "campo": "name",
+          "mensagem": "Use no máximo 100 caracteres."
+        }
+      ]
+    },
+    "tomador: tipo inválido": {
+      "exibida": "Valor inválido. Use: pj, pf ou estrangeiro.",
+      "detalhes": [
+        {
+          "campo": "tipo",
+          "mensagem": "Valor inválido. Use: pj, pf ou estrangeiro."
+        }
+      ]
+    },
+    "tomador: e-mail longo": {
+      "exibida": "Use no máximo 80 caracteres.",
+      "detalhes": [
+        {
+          "campo": "email",
+          "mensagem": "Use no máximo 80 caracteres."
+        }
+      ]
+    }
+  }
+}
