@@ -42,11 +42,18 @@ export const updatePreferences = createServerFn({ method: 'POST' }).middleware([
   if (result.error) {console.error('notem: database error',result.error.code);throw new Error('Não foi possível carregar ou salvar os dados. Tente novamente.')};
   return { ok:true };
 });
-export const getCompanies = createServerFn({method:'POST'}).middleware([requireSupabaseAuth]).inputValidator(z.object({organization_id:z.string().uuid(),search:z.string().default(''),page:integer().min(0).default(0)})).handler(async ({context,data}) => {
-  let query=context.supabase.from('companies').select('*',{count:'exact'}).eq('organization_id',data.organization_id).order('legal_name').range(data.page*30,data.page*30+29);
+/** Empresas list. Rows come from the caller's own row rules; the situation (pronta / com pendência / inativa)
+ *  uses the same readiness calculation as the Início and the API, in the selected environment. */
+export const getCompanies = createServerFn({method:'POST'}).middleware([requireSupabaseAuth]).inputValidator(z.object({organization_id:z.string().uuid(),search:z.string().default(''),page:integer().min(0).default(0),environment:z.enum(['sandbox','production']).default('production'),situacao:z.enum(['','prontas','pendencia','inativas']).default('')})).handler(async ({context,data}) => {
+  const {requireOrgMember}=await import('./panel-access');await requireOrgMember(context.supabase,data.organization_id);
+  let query=context.supabase.from('companies').select('*').eq('organization_id',data.organization_id).order('legal_name');
   const search=data.search.replace(/[%_,().]/g,'').trim();
   if(search){const cnpj=normalizeCnpj(search);query=query.or(`legal_name.ilike.%${search}%,trade_name.ilike.%${search}%,cnpj.ilike.%${search}%${cnpj&&cnpj!==search?`,cnpj.ilike.%${cnpj}%`:''}`);}
-  const result=await query; if(result.error) {console.error('notem: database error',result.error.code);throw new Error('Não foi possível carregar ou salvar os dados. Tente novamente.')}; return {rows:result.data ?? [],count:result.count ?? 0};
+  const result=await query; if(result.error) {console.error('notem: database error',result.error.code);throw new Error('Não foi possível carregar ou salvar os dados. Tente novamente.')};
+  const {supabaseAdmin}=await import('@/integrations/supabase/client.server');const {loadOrgReadiness}=await import('./panel-home.server');const {companySituation}=await import('./home-metrics');
+  const states=new Map((await loadOrgReadiness(supabaseAdmin,data.organization_id,data.environment)).map(c=>[c.id,companySituation(c)]));
+  const rows=(result.data??[]).map(c=>({...c,situacao:states.get(c.id)??(c.active?'pendencia' as const:'inativas' as const)})).filter(c=>!data.situacao||c.situacao===data.situacao);
+  return {rows:rows.slice(data.page*30,data.page*30+30),count:rows.length};
 });
 export const getCompany = createServerFn({method:'POST'}).middleware([requireSupabaseAuth]).inputValidator(z.object({id:z.string().uuid(),organization_id:z.string().uuid()})).handler(async({context,data})=>{
   const result=await context.supabase.from('companies').select('*, municipalities(*)').eq('id',data.id).eq('organization_id',data.organization_id).single();if(result.error)throw new Error('Empresa não encontrada ou acesso não autorizado.');

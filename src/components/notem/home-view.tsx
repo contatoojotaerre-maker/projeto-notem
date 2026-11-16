@@ -39,7 +39,7 @@ export function HomeView({ organizationId, slug, name, canCreate }: { organizati
       <p className="mt-3 text-xs text-muted-foreground">De {dateBr(data.period.current.first)} a {dateBr(data.period.current.last)}, pela data de emissão (horário de Brasília). O número grande conta as notas emitidas pela notem. {compared}</p></Section>
 
     {i && <Section title="Integração (últimas 24 horas)">{!i.integrations
-      ? <div className="flex flex-wrap items-center justify-between gap-3 border-y border-border py-6 text-muted-foreground">Nenhuma integração criada{canCreate && <Link to="/o/$orgSlug/integracoes" params={{ orgSlug: slug }} className="inline-flex items-center gap-1 text-sm text-foreground underline underline-offset-4">Ir para Integrações<ArrowUpRight size={14} /></Link>}</div>
+      ? <div className="flex flex-wrap items-center justify-between gap-3 border-y border-border py-6 text-muted-foreground">Nenhuma integração criada{/* the block is shown only to roles that can create integrations */}<Link to="/o/$orgSlug/integracoes" params={{ orgSlug: slug }} className="inline-flex items-center gap-1 text-sm text-foreground underline underline-offset-4">Ir para Integrações<ArrowUpRight size={14} /></Link></div>
       : <div className="metric-grid">
         {logs(<Tile label="Chamadas à API" value={i.calls} />)}
         <Tooltip><TooltipTrigger asChild>{logs(<><Tile label="Chamadas com erro" value={errors} /><span className="sr-only">Erros do pedido (4xx): {i.client_errors}. Erros da notem (5xx): {i.server_errors}.</span></>)}</TooltipTrigger>
