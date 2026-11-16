@@ -158,6 +158,9 @@ BEGIN
   jsonb_build_object('n','RPC ibscbs_service_rule_error','q','select public.ibscbs_service_rule_error(''010501'',''000001'',''100501'',null)','a',all_auth),
   jsonb_build_object('n','RPC ibscbs_regime_default','q','select public.ibscbs_regime_default(1)','a',all_auth),
   jsonb_build_object('n','RPC set_fiscal_platform_setting','q','select public.set_fiscal_platform_setting(''ibscbs_required_production_from'',''2026-12-01'',$3)','a','[]'),
+  -- Fase 8: support contact is read and written only by the server (service role), never directly by users
+  jsonb_build_object('n','RPC platform_support_contact','q','select count(*) from public.platform_support_contact()','a','[]'),
+  jsonb_build_object('n','RPC set_platform_support','q','select count(*) from public.set_platform_support(''x@y.co'',''5548999990000'',$3)','a','[]'),
   jsonb_build_object('n','alterar data IBS/CBS direto','q','update public.platform_settings set ibscbs_required_production_from=ibscbs_required_production_from','a','[]'),
   jsonb_build_object('n','alterar catalogo ibscbs_classifications','q','update public.ibscbs_classifications set code=code','a','[]'),
   jsonb_build_object('n','apagar catalogo ibscbs_classifications','q','delete from public.ibscbs_classifications','a','[]'),
