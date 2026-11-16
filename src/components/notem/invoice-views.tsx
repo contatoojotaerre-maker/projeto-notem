@@ -16,6 +16,7 @@ import { useWorkspace } from './app-shell';
 import { IbsCbsSection } from './ibs-cbs-values';
 import { InvoiceActions, PendingNotice, cancelReasonLabels, cancellationStatusLabels } from './invoice-actions';
 import { ExternalDetail, OfficialEvents, RefreshButton } from './sync-views';
+import { formatDocument } from '@/lib/note-display';
 import { PdfButton, TakerDetails, TakerSection, ValuesSection, saveXml } from './note-sections';
 
 const object = (v: unknown): Record<string, unknown> => v && typeof v === 'object' && !Array.isArray(v) ? v as Record<string, unknown> : {};
@@ -94,5 +95,4 @@ export function CustomersTab({ companyId, organizationId }: { companyId: string;
   return <><h2 className="mb-5 text-lg font-medium">Tomadores</h2>{data.rows.length ? <div className="divide-y divide-border">{data.rows.map(r => { const c = object(r.customer_data); return <details key={r.id} className="py-5"><summary className="cursor-pointer"><span className="font-medium">{display(c['nome'])}</span><span className="ml-3 text-sm text-muted-foreground">{c['documento'] ? <DocumentText value={c['documento']} /> : display(c['nif'])}</span></summary><div className="mt-4"><TakerDetails taker={c} /></div><p className="mt-4 text-xs text-muted-foreground">Identificação externa: {r.external_id ?? '—'} · Atualizado em {dateTimeBr(r.updated_at)}</p></details>; })}</div> : <div className="flex items-center gap-3 border-y border-border py-8 text-muted-foreground"><Users className="size-5" />Nenhum tomador cadastrado.</div>}
     <div className="mt-5 flex justify-end gap-2"><Button variant="outline" size="icon" aria-label="Tomadores anteriores" disabled={!offset} onClick={() => setOffset(Math.max(0, offset - 50))}><ChevronLeft /></Button><Button variant="outline" size="icon" aria-label="Próximos tomadores" disabled={!data.more} onClick={() => setOffset(offset + 50)}><ChevronRight /></Button></div></>;
 }
-import { formatDocument } from '@/lib/note-display';
 function DocumentText({ value }: { value: unknown }) { return <>{formatDocument(value)}</>; }
