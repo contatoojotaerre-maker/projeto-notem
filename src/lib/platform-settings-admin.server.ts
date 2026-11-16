@@ -50,3 +50,21 @@ export async function changeFiscalSetting(caller: Caller, userId: string, settin
   if (r.error) return { ok: false, mensagem: r.error.message.includes('SEM_PERMISSAO') ? LAYOUT_DENIED : r.error.message.includes('DATA_INVALIDA') ? 'A data deve estar entre 2026 e 2035.' : 'Não foi possível salvar. Tente novamente.' };
   return { ok: true, status: status(r.data as Row, now) };
 }
+
+// ---------- Support contact (Ajuda) ----------
+export const SUPPORT_DENIED = 'Somente o administrador da plataforma pode alterar o contato de suporte.';
+export type SupportContact = { email: string | null; whatsapp: string | null };
+export async function readSupportSettings(caller: Caller): Promise<{ ok: true; contact: SupportContact } | { ok: false; mensagem: string }> {
+  if (!await isPlatformAdmin(caller)) return { ok: false, mensagem: SUPPORT_DENIED };
+  const { supabaseAdmin } = await import('@/integrations/supabase/client.server');
+  const r = await supabaseAdmin.rpc('platform_support_contact'); if (r.error) return { ok: false, mensagem: 'Não foi possível carregar o contato de suporte.' };
+  const row = (r.data ?? [])[0]; return { ok: true, contact: { email: row?.support_email ?? null, whatsapp: row?.support_whatsapp ?? null } };
+}
+/** WhatsApp: digits only with the 55 country code (e.g. 5548999990000); empty fields hide the block in Ajuda. */
+export async function changeSupportSettings(caller: Caller, userId: string, email: string, whatsapp: string): Promise<{ ok: true; contact: SupportContact } | { ok: false; mensagem: string }> {
+  if (!await isPlatformAdmin(caller)) return { ok: false, mensagem: SUPPORT_DENIED };
+  const { supabaseAdmin } = await import('@/integrations/supabase/client.server');
+  const r = await supabaseAdmin.rpc('set_platform_support', { _email: email, _whatsapp: whatsapp, _actor: userId });
+  if (r.error) return { ok: false, mensagem: r.error.message.includes('SEM_PERMISSAO') ? SUPPORT_DENIED : r.error.message.includes('EMAIL_INVALIDO') ? 'E-mail inválido.' : r.error.message.includes('WHATSAPP_INVALIDO') ? 'WhatsApp inválido. Use só números, com 55 e o DDD (ex.: 5548999990000).' : 'Não foi possível salvar. Tente novamente.' };
+  const row = (r.data ?? [])[0]; return { ok: true, contact: { email: row?.support_email ?? null, whatsapp: row?.support_whatsapp ?? null } };
+}

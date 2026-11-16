@@ -18,3 +18,14 @@ export const updateFiscalPlatformSetting = createServerFn({ method: 'POST' }).mi
     const { changeFiscalSetting } = await import('./platform-settings-admin.server');
     return changeFiscalSetting(context.supabase, context.userId, data.setting, data.value);
   });
+export const WHATSAPP_PATTERN = /^55\d{10,11}$/;
+export const getSupportSettings = createServerFn({ method: 'POST' }).middleware([requireSupabaseAuth]).handler(async ({ context }) => {
+  const { readSupportSettings } = await import('./platform-settings-admin.server');
+  return readSupportSettings(context.supabase);
+});
+export const updateSupportSettings = createServerFn({ method: 'POST' }).middleware([requireSupabaseAuth])
+  .inputValidator((d: unknown) => z.object({ email: z.union([z.literal(''), z.string().trim().max(254).regex(/^[^@\s]+@[^@\s]+\.[^@\s]+$/, 'E-mail inválido.')]), whatsapp: z.union([z.literal(''), z.string().trim().regex(WHATSAPP_PATTERN, 'WhatsApp inválido. Use só números, com 55 e o DDD (ex.: 5548999990000).')]) }).parse(d))
+  .handler(async ({ context, data }) => {
+    const { changeSupportSettings } = await import('./platform-settings-admin.server');
+    return changeSupportSettings(context.supabase, context.userId, data.email, data.whatsapp);
+  });
