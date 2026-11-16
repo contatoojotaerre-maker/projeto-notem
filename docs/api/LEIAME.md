@@ -12,6 +12,7 @@ Documentação oficial para integrar sistemas parceiros à API da notem.
 | `notas.md` | Emissão e consulta da NFS-e, tomadores, rejeições e DANFSe em PDF |
 | `cancelamento.md` | Cancelamento, análise fiscal do cancelamento e substituição de NFS-e |
 | `sincronizacao.md` | Notas emitidas fora da notem, notas recebidas e situação da sincronização com o governo |
+| `historico.md` | Histórico de alterações da API |
 
 ## Endereços
 Endereço oficial: `https://app.notemfiscal.com.br/api/v1`.

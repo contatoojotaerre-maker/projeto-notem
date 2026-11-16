@@ -83,6 +83,8 @@ Todo erro tem **sempre** o mesmo formato:
 ```
 
 - `codigo`: código estável da notem (lista abaixo). Use-o na lógica do seu sistema; a `mensagem` pode mudar de redação.
+- `detalhes[].campo` é estável; `detalhes[].mensagem` é sempre em português, escrita pela notem, e pode ser melhorada. Não compare textos de mensagem no seu sistema.
+- Identificadores (`id`, `empresa_id`, `tomador_id` etc.) são UUID no padrão RFC 9562, no corpo, na consulta e no caminho. Fora do padrão: `400 REQUISICAO_INVALIDA` com o `campo` correspondente. Um UUID válido que não existe ou é de outra organização continua `404 NAO_ENCONTRADO`.
 - `codigo_governo` / `mensagem_governo`: preenchidos quando o erro veio do governo (ex.: `E0014`).
 - `id_requisicao`: também enviado no cabeçalho `X-Request-Id` de **toda** resposta. Informe-o ao suporte.
 

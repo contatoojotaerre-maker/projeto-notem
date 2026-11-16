@@ -519,7 +519,7 @@ components:
       name: id
       in: path
       required: true
-      description: "Empresa da organização da chave (de outra organização → 404)"
+      description: "Empresa da organização da chave (de outra organização → 404). UUID (RFC 9562); fora do padrão → 400 REQUISICAO_INVALIDA com campo id."
       schema: { type: string, format: uuid }
     Cursor:
       name: cursor
