@@ -1,7 +1,7 @@
 import { ruleMessage } from './rule-error';
 // Cancellation (e101101) and fiscal analysis (e101103) requests: durable record before sending,
 // ambiguous replies are confirmed by consulting the event and never re-sent blindly.
-import { z } from 'zod';
+import { z } from './validation';
 import type { Database, Json } from '@/integrations/supabase/types';
 import type { DB, ApiResult } from './api.server';
 import { callTransmissor } from './transmissor.server';
@@ -26,7 +26,7 @@ export type EventKind = 'cancel' | 'analysis';
 export const analysisCodes = ['E0822', 'E0823', 'E0824', 'E0827'];
 /** Rejections meaning a cancellation event may already exist: consult 101101/1 before refusing. */
 export const alreadyRegisteredCodes = ['E0840', 'E0802', 'E1805'];
-export const eventBody = z.object({ motivo: z.enum(['erro_emissao', 'servico_nao_prestado', 'outros']), justificativa: z.string().max(2000) }).strict();
+export const eventBody = z.strictObject({ motivo: z.enum(['erro_emissao', 'servico_nao_prestado', 'outros']), justificativa: z.string().max(2000) });
 type EventReply = { evento_assinado?: string; resposta?: GovernmentReply };
 type Outcome = { event: FiscalEvent; invoice: Invoice };
 type Patch = { status: 'not_sent' | 'verifying' | 'registered' | 'rejected' | 'not_registered'; signed_xml?: string; event_xml?: string; government_response?: Json; government_errors?: Json; can_request_analysis?: boolean; registered_outside?: boolean; registered_at?: string | undefined };

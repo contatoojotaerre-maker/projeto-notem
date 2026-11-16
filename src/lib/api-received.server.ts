@@ -1,16 +1,15 @@
 // API v1: received notes of a company (taker or intermediary) and the read-only synchronization status.
 import type { ApiCtx, ApiResult } from './api.server';
-import { dateRange, fail, page, pageParams } from './api-contract';
+import { dateRange, fail, idParam, page, pageParams } from './api-contract';
 import { invoiceStatuses } from './invoices';
 import { pdfStatuses } from './danfse';
 import { receivedOut } from './nfse-documents';
 import { companySyncStatus, documentXml, listReceivedNotes, loadReceivedNote } from './notes.server';
 import { CNPJ_PATTERN, normalizeCnpj } from './notem';
 
-const uuid = (v: string | undefined) => !!v && /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(v);
-function companyId(ctx: ApiCtx) { const id = ctx.params['id']; if (!uuid(id)) throw fail(404, 'NAO_ENCONTRADO'); ctx.setCompany(id!); return id!; }
+function companyId(ctx: ApiCtx) { const id = idParam(ctx.params['id'], 'id'); ctx.setCompany(id); return id; }
 async function received(ctx: ApiCtx) {
-  const id = companyId(ctx); const nota = ctx.params['notaId']; if (!uuid(nota)) throw fail(404, 'NAO_ENCONTRADO');
+  const id = companyId(ctx); const nota = idParam(ctx.params['notaId'], 'nota_id');
   const r = await loadReceivedNote(ctx.db, ctx.organization_id, ctx.env, id, nota!); if (!r) throw fail(404, 'NAO_ENCONTRADO'); return { ...r, companyId: id };
 }
 export async function listReceived(ctx: ApiCtx): Promise<ApiResult> {

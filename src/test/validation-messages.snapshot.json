@@ -1,0 +1,998 @@
+{
+  "api": {
+    "empresa: corpo vazio": {
+      "status": 400,
+      "codigo": "REQUISICAO_INVALIDA",
+      "detalhes": [
+        {
+          "campo": "cnpj",
+          "mensagem": "Campo obrigatório."
+        },
+        {
+          "campo": "razao_social",
+          "mensagem": "Campo obrigatório."
+        },
+        {
+          "campo": "endereco",
+          "mensagem": "Campo obrigatório."
+        }
+      ]
+    },
+    "empresa: corpo lista": {
+      "status": 400,
+      "codigo": "REQUISICAO_INVALIDA",
+      "detalhes": [
+        {
+          "campo": "corpo",
+          "mensagem": "Informe um objeto JSON."
+        }
+      ]
+    },
+    "empresa: corpo nulo": {
+      "status": 400,
+      "codigo": "REQUISICAO_INVALIDA",
+      "detalhes": [
+        {
+          "campo": "corpo",
+          "mensagem": "Informe um objeto JSON."
+        }
+      ]
+    },
+    "empresa: tipo errado": {
+      "status": 400,
+      "codigo": "REQUISICAO_INVALIDA",
+      "detalhes": [
+        {
+          "campo": "razao_social",
+          "mensagem": "Informe um texto."
+        }
+      ]
+    },
+    "empresa: booleano como texto": {
+      "status": 400,
+      "codigo": "REQUISICAO_INVALIDA",
+      "detalhes": [
+        {
+          "campo": "ativa",
+          "mensagem": "Informe true ou false."
+        }
+      ]
+    },
+    "empresa: campo desconhecido": {
+      "status": 400,
+      "codigo": "REQUISICAO_INVALIDA",
+      "detalhes": [
+        {
+          "campo": "corpo",
+          "mensagem": "Campo não aceito: x."
+        }
+      ]
+    },
+    "empresa: nome de campo desconhecido muito longo": {
+      "status": 400,
+      "codigo": "REQUISICAO_INVALIDA",
+      "detalhes": [
+        {
+          "campo": "corpo",
+          "mensagem": "Campo não aceito: campo_com_nome_muito_longo_campo_com_nome_muito_longo_campo…."
+        }
+      ]
+    },
+    "empresa: 20 campos desconhecidos": {
+      "status": 400,
+      "codigo": "REQUISICAO_INVALIDA",
+      "detalhes": [
+        {
+          "campo": "corpo",
+          "mensagem": "Campos não aceitos: extra_01, extra_02, extra_03, extra_04, extra_05 e mais 15."
+        }
+      ]
+    },
+    "empresa: campo desconhecido no endereço": {
+      "status": 400,
+      "codigo": "REQUISICAO_INVALIDA",
+      "detalhes": [
+        {
+          "campo": "endereco",
+          "mensagem": "Campo não aceito: uf."
+        }
+      ]
+    },
+    "empresa: e-mail inválido (mensagem da notem)": {
+      "status": 400,
+      "codigo": "REQUISICAO_INVALIDA",
+      "detalhes": [
+        {
+          "campo": "email",
+          "mensagem": "E-mail inválido."
+        }
+      ]
+    },
+    "empresa: e-mail com + e .com.br": "OK",
+    "empresa: texto longo": {
+      "status": 400,
+      "codigo": "REQUISICAO_INVALIDA",
+      "detalhes": [
+        {
+          "campo": "razao_social",
+          "mensagem": "Use no máximo 200 caracteres."
+        }
+      ]
+    },
+    "empresa: texto vazio": {
+      "status": 400,
+      "codigo": "REQUISICAO_INVALIDA",
+      "detalhes": [
+        {
+          "campo": "razao_social",
+          "mensagem": "Informe um valor."
+        }
+      ]
+    },
+    "empresa: CEP (mensagem da notem)": {
+      "status": 400,
+      "codigo": "REQUISICAO_INVALIDA",
+      "detalhes": [
+        {
+          "campo": "endereco.cep",
+          "mensagem": "CEP com 8 números."
+        }
+      ]
+    },
+    "empresa: CNPJ inválido (mensagem da notem)": {
+      "status": 400,
+      "codigo": "REQUISICAO_INVALIDA",
+      "detalhes": [
+        {
+          "campo": "cnpj",
+          "mensagem": "CNPJ inválido."
+        }
+      ]
+    },
+    "empresa PATCH: campo desconhecido": {
+      "status": 400,
+      "codigo": "REQUISICAO_INVALIDA",
+      "detalhes": [
+        {
+          "campo": "corpo",
+          "mensagem": "Campo não aceito: y."
+        }
+      ]
+    },
+    "empresa PATCH: id_externo vazio": {
+      "status": 400,
+      "codigo": "REQUISICAO_INVALIDA",
+      "detalhes": [
+        {
+          "campo": "id_externo",
+          "mensagem": "Informe um valor."
+        }
+      ]
+    },
+    "configuração fiscal: vazia": {
+      "status": 400,
+      "codigo": "REQUISICAO_INVALIDA",
+      "detalhes": [
+        {
+          "campo": "simples_nacional",
+          "mensagem": "Campo obrigatório."
+        },
+        {
+          "campo": "regime_especial",
+          "mensagem": "Campo obrigatório."
+        },
+        {
+          "campo": "tributos_aproximados",
+          "mensagem": "Campo obrigatório."
+        }
+      ]
+    },
+    "configuração fiscal: opção inválida": {
+      "status": 400,
+      "codigo": "REQUISICAO_INVALIDA",
+      "detalhes": [
+        {
+          "campo": "simples_nacional",
+          "mensagem": "Valor inválido. Use: nao_optante, mei ou me_epp."
+        }
+      ]
+    },
+    "configuração fiscal: campo desconhecido": {
+      "status": 400,
+      "codigo": "REQUISICAO_INVALIDA",
+      "detalhes": [
+        {
+          "campo": "corpo",
+          "mensagem": "Campo não aceito: z."
+        }
+      ]
+    },
+    "configuração fiscal: percentual (mensagem da notem)": {
+      "status": 400,
+      "codigo": "REQUISICAO_INVALIDA",
+      "detalhes": [
+        {
+          "campo": "tributos_aproximados.percentual_simples",
+          "mensagem": "Use texto com ponto decimal e até 2 casas, ex.: \"2.00\"."
+        }
+      ]
+    },
+    "serviço: vazio": {
+      "status": 400,
+      "codigo": "REQUISICAO_INVALIDA",
+      "detalhes": [
+        {
+          "campo": "nome",
+          "mensagem": "Campo obrigatório."
+        },
+        {
+          "campo": "codigo_servico",
+          "mensagem": "Campo obrigatório."
+        },
+        {
+          "campo": "tributacao_iss",
+          "mensagem": "Campo obrigatório."
+        },
+        {
+          "campo": "retencao_iss",
+          "mensagem": "Campo obrigatório."
+        }
+      ]
+    },
+    "serviço: campo desconhecido": {
+      "status": 400,
+      "codigo": "REQUISICAO_INVALIDA",
+      "detalhes": [
+        {
+          "campo": "corpo",
+          "mensagem": "Campo não aceito: k."
+        }
+      ]
+    },
+    "serviço PATCH: nome longo": {
+      "status": 400,
+      "codigo": "REQUISICAO_INVALIDA",
+      "detalhes": [
+        {
+          "campo": "nome",
+          "mensagem": "Use no máximo 200 caracteres."
+        }
+      ]
+    },
+    "serviço: código (mensagem da notem)": {
+      "status": 400,
+      "codigo": "REQUISICAO_INVALIDA",
+      "detalhes": [
+        {
+          "campo": "codigo_servico",
+          "mensagem": "Código nacional de 6 dígitos."
+        }
+      ]
+    },
+    "certificado: vazio": {
+      "status": 400,
+      "codigo": "REQUISICAO_INVALIDA",
+      "detalhes": [
+        {
+          "campo": "arquivo_base64",
+          "mensagem": "Campo obrigatório."
+        },
+        {
+          "campo": "senha",
+          "mensagem": "Campo obrigatório."
+        }
+      ]
+    },
+    "certificado: senha longa": {
+      "status": 400,
+      "codigo": "REQUISICAO_INVALIDA",
+      "detalhes": [
+        {
+          "campo": "senha",
+          "mensagem": "Use no máximo 500 caracteres."
+        }
+      ]
+    },
+    "nota: vazia": {
+      "status": 400,
+      "codigo": "REQUISICAO_INVALIDA",
+      "detalhes": [
+        {
+          "campo": "valores",
+          "mensagem": "Campo obrigatório."
+        }
+      ]
+    },
+    "nota: UUID inválido": {
+      "status": 400,
+      "codigo": "REQUISICAO_INVALIDA",
+      "detalhes": [
+        {
+          "campo": "empresa_id",
+          "mensagem": "Identificador inválido (UUID)."
+        }
+      ]
+    },
+    "nota: UUID fora do padrão": {
+      "status": 400,
+      "codigo": "REQUISICAO_INVALIDA",
+      "detalhes": [
+        {
+          "campo": "empresa_id",
+          "mensagem": "Identificador inválido (UUID)."
+        }
+      ]
+    },
+    "nota: opção inválida": {
+      "status": 400,
+      "codigo": "REQUISICAO_INVALIDA",
+      "detalhes": [
+        {
+          "campo": "retencao_iss",
+          "mensagem": "Valor inválido. Use: nao_retido, retido_tomador ou retido_intermediario."
+        }
+      ]
+    },
+    "nota: campo desconhecido": {
+      "status": 400,
+      "codigo": "REQUISICAO_INVALIDA",
+      "detalhes": [
+        {
+          "campo": "corpo",
+          "mensagem": "Campo não aceito: extra."
+        }
+      ]
+    },
+    "nota: campo desconhecido + regra da notem": {
+      "status": 400,
+      "codigo": "REQUISICAO_INVALIDA",
+      "detalhes": [
+        {
+          "campo": "corpo",
+          "mensagem": "Campo não aceito: extra."
+        },
+        {
+          "campo": "empresa_id",
+          "mensagem": "Informe empresa_id ou empresa_id_externo, nunca ambos."
+        }
+      ]
+    },
+    "nota: campo desconhecido em valores": {
+      "status": 400,
+      "codigo": "REQUISICAO_INVALIDA",
+      "detalhes": [
+        {
+          "campo": "valores",
+          "mensagem": "Campo não aceito: x."
+        }
+      ]
+    },
+    "nota: valor como número": {
+      "status": 400,
+      "codigo": "REQUISICAO_INVALIDA",
+      "detalhes": [
+        {
+          "campo": "valores.servico",
+          "mensagem": "Informe um texto."
+        }
+      ]
+    },
+    "nota: valor sem duas casas (mensagem da notem)": {
+      "status": 400,
+      "codigo": "REQUISICAO_INVALIDA",
+      "detalhes": [
+        {
+          "campo": "valores.servico",
+          "mensagem": "Use texto decimal com duas casas."
+        }
+      ]
+    },
+    "nota: descrição longa": {
+      "status": 400,
+      "codigo": "REQUISICAO_INVALIDA",
+      "detalhes": [
+        {
+          "campo": "descricao",
+          "mensagem": "Use no máximo 2.000 caracteres."
+        }
+      ]
+    },
+    "nota: competência em formato errado": {
+      "status": 400,
+      "codigo": "REQUISICAO_INVALIDA",
+      "detalhes": [
+        {
+          "campo": "competencia",
+          "mensagem": "Formato inválido."
+        }
+      ]
+    },
+    "nota: tomador com e-mail inválido (mensagem da notem)": {
+      "status": 400,
+      "codigo": "REQUISICAO_INVALIDA",
+      "detalhes": [
+        {
+          "campo": "tomador.email",
+          "mensagem": "E-mail inválido."
+        }
+      ]
+    },
+    "nota: tomador com campo desconhecido": {
+      "status": 400,
+      "codigo": "REQUISICAO_INVALIDA",
+      "detalhes": [
+        {
+          "campo": "tomador",
+          "mensagem": "Campo não aceito: q."
+        }
+      ]
+    },
+    "nota: tomador com tipo inválido": {
+      "status": 400,
+      "codigo": "REQUISICAO_INVALIDA",
+      "detalhes": [
+        {
+          "campo": "tomador.tipo",
+          "mensagem": "Valor inválido. Use: pj, pf ou estrangeiro."
+        }
+      ]
+    },
+    "nota: local sem 7 dígitos": {
+      "status": 400,
+      "codigo": "REQUISICAO_INVALIDA",
+      "detalhes": [
+        {
+          "campo": "local_prestacao.codigo_municipio",
+          "mensagem": "Formato inválido."
+        }
+      ]
+    },
+    "tomador: vazio": {
+      "status": 400,
+      "codigo": "REQUISICAO_INVALIDA",
+      "detalhes": [
+        {
+          "campo": "tipo",
+          "mensagem": "Campo obrigatório."
+        },
+        {
+          "campo": "nome",
+          "mensagem": "Campo obrigatório."
+        }
+      ]
+    },
+    "tomador: e-mail com subdomínio": "OK",
+    "tomador POST: id_externo vazio": {
+      "status": 400,
+      "codigo": "REQUISICAO_INVALIDA",
+      "detalhes": [
+        {
+          "campo": "id_externo",
+          "mensagem": "Informe um valor."
+        }
+      ]
+    },
+    "cancelamento: vazio": {
+      "status": 400,
+      "codigo": "REQUISICAO_INVALIDA",
+      "detalhes": [
+        {
+          "campo": "motivo",
+          "mensagem": "Campo obrigatório."
+        },
+        {
+          "campo": "justificativa",
+          "mensagem": "Campo obrigatório."
+        }
+      ]
+    },
+    "cancelamento: campo desconhecido": {
+      "status": 400,
+      "codigo": "REQUISICAO_INVALIDA",
+      "detalhes": [
+        {
+          "campo": "corpo",
+          "mensagem": "Campo não aceito: x."
+        }
+      ]
+    },
+    "configuração fiscal: regra E0712 convertida (mensagem da notem)": {
+      "status": 422,
+      "codigo": "REGRA_DE_NEGOCIO",
+      "detalhes": [
+        {
+          "campo": "tributos_aproximados.modo",
+          "mensagem": "Para ME/EPP, informe o percentual do Simples ou os percentuais federal, estadual e municipal. Não informar não é permitido (E0712)."
+        },
+        {
+          "campo": "tributos_aproximados.modo",
+          "mensagem": "Confira os percentuais exigidos para o modo escolhido."
+        }
+      ]
+    },
+    "servidor: POST /empresas pelo manipulador da API": {
+      "status": 400,
+      "codigo": "REQUISICAO_INVALIDA",
+      "detalhes": [
+        {
+          "campo": "razao_social",
+          "mensagem": "Informe um texto."
+        },
+        {
+          "campo": "corpo",
+          "mensagem": "Campo não aceito: x."
+        }
+      ]
+    },
+    "caminho: /empresas/abc": {
+      "status": 400,
+      "codigo": "REQUISICAO_INVALIDA",
+      "detalhes": [
+        {
+          "campo": "id",
+          "mensagem": "Identificador inválido (UUID)."
+        }
+      ]
+    },
+    "caminho: /empresas/{UUID fora do padrão}": {
+      "status": 400,
+      "codigo": "REQUISICAO_INVALIDA",
+      "detalhes": [
+        {
+          "campo": "id",
+          "mensagem": "Identificador inválido (UUID)."
+        }
+      ]
+    },
+    "caminho: /empresas/{UUID válido inexistente}": {
+      "status": 404,
+      "codigo": "NAO_ENCONTRADO",
+      "detalhes": []
+    },
+    "caminho: /notas/{UUID fora do padrão}": {
+      "status": 400,
+      "codigo": "REQUISICAO_INVALIDA",
+      "detalhes": [
+        {
+          "campo": "id",
+          "mensagem": "Identificador inválido (UUID)."
+        }
+      ]
+    }
+  },
+  "formularios": {
+    "empresa: formulário vazio": {
+      "exibida": "Campo obrigatório.",
+      "detalhes": [
+        {
+          "campo": "organization_id",
+          "mensagem": "Campo obrigatório."
+        },
+        {
+          "campo": "cnpj",
+          "mensagem": "Campo obrigatório."
+        },
+        {
+          "campo": "legal_name",
+          "mensagem": "Campo obrigatório."
+        },
+        {
+          "campo": "email",
+          "mensagem": "Campo obrigatório."
+        },
+        {
+          "campo": "phone",
+          "mensagem": "Campo obrigatório."
+        },
+        {
+          "campo": "postal_code",
+          "mensagem": "Campo obrigatório."
+        },
+        {
+          "campo": "street",
+          "mensagem": "Campo obrigatório."
+        },
+        {
+          "campo": "number",
+          "mensagem": "Campo obrigatório."
+        },
+        {
+          "campo": "complement",
+          "mensagem": "Campo obrigatório."
+        },
+        {
+          "campo": "district",
+          "mensagem": "Campo obrigatório."
+        },
+        {
+          "campo": "municipality_ibge_code",
+          "mensagem": "Campo obrigatório."
+        }
+      ]
+    },
+    "empresa: razão social vazia (mensagem da notem)": {
+      "exibida": "Informe a razão social.",
+      "detalhes": [
+        {
+          "campo": "legal_name",
+          "mensagem": "Informe a razão social."
+        }
+      ]
+    },
+    "empresa: e-mail inválido (mensagem da notem)": {
+      "exibida": "E-mail inválido.",
+      "detalhes": [
+        {
+          "campo": "email",
+          "mensagem": "E-mail inválido."
+        }
+      ]
+    },
+    "empresa: e-mail com + e .com.br": "OK",
+    "empresa: e-mail com subdomínio": "OK",
+    "empresa: UUID inválido": {
+      "exibida": "Identificador inválido (UUID).",
+      "detalhes": [
+        {
+          "campo": "organization_id",
+          "mensagem": "Identificador inválido (UUID)."
+        }
+      ]
+    },
+    "empresa: UUID fora do padrão": {
+      "exibida": "Identificador inválido (UUID).",
+      "detalhes": [
+        {
+          "campo": "organization_id",
+          "mensagem": "Identificador inválido (UUID)."
+        }
+      ]
+    },
+    "empresa: município sem 7 dígitos (mensagem da notem)": {
+      "exibida": "Selecione um município.",
+      "detalhes": [
+        {
+          "campo": "municipality_ibge_code",
+          "mensagem": "Selecione um município."
+        }
+      ]
+    },
+    "empresa: tipo errado": {
+      "exibida": "Informe um texto.",
+      "detalhes": [
+        {
+          "campo": "street",
+          "mensagem": "Informe um texto."
+        }
+      ]
+    },
+    "organização: vazia": {
+      "exibida": "Campo obrigatório.",
+      "detalhes": [
+        {
+          "campo": "name",
+          "mensagem": "Campo obrigatório."
+        },
+        {
+          "campo": "type",
+          "mensagem": "Selecione o tipo de organização."
+        }
+      ]
+    },
+    "organização: tipo inválido (mensagem da notem)": {
+      "exibida": "Selecione o tipo de organização.",
+      "detalhes": [
+        {
+          "campo": "type",
+          "mensagem": "Selecione o tipo de organização."
+        }
+      ]
+    },
+    "configuração fiscal: vazia": {
+      "exibida": "Campo obrigatório.",
+      "detalhes": [
+        {
+          "campo": "company_id",
+          "mensagem": "Campo obrigatório."
+        },
+        {
+          "campo": "organization_id",
+          "mensagem": "Campo obrigatório."
+        },
+        {
+          "campo": "simples_nacional_option",
+          "mensagem": "Campo obrigatório."
+        },
+        {
+          "campo": "simples_nacional_regime",
+          "mensagem": "Campo obrigatório."
+        },
+        {
+          "campo": "special_tax_regime",
+          "mensagem": "Campo obrigatório."
+        },
+        {
+          "campo": "dps_series",
+          "mensagem": "Campo obrigatório."
+        },
+        {
+          "campo": "approx_taxes_mode",
+          "mensagem": "Campo obrigatório."
+        },
+        {
+          "campo": "approx_simples_percent",
+          "mensagem": "Campo obrigatório."
+        },
+        {
+          "campo": "approx_federal_percent",
+          "mensagem": "Campo obrigatório."
+        },
+        {
+          "campo": "approx_state_percent",
+          "mensagem": "Campo obrigatório."
+        },
+        {
+          "campo": "approx_municipal_percent",
+          "mensagem": "Campo obrigatório."
+        }
+      ]
+    },
+    "configuração fiscal: inteiro com fração": {
+      "exibida": "Informe um número inteiro.",
+      "detalhes": [
+        {
+          "campo": "simples_nacional_option",
+          "mensagem": "Informe um número inteiro."
+        },
+        {
+          "campo": "approx_taxes_mode",
+          "mensagem": "Confira os percentuais exigidos para o modo escolhido."
+        }
+      ]
+    },
+    "configuração fiscal: número acima do limite": {
+      "exibida": "Informe um valor menor ou igual a 3.",
+      "detalhes": [
+        {
+          "campo": "simples_nacional_option",
+          "mensagem": "Informe um valor menor ou igual a 3."
+        },
+        {
+          "campo": "approx_taxes_mode",
+          "mensagem": "Confira os percentuais exigidos para o modo escolhido."
+        }
+      ]
+    },
+    "configuração fiscal: percentual acima de 100": {
+      "exibida": "Informe um valor menor ou igual a 100.",
+      "detalhes": [
+        {
+          "campo": "approx_federal_percent",
+          "mensagem": "Informe um valor menor ou igual a 100."
+        }
+      ]
+    },
+    "configuração fiscal: regime especial fora da lista": {
+      "exibida": "Valor inválido.",
+      "detalhes": [
+        {
+          "campo": "special_tax_regime",
+          "mensagem": "Valor inválido."
+        },
+        {
+          "campo": "special_tax_regime",
+          "mensagem": "Para MEI, o regime especial deve ser Nenhum (E0174)."
+        }
+      ]
+    },
+    "configuração fiscal: série acima de 49999": {
+      "exibida": "Informe um valor menor ou igual a 49.999.",
+      "detalhes": [
+        {
+          "campo": "dps_series",
+          "mensagem": "Informe um valor menor ou igual a 49.999."
+        }
+      ]
+    },
+    "configuração fiscal: ISS do Simples abaixo do mínimo (mensagem da notem)": {
+      "exibida": "A alíquota do ISS deve ser pelo menos 1,80%.",
+      "detalhes": [
+        {
+          "campo": "simples_iss_withholding_percent",
+          "mensagem": "A alíquota do ISS deve ser pelo menos 1,80%."
+        }
+      ]
+    },
+    "configuração fiscal: modo inválido": {
+      "exibida": "Valor inválido. Use: percent_simples, percent_by_sphere ou none.",
+      "detalhes": [
+        {
+          "campo": "approx_taxes_mode",
+          "mensagem": "Valor inválido. Use: percent_simples, percent_by_sphere ou none."
+        }
+      ]
+    },
+    "serviço: nome vazio": {
+      "exibida": "Informe um valor.",
+      "detalhes": [
+        {
+          "campo": "name",
+          "mensagem": "Informe um valor."
+        }
+      ]
+    },
+    "serviço: nome longo": {
+      "exibida": "Use no máximo 200 caracteres.",
+      "detalhes": [
+        {
+          "campo": "name",
+          "mensagem": "Use no máximo 200 caracteres."
+        }
+      ]
+    },
+    "serviço: código de serviço sem 6 dígitos": {
+      "exibida": "Formato inválido.",
+      "detalhes": [
+        {
+          "campo": "service_code",
+          "mensagem": "Formato inválido."
+        }
+      ]
+    },
+    "serviço: imunidade (regra da notem)": {
+      "exibida": "Informe o tipo de imunidade somente para tributação por imunidade.",
+      "detalhes": [
+        {
+          "campo": "immunity_type",
+          "mensagem": "Informe o tipo de imunidade somente para tributação por imunidade."
+        }
+      ]
+    },
+    "webhook: vazio": {
+      "exibida": "Campo obrigatório.",
+      "detalhes": [
+        {
+          "campo": "organization_id",
+          "mensagem": "Campo obrigatório."
+        },
+        {
+          "campo": "integration_id",
+          "mensagem": "Campo obrigatório."
+        },
+        {
+          "campo": "environment",
+          "mensagem": "Campo obrigatório."
+        },
+        {
+          "campo": "url",
+          "mensagem": "Campo obrigatório."
+        },
+        {
+          "campo": "events",
+          "mensagem": "Campo obrigatório."
+        }
+      ]
+    },
+    "webhook: sem eventos (mensagem da notem)": {
+      "exibida": "Escolha pelo menos um evento.",
+      "detalhes": [
+        {
+          "campo": "events",
+          "mensagem": "Escolha pelo menos um evento."
+        }
+      ]
+    },
+    "webhook: evento inválido": {
+      "exibida": "Valor inválido. Use: webhook.teste, nota.autorizada, nota.rejeitada, nota.cancelada, nota.cancelamento_em_analise, nota.cancelamento_indeferido, nota.substituida, nota.cancelada_prefeitura, nota.bloqueada_prefeitura, nota.desbloqueada_prefeitura, nota.manifestacao, empresa.situacao_alterada, certificado.vencendo, certificado.vencido, municipio.disponivel, nota.*, empresa.*, certificado.* ou municipio.*.",
+      "detalhes": [
+        {
+          "campo": "events.0",
+          "mensagem": "Valor inválido. Use: webhook.teste, nota.autorizada, nota.rejeitada, nota.cancelada, nota.cancelamento_em_analise, nota.cancelamento_indeferido, nota.substituida, nota.cancelada_prefeitura, nota.bloqueada_prefeitura, nota.desbloqueada_prefeitura, nota.manifestacao, empresa.situacao_alterada, certificado.vencendo, certificado.vencido, municipio.disponivel, nota.*, empresa.*, certificado.* ou municipio.*."
+        }
+      ]
+    },
+    "webhook: eventos demais": {
+      "exibida": "Informe no máximo 18 itens.",
+      "detalhes": [
+        {
+          "campo": "events",
+          "mensagem": "Informe no máximo 18 itens."
+        }
+      ]
+    },
+    "webhook: descrição longa": {
+      "exibida": "Use no máximo 2.000 caracteres.",
+      "detalhes": [
+        {
+          "campo": "description",
+          "mensagem": "Use no máximo 2.000 caracteres."
+        }
+      ]
+    },
+    "webhook: endereço inválido (mensagem da notem)": {
+      "exibida": "Informe um endereço HTTPS público, sem credenciais.",
+      "detalhes": [
+        {
+          "campo": "url",
+          "mensagem": "Informe um endereço HTTPS público, sem credenciais."
+        }
+      ]
+    },
+    "webhook: ambiente inválido": {
+      "exibida": "Valor inválido. Use: sandbox ou production.",
+      "detalhes": [
+        {
+          "campo": "environment",
+          "mensagem": "Valor inválido. Use: sandbox ou production."
+        }
+      ]
+    },
+    "webhook: ativo como texto": {
+      "exibida": "Informe true ou false.",
+      "detalhes": [
+        {
+          "campo": "auth_clear",
+          "mensagem": "Informe true ou false."
+        }
+      ]
+    },
+    "integração: vazia": {
+      "exibida": "Campo obrigatório.",
+      "detalhes": [
+        {
+          "campo": "organization_id",
+          "mensagem": "Campo obrigatório."
+        },
+        {
+          "campo": "name",
+          "mensagem": "Campo obrigatório."
+        }
+      ]
+    },
+    "integração: escopo diferente de all": {
+      "exibida": "Valor inválido. Use: all.",
+      "detalhes": [
+        {
+          "campo": "company_scope",
+          "mensagem": "Valor inválido. Use: all."
+        }
+      ]
+    },
+    "integração: empresas selecionadas": {
+      "exibida": "Informe no máximo 0 itens.",
+      "detalhes": [
+        {
+          "campo": "company_ids",
+          "mensagem": "Informe no máximo 0 itens."
+        }
+      ]
+    },
+    "integração: nome longo": {
+      "exibida": "Use no máximo 100 caracteres.",
+      "detalhes": [
+        {
+          "campo": "name",
+          "mensagem": "Use no máximo 100 caracteres."
+        }
+      ]
+    },
+    "tomador: tipo inválido": {
+      "exibida": "Valor inválido. Use: pj, pf ou estrangeiro.",
+      "detalhes": [
+        {
+          "campo": "tipo",
+          "mensagem": "Valor inválido. Use: pj, pf ou estrangeiro."
+        }
+      ]
+    },
+    "tomador: e-mail longo": {
+      "exibida": "Use no máximo 80 caracteres.",
+      "detalhes": [
+        {
+          "campo": "email",
+          "mensagem": "Use no máximo 80 caracteres."
+        }
+      ]
+    }
+  }
+}

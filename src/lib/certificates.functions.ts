@@ -1,5 +1,5 @@
 import { createServerFn } from '@tanstack/react-start';
-import { z } from 'zod';
+import { z } from './validation';
 import { requireSupabaseAuth } from '@/integrations/supabase/auth-middleware';
 import { MAX_CERTIFICATE_BYTES, AGREEMENT_COOLDOWN_MS, toTransmissorEnvironment, translateTransmissorError, stripSensitive } from './certificates';
 import { normalizeCnpj } from './notem';

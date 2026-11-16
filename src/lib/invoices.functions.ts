@@ -1,6 +1,6 @@
 import { createServerFn } from '@tanstack/react-start';
 import { requireSupabaseAuth } from '@/integrations/supabase/auth-middleware';
-import { z } from 'zod';
+import { z, integer } from './validation';
 import { requireOrgMember } from './panel-access';
 import { invoiceOut } from './invoices';
 import type { Json } from '@/integrations/supabase/types';
@@ -35,7 +35,7 @@ export const substitutePanelInvoice = createServerFn({ method: 'POST' }).middlew
 const scope=z.object({organization_id:z.string().uuid(),environment:z.enum(['sandbox','production'])});
 const customerName=(v:unknown)=>v&&typeof v==='object'&&!Array.isArray(v)?(v as Record<string,unknown>):{};
 /** notem and external notes in one list (external: issued outside notem by a company of the organization with proof of possession). */
-export const getPanelInvoices=createServerFn({method:'POST'}).middleware([requireSupabaseAuth]).inputValidator(scope.extend({company_id:z.string().uuid().optional(),status:z.string().max(40).optional(),origin:z.enum(['notem','externa']).optional(),from:z.string().regex(/^\d{4}-\d{2}-\d{2}$/).optional(),to:z.string().regex(/^\d{4}-\d{2}-\d{2}$/).optional(),offset:z.number().int().min(0).default(0)})).handler(async({context,data})=>{
+export const getPanelInvoices=createServerFn({method:'POST'}).middleware([requireSupabaseAuth]).inputValidator(scope.extend({company_id:z.string().uuid().optional(),status:z.string().max(40).optional(),origin:z.enum(['notem','externa']).optional(),from:z.string().regex(/^\d{4}-\d{2}-\d{2}$/).optional(),to:z.string().regex(/^\d{4}-\d{2}-\d{2}$/).optional(),offset:integer().min(0).default(0)})).handler(async({context,data})=>{
  const [r,companies]=await Promise.all([context.supabase.rpc('list_org_notes',{_org:data.organization_id,_env:data.environment,...Object.fromEntries(Object.entries({_company:data.company_id,_origin:data.origin,_status:data.status,_from:data.from?data.from+'T00:00:00-03:00':undefined,_to:data.to?data.to+'T23:59:59.999-03:00':undefined}).filter(([,v])=>v!=null)) as Record<string,string>,_limit:51,_offset:data.offset}),context.supabase.from('companies').select('id,legal_name').eq('organization_id',data.organization_id).order('legal_name')]);
  if(r.error||companies.error)throw new Error('Não foi possível carregar as notas.');
  const rows=(r.data??[]).slice(0,50);const own=rows.filter(x=>x.origin==='notem').map(x=>x.id),ext=rows.filter(x=>x.origin==='externa').map(x=>x.id);
@@ -90,7 +90,7 @@ export const getPanelInvoicePdf=createServerFn({method:'POST'}).middleware([requ
  let base64='';for(const b of pdf)base64+=String.fromCharCode(b);return {base64:btoa(base64),filename:`danfse-${number??data.id}.pdf`};
 });
 /** Received notes of a company (taker or intermediary); read only. */
-export const getPanelReceived=createServerFn({method:'POST'}).middleware([requireSupabaseAuth]).inputValidator(scope.extend({company_id:z.string().uuid(),status:z.string().max(40).optional(),offset:z.number().int().min(0).default(0)})).handler(async({context,data})=>{
+export const getPanelReceived=createServerFn({method:'POST'}).middleware([requireSupabaseAuth]).inputValidator(scope.extend({company_id:z.string().uuid(),status:z.string().max(40).optional(),offset:integer().min(0).default(0)})).handler(async({context,data})=>{
  const c=await context.supabase.from('companies').select('id').eq('id',data.company_id).eq('organization_id',data.organization_id).maybeSingle();if(c.error||!c.data)throw new Error('Empresa não encontrada ou acesso não autorizado.');
  const {supabaseAdmin}=await import('@/integrations/supabase/client.server');const {listReceivedNotes}=await import('./notes.server');const {receivedOut}=await import('./nfse-documents');
  const r=await listReceivedNotes(supabaseAdmin,data.organization_id,data.environment,data.company_id,{status:data.status??null},50,data.offset);if(!r)throw new Error('Empresa não encontrada.');
@@ -102,6 +102,6 @@ export const getPanelReceivedXml=createServerFn({method:'POST'}).middleware([req
  const r=await notes.loadReceivedNote(supabaseAdmin,data.organization_id,data.environment,data.company_id,data.id);if(!r)throw new Error('Nota não encontrada ou acesso não autorizado.');
  const xml=await notes.documentXml(supabaseAdmin,r.doc);if(!xml)throw new Error('XML indisponível.');return {xml,filename:`nfse-recebida-${r.doc.nfse_number??r.doc.id}.xml`};
 });
-export const getPanelCustomers=createServerFn({method:'POST'}).middleware([requireSupabaseAuth]).inputValidator(z.object({company_id:z.string().uuid(),organization_id:z.string().uuid(),offset:z.number().int().min(0).default(0)})).handler(async({context,data})=>{
+export const getPanelCustomers=createServerFn({method:'POST'}).middleware([requireSupabaseAuth]).inputValidator(z.object({company_id:z.string().uuid(),organization_id:z.string().uuid(),offset:integer().min(0).default(0)})).handler(async({context,data})=>{
  const r=await context.supabase.from('company_customers').select('id,external_id,customer_data,created_at,updated_at').eq('company_id',data.company_id).eq('organization_id',data.organization_id).order('created_at',{ascending:false}).order('id').range(data.offset,data.offset+50);if(r.error)throw new Error('Não foi possível carregar os tomadores.');return {rows:(r.data??[]).slice(0,50),more:(r.data?.length??0)>50};
 });

@@ -4,7 +4,7 @@ import type { SupabaseClient } from '@supabase/supabase-js';
 import type { Database, Json } from '@/integrations/supabase/types';
 import { hashKey, keyEnvironment, sanitizeLog } from './integrations';
 import { anonymousRules, limitMessages, limitRules, sandboxChange, type RateRule, type SlotRule } from './api-policy';
-import { ApiFailure, bodyHash, defaultMessages, fail, idempotencyKey, type Env } from './api-contract';
+import { ApiFailure, bodyHash, defaultMessages, fail, idParam, idempotencyKey, type Env } from './api-contract';
 
 export type DB = SupabaseClient<Database>;
 export type ApiCtx = { db: DB; requestId: string; request: Request; url: URL; params: Record<string, string>; body: unknown; env: Env; organization_id: string; integration_id: string; integration_name: string; actor: string; background: (p: Promise<unknown>) => void; setCompany: (id: string | null) => void };
@@ -153,7 +153,7 @@ export function apiRoute(handlers: Partial<Record<'GET' | 'POST' | 'PATCH' | 'PU
 
 /** Loads a company of the key's organization or fails with 404 (never reveals other organizations). */
 export async function loadCompany(ctx: ApiCtx, id = ctx.params['id'] ?? '') {
-  if (!/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(id ?? '')) throw fail(404, 'NAO_ENCONTRADO');
+  idParam(id, 'id');
   const r = await ctx.db.from('companies').select('*, municipalities(name)').eq('id', id).eq('organization_id', ctx.organization_id).maybeSingle();
   if (r.error) throw new Error('COMPANY_READ_FAILED'); if (!r.data) throw fail(404, 'NAO_ENCONTRADO');
   ctx.setCompany(r.data.id); return r.data;

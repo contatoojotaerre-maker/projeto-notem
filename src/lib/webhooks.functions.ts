@@ -1,6 +1,6 @@
 import { createServerFn } from '@tanstack/react-start'
 import { setResponseHeader } from '@tanstack/react-start/server'
-import { z } from 'zod'
+import { z, integer } from './validation'
 import { requireSupabaseAuth } from '@/integrations/supabase/auth-middleware'
 import { webhookInput, deliveryMessage } from './webhooks'
 
@@ -13,7 +13,7 @@ export const endpointColumns='id,organization_id,integration_id,environment,url,
 async function requireManager(supabase:AuthedSupabase,organization_id:string){const [admin,role]=await Promise.all([supabase.rpc('is_platform_admin'),supabase.rpc('has_org_role',{org_id:organization_id,roles:['owner','admin','developer']})]);if(admin.error||role.error||(!admin.data&&!role.data))throw new Error('Acesso não autorizado.')}
 const masterKey=async()=>(await import('./webhooks.server')).webhookMasterKey()
 
-export const getWebhooks=createServerFn({method:'POST'}).middleware([requireSupabaseAuth]).inputValidator(contextInput.extend({environment:z.enum(['sandbox','production']),errors:z.boolean().default(false),page:z.number().int().min(0).max(10000).default(0),endpoint_id:z.string().uuid().optional()})).handler(async({data,context})=>{
+export const getWebhooks=createServerFn({method:'POST'}).middleware([requireSupabaseAuth]).inputValidator(contextInput.extend({environment:z.enum(['sandbox','production']),errors:z.boolean().default(false),page:integer().min(0).max(10000).default(0),endpoint_id:z.string().uuid().optional()})).handler(async({data,context})=>{
  const cutoff=new Date(Date.now()-90*86400000).toISOString();let deliveries=context.supabase.from('webhook_deliveries').select('*,webhook_events(type)',{count:'exact'}).eq('organization_id',data.organization_id).eq('integration_id',data.integration_id).eq('environment',data.environment).gte('created_at',cutoff).order('created_at',{ascending:false}).range(data.page*20,data.page*20+19);if(data.errors)deliveries=deliveries.in('status',['failed','exhausted']);if(data.endpoint_id)deliveries=deliveries.eq('endpoint_id',data.endpoint_id)
  const [endpoints,history,alerts]=await Promise.all([context.supabase.from('webhook_endpoints').select(endpointColumns).eq('organization_id',data.organization_id).eq('integration_id',data.integration_id).eq('environment',data.environment).is('deleted_at',null).order('created_at'),deliveries,context.supabase.from('webhook_alerts').select('*').eq('organization_id',data.organization_id).eq('integration_id',data.integration_id).eq('environment',data.environment).gte('created_at',cutoff).order('created_at',{ascending:false}).limit(20)])
  if(endpoints.error||history.error||alerts.error){console.error('webhooks: load failed');throw new Error('Não foi possível carregar os webhooks.')}

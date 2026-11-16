@@ -66,7 +66,7 @@ paths:
         "422": { description: "REGRA_DE_NEGOCIO, EMPRESA_NAO_PRONTA ou REJEITADO_GOVERNO (detalhes incluem nota_id e mensagens originais)", content: { application/json: { schema: { $ref: "#/components/schemas/Erro" } } } }
         "503": { $ref: "#/components/responses/Erro" }
   /notas/{id}:
-    parameters: [{ name: id, in: path, required: true, schema: { type: string, format: uuid } }]
+    parameters: [{ name: id, in: path, required: true, description: "UUID (RFC 9562). Fora do padrão: 400 REQUISICAO_INVALIDA com campo igual ao nome do parâmetro.", schema: { type: string, format: uuid } }]
     get:
       tags: [Notas]
       summary: Consulta nota (outra organização ou ambiente retorna 404)
@@ -75,7 +75,7 @@ paths:
         "401": { $ref: "#/components/responses/AutenticacaoInvalida" }
         "404": { $ref: "#/components/responses/Erro" }
   /notas/{id}/xml:
-    parameters: [{ name: id, in: path, required: true, schema: { type: string, format: uuid } }]
+    parameters: [{ name: id, in: path, required: true, description: "UUID (RFC 9562). Fora do padrão: 400 REQUISICAO_INVALIDA com campo igual ao nome do parâmetro.", schema: { type: string, format: uuid } }]
     get:
       tags: [Notas]
       summary: Baixa XML oficial da NFS-e autorizada
@@ -84,7 +84,7 @@ paths:
         "401": { $ref: "#/components/responses/AutenticacaoInvalida" }
         "404": { $ref: "#/components/responses/Erro" }
   /notas/{id}/cancelar:
-    parameters: [{ name: id, in: path, required: true, schema: { type: string, format: uuid } }]
+    parameters: [{ name: id, in: path, required: true, description: "UUID (RFC 9562). Fora do padrão: 400 REQUISICAO_INVALIDA com campo igual ao nome do parâmetro.", schema: { type: string, format: uuid } }]
     post:
       tags: [Notas]
       summary: Cancela NFS-e autorizada (evento 101101)
@@ -108,7 +108,7 @@ paths:
         "422": { description: "REGRA_DE_NEGOCIO (justificativa, certificado), EMPRESA_NAO_PRONTA ou REJEITADO_GOVERNO", content: { application/json: { schema: { $ref: "#/components/schemas/Erro" } } } }
         "503": { $ref: "#/components/responses/Erro" }
   /notas/{id}/solicitar-analise-cancelamento:
-    parameters: [{ name: id, in: path, required: true, schema: { type: string, format: uuid } }]
+    parameters: [{ name: id, in: path, required: true, description: "UUID (RFC 9562). Fora do padrão: 400 REQUISICAO_INVALIDA com campo igual ao nome do parâmetro.", schema: { type: string, format: uuid } }]
     post:
       tags: [Notas]
       summary: Solicita análise fiscal do cancelamento à prefeitura (evento 101103)
@@ -129,7 +129,7 @@ paths:
         "422": { $ref: "#/components/responses/Erro" }
         "503": { $ref: "#/components/responses/Erro" }
   /notas/{id}/substituir:
-    parameters: [{ name: id, in: path, required: true, schema: { type: string, format: uuid } }]
+    parameters: [{ name: id, in: path, required: true, description: "UUID (RFC 9562). Fora do padrão: 400 REQUISICAO_INVALIDA com campo igual ao nome do parâmetro.", schema: { type: string, format: uuid } }]
     post:
       tags: [Notas]
       summary: Emite nota substituta (grupo subst)
@@ -153,7 +153,7 @@ paths:
         "503": { $ref: "#/components/responses/Erro" }
   /notas/{id}/eventos/{codigo}/xml:
     parameters:
-      - { name: id, in: path, required: true, schema: { type: string, format: uuid } }
+      - { name: id, in: path, required: true, description: "UUID (RFC 9562). Fora do padrão: 400 REQUISICAO_INVALIDA com campo igual ao nome do parâmetro.", schema: { type: string, format: uuid } }
       - { name: codigo, in: path, required: true, schema: { type: string, enum: ["101101", "101103"] } }
     get:
       tags: [Notas]
@@ -188,7 +188,7 @@ paths:
   /empresas/{id}/tomadores/{tomador_id}:
     parameters:
       - { $ref: "#/components/parameters/EmpresaId" }
-      - { name: tomador_id, in: path, required: true, schema: { type: string, format: uuid } }
+      - { name: tomador_id, in: path, required: true, description: "UUID (RFC 9562). Fora do padrão: 400 REQUISICAO_INVALIDA com campo igual ao nome do parâmetro.", schema: { type: string, format: uuid } }
     get:
       tags: [Empresas]
       summary: Consulta tomador
@@ -209,7 +209,7 @@ paths:
       tags: [Notas]
       summary: Baixa DANFSe v2.0 em PDF
       description: "Gerado do XML autorizado e situação atual; autorizada, cancelada, cancelada_prefeitura ou substituida. Canhoto opcional; mesma organização e ambiente da chave."
-      parameters: [{ name: id, in: path, required: true, schema: { type: string, format: uuid } }]
+      parameters: [{ name: id, in: path, required: true, description: "UUID (RFC 9562). Fora do padrão: 400 REQUISICAO_INVALIDA com campo igual ao nome do parâmetro.", schema: { type: string, format: uuid } }]
       responses:
         "200":
           description: "DANFSe A4 em página única"
@@ -352,7 +352,7 @@ paths:
         "409": { description: "ID_EXTERNO_DUPLICADO", content: { application/json: { schema: { $ref: "#/components/schemas/Erro" } } } }
         "422": { $ref: "#/components/responses/Erro" }
   /empresas/{id}/servicos/{servico_id}:
-    parameters: [{ $ref: "#/components/parameters/EmpresaId" }, { name: servico_id, in: path, required: true, schema: { type: string, format: uuid } }]
+    parameters: [{ $ref: "#/components/parameters/EmpresaId" }, { name: servico_id, in: path, required: true, description: "UUID (RFC 9562). Fora do padrão: 400 REQUISICAO_INVALIDA com campo igual ao nome do parâmetro.", schema: { type: string, format: uuid } }]
     get:
       tags: [Empresas]
       summary: Consulta um serviço
@@ -416,7 +416,7 @@ paths:
         "401": { $ref: "#/components/responses/AutenticacaoInvalida" }
         "404": { $ref: "#/components/responses/Erro" }
   /empresas/{id}/notas-recebidas/{nota_id}:
-    parameters: [{ $ref: "#/components/parameters/EmpresaId" }, { name: nota_id, in: path, required: true, schema: { type: string, format: uuid } }]
+    parameters: [{ $ref: "#/components/parameters/EmpresaId" }, { name: nota_id, in: path, required: true, description: "UUID (RFC 9562). Fora do padrão: 400 REQUISICAO_INVALIDA com campo igual ao nome do parâmetro.", schema: { type: string, format: uuid } }]
     get:
       tags: [Empresas]
       summary: "Consulta nota recebida"
@@ -425,7 +425,7 @@ paths:
         "401": { $ref: "#/components/responses/AutenticacaoInvalida" }
         "404": { $ref: "#/components/responses/Erro" }
   /empresas/{id}/notas-recebidas/{nota_id}/xml:
-    parameters: [{ $ref: "#/components/parameters/EmpresaId" }, { name: nota_id, in: path, required: true, schema: { type: string, format: uuid } }]
+    parameters: [{ $ref: "#/components/parameters/EmpresaId" }, { name: nota_id, in: path, required: true, description: "UUID (RFC 9562). Fora do padrão: 400 REQUISICAO_INVALIDA com campo igual ao nome do parâmetro.", schema: { type: string, format: uuid } }]
     get:
       tags: [Empresas]
       summary: "XML oficial da nota recebida, sem alterações"
@@ -434,7 +434,7 @@ paths:
         "401": { $ref: "#/components/responses/AutenticacaoInvalida" }
         "404": { $ref: "#/components/responses/Erro" }
   /empresas/{id}/notas-recebidas/{nota_id}/pdf:
-    parameters: [{ $ref: "#/components/parameters/EmpresaId" }, { name: nota_id, in: path, required: true, schema: { type: string, format: uuid } }]
+    parameters: [{ $ref: "#/components/parameters/EmpresaId" }, { name: nota_id, in: path, required: true, description: "UUID (RFC 9562). Fora do padrão: 400 REQUISICAO_INVALIDA com campo igual ao nome do parâmetro.", schema: { type: string, format: uuid } }]
     get:
       tags: [Empresas]
       summary: "DANFSe da nota recebida, gerado do XML oficial"
@@ -519,7 +519,7 @@ components:
       name: id
       in: path
       required: true
-      description: "Empresa da organização da chave (de outra organização → 404)"
+      description: "Empresa da organização da chave (de outra organização → 404). UUID (RFC 9562); fora do padrão → 400 REQUISICAO_INVALIDA com campo id."
       schema: { type: string, format: uuid }
     Cursor:
       name: cursor
@@ -1053,8 +1053,8 @@ webhooks:
               tipo: webhook.teste
               criado_em: '2026-11-05T00:00:00Z'
               ambiente: homologacao
-              organizacao_id: '00000000-0000-0000-0000-000000000001'
-              integracao_id: '00000000-0000-0000-0000-000000000002'
+              organizacao_id: '00000000-0000-4000-8000-000000000001'
+              integracao_id: '00000000-0000-4000-8000-000000000002'
               dados: {}
       responses:
         '200':

@@ -2,7 +2,7 @@
 // Roles are checked here with the caller's session before any service-role work; the database checks intervals and open requests.
 import { createServerFn } from '@tanstack/react-start';
 import { requireSupabaseAuth } from '@/integrations/supabase/auth-middleware';
-import { z } from 'zod';
+import { z } from './validation';
 import type { SupabaseClient } from '@supabase/supabase-js';
 import type { Database } from '@/integrations/supabase/types';
 type Rpc = SupabaseClient<Database>;

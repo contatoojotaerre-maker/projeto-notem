@@ -1,6 +1,6 @@
 // Business handlers for /api/v1 empresas and catalogos. Organization always comes from the key.
 import { apiAudit, loadCompany, type ApiCtx, type ApiResult } from './api.server';
-import { certificateIn, certificateOut, companyCreate, companyIn, companyOut, companyPatch, fail, fiscalDbDetail, fiscalIn, fiscalOut, fiscalToDb, page, pageParams, parseBody, searchParam, serviceCreate, serviceOut, servicePatch, serviceToDb, transmissorToContract, type CompanyRow, type FiscalRow, type ServiceRow } from './api-contract';
+import { certificateIn, certificateOut, companyCreate, companyIn, companyOut, companyPatch, fail, idParam, fiscalDbDetail, fiscalIn, fiscalOut, fiscalToDb, page, pageParams, parseBody, searchParam, serviceCreate, serviceOut, servicePatch, serviceToDb, transmissorToContract, type CompanyRow, type FiscalRow, type ServiceRow } from './api-contract';
 import { CNPJ_LOCK_MESSAGE, validReadinessCertificate,specialTaxRuleError } from './fiscal';
 import { AGREEMENT_COOLDOWN_MS, MAX_CERTIFICATE_BYTES, toTransmissorEnvironment } from './certificates';
 import { municipalitySearchTerm } from './municipality-search';
@@ -132,7 +132,7 @@ export async function createService(ctx: ApiCtx): Promise<ApiResult> {
   if (r.error) serviceWriteError(r.error); refresh(ctx, c.id); return { status: 201, body: serviceOut(r.data as unknown as ServiceRow) };
 }
 async function loadService(ctx: ApiCtx, companyId: string) {
-  const id = ctx.params['servicoId'] ?? ''; if (!/^[0-9a-f-]{36}$/i.test(id ?? '')) throw fail(404, 'NAO_ENCONTRADO');
+  const id = idParam(ctx.params['servicoId'], 'servico_id');
   const r = await ctx.db.from('company_service_profiles').select(SERVICE_SELECT).eq('id', id).eq('company_id', companyId).eq('organization_id', ctx.organization_id).maybeSingle();
   if (r.error) throw new Error('SERVICE_READ_FAILED'); if (!r.data) throw fail(404, 'NAO_ENCONTRADO'); return r.data as unknown as ServiceRow;
 }

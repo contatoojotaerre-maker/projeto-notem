@@ -1,4 +1,4 @@
-import { z } from 'zod';
+import { z } from './validation';
 import { customerSchema, type Customer } from './customers';
 import { CNPJ_PATTERN, isAlphanumericCnpj, isValidCnpj, normalizeCnpj } from './notem';
 import { RuleError } from './rule-error';
