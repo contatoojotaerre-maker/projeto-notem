@@ -2,7 +2,7 @@
 // Every export is audited (who, when, filters, quantity) without its content.
 import { createServerFn } from '@tanstack/react-start';
 import { requireSupabaseAuth } from '@/integrations/supabase/auth-middleware';
-import { z } from './validation';
+import { z, integer } from './validation';
 import { requireOrgMember } from './panel-access';
 import { noteFilters, noteRpcArgs, type NoteFilters } from './note-filters';
 import { CSV_LIMIT, csvTooLarge } from './notes-csv';
@@ -61,7 +61,7 @@ export const getExportFiles = createServerFn({ method: 'POST' }).middleware([req
   const start = await supabaseAdmin.from('admin_audit_events').select('details,created_at').eq('action', 'notas.exportacao_zip_inicio').eq('target_id', data.export_id).eq('actor_id', context.userId).eq('organization_id', data.organization_id).maybeSingle();
   if (start.error || !start.data || Date.now() - Date.parse(start.data.created_at) > 2 * 3_600_000) throw new Error('Exportação não encontrada ou expirada. Comece novamente.');
   const d = start.data.details as { ambiente: 'sandbox' | 'production'; filtros: NoteFilters; formatos: { xml: boolean; pdf: boolean } };
-  const rate = await supabaseAdmin.rpc('api_rate_check', { _org: data.organization_id, _rules: [{ scope: `painel:${context.userId}`, bucket: 'painel_arquivos', ...LIMITS.painel_arquivos }] });
+  const rate = await supabaseAdmin.rpc('api_rate_check', { _org: data.organization_id, _rules: [{ scope: `painel:${context.userId}`, bucket: 'painel_arquivos', ...LIMITS.painel_arquivos }] as never });
   if (rate.error) console.error('PANEL_RATE_CHECK_FAILED'); // counter outage: fail open, as in the API
   else if ((rate.data as { allowed?: boolean } | null)?.allowed === false) return { ok: false as const, retry: true, mensagem: limitMessages['painel_arquivos'] ?? '' };
   const slot = await supabaseAdmin.rpc('api_slot_acquire', { _scope: `painel-arquivos:${context.userId}`, _max: SLOTS.painel_arquivos, _ttl: 120 });
@@ -76,7 +76,7 @@ export const getExportFiles = createServerFn({ method: 'POST' }).middleware([req
   } finally { if (slot.data) { const r = await supabaseAdmin.rpc('api_slot_release', { _token: slot.data }); if (r.error) console.error('PANEL_SLOT_RELEASE_FAILED'); } }
 });
 
-export const finishZipExport = createServerFn({ method: 'POST' }).middleware([requireSupabaseAuth]).inputValidator(z.object({ organization_id: z.string().uuid(), export_id: z.string().uuid(), outcome: z.enum(['concluida', 'interrompida']), files: z.number().int().min(0).max(5000), notes: z.number().int().min(0).max(ZIP_LIMIT), without_file: z.number().int().min(0).max(ZIP_LIMIT) })).handler(async ({ context, data }) => {
+export const finishZipExport = createServerFn({ method: 'POST' }).middleware([requireSupabaseAuth]).inputValidator(z.object({ organization_id: z.string().uuid(), export_id: z.string().uuid(), outcome: z.enum(['concluida', 'interrompida']), files: integer().min(0).max(5000), notes: integer().min(0).max(ZIP_LIMIT), without_file: integer().min(0).max(ZIP_LIMIT) })).handler(async ({ context, data }) => {
   await requireOrgMember(context.supabase, data.organization_id);
   const { supabaseAdmin } = await import('@/integrations/supabase/client.server');
   const start = await supabaseAdmin.from('admin_audit_events').select('id').eq('action', 'notas.exportacao_zip_inicio').eq('target_id', data.export_id).eq('actor_id', context.userId).eq('organization_id', data.organization_id).maybeSingle();
