@@ -32,6 +32,18 @@ export async function loadReceivedNote(db: DB, org: string, env: Env, companyId:
   const r = await db.from('nfse_documents').select('*').eq('id', id).eq('environment', env).or(`taker_document.eq.${cnpj},intermediary_document.eq.${cnpj}`).maybeSingle();
   if (r.error) throw new Error('DOCUMENT_READ_FAILED'); return r.data ? { doc: r.data, cnpj } : null;
 }
+/** Received note of the organization by id alone (Notas › Recebidas): the company is the one of the organization
+ *  whose CNPJ is taker (preferred) or intermediary, with proof of possession of that CNPJ. */
+export async function findReceivedNote(db: DB, org: string, env: Env, id: string) {
+  const r = await db.from('nfse_documents').select('*').eq('id', id).eq('environment', env).maybeSingle();
+  if (r.error) throw new Error('DOCUMENT_READ_FAILED'); const doc = r.data; if (!doc) return null;
+  const c = await db.from('companies').select('id,cnpj,created_at').eq('organization_id', org).order('created_at').order('id');
+  if (c.error) throw new Error('COMPANY_READ_FAILED');
+  const rank = (cnpj: string) => cnpj === doc.taker_document ? 0 : cnpj === doc.intermediary_document ? 1 : 2;
+  const candidates = (c.data ?? []).map(x => ({ id: x.id, cnpj: digits(x.cnpj) })).filter(x => rank(x.cnpj) < 2).sort((a, b) => rank(a.cnpj) - rank(b.cnpj));
+  for (const x of candidates) if (await proven(db, org, x.cnpj)) return { doc, companyId: x.id, cnpj: x.cnpj };
+  return null;
+}
 export type ReceivedFilters = { status?: string | null | undefined; from?: string | null | undefined; to?: string | null | undefined; provider?: string | null | undefined };
 export async function listReceivedNotes(db: DB, org: string, env: Env, companyId: string, f: ReceivedFilters, limit: number, offset: number) {
   const c = await db.from('companies').select('id,cnpj').eq('id', companyId).eq('organization_id', org).maybeSingle();
