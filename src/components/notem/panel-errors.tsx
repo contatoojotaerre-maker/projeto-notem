@@ -3,6 +3,9 @@ import { FileQuestion, Lock, TriangleAlert, Home, RotateCcw } from 'lucide-react
 import { useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { isAccessDenied } from '@/lib/panel-errors';
+
+// A refusal from the server ("Acesso não autorizado…") is shown as the no-access screen; anything else as a failure.
+const refused = (e: unknown) => isAccessDenied(e) || (e instanceof Error && /acesso não autorizado/i.test(e.message));
 import { reportLovableError } from '@/lib/lovable-error-reporting';
 import { useOptionalWorkspace } from './app-shell';
 
@@ -29,7 +32,7 @@ export function PanelForbidden() {
 /** Unexpected failure: never shows internal text, stack traces or library messages. */
 export function PanelError({ error, reset }: ErrorComponentProps) {
   const router = useRouter();
-  useEffect(() => { if (!isAccessDenied(error)) reportLovableError(error, { boundary: 'panel_error_component' }); }, [error]);
-  if (isAccessDenied(error)) return <PanelForbidden />;
+  useEffect(() => { if (!refused(error)) reportLovableError(error, { boundary: 'panel_error_component' }); }, [error]);
+  if (refused(error)) return <PanelForbidden />;
   return <Panel icon={<TriangleAlert size={36} strokeWidth={1} className="text-muted-foreground" />} title="Não foi possível carregar esta página."><Button onClick={() => { void router.invalidate(); reset(); }}><RotateCcw />Tentar de novo</Button><HomeButton primary={false} /></Panel>;
 }
