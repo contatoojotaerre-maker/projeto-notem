@@ -1,5 +1,5 @@
 import { createServerFn } from '@tanstack/react-start';
-import { z, email as zEmail } from './validation';
+import { z, email as zEmail, integer } from './validation';
 import { appLink } from '@/lib/app-url';
 import { requireSupabaseAuth } from '@/integrations/supabase/auth-middleware';
 import { companySchema, normalizeCnpj, roles, organizationSchema } from './notem';
@@ -42,7 +42,7 @@ export const updatePreferences = createServerFn({ method: 'POST' }).middleware([
   if (result.error) {console.error('notem: database error',result.error.code);throw new Error('Não foi possível carregar ou salvar os dados. Tente novamente.')};
   return { ok:true };
 });
-export const getCompanies = createServerFn({method:'POST'}).middleware([requireSupabaseAuth]).inputValidator(z.object({organization_id:z.string().uuid(),search:z.string().default(''),page:z.number().int().min(0).default(0)})).handler(async ({context,data}) => {
+export const getCompanies = createServerFn({method:'POST'}).middleware([requireSupabaseAuth]).inputValidator(z.object({organization_id:z.string().uuid(),search:z.string().default(''),page:integer().min(0).default(0)})).handler(async ({context,data}) => {
   let query=context.supabase.from('companies').select('*',{count:'exact'}).eq('organization_id',data.organization_id).order('legal_name').range(data.page*30,data.page*30+29);
   const search=data.search.replace(/[%_,().]/g,'').trim();
   if(search){const cnpj=normalizeCnpj(search);query=query.or(`legal_name.ilike.%${search}%,trade_name.ilike.%${search}%,cnpj.ilike.%${search}%${cnpj&&cnpj!==search?`,cnpj.ilike.%${cnpj}%`:''}`);}

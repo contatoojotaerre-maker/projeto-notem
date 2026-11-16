@@ -77,6 +77,12 @@ export const DATETIME_PATTERN = /^((\d\d[2468][048]|\d\d[13579][26]|\d\d0[48]|[0
 export const isoDateTime = () => z.string().regex(DATETIME_PATTERN, 'Data e hora inválidas.');
 
 /**
+ * Integer as before zod 4: any JavaScript integer, reported as a field rule so object-level
+ * rules still run (zod 4's .int() aborts and also refuses integers above 2^53).
+ */
+export const integer = () => z.number().refine(Number.isInteger, 'Informe um número inteiro.');
+
+/**
  * Object-level notem rules run in the same situations as before zod 4: after field-rule failures
  * (sizes, formats, integers, refinements), never after a wrong type or option.
  */

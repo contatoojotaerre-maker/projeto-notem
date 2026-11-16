@@ -1,4 +1,4 @@
-import { z, objectRule } from './validation';
+import { z, objectRule, integer } from './validation';
 import { normalizeCnpj } from './notem';
 import { IBSCBS_MESSAGES, allowedIbsCbsRegimes, defaultIbsCbsRegime } from './ibscbs';
 export const CNPJ_LOCK_MESSAGE = 'O CNPJ não pode ser alterado porque a empresa já tem certificado ou série. Cadastre uma nova empresa.';
@@ -17,14 +17,14 @@ export function specialTaxRuleError(option:number,regime:number|null,special:num
  if([2,3,4].includes(taxation))return 'Para imunidade, exportação ou não incidência, o regime especial deve ser Nenhum (E0172).';
  return null;
 }
-export const seriesSchema = z.number().int().min(1).max(49999);
+export const seriesSchema = integer().min(1).max(49999);
 export const fiscalSchema = fiscalIds.extend({
   print_danfse_receipt: z.boolean().default(false),
-  simples_nacional_option: z.number().int().min(1).max(3), simples_nacional_regime: z.number().int().min(1).max(3).nullable(),
+  simples_nacional_option: integer().min(1).max(3), simples_nacional_regime: integer().min(1).max(3).nullable(),
   special_tax_regime: z.number().refine(v => [0,1,2,3,4,5,6,9].includes(v)), dps_series: seriesSchema.nullable(),
   approx_taxes_mode: z.enum(['percent_simples','percent_by_sphere','none']), approx_simples_percent: percent,
   approx_federal_percent: percent, approx_state_percent: percent, approx_municipal_percent: percent,
-  ibscbs_simples_regime: z.number().int().min(1).max(3).nullable().default(null),
+  ibscbs_simples_regime: integer().min(1).max(3).nullable().default(null),
   simples_iss_withholding_percent: z.number().min(1.8, 'A alíquota do ISS deve ser pelo menos 1,80%.').max(9.99).refine(v => Math.abs(v * 100 - Math.round(v * 100)) < 1e-8, 'Use até duas casas decimais.').nullable().default(null),
 }).superRefine((v,ctx) => {
   const specialError=specialTaxRuleError(v.simples_nacional_option,v.simples_nacional_regime,v.special_tax_regime);
@@ -39,7 +39,7 @@ export const fiscalSchema = fiscalIds.extend({
   if (!valid) ctx.addIssue({code:'custom',path:['approx_taxes_mode'],message:'Confira os percentuais exigidos para o modo escolhido.'});
 }, objectRule);
 const optionalCode = (size: number) => z.string().regex(new RegExp(`^[0-9]{${size}}$`)).nullable();
-export const serviceProfileSchema = fiscalIds.extend({id:z.string().uuid().optional(),name:z.string().trim().min(1).max(200),active:z.boolean(),service_code:z.string().regex(/^[0-9]{6}$/),municipal_tax_code:z.string().nullable(),nbs_code:optionalCode(9),default_description:z.string().max(2000),iss_taxation:z.number().int().min(1).max(4),immunity_type:z.number().int().min(0).max(5).nullable(),iss_withholding:z.number().int().min(1).max(3),ibscbs_operation_indicator:optionalCode(6),municipal_benefit_number:z.string().nullable(),ibscbs_classification:optionalCode(6).default(null),ibscbs_final_consumer:z.boolean().default(false),simples_activity_code:z.string().regex(/^(0[7-9]|1[0-4]|90)$/).nullable().default(null)}).superRefine((v,ctx)=>{if((v.iss_taxation===2)!==(v.immunity_type!==null))ctx.addIssue({code:'custom',path:['immunity_type'],message:'Informe o tipo de imunidade somente para tributação por imunidade.'});}, objectRule);
+export const serviceProfileSchema = fiscalIds.extend({id:z.string().uuid().optional(),name:z.string().trim().min(1).max(200),active:z.boolean(),service_code:z.string().regex(/^[0-9]{6}$/),municipal_tax_code:z.string().nullable(),nbs_code:optionalCode(9),default_description:z.string().max(2000),iss_taxation:integer().min(1).max(4),immunity_type:integer().min(0).max(5).nullable(),iss_withholding:integer().min(1).max(3),ibscbs_operation_indicator:optionalCode(6),municipal_benefit_number:z.string().nullable(),ibscbs_classification:optionalCode(6).default(null),ibscbs_final_consumer:z.boolean().default(false),simples_activity_code:z.string().regex(/^(0[7-9]|1[0-4]|90)$/).nullable().default(null)}).superRefine((v,ctx)=>{if((v.iss_taxation===2)!==(v.immunity_type!==null))ctx.addIssue({code:'custom',path:['immunity_type'],message:'Informe o tipo de imunidade somente para tributação por imunidade.'});}, objectRule);
 export type FiscalForm = z.infer<typeof fiscalSchema>;
 export type ServiceForm = z.infer<typeof serviceProfileSchema>;
 export const simplesOptions = [[1,'Não optante'],[2,'Optante MEI'],[3,'Optante ME/EPP']] as const;
