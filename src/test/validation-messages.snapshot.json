@@ -6,15 +6,15 @@
       "detalhes": [
         {
           "campo": "cnpj",
-          "mensagem": "Required"
+          "mensagem": "Campo obrigatório."
         },
         {
           "campo": "razao_social",
-          "mensagem": "Required"
+          "mensagem": "Campo obrigatório."
         },
         {
           "campo": "endereco",
-          "mensagem": "Required"
+          "mensagem": "Campo obrigatório."
         }
       ]
     },
@@ -24,7 +24,7 @@
       "detalhes": [
         {
           "campo": "corpo",
-          "mensagem": "Expected object, received array"
+          "mensagem": "Informe um objeto JSON."
         }
       ]
     },
@@ -34,7 +34,7 @@
       "detalhes": [
         {
           "campo": "corpo",
-          "mensagem": "Expected object, received null"
+          "mensagem": "Informe um objeto JSON."
         }
       ]
     },
@@ -44,7 +44,7 @@
       "detalhes": [
         {
           "campo": "razao_social",
-          "mensagem": "Expected string, received number"
+          "mensagem": "Informe um texto."
         }
       ]
     },
@@ -54,7 +54,7 @@
       "detalhes": [
         {
           "campo": "ativa",
-          "mensagem": "Expected boolean, received string"
+          "mensagem": "Informe true ou false."
         }
       ]
     },
@@ -64,7 +64,7 @@
       "detalhes": [
         {
           "campo": "corpo",
-          "mensagem": "Unrecognized key(s) in object: 'x'"
+          "mensagem": "Campo não aceito: x."
         }
       ]
     },
@@ -74,7 +74,7 @@
       "detalhes": [
         {
           "campo": "corpo",
-          "mensagem": "Unrecognized key(s) in object: 'campo_com_nome_muito_longo_campo_com_nome_muito_longo_campo_com_nome_muito_longo_campo_com_nome_muito_longo_campo_com_nome_muito_longo_'"
+          "mensagem": "Campo não aceito: campo_com_nome_muito_longo_campo_com_nome_muito_longo_campo…."
         }
       ]
     },
@@ -84,7 +84,7 @@
       "detalhes": [
         {
           "campo": "corpo",
-          "mensagem": "Unrecognized key(s) in object: 'extra_01', 'extra_02', 'extra_03', 'extra_04', 'extra_05', 'extra_06', 'extra_07', 'extra_08', 'extra_09', 'extra_10', 'extra_11', 'extra_12', 'extra_13', 'extra_14', 'extra_15', 'extra_16', 'extra_17', 'extra_18', 'extra_19', 'extra_20'"
+          "mensagem": "Campos não aceitos: extra_01, extra_02, extra_03, extra_04, extra_05 e mais 15."
         }
       ]
     },
@@ -94,7 +94,7 @@
       "detalhes": [
         {
           "campo": "endereco",
-          "mensagem": "Unrecognized key(s) in object: 'uf'"
+          "mensagem": "Campo não aceito: uf."
         }
       ]
     },
@@ -115,7 +115,7 @@
       "detalhes": [
         {
           "campo": "razao_social",
-          "mensagem": "String must contain at most 200 character(s)"
+          "mensagem": "Use no máximo 200 caracteres."
         }
       ]
     },
@@ -125,7 +125,7 @@
       "detalhes": [
         {
           "campo": "razao_social",
-          "mensagem": "String must contain at least 1 character(s)"
+          "mensagem": "Informe um valor."
         }
       ]
     },
@@ -155,7 +155,7 @@
       "detalhes": [
         {
           "campo": "corpo",
-          "mensagem": "Unrecognized key(s) in object: 'y'"
+          "mensagem": "Campo não aceito: y."
         }
       ]
     },
@@ -165,7 +165,7 @@
       "detalhes": [
         {
           "campo": "id_externo",
-          "mensagem": "String must contain at least 1 character(s)"
+          "mensagem": "Informe um valor."
         }
       ]
     },
@@ -175,15 +175,15 @@
       "detalhes": [
         {
           "campo": "simples_nacional",
-          "mensagem": "Required"
+          "mensagem": "Campo obrigatório."
         },
         {
           "campo": "regime_especial",
-          "mensagem": "Required"
+          "mensagem": "Campo obrigatório."
         },
         {
           "campo": "tributos_aproximados",
-          "mensagem": "Required"
+          "mensagem": "Campo obrigatório."
         }
       ]
     },
@@ -193,7 +193,7 @@
       "detalhes": [
         {
           "campo": "simples_nacional",
-          "mensagem": "Invalid enum value. Expected 'nao_optante' | 'mei' | 'me_epp', received 'x'"
+          "mensagem": "Valor inválido. Use: nao_optante, mei ou me_epp."
         }
       ]
     },
@@ -203,7 +203,7 @@
       "detalhes": [
         {
           "campo": "corpo",
-          "mensagem": "Unrecognized key(s) in object: 'z'"
+          "mensagem": "Campo não aceito: z."
         }
       ]
     },
@@ -223,19 +223,19 @@
       "detalhes": [
         {
           "campo": "nome",
-          "mensagem": "Required"
+          "mensagem": "Campo obrigatório."
         },
         {
           "campo": "codigo_servico",
-          "mensagem": "Required"
+          "mensagem": "Campo obrigatório."
         },
         {
           "campo": "tributacao_iss",
-          "mensagem": "Required"
+          "mensagem": "Campo obrigatório."
         },
         {
           "campo": "retencao_iss",
-          "mensagem": "Required"
+          "mensagem": "Campo obrigatório."
         }
       ]
     },
@@ -245,7 +245,7 @@
       "detalhes": [
         {
           "campo": "corpo",
-          "mensagem": "Unrecognized key(s) in object: 'k'"
+          "mensagem": "Campo não aceito: k."
         }
       ]
     },
@@ -255,7 +255,7 @@
       "detalhes": [
         {
           "campo": "nome",
-          "mensagem": "String must contain at most 200 character(s)"
+          "mensagem": "Use no máximo 200 caracteres."
         }
       ]
     },
@@ -275,11 +275,11 @@
       "detalhes": [
         {
           "campo": "arquivo_base64",
-          "mensagem": "Required"
+          "mensagem": "Campo obrigatório."
         },
         {
           "campo": "senha",
-          "mensagem": "Required"
+          "mensagem": "Campo obrigatório."
         }
       ]
     },
@@ -289,7 +289,7 @@
       "detalhes": [
         {
           "campo": "senha",
-          "mensagem": "String must contain at most 500 character(s)"
+          "mensagem": "Use no máximo 500 caracteres."
         }
       ]
     },
@@ -299,7 +299,7 @@
       "detalhes": [
         {
           "campo": "valores",
-          "mensagem": "Required"
+          "mensagem": "Campo obrigatório."
         }
       ]
     },
@@ -309,7 +309,7 @@
       "detalhes": [
         {
           "campo": "empresa_id",
-          "mensagem": "Invalid uuid"
+          "mensagem": "Identificador inválido (UUID)."
         }
       ]
     },
@@ -320,7 +320,7 @@
       "detalhes": [
         {
           "campo": "retencao_iss",
-          "mensagem": "Invalid enum value. Expected 'nao_retido' | 'retido_tomador' | 'retido_intermediario', received 'x'"
+          "mensagem": "Valor inválido. Use: nao_retido, retido_tomador ou retido_intermediario."
         }
       ]
     },
@@ -330,7 +330,7 @@
       "detalhes": [
         {
           "campo": "corpo",
-          "mensagem": "Unrecognized key(s) in object: 'extra'"
+          "mensagem": "Campo não aceito: extra."
         }
       ]
     },
@@ -340,7 +340,7 @@
       "detalhes": [
         {
           "campo": "corpo",
-          "mensagem": "Unrecognized key(s) in object: 'extra'"
+          "mensagem": "Campo não aceito: extra."
         },
         {
           "campo": "empresa_id",
@@ -354,7 +354,7 @@
       "detalhes": [
         {
           "campo": "valores",
-          "mensagem": "Unrecognized key(s) in object: 'x'"
+          "mensagem": "Campo não aceito: x."
         }
       ]
     },
@@ -364,7 +364,7 @@
       "detalhes": [
         {
           "campo": "valores.servico",
-          "mensagem": "Expected string, received number"
+          "mensagem": "Informe um texto."
         }
       ]
     },
@@ -384,7 +384,7 @@
       "detalhes": [
         {
           "campo": "descricao",
-          "mensagem": "String must contain at most 2000 character(s)"
+          "mensagem": "Use no máximo 2.000 caracteres."
         }
       ]
     },
@@ -394,7 +394,7 @@
       "detalhes": [
         {
           "campo": "competencia",
-          "mensagem": "Invalid"
+          "mensagem": "Formato inválido."
         }
       ]
     },
@@ -414,7 +414,7 @@
       "detalhes": [
         {
           "campo": "tomador",
-          "mensagem": "Unrecognized key(s) in object: 'q'"
+          "mensagem": "Campo não aceito: q."
         }
       ]
     },
@@ -424,7 +424,7 @@
       "detalhes": [
         {
           "campo": "tomador.tipo",
-          "mensagem": "Invalid enum value. Expected 'pj' | 'pf' | 'estrangeiro', received 'z'"
+          "mensagem": "Valor inválido. Use: pj, pf ou estrangeiro."
         }
       ]
     },
@@ -434,7 +434,7 @@
       "detalhes": [
         {
           "campo": "local_prestacao.codigo_municipio",
-          "mensagem": "Invalid"
+          "mensagem": "Formato inválido."
         }
       ]
     },
@@ -444,11 +444,11 @@
       "detalhes": [
         {
           "campo": "tipo",
-          "mensagem": "Required"
+          "mensagem": "Campo obrigatório."
         },
         {
           "campo": "nome",
-          "mensagem": "Required"
+          "mensagem": "Campo obrigatório."
         }
       ]
     },
@@ -459,7 +459,7 @@
       "detalhes": [
         {
           "campo": "id_externo",
-          "mensagem": "String must contain at least 1 character(s)"
+          "mensagem": "Informe um valor."
         }
       ]
     },
@@ -469,11 +469,11 @@
       "detalhes": [
         {
           "campo": "motivo",
-          "mensagem": "Required"
+          "mensagem": "Campo obrigatório."
         },
         {
           "campo": "justificativa",
-          "mensagem": "Required"
+          "mensagem": "Campo obrigatório."
         }
       ]
     },
@@ -483,7 +483,7 @@
       "detalhes": [
         {
           "campo": "corpo",
-          "mensagem": "Unrecognized key(s) in object: 'x'"
+          "mensagem": "Campo não aceito: x."
         }
       ]
     },
@@ -507,11 +507,11 @@
       "detalhes": [
         {
           "campo": "razao_social",
-          "mensagem": "Expected string, received number"
+          "mensagem": "Informe um texto."
         },
         {
           "campo": "corpo",
-          "mensagem": "Unrecognized key(s) in object: 'x'"
+          "mensagem": "Campo não aceito: x."
         }
       ]
     },
@@ -533,51 +533,51 @@
   },
   "formularios": {
     "empresa: formulário vazio": {
-      "exibida": "Required",
+      "exibida": "Campo obrigatório.",
       "detalhes": [
         {
           "campo": "organization_id",
-          "mensagem": "Required"
+          "mensagem": "Campo obrigatório."
         },
         {
           "campo": "cnpj",
-          "mensagem": "Required"
+          "mensagem": "Campo obrigatório."
         },
         {
           "campo": "legal_name",
-          "mensagem": "Required"
+          "mensagem": "Campo obrigatório."
         },
         {
           "campo": "email",
-          "mensagem": "Invalid input"
+          "mensagem": "Campo obrigatório."
         },
         {
           "campo": "phone",
-          "mensagem": "Required"
+          "mensagem": "Campo obrigatório."
         },
         {
           "campo": "postal_code",
-          "mensagem": "Required"
+          "mensagem": "Campo obrigatório."
         },
         {
           "campo": "street",
-          "mensagem": "Required"
+          "mensagem": "Campo obrigatório."
         },
         {
           "campo": "number",
-          "mensagem": "Required"
+          "mensagem": "Campo obrigatório."
         },
         {
           "campo": "complement",
-          "mensagem": "Required"
+          "mensagem": "Campo obrigatório."
         },
         {
           "campo": "district",
-          "mensagem": "Required"
+          "mensagem": "Campo obrigatório."
         },
         {
           "campo": "municipality_ibge_code",
-          "mensagem": "Required"
+          "mensagem": "Campo obrigatório."
         }
       ]
     },
@@ -602,11 +602,11 @@
     "empresa: e-mail com + e .com.br": "OK",
     "empresa: e-mail com subdomínio": "OK",
     "empresa: UUID inválido": {
-      "exibida": "Invalid uuid",
+      "exibida": "Identificador inválido (UUID).",
       "detalhes": [
         {
           "campo": "organization_id",
-          "mensagem": "Invalid uuid"
+          "mensagem": "Identificador inválido (UUID)."
         }
       ]
     },
@@ -621,20 +621,20 @@
       ]
     },
     "empresa: tipo errado": {
-      "exibida": "Expected string, received number",
+      "exibida": "Informe um texto.",
       "detalhes": [
         {
           "campo": "street",
-          "mensagem": "Expected string, received number"
+          "mensagem": "Informe um texto."
         }
       ]
     },
     "organização: vazia": {
-      "exibida": "Required",
+      "exibida": "Campo obrigatório.",
       "detalhes": [
         {
           "campo": "name",
-          "mensagem": "Required"
+          "mensagem": "Campo obrigatório."
         },
         {
           "campo": "type",
@@ -652,60 +652,60 @@
       ]
     },
     "configuração fiscal: vazia": {
-      "exibida": "Required",
+      "exibida": "Campo obrigatório.",
       "detalhes": [
         {
           "campo": "company_id",
-          "mensagem": "Required"
+          "mensagem": "Campo obrigatório."
         },
         {
           "campo": "organization_id",
-          "mensagem": "Required"
+          "mensagem": "Campo obrigatório."
         },
         {
           "campo": "simples_nacional_option",
-          "mensagem": "Required"
+          "mensagem": "Campo obrigatório."
         },
         {
           "campo": "simples_nacional_regime",
-          "mensagem": "Required"
+          "mensagem": "Campo obrigatório."
         },
         {
           "campo": "special_tax_regime",
-          "mensagem": "Required"
+          "mensagem": "Campo obrigatório."
         },
         {
           "campo": "dps_series",
-          "mensagem": "Required"
+          "mensagem": "Campo obrigatório."
         },
         {
           "campo": "approx_taxes_mode",
-          "mensagem": "Required"
+          "mensagem": "Campo obrigatório."
         },
         {
           "campo": "approx_simples_percent",
-          "mensagem": "Required"
+          "mensagem": "Campo obrigatório."
         },
         {
           "campo": "approx_federal_percent",
-          "mensagem": "Required"
+          "mensagem": "Campo obrigatório."
         },
         {
           "campo": "approx_state_percent",
-          "mensagem": "Required"
+          "mensagem": "Campo obrigatório."
         },
         {
           "campo": "approx_municipal_percent",
-          "mensagem": "Required"
+          "mensagem": "Campo obrigatório."
         }
       ]
     },
     "configuração fiscal: inteiro com fração": {
-      "exibida": "Expected integer, received float",
+      "exibida": "Informe um número inteiro.",
       "detalhes": [
         {
           "campo": "simples_nacional_option",
-          "mensagem": "Expected integer, received float"
+          "mensagem": "Informe um número inteiro."
         },
         {
           "campo": "approx_taxes_mode",
@@ -714,11 +714,11 @@
       ]
     },
     "configuração fiscal: número acima do limite": {
-      "exibida": "Number must be less than or equal to 3",
+      "exibida": "Informe um valor menor ou igual a 3.",
       "detalhes": [
         {
           "campo": "simples_nacional_option",
-          "mensagem": "Number must be less than or equal to 3"
+          "mensagem": "Informe um valor menor ou igual a 3."
         },
         {
           "campo": "approx_taxes_mode",
@@ -727,20 +727,20 @@
       ]
     },
     "configuração fiscal: percentual acima de 100": {
-      "exibida": "Number must be less than or equal to 100",
+      "exibida": "Informe um valor menor ou igual a 100.",
       "detalhes": [
         {
           "campo": "approx_federal_percent",
-          "mensagem": "Number must be less than or equal to 100"
+          "mensagem": "Informe um valor menor ou igual a 100."
         }
       ]
     },
     "configuração fiscal: regime especial fora da lista": {
-      "exibida": "Invalid input",
+      "exibida": "Valor inválido.",
       "detalhes": [
         {
           "campo": "special_tax_regime",
-          "mensagem": "Invalid input"
+          "mensagem": "Valor inválido."
         },
         {
           "campo": "special_tax_regime",
@@ -749,11 +749,11 @@
       ]
     },
     "configuração fiscal: série acima de 49999": {
-      "exibida": "Number must be less than or equal to 49999",
+      "exibida": "Informe um valor menor ou igual a 49.999.",
       "detalhes": [
         {
           "campo": "dps_series",
-          "mensagem": "Number must be less than or equal to 49999"
+          "mensagem": "Informe um valor menor ou igual a 49.999."
         }
       ]
     },
@@ -767,38 +767,38 @@
       ]
     },
     "configuração fiscal: modo inválido": {
-      "exibida": "Invalid enum value. Expected 'percent_simples' | 'percent_by_sphere' | 'none', received 'x'",
+      "exibida": "Valor inválido. Use: percent_simples, percent_by_sphere ou none.",
       "detalhes": [
         {
           "campo": "approx_taxes_mode",
-          "mensagem": "Invalid enum value. Expected 'percent_simples' | 'percent_by_sphere' | 'none', received 'x'"
+          "mensagem": "Valor inválido. Use: percent_simples, percent_by_sphere ou none."
         }
       ]
     },
     "serviço: nome vazio": {
-      "exibida": "String must contain at least 1 character(s)",
+      "exibida": "Informe um valor.",
       "detalhes": [
         {
           "campo": "name",
-          "mensagem": "String must contain at least 1 character(s)"
+          "mensagem": "Informe um valor."
         }
       ]
     },
     "serviço: nome longo": {
-      "exibida": "String must contain at most 200 character(s)",
+      "exibida": "Use no máximo 200 caracteres.",
       "detalhes": [
         {
           "campo": "name",
-          "mensagem": "String must contain at most 200 character(s)"
+          "mensagem": "Use no máximo 200 caracteres."
         }
       ]
     },
     "serviço: código de serviço sem 6 dígitos": {
-      "exibida": "Invalid",
+      "exibida": "Formato inválido.",
       "detalhes": [
         {
           "campo": "service_code",
-          "mensagem": "Invalid"
+          "mensagem": "Formato inválido."
         }
       ]
     },
@@ -812,27 +812,27 @@
       ]
     },
     "webhook: vazio": {
-      "exibida": "Required",
+      "exibida": "Campo obrigatório.",
       "detalhes": [
         {
           "campo": "organization_id",
-          "mensagem": "Required"
+          "mensagem": "Campo obrigatório."
         },
         {
           "campo": "integration_id",
-          "mensagem": "Required"
+          "mensagem": "Campo obrigatório."
         },
         {
           "campo": "environment",
-          "mensagem": "Required"
+          "mensagem": "Campo obrigatório."
         },
         {
           "campo": "url",
-          "mensagem": "Required"
+          "mensagem": "Campo obrigatório."
         },
         {
           "campo": "events",
-          "mensagem": "Required"
+          "mensagem": "Campo obrigatório."
         }
       ]
     },
@@ -846,29 +846,29 @@
       ]
     },
     "webhook: evento inválido": {
-      "exibida": "Invalid enum value. Expected 'webhook.teste' | 'nota.autorizada' | 'nota.rejeitada' | 'nota.cancelada' | 'nota.cancelamento_em_analise' | 'nota.cancelamento_indeferido' | 'nota.substituida' | 'nota.cancelada_prefeitura' | 'nota.bloqueada_prefeitura' | 'nota.desbloqueada_prefeitura' | 'nota.manifestacao' | 'empresa.situacao_alterada' | 'certificado.vencendo' | 'certificado.vencido' | 'municipio.disponivel' | 'nota.*' | 'empresa.*' | 'certificado.*' | 'municipio.*', received 'x'",
+      "exibida": "Valor inválido. Use: webhook.teste, nota.autorizada, nota.rejeitada, nota.cancelada, nota.cancelamento_em_analise, nota.cancelamento_indeferido, nota.substituida, nota.cancelada_prefeitura, nota.bloqueada_prefeitura, nota.desbloqueada_prefeitura, nota.manifestacao, empresa.situacao_alterada, certificado.vencendo, certificado.vencido, municipio.disponivel, nota.*, empresa.*, certificado.* ou municipio.*.",
       "detalhes": [
         {
           "campo": "events.0",
-          "mensagem": "Invalid enum value. Expected 'webhook.teste' | 'nota.autorizada' | 'nota.rejeitada' | 'nota.cancelada' | 'nota.cancelamento_em_analise' | 'nota.cancelamento_indeferido' | 'nota.substituida' | 'nota.cancelada_prefeitura' | 'nota.bloqueada_prefeitura' | 'nota.desbloqueada_prefeitura' | 'nota.manifestacao' | 'empresa.situacao_alterada' | 'certificado.vencendo' | 'certificado.vencido' | 'municipio.disponivel' | 'nota.*' | 'empresa.*' | 'certificado.*' | 'municipio.*', received 'x'"
+          "mensagem": "Valor inválido. Use: webhook.teste, nota.autorizada, nota.rejeitada, nota.cancelada, nota.cancelamento_em_analise, nota.cancelamento_indeferido, nota.substituida, nota.cancelada_prefeitura, nota.bloqueada_prefeitura, nota.desbloqueada_prefeitura, nota.manifestacao, empresa.situacao_alterada, certificado.vencendo, certificado.vencido, municipio.disponivel, nota.*, empresa.*, certificado.* ou municipio.*."
         }
       ]
     },
     "webhook: eventos demais": {
-      "exibida": "Array must contain at most 18 element(s)",
+      "exibida": "Informe no máximo 18 itens.",
       "detalhes": [
         {
           "campo": "events",
-          "mensagem": "Array must contain at most 18 element(s)"
+          "mensagem": "Informe no máximo 18 itens."
         }
       ]
     },
     "webhook: descrição longa": {
-      "exibida": "String must contain at most 2000 character(s)",
+      "exibida": "Use no máximo 2.000 caracteres.",
       "detalhes": [
         {
           "campo": "description",
-          "mensagem": "String must contain at most 2000 character(s)"
+          "mensagem": "Use no máximo 2.000 caracteres."
         }
       ]
     },
@@ -882,78 +882,78 @@
       ]
     },
     "webhook: ambiente inválido": {
-      "exibida": "Invalid enum value. Expected 'sandbox' | 'production', received 'x'",
+      "exibida": "Valor inválido. Use: sandbox ou production.",
       "detalhes": [
         {
           "campo": "environment",
-          "mensagem": "Invalid enum value. Expected 'sandbox' | 'production', received 'x'"
+          "mensagem": "Valor inválido. Use: sandbox ou production."
         }
       ]
     },
     "webhook: ativo como texto": {
-      "exibida": "Expected boolean, received string",
+      "exibida": "Informe true ou false.",
       "detalhes": [
         {
           "campo": "auth_clear",
-          "mensagem": "Expected boolean, received string"
+          "mensagem": "Informe true ou false."
         }
       ]
     },
     "integração: vazia": {
-      "exibida": "Required",
+      "exibida": "Campo obrigatório.",
       "detalhes": [
         {
           "campo": "organization_id",
-          "mensagem": "Required"
+          "mensagem": "Campo obrigatório."
         },
         {
           "campo": "name",
-          "mensagem": "Required"
+          "mensagem": "Campo obrigatório."
         }
       ]
     },
     "integração: escopo diferente de all": {
-      "exibida": "Invalid literal value, expected \"all\"",
+      "exibida": "Valor inválido. Use: all.",
       "detalhes": [
         {
           "campo": "company_scope",
-          "mensagem": "Invalid literal value, expected \"all\""
+          "mensagem": "Valor inválido. Use: all."
         }
       ]
     },
     "integração: empresas selecionadas": {
-      "exibida": "Array must contain at most 0 element(s)",
+      "exibida": "Informe no máximo 0 itens.",
       "detalhes": [
         {
           "campo": "company_ids",
-          "mensagem": "Array must contain at most 0 element(s)"
+          "mensagem": "Informe no máximo 0 itens."
         }
       ]
     },
     "integração: nome longo": {
-      "exibida": "String must contain at most 100 character(s)",
+      "exibida": "Use no máximo 100 caracteres.",
       "detalhes": [
         {
           "campo": "name",
-          "mensagem": "String must contain at most 100 character(s)"
+          "mensagem": "Use no máximo 100 caracteres."
         }
       ]
     },
     "tomador: tipo inválido": {
-      "exibida": "Invalid enum value. Expected 'pj' | 'pf' | 'estrangeiro', received 'z'",
+      "exibida": "Valor inválido. Use: pj, pf ou estrangeiro.",
       "detalhes": [
         {
           "campo": "tipo",
-          "mensagem": "Invalid enum value. Expected 'pj' | 'pf' | 'estrangeiro', received 'z'"
+          "mensagem": "Valor inválido. Use: pj, pf ou estrangeiro."
         }
       ]
     },
     "tomador: e-mail longo": {
-      "exibida": "String must contain at most 80 character(s)",
+      "exibida": "Use no máximo 80 caracteres.",
       "detalhes": [
         {
           "campo": "email",
-          "mensagem": "String must contain at most 80 character(s)"
+          "mensagem": "Use no máximo 80 caracteres."
         }
       ]
     }
