@@ -3,7 +3,10 @@
 - [x] Parte 1: perfis de leiaute nt004/nt009r1, data de vigência (admin plataforma, auditoria), escolha antes de cada envio, remontagem com mesmo número, leitores tolerantes, DANFSe (finalidade, destinatário), testes XSD nos dois perfis, exemplos e docs — pausa com relatório
 - [x] Parte 2: CNPJ alfanumérico — plano aprovado (bloqueio produção antes da NT 009, recusa conversão, chave 9+14+27 com correção em memória só do TSChaveNFSe nos testes, mensagem clara para recusa de esquema da chave, defeito em docs/interno, API aceita máscara/minúsculas) — pausa com relatório
 - [x] Publicar a Parte 2 (solicitado em 15/11/2026)
-- [ ] Parte 3: IBS/CBS — plano aprovado com decisões (datas por ambiente, DANFSe bloco sempre, regime 1/2/3, campo API obsoleto, casos extras bloqueados) — implementada; aguardando aprovação do relatório (não publicada)
+- [x] Parte 3: IBS/CBS — aprovada e publicação solicitada em 15/11/2026
+  - [x] Matriz de isolamento com colunas IBS/CBS, catálogos, sugestão/aplicação e funções novas (1.495 verificações, 0 falhas) + API (aplicar sugestão/regime em empresa alheia = 404; sugestão só lê catálogos)
+  - [x] Antes de 01/01/2027: aviso sem bloqueio, uma única reserva (a da própria nota), DPS sem o grupo; depois da data: 422 antes de numerar (teste)
+  - [x] Exemplos ibscbs-tributado (000001/100501) e ibscbs-sem-tributacao (410999) validados no XSD release 1; LEIAME atualizado
   - [x] Catálogos (cClassTrib 73, cIndOp 28 + 5 inativos, Anexo VIII) com versão
   - [x] Cadastros (regime IBS/CBS, perfil de serviço, sugestão, aviso tomador)
   - [x] Prontidão (datas por ambiente, avisos)

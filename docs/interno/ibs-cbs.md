@@ -34,3 +34,6 @@ Bloco sempre presente, com "-" sem o grupo. Exclusões = vDescIncond + vCalcReeR
 ## Testes
 - `src/test/ibs-cbs.test.ts`: regras, DPS contra XSD release 1, perfil r2, API, rejeições, leitura/DANFSe, sugestão.
 - `src/test/ibs-cbs.database.sql`: rollback-only pela ferramenta de migração (catálogos, gatilhos, regime, datas, auditoria, permissões).
+- `src/test/ibs-cbs-emissao.test.ts`: antes da data de obrigatoriedade a classificação pendente é só aviso (empresa pronta, uma única reserva — a da própria nota —, DPS sem o grupo validada no XSD); a partir da data, 422 antes de numerar.
+- Exemplos publicados `docs/exemplos/dps/ibscbs-*.xml` conferidos com o montador e o XSD release 1 em `ibs-cbs.test.ts`.
+- Isolamento: `isolation-matrix.database.sql` cobre as colunas IBS/CBS dos serviços e o regime, catálogos (leitura só com login, escrita de ninguém), aplicação da sugestão (owner/admin/admin da plataforma), serviço apontando para empresa de outra organização (chave composta) e as funções novas; `api-isolation.test.ts` cobre aplicação da sugestão/regime em empresa alheia (404) e a sugestão (só catálogos).
