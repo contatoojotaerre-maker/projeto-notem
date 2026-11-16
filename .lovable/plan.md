@@ -1,81 +1,115 @@
-# Atualização do zod 3 → 4 (sem mudar comportamento nem contrato)
+# Fase 8: painel da organização
 
-## O que já conferi (sem alterar o projeto)
-Comparei, numa cópia temporária fora do projeto, as mesmas validações com o zod 3.25.76 (atual) e o 4.6.7.
+Sem emissão pelo painel. Não serão alterados `transmissor/`, as regras fiscais, o leiaute da DPS nem a emissão e o cancelamento. Tudo respeita a organização e o ambiente selecionado (salvo no perfil, como hoje).
 
-- **Versão:** `zod@4.6.7` é a última estável, publicada em 12/10/2026 (35 dias). As ferramentas do TanStack já usam o zod 4 internamente e o `@hookform/resolvers` 5.2.2 aceita 3 ou 4. **Nenhuma outra dependência precisa mudar.**
-- **Mensagens em inglês hoje (o ponto principal):** em 40 casos típicos, **todas** as mensagens padrão do zod chegam ao parceiro em inglês, e mudam de texto na v4. Exemplos:
-  - campo ausente: "Required" → v4 "Invalid input: expected string, received undefined";
-  - campo desconhecido: "Unrecognized key(s) in object: 'x'" → v4 `Unrecognized key: "x"`;
-  - opção inválida: "Invalid enum value. Expected 'pj' | 'pf' | 'estrangeiro', received 'z'";
-  - texto longo: "String must contain at most 2000 character(s)";
-  - UUID: "Invalid uuid"; formato (ex.: `competencia`): "Invalid"; tipo errado: "Expected string, received number".
-  - No painel também aparecem: nome do serviço vazio e descrição do webhook longa mostram texto em inglês.
-  - As mensagens que a notem já escreve (CNPJ inválido, E0712, "nunca ambos" etc.) ficam iguais nas duas versões.
-- **Quais erros aparecem e em que ordem:** iguais nas duas versões em todos os casos testados, inclusive em combinações (campo desconhecido junto com uma regra da notem).
-- **UUIDs:**
-  - No banco, todos os identificadores de todas as tabelas, inclusive os usuários, já seguem a regra rígida (0 fora do padrão).
-  - Nos testes, só `src/test/webhooks.test.ts` usa `00000000-0000-0000-0000-000000000001/…02`, em 2 linhas. Os demais já são válidos.
-  - Na documentação, o exemplo de webhook do `openapi.yaml` usa esses mesmos dois.
-  - **Única mudança de resultado esperada:** um UUID fora do padrão (ex.: `00000000-0000-0000-0000-000000000001`) hoje passa na API e cai em 404. Com a regra rígida, passa a ser recusado com 400 antes de consultar. Como nenhum ID real fica fora do padrão, isso não afeta nenhum registro existente.
-- **E-mail:** comparei as duas regras em 3 milhões de combinações aleatórias e em casos reais (com `+`, subdomínio, `.com.br`, `.gov.br`, apóstrofo e maiúsculas): **0 divergências**. Hoje há só 2 e-mails gravados (1 empresa e 1 usuário), e os dois passam nas duas versões.
-- **Data e hora (`.datetime()`, só nos filtros de logs do painel):** fuso `-03:00` é recusado nas duas versões, como hoje. **Diferença:** a v4 recusa hora sem segundos (`2026-11-15T10:00Z`), que hoje é aceita. O painel sempre envia com segundos, mas manterei o critério atual exatamente.
-- **`.default()` (26 usos):** todos os padrões são valores fixos que já passam na própria validação (`''`, `false`, `true`, `0`, `null`, `[]`, `'all'`). Não há `.default()` dentro de campo opcional nem de `.partial()`, então o resultado é o mesmo. Não precisa de `.prefault()`.
-- **`z.record`:** o único uso já tem chave e valor.
-- **`superRefine`:** os 4 usos só acrescentam erros com caminho fixo e não usam `ctx.path`. Funcionam iguais na v4.
-- **Códigos de erro e `error.errors`:** nenhum código da notem depende dos nomes do zod e não há uso de `error.errors`. Tudo lê `error.issues`, mensagem e caminho.
-- **Números:** valores fiscais são texto decimal. A v4 recusa `Infinity` e inteiros acima do limite seguro. Isso só seria alcançável por chamadas forjadas do painel (JSON não transmite `Infinity`), e esses valores já eram recusados por limites ou pelo banco.
+## Decisões propostas (confirme ou ajuste)
 
-## Como vou fazer (em 3 passos, para provar que nada mudou)
-1. **Retrato "antes" (zod 3, sem mudar código):** um teste novo registra as respostas de erro de todas as validações da API (empresas, endereço, configuração fiscal, serviços, certificado, notas, tomadores, cancelamento/substituição) e dos formulários do painel (empresa, organização, configuração fiscal, serviço, webhook, integração). Ele cobre a mensagem exibida, para entradas inválidas típicas: campo ausente, tipo errado, UUID inválido, e-mail inválido, opção inválida, campo desconhecido, texto longo, formato, lista vazia e números fora do limite. O retrato fica guardado.
-2. **Mensagens em português controladas pela notem (ainda no zod 3):** um único módulo da notem passa a definir o texto de todo erro sem mensagem própria. Todos os arquivos passam a importar o zod por ele. As mensagens que já escrevemos não mudam. Gero o retrato de novo e entrego a diferença 1 → 2: é a lista do que estava em inglês e como ficou. Proposta de textos:
+1. **Período: data de emissão** (`dhEmi`) para todos os números do Início, no horário de Brasília e por dias inteiros.
+   - Mês atual: dia 1 até hoje.
+   - Mês anterior: o mês fechado.
+   - Últimos 30 dias: hoje e os 29 dias anteriores.
+   - Texto abaixo dos números: "Notas emitidas no período, pela data de emissão (horário de Brasília)."
+2. **Valor total emitido:** soma do valor do serviço das notas autorizadas, incluindo as que estão com cancelamento em análise (continuam válidas até a decisão). Ficam fora as canceladas, as canceladas pela prefeitura e as substituídas.
+3. **Canceladas no período:** notas emitidas no período que hoje estão canceladas, pela mesma regra de data. A alternativa seria contar pela data do cancelamento, o que exige uma segunda regra no texto.
+4. **Fora da notem:** notas sincronizadas em que o prestador é uma empresa da organização com prova de posse (regra da Fase 7). Notas recebidas não entram no Início. Notas da notem que também chegam pela sincronização não são contadas duas vezes.
+5. **CSV:** limite de **10.000 notas por planilha**. Acima disso, o painel não gera um arquivo cortado: mostra "O filtro tem N notas; o limite por planilha é 10.000. Reduza o período."
+6. **ZIP:** a recomendação é a **opção A**.
+   - **Opção A (recomendada):** montagem no navegador, em partes.
+     - Limite de **500 notas por ZIP** (cerca de 60 MB com XML e PDF).
+     - O navegador pede os arquivos em lotes de 20 notas a funções do servidor que exigem login. Cada lote confere de novo a organização e a prova de posse, e o ZIP é montado no próprio navegador, com barra de progresso.
+     - Nenhum servidor ultrapassa o tempo limite, e nenhum arquivo fica guardado: não há link, porque não existe arquivo no servidor para expirar.
+     - Se a aba for fechada, o download para.
+   - **Opção B:** geração em segundo plano.
+     - Precisa de uma tabela nova de exportações, um bucket privado, processamento pelo agendador a cada minuto em várias etapas, aviso no painel e link assinado de 15 minutos.
+     - É mais complexa e mais lenta (minutos), e exige montar o ZIP em partes no servidor.
+   - Nas duas opções, acima de 500 notas o painel pede para reduzir o filtro.
+7. **PDF de nota de fora:** hoje o painel **já gera o DANFSe** das notas de fora e das recebidas a partir do XML oficial, então o ZIP inclui esse PDF. O PDF das notas da notem também é gerado na hora (não fica guardado), com a situação atual.
+8. **Gravidade dos alertas:**
+   - Impeditivo: certificado vencido; empresa ativa sem condição de emitir; IBS/CBS a partir de 01/01/2027.
+   - Atenção: certificado vencendo em até 7 dias; IBS/CBS antes de 01/01/2027; nota em verificação há mais de 30 minutos; cancelamento aguardando o governo há mais de 24 horas; erro na sincronização com o ADN; falha de webhook.
+   - Informativo: certificado vencendo em 15 ou 30 dias.
 
-| Situação | Hoje | Novo |
-|---|---|---|
-| Campo ausente | Required | Campo obrigatório. |
-| Tipo errado | Expected string/number/boolean/object/array… | Informe um texto. / Informe um número. / Informe true ou false. / Informe um objeto JSON. / Informe uma lista. |
-| Inteiro | Expected integer, received float | Informe um número inteiro. |
-| Campo desconhecido | Unrecognized key(s) in object: 'x' | Campo não aceito: x. (vários: "Campos não aceitos: x, y.") |
-| Opção inválida | Invalid enum value. Expected … | Valor inválido. Use: pj, pf ou estrangeiro. |
-| Texto curto | String must contain at least 1 character(s) | Informe um valor. (N>1: "Use pelo menos N caracteres.") |
-| Texto longo | String must contain at most N character(s) | Use no máximo N caracteres. |
-| Número fora do limite | Number must be … | Informe um valor maior/menor ou igual a N. |
-| Lista | Array must contain … | Informe pelo menos/no máximo N item(ns). |
-| UUID | Invalid uuid | Identificador inválido (UUID). |
-| E-mail sem texto próprio | Invalid email | E-mail inválido. |
-| Formato | Invalid | Formato inválido. |
-| Data e hora | Invalid datetime | Data e hora inválidas. |
-| Qualquer outro caso | Invalid input / Invalid | Valor inválido. |
+## O que será feito
 
-Números com separador brasileiro ("1.024"). Os códigos (`REQUISICAO_INVALIDA`, `REGRA_DE_NEGOCIO`), os status e os campos (`campo`, incluindo `corpo`) não mudam.
+### 1. Início
+- **Empresas:** total, ativas e inativas, prontas para emitir e com pendência. A prontidão usa o mesmo cálculo da aba "Pronta para emitir", feito no servidor para todas as empresas de uma vez.
+- **Notas do período**, com seletor (mês atual é o padrão): emitidas (total, pela notem e fora da notem), valor total (com a mesma separação), canceladas e rejeitadas (só da notem). Valores em reais com duas casas.
+- **Pendências:** os 5 alertas mais graves, cada um com link para resolver, e "Ver todos os alertas". Sem pendências, aparece "Tudo em dia".
+- **Últimas 10 notas:** número, empresa, tomador, valor, situação, origem e data. Cada linha abre o detalhe da nota.
+- **Sem empresas:** estado vazio com "Cadastrar empresa", só para quem pode cadastrar.
+- Todos os perfis da organização veem o Início.
 
-3. **Troca para o zod 4.6.7:** adapto o módulo de mensagens ao formato da v4 e gero o retrato de novo. Ele tem de ser **idêntico ao do passo 2**, com uma única diferença esperada e já explicada: o UUID fora do padrão. Ajustes no código:
-   - `.strict()` (16) → `z.strictObject`; `.passthrough()` (2) → `z.looseObject`. Campo desconhecido continua recusado com o mesmo código, campo e mensagem; o retrato confirma.
-   - E-mail: fixo a regra atual como regra da notem, para não depender de mudanças futuras do zod.
-   - Data e hora dos filtros de logs: regra da notem idêntica à de hoje (Z obrigatório, segundos opcionais, frações livres). Faço um teste com os 9 casos que comparei.
-   - `.uuid()` continua rígido na API (sem `z.guid()`).
-   - Mantenho `.uuid()`, `.email()` e `superRefine` na forma atual, que a v4 ainda aceita. Assim a mudança fica menor; uma troca só de forma pode ficar para depois.
-   - Uma regra da verificação do código impede importar o zod diretamente fora do módulo da notem.
+### 2. Notas
+- **Busca única:**
+  - número da nota;
+  - chave de acesso (50 caracteres);
+  - documento do tomador (CPF, CNPJ numérico ou alfanumérico, com ou sem pontuação, maiúsculas ou minúsculas; NIF);
+  - nome parcial do tomador, sem diferenciar acentos nem maiúsculas.
+- **Período:** filtro por emissão ou competência, com mês atual, mês anterior, últimos 30 dias ou intervalo personalizado, somado aos filtros de empresa, origem e situação.
+- **Exportar CSV:**
+  - separador `;`, UTF-8 com BOM, vírgula decimal e datas `dd/mm/aaaa`;
+  - colunas pedidas no briefing; a "série" é a série da DPS, a única que a nota tem;
+  - proteção contra fórmula para células que começam com `= + - @`, tab ou retorno.
+- **Baixar ZIP:**
+  - o usuário escolhe XML, PDF ou os dois, sempre com os filtros aplicados;
+  - organização em pastas: `{CNPJ}/NFSe_{numero}_{chave}.xml`, `NFSe_{numero}_{chave}.pdf` e `Cancelamento_{numero}_{chave}.xml` (XML oficial do evento).
+- **Permissão:** quem já vê as notas.
+- **Registro:** cada exportação é registrada na trilha de auditoria existente, com tipo, filtros, quantidade, quem e quando, sem o conteúdo.
 
-## Testes e dados de teste
-- Os 563 testes atuais devem passar sem mudar o que conferem. Única alteração de dado: em `src/test/webhooks.test.ts`, os 2 UUIDs fora do padrão viram UUIDs válidos. Também troco o exemplo do `openapi.yaml` pelos mesmos valores válidos, só na documentação.
-- Testes novos: o retrato (comparado com o arquivo guardado), "nenhuma mensagem do retrato contém texto padrão do zod", a lista de e-mails, os casos de data e hora e o UUID rígido.
-- Rodo de novo: suíte completa, verificação de tipos, montagem do app, OpenAPI 3.1, matriz de isolamento (1.495 verificações) e os exemplos de DPS no esquema oficial do release 1.
+### 3. Modelos de serviço
+O item sai do menu, e o endereço antigo leva ao Início, sem erro.
 
-## Documentação
-- `docs/interno/validacao-mensagens.md`: regra "mensagens sempre da notem", tabela acima e lista do que mudou de inglês para português.
-- Regra técnica no AGENTS.md: validação importa o zod só pelo módulo da notem.
-- `docs/api/`: nenhuma página promete os textos antigos em inglês. Acrescento só uma nota de que as mensagens de `detalhes` são em português e podem ser melhoradas, enquanto `codigo` e `campo` são estáveis.
+### 4. Alertas
+- **Uma única fonte**, que alimenta a tela Alertas, as Pendências do Início e o contador ao lado do menu (atualizado a cada minuto).
+- **Calculados na hora** (somem sozinhos quando o problema é resolvido):
+  - certificado vencendo ou vencido, pela validade do certificado ativo; os marcos de `certificate_expiry_notices` continuam servindo aos webhooks;
+  - empresa ativa sem condição de emitir, com o motivo;
+  - IBS/CBS pendente em serviço ativo;
+  - nota em verificação há mais de 30 minutos;
+  - cancelamento aguardando o governo há mais de 24 horas;
+  - erro na última sincronização da empresa.
+- **Guardados:** falhas de webhook, já gravadas hoje. Ficam abertas enquanto o endpoint continuar desativado ou sem entrega bem-sucedida depois do alerta; as antigas vão para "Histórico".
+- **Filtros:** por gravidade e por empresa.
+- **Datas:** no horário de Brasília. Hoje a tela usa o horário do navegador; isso será corrigido.
 
-## Fora do escopo
-- Regras fiscais, banco, permissões, migrações e `transmissor/`: nada muda.
-- Sem publicação antes da sua aprovação.
+### 5. Ajuda
+- **Passo a passo:** 8 passos curtos, cada um com link para a tela correspondente.
+- **Documentação da API:** o bloco fica oculto até a Fase 10.
+- **Suporte:** e-mail e WhatsApp numa seção nova "Suporte" da Administração, editável só pelo administrador da plataforma e registrada na auditoria. Se estiver vazio, o bloco não aparece. Não vou inventar contato.
 
-## Pontos para você decidir
-1. Os textos da tabela (posso ajustar qualquer um).
-2. Aceitar a recusa (400) de UUID fora do padrão na API, que hoje cai em 404.
-3. Erro de validação interna das funções do painel (só acontece se alguém burlar o formulário): hoje a tela mostra um bloco técnico. Com o passo 2 o conteúdo fica em português, mas o formato continua. Proponho não mexer agora.
+### 6. Nomes e menu
+- A aba "Situação" passa a se chamar "Pronta para emitir".
+- Ordem do menu: Início, Notas, Empresas, Alertas, Integrações, Equipe, Organização, Ajuda.
+- Ao abrir uma organização, a primeira tela já é o Início.
 
-## Não será possível verificar
-- Telas com login real: o login deste projeto não pode ser simulado aqui. Confiro a montagem e as validações dos formulários por testes.
-- Chamadas com chave real.
+## Detalhes técnicos
+
+- **Sem tabelas novas** na opção A. Mudanças no banco:
+  - duas colunas em `platform_settings` (`support_email`, `support_whatsapp`), com verificação de formato, mais uma função só para o administrador da plataforma, com auditoria;
+  - `list_org_notes` ganha `_search` e `_date_field` (emissão ou competência), mantendo a prova de posse;
+  - função nova `org_notes_summary(_org,_env,_from,_to)`, no mesmo padrão de quem chama (RLS do próprio usuário), que conta e soma no banco os valores de `sent_values`/`summary`.
+- **Índices novos:**
+  - `invoices`: `(organization_id, environment, competence)`, `(organization_id, environment, nfse_number)`, `(environment, access_key)`, `(organization_id, environment, (customer_snapshot->>'documento'))` e índice de trigramas no nome normalizado do tomador;
+  - `nfse_documents`: `(environment, provider_cnpj, competence)`, `(environment, provider_cnpj, nfse_number)` e índice de trigramas em `taker_name`.
+  - Continuam em uso `invoices_list`, `nfse_documents_provider_idx`, `nfse_documents_taker_idx` e a chave única por ambiente.
+- **Funções do servidor** (com login, `requireOrgMember` e tudo filtrado pela organização):
+  - `getOrgDashboard`, `getOrgAlerts` (lista e contagem), `exportInvoicesCsv` e `getExportFiles` (lote de 20 notas);
+  - os alertas e a prontidão usam leituras em lote (cerca de 7 consultas por organização) e o cálculo puro `computeReadiness`, já usado hoje.
+- **ZIP:** biblioteca `fflate` (MIT), na versão estável com pelo menos duas semanas, travada exata.
+- **Formatação:** um módulo único para moeda e datas de Brasília, usado pelas telas novas e pelo CSV.
+- **Auditoria das exportações:** `admin_audit_events` com `action='notas.exportacao_csv'` ou `'notas.exportacao_zip'` e `details` sem dados das notas.
+
+## Testes
+- **Início:** os números são conferidos com uma consulta independente nos 3 períodos e nos 2 ambientes, com notas de fora, canceladas, rejeitadas e substituídas.
+- **Busca:** número, chave, CNPJ com e sem pontuação, CNPJ alfanumérico, CPF e nome parcial com acento.
+- **CSV:** BOM, separador, decimais, datas, acentos, proteção contra fórmula e limite.
+- **ZIP:** pastas, eventos de cancelamento, filtros, limite e recusa de notas de outra organização no lote.
+- **Alertas:** cada tipo aparece no cenário certo e some quando resolvido.
+- **Isolamento:** a matriz ganha as funções novas (resumo, busca, alertas, exportação e suporte). Usuário de outra organização recebe 0 registros ou 404. Trago o total (hoje 1.495) e as falhas.
+- **Regras gerais:** os 587 testes, a verificação de tipos e a montagem.
+
+## Prints
+O banco do projeto não permite que eu entre no painel com login. Para os prints em produção e homologação, preciso que você me passe um usuário de teste pelo formulário seguro (e-mail e senha), membro de uma organização de teste. Sem isso, entrego os testes automáticos e marco os prints como não verificados.
+
+## Fora desta fase
+Administração (Fase 9), documentação pública (Fase 10), e-mails de alerta e gráficos. Não publico antes da sua aprovação.
