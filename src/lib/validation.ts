@@ -5,7 +5,8 @@
  */
 import { z } from 'zod';
 
-const num = (n: number | bigint) => new Intl.NumberFormat('pt-BR').format(n);
+/** Brazilian number format without Intl, so every runtime (browser, Worker, Node) prints the same text. */
+const num = (n: number | bigint) => { const [i = '', d] = String(n).split('.'); const g = i.replace(/\B(?=(\d{3})+(?!\d))/g, '.'); return d ? `${g},${d}` : g; };
 const plural = (n: number | bigint, one: string, many: string) => `${num(n)} ${Number(n) === 1 ? one : many}`;
 const list = (xs: string[]) => xs.length <= 1 ? xs.join('') : `${xs.slice(0, -1).join(', ')} ou ${xs[xs.length - 1]}`;
 export const UNKNOWN_KEY_MAX_LENGTH = 60;
