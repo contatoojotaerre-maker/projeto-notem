@@ -144,3 +144,13 @@ export const acknowledgeSandboxChanges = createServerFn({method:'POST'}).middlew
   if(r.error){console.error('notem: database error',r.error.code);throw new Error('Somente proprietários e administradores podem marcar os avisos como lidos.');}
   return {count:r.data?.length??0};
 });
+/** Names of the people who created/changed records of an organization (members or platform admins only). */
+export const getActorNames = createServerFn({method:'POST'}).middleware([requireSupabaseAuth]).inputValidator(z.object({organization_id:z.string().uuid(),ids:z.array(z.string().uuid()).max(20)})).handler(async({context,data})=>{
+  const {requireOrgMember}=await import('./panel-access');await requireOrgMember(context.supabase,data.organization_id);
+  const ids=[...new Set(data.ids)];if(!ids.length)return [] as {id:string,name:string}[];
+  const {supabaseAdmin}=await import('@/integrations/supabase/client.server');
+  const [members,admins,profiles]=await Promise.all([supabaseAdmin.from('organization_members').select('user_id').eq('organization_id',data.organization_id).in('user_id',ids),supabaseAdmin.from('platform_admins').select('user_id').in('user_id',ids),supabaseAdmin.from('profiles').select('id,display_name').in('id',ids)]);
+  if(members.error||admins.error||profiles.error)throw new Error('Não foi possível carregar os responsáveis.');
+  const member=new Set((members.data??[]).map(m=>m.user_id)),admin=new Set((admins.data??[]).map(a=>a.user_id));
+  return ids.map(id=>{const p=(profiles.data??[]).find(x=>x.id===id);const name=p?.display_name?.trim();return {id,name:member.has(id)?(name||'Membro da organização'):admin.has(id)?(name?`${name} (administração da notem)`:'Administração da notem'):'Pessoa que não está mais na organização'};});
+});

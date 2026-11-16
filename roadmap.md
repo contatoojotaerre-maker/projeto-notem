@@ -1,170 +1,23 @@
-# notem — Fase 1
-## Fase C — NT 009, CNPJ alfanumérico e IBS/CBS
-- [x] Parte 1: perfis de leiaute nt004/nt009r1, data de vigência (admin plataforma, auditoria), escolha antes de cada envio, remontagem com mesmo número, leitores tolerantes, DANFSe (finalidade, destinatário), testes XSD nos dois perfis, exemplos e docs — pausa com relatório
-- [x] Parte 2: CNPJ alfanumérico — plano aprovado (bloqueio produção antes da NT 009, recusa conversão, chave 9+14+27 com correção em memória só do TSChaveNFSe nos testes, mensagem clara para recusa de esquema da chave, defeito em docs/interno, API aceita máscara/minúsculas) — pausa com relatório
-- [x] Publicar a Parte 2 (solicitado em 15/11/2026)
-- [x] Parte 3: IBS/CBS — aprovada e publicação solicitada em 15/11/2026
-  - [x] Matriz de isolamento com colunas IBS/CBS, catálogos, sugestão/aplicação e funções novas (1.495 verificações, 0 falhas) + API (aplicar sugestão/regime em empresa alheia = 404; sugestão só lê catálogos)
-  - [x] Antes de 01/01/2027: aviso sem bloqueio, uma única reserva (a da própria nota), DPS sem o grupo; depois da data: 422 antes de numerar (teste)
-  - [x] Exemplos ibscbs-tributado (000001/100501) e ibscbs-sem-tributacao (410999) validados no XSD release 1; LEIAME atualizado
-  - [x] Catálogos (cClassTrib 73, cIndOp 28 + 5 inativos, Anexo VIII) com versão
-  - [x] Cadastros (regime IBS/CBS, perfil de serviço, sugestão, aviso tomador)
-  - [x] Prontidão (datas por ambiente, avisos)
-  - [x] DPS nt009r1 com IBSCBS + validações + perfil nt009r2 desligado
-  - [x] Leitura, API, webhooks, DANFSe, docs e testes
-## Revisão de segurança — Etapa 2 (correções aprovadas em 15/11/2026)
-- [x] S-01 membro obrigatório nas notas do painel + teste
-- [x] S-02 cadastro público desligado (configuração pública) + teste permanente
-- [x] S-03 limites de uso (429 + Retry-After), ajuste por organização pronto sem tela, convencoes.md; testes unitários e de banco
-- [x] S-04 auditoria e alerta no painel das alterações por chave de homologação; risco em convencoes.md
-- [x] S-05 registros mínimos (downloads só tipo/tamanho, documentos mascarados, sem contato/endereço); leitura owner/admin/developer
-- [x] S-06 convites com validade de 7 dias, lista e revogação registrada
-- [x] S-07 bibliotecas atualizadas (vite, TanStack/seroval, vitest e transitivas)
-- [x] S-07b zod v3 → v4 em etapa separada (64 pontos em 17 arquivos; muda mensagens de erro da API) — aguarda aprovação
-- [x] S-08 corpo limitado a 200 KB durante a leitura (413)
-- [x] S-09..S-18, S-24 (concessões, cabeçalhos, mensagens fixas, idempotência, tetos, retenção, OIDC, auditoria admin, última organização, chave webhook, /status)
-- [x] S-23 passo a passo de rotação da conta notem-painel entregue (execução fica com o proprietário)
-- [x] Matriz de isolamento permanente (1.225 verificações, 0 falhas) + teste /api/v1 com IDs de outra organização (404)
-- [x] Publicado e conferido no domínio oficial (cabeçalhos, OPTIONS 204, 401 com X-Request-Id)
-- [ ] Telas autenticadas (alerta de homologação, convites pendentes, registros) — sem sessão de teste no Supabase externo; conferência do proprietário
-## Fase 5 — Cancelamento, análise fiscal e substituição
-- [x] Plano aprovado com ajustes; transmissor/ intocado.
-- [x] Parte 1: montador de eventos e101101/e101103 e grupo subst, testes XSD (268 testes OK), exemplos em docs/exemplos/eventos/.
-- [x] Conferência externa dos três XML aprovada pelo proprietário.
-- [x] Normalização de texto NFS-e (travessões, aspas, reticências, espaços, quebras) em todos os campos da DPS e eventos; 422 "contém caracteres não aceitos pela NFS-e" antes de numerar/enviar; texto normalizado gravado; convencoes.md; testes com textos colados.
-- [x] Parte 2: banco/fluxo fiscal, reconciliação E0840, verificação sem reenvio e substituição atômica; testes de banco com desfazimento passaram.
-- [x] Parte 3: rotas cancelar/solicitar-analise-cancelamento/substituir/eventos XML; cancelamento.md, notas.md, webhooks.md, convencoes.md e OpenAPI 3.1 válido.
-- [x] Parte 4: painel (cancelar, análise, substituir, aviso de pendência, XML do evento) e testes automatizados.
-- [ ] Teste real de cancelamento/substituição no governo e tela autenticada — dependem de autorização explícita para ação fiscal real (nota nº 11) ou de nota de homologação, e de sessão de teste no painel.
+# Roadmap — Correções e reorganização do painel
 
-## Auditoria da documentação API
-- [x] Separar contrato público e notas internas, corrigir textos e incluir exemplos completos de webhooks.
-- [x] OpenAPI 3.1.0 válido — 0 erros (openapi-spec-validator 0.7.2); 256 testes passaram, incluindo especificação inválida de controle. Informar arquivos alterados/criados/movidos; API sem mudanças e sem publicação nesta auditoria.
+## Parte 1 (concluída; aguarda aprovação; não publicar)
+- [x] 1 Telas de erro pt-BR dentro do painel (não encontrada / sem acesso / falha)
+- [x] 2 Login volta ao destino (safeInternalPath ao gravar E ao ler; apagar após uso)
+- [x] 3 Botão de menu 768–900 px
+- [x] 4 Detalhe da nota e Tomadores legíveis
+- [x] 5 Datas em Brasília em todas as telas
+- [x] 6 Códigos fixos ?aba= (empresa e integração) + conversão dos nomes antigos
+- [x] 7 Filtros no endereço (Notas, Empresas, Requisições)
+- [x] 8 Atalhos do Início (erros 24h + ambiente; webhooks do ambiente)
+- [x] 9 Restos (busca do topo, "autorizadas", coluna Empresas)
+- [x] 10 Sem códigos internos (nomes, origem, município, CNPJ, regime)
+- [x] 11 PDF em um clique; PDF+XML juntos
+- [x] 12 Pequenos ajustes
+- [x] Testes da Parte 1 + relatório
 
-## Etapa E2 — DANFSe e proteção de numeração
-- [x] Máscaras e localidades, três reduções IBS/CBS e quebra entre palavras ajustadas; PNGs base/homologação regenerados e inspecionados, 254 testes passaram e build OK; publicação solicitada ao encerrar (conclusão não verificada).
-- [x] Plano E2 aprovado: seguir ordem proposta; transmissor/ intocado.
-- [x] Gerador DANFSe, preferência de canhoto e sete exemplos PNG em docs/exemplos/danfse/ e Files para entrega no chat; QR decodificado.
-- [x] Downloads API/painel, links e documentação; API PDF testada com fixture real em memória. Painel autenticado não verificado (Supabase externo).
-- [x] Séries automáticas desde 900 e saltos duráveis E0014; teste DB com rollback passou, cinco saltos e seis históricos, grants corrigidos e conferidos.
-- [x] 254 testes locais, sete PNGs inspecionados; build OK; scan sem críticos (seis informativos).
-- [x] Solicitação de publicação E2 ao finalizar; confirmação do resultado pela ferramenta e produção separadas.
-- [ ] PDF de nota autorizada real e emissão A1/continuação E0014 hospedada — banco sem notas, sem sessão externa disponível; depende do teste do proprietário.
-
-## Etapa E1 — Emissão e tomadores
-- [x] Ler contratos de notas e transmissor v2 pelo anexo autorizado como fonte até a sincronização normalizar; sem editar transmissor/.
-- [x] Plano aprovado em cinco partes com complementos; PDF usa PDF_EM_PREPARACAO (503), mensagem “PDF em preparação”.
-- [x] Parte 1: banco/rotas de tomadores, notas.md/openapi com complementos; chamadas autenticadas externas não verificadas.
-- [x] Parte 2: três XML passam sem erros no XSD com somente TSSerieDPS corrigido em memória; ZIP intacto e 10 testes DPS passaram. Exemplos entregues no chat.
-- [x] Primeira conferência externa: três XML passaram no XSD com correção em memória; proprietário identificou E0431/E0432, E0710/E0712/E0713 e E0202.
-- [x] Correções pré-Parte 3: descontos zero omitidos, matriz de tributos em tela/API/banco/DPS, legados incompletos sem reescrita, tomador distinto na validação pré-numeração, testes e documentação. 193 testes passaram; nove combinações no banco e legado sem consumo de número validados com rollback. Tela autenticada/API com chave não verificadas (Supabase externo).
-- [x] Regenerar três XML: todos passaram no XSD com correção isolada em memória; entregar completos no chat para nova conferência. Sincronização GitHub permanece não verificada.
-- [x] Segunda conferência externa: três XML aprovados em XSD/regras; Partes 3–5 liberadas em 14/11/2026.
-- [x] Validações pré-reserva E0172/E0174/E0175, E0204/E0237; legados preservados e incompletos; traduções do Anexo I e testes.
-- [x] Parte 3: emissão idempotente duradoura, número/nota atômicos, persistência anterior à transmissão, resultados e webhooks atômicos.
-- [x] Parte 4: consulta automática com leases, 404 por 15 minutos e reconciliação sem reenvio ambíguo.
-- [x] Parte 5: consultas API/XML/PDF, painel somente leitura e tomadores, mensagens de rejeição, documentação; 238 testes passaram, XSD dos três XML válido, testes DB com rollback aprovados, build OK.
-- [x] Publicação E1 solicitada para https://app.notemfiscal.com.br; confirmação externa das novas rotas pendente.
-- [ ] Emissão real com chave/A1 e painel autenticado — depende do teste externo do proprietário (Supabase externo sem sessão gerenciada); não verificado.
-
-## Fase 3A.2 — Webhooks e ajustes de Integrações
-- [x] Correção pós-auditoria: teste direto com resultado na tela, eventos reais em fila sem waitUntil, mensagens em português, registro resumido do agendador, chave de autorização, revelar segredo, filtro por empresa, exemplo e docs.
-- [x] Teste publicado: webhook.teste entregue ao webhook.site (HTTP 200, 598 ms) pelo agendador; ciclo registrado com resumo.
-- [ ] Clicar "Enviar teste" no painel (tentativa direta) — sem sessão de teste no Supabase externo; fica com o usuário.
-- [x] Ler contrato docs/api/webhooks.md e convenções; preparar plano aprovado com Google Cloud Scheduler e DNS preflight sem IP pinning.
-- [x] Provar waitUntil e rota POST /api/public/webhooks/process com OIDC Google: 401 sem token; 200 com Google real e req_0c386b1ec9a046cc90ee0bb33f2c11cf confirmado no banco. URL/auth informadas; tarefa Google Cloud a cada minuto será criada pelo usuário.
-- [x] Aplicar plano aprovado: HTTPS/DNS sem IP pinning, quatro tabelas/RLS, motor de assinaturas/entregas, telas e docs. Testes de banco com rollback passaram (8 tentativas, reenvio, corpo preservado, sucesso limpa falha, desativação/alerta 3 dias, grants/RLS); 101 testes locais passaram.
-- [ ] Criar tarefa Google Cloud Scheduler a cada minuto — depende do proprietário; configuração em docs/interno/agendador-webhooks.md.
-- [ ] Validar cadastro, teste e leitura em tela autenticada com receptor real — Supabase externo sem sessão de teste gerenciada; navegador redirecionou para /entrar, sem erros.
-- [ ] Confirmar publicação definitiva e processamento OIDC externo — republicação solicitada; chamadas externas ainda serviram o diagnóstico anterior, não o motor definitivo.
-
-## Fase 3A — Integrações e primeira rota da API
-- [x] Plano aprovado; testar /api/v1 primeiro, adotar /api/public/v1 sem aliases apenas se bloqueado, atualizando somente a base do contrato.
-- [x] Publicação inicial confirmada; URL e três Redirect URLs informadas. Nova publicação com integrações solicitada.
-- [x] Publicação atualizada confirmada: /api/v1/status retornou 401 e Server-Timing api-log background; req_aef31f2dff00489593bb74583c3c9d7b confirmado no banco. waitUntil disponível hospedado; sem espera síncrona da gravação (duration_ms antes do agendamento: 0 ms na chamada sem chave).
-- [x] Prova externa: /api/v1/status publicado respondeu 401 JSON com X-Request-Id sem sessão às 23:02:49 UTC. Base /api/v1 preservada, sem aliases. Quatro tabelas criadas com RLS, leitura de metadados sem hash e escrita só servidor; limpeza diária 03:00 UTC.
-- [x] Implementar lista/detalhe, geração/revogação e logs com filtros; 55 testes locais passaram e testes de banco com rollback passaram (limite por ambiente, revogação, papéis, empresa de outro tenant quando disponível e concessões sem hash/escrita direta). Limpeza SQL diária ativa às 03:00 UTC.
-- [ ] Conferir criação, geração e leitura na tela autenticada com chave real — Supabase externo sem sessão de teste gerenciada. Concorrência multissessão não exercitada; lock de integração implementado.
-- [ ] Página pública /docs gerada de docs/api/ — fase final, fora da Fase 3A.
-
-## Redesenho fiscal guiado
-- [x] Plano aprovado: Configuração fiscal e Serviços simples, avançado recolhido e alíquota opcional de ISS do Simples.
-- [x] Aplicar redesenho e alíquota opcional; E0713 no formulário, função autenticada e banco: não optante exige três percentuais e não permite none. Preservar linhas antigas incompatíveis e avisar na tela.
-- [x] 46 testes locais aprovados, validações de banco com rollback aprovadas e aplicativo sem erros; sem alterações em transmissor/.
-- [ ] Conferir visual e salvamento/leitura das abas autenticadas — Supabase externo sem sessão de teste disponível; navegador redirecionou para /entrar.
-
-## Configuração fiscal e perfis de serviço
-- [x] Plano aprovado com os ajustes de CNPJ protegido e reserva definitiva.
-- [x] Criar três catálogos vazios, configuração/perfis, séries e reserva definitiva; aplicar RLS/concessões e proteção condicional do CNPJ.
-- [x] Implementar abas fiscais/serviços e Prontidão; 42 testes locais e testes de banco com rollback aprovados. Confirmadas regras condicionais, papéis, isolamento, reserva sem emissão, limite e ambientes separados; catálogos com zero linhas.
-- [ ] Conferir salvamento/leitura nas telas conectadas e catálogos reais — depende de sessão externa de teste disponível e carga SQL pelo usuário; Supabase externo não permite sessão de teste gerenciada.
-- [ ] Teste concorrente de atribuição/reserva e proteção CNPJ em sessões simultâneas — sem conexão SQL de teste multissessão disponível; bloqueios transacionais implementados, execução concorrente não verificada.
-
-## Catálogos oficiais e busca municipal
-- [x] Plano aprovado; CSV conferidos com 5.570 municípios, 250 países e códigos únicos.
-- [x] Busca indexada sem acentos/por IBGE e estados do campo aplicados; 11 testes passaram e aplicativo sem erros.
-- [ ] Aplicar carga idempotente — bloqueada pelo envio apenas inline da ferramenta de migração; SQL integral preparado em Files, banco continua vazio.
-- [ ] Validar contagens, valores e idempotência no banco — depende da carga; validação das funções pela conexão de leitura é restrita por permissões.
-- [ ] Verificar busca na tela conectada — Supabase externo sem sessão de teste disponível; navegação de teste foi redirecionada para entrar.
-
-- [x] Aplicar fundação com os ajustes aprovados: banco, isolamento, convites e auditoria.
-- [x] Implementar login, painel, organizações, empresas e preferências.
-- [x] Verificar regras locais e páginas públicas: 7 testes aprovados, verificações desktop/celular sem erros.
-- [x] Entregar guia Supabase/Google e textos de e-mail em português.
-- [ ] Validar login, convites e isolamento com usuários reais — depende das configurações externas e municípios oficiais; Supabase externo não fornece sessão de teste gerenciada.
-- [ ] Enviar aviso por e-mail para conta existente — aguarda domínio de envio; convite pendente e aceite explícito já implementados.
-- [x] Integrar marca no login, menu e favicon; originais preservados e fundo WebP otimizado.
-- [x] Unificar rotas públicas em português, remover duplicadas e entregar guia v2; 13 testes e verificações públicas aprovados.
-- [x] Revogar execução pública de rls_auto_enable; teste de nova tabela passou e gatilho ensure_rls permanece habilitado; aviso específico removido.
-- [x] Explicar rls_auto_enable e consultar RLS: as oito tabelas públicas têm RLS ativo.
-- [x] Nova organização: tipo (partner/company), endereço no painel 3–50 com prévia e unicidade, filtro por tipo.
-
-## Fase 2A (revisada — transmissor)
-- [x] Tabelas, troca atômica, imutabilidade de organization_id da empresa.
-- [x] Cliente do transmissor, envio de certificado, consulta de convênio (valores crus, intervalo de 1 min por empresa/ambiente).
-- [x] Abas Certificado e Prontidão; testes de regras.
-- [x] Cadastrar TRANSMISSOR_URL e GOOGLE_SERVICE_ACCOUNT_JSON.
-- [ ] Aceite real: A1 Grupo Jota (IBGE 4212254) e resposta de homologação — aguarda segredos e certificado.
-- [x] Modal de webhook redesenhado + assinatura por grupo (curingas) e publicação
-
-## Fase 3B — API de empresas
-- [x] Banco: ativa, id_externo, origem/integração, idempotência, situação, avisos de certificado, exclusão segura, developer só leitura, integrações = organização inteira.
-- [x] Rotas /api/v1 de empresas, configuração fiscal, certificado, serviços, situação, verificação de município e catálogos.
-- [x] Situação única (painel e API), webhook de situação, rotina diária de certificados.
-- [x] Painel: sem seleção de empresas, aba Situação, desativar/reativar, "Alterado via API", filtro por empresa nas requisições.
-- [x] Documentação (openapi, convencoes, empresas, webhooks, glossario) e testes de regras.
-- [ ] Verificação externa com chave de homologação — feita pelo usuário.
-- [ ] Testes de banco do papel developer e da exclusão com dados reais — não executados.
-
-## Fase 7 — Sincronização com o ADN
-- [x] Parte 1: núcleo publicado; primeira sincronização da Group Jota concluída (13 NSUs) e nota nº 11 cancelada como registrada fora da notem. Aguardando aprovação para a Parte 2.
-- [x] Ajuste A: sincronização só manual por empresa/ambiente, busca ≤25 etapas com 2 s, homologação permitida; Scheduler só continua pedidos.
-- [x] Ajuste B (cópia): 18 XML copiados para o bucket privado e conferidos byte a byte.
-- [x] Ajuste B (remoção das colunas de XML): aprovada e aplicada; arquivos privados são a única cópia.
-- [x] Teste automático da permissão de sincronização (servidor e banco): owner/admin/admin da plataforma aceitos; operator/developer/viewer/outra organização recusados.
-- [x] Publicar o painel com a remoção das colunas (publicação solicitada em 15/11/2026).
-- [x] Ajuste C: verificação diária com data/hora, verificadas e atualizadas na aba Sincronização.
-- [x] Parte 2: API (origem, notas recebidas, situação da sincronização), sincronizacao.md, OpenAPI, nota.desbloqueada_prefeitura.
-- [x] Parte 3: painel (selo/filtro de origem, abas Sincronização e Notas recebidas, Atualizar com o governo) e testes. Telas não verificadas com sessão real (projeto sem login de teste disponível).
-
-## Atualização do zod 3 → 4 (aprovada em 16/11/2026)
-- [x] Passo 1: retrato "antes" das mensagens de erro (API, painel, servidor e navegador) no zod 3.
-- [x] Passo 2: mensagens em português da notem para todo erro sem texto próprio; nome de campo não aceito até 60 caracteres e no máximo 5 nomes ("e mais N"); mensagem da notem sempre vence.
-- [x] Passo 3: zod 4.6.7 exato; strictObject/looseObject; e-mail e data e hora com a regra atual; retrato idêntico ao do passo 2 (exceto UUID fora do padrão).
-- [x] UUID fora do padrão recusado com 400 REQUISICAO_INVALIDA com campo, inclusive em parâmetros de caminho; registrar no histórico da API em docs/api/.
-- [x] Confirmar que o módulo de mensagens é carregado em servidor, navegador e funções do Supabase.
-- [x] Testes, tipos, montagem, OpenAPI, matriz de isolamento e XSD dos exemplos; relatório.
-- [ ] Publicar a atualização do zod — aguarda aprovação do proprietário.
-
-## Fase 8 — painel da organização (aprovada em 16/11/2026, opção A para o ZIP, decisões 1 a 8)
-- [x] Banco: pg_trgm no schema extensions; documento normalizado e índices (invoices e nfse_documents); list_org_notes com busca e filtro por emissão ou competência; org_notes_summary somando em numeric; suporte em platform_settings (função de leitura só com os dois campos, WhatsApp só dígitos com 55); EXPLAIN da busca por CNPJ e por nome.
-- [x] Início (empresas, notas do período, pendências, últimas 10, estado vazio).
-- [x] Notas: busca, período, CSV (limite de 10.000) e ZIP no navegador (500 notas, lotes de 20, um lote por vez por usuário, limite por minuto, IDs conferidos um a um com recusa do lote inteiro, auditoria do início e do fim ou da interrupção).
-- [x] Modelos de serviço fora do menu, com o endereço antigo levando ao Início.
-- [x] Alertas: fonte única, gravidade, filtros, contador no menu, horário de Brasília.
-- [x] Ajuda e seção Suporte na Administração.
-- [x] Nomes e menu ("Pronta para emitir", nova ordem).
-- [x] Testes: totais com centavos exatos (incluindo notas de fora), busca, CSV, ZIP, alertas, matriz de isolamento, 587 testes, tipos e montagem; exame de segurança sem alerta novo pelo pg_trgm.
-- [x] Revisão do Início (16/11/2026): só números — Empresas (4 quadros com filtro no endereço), Notas (3 quadros, fora da notem, comparação do mesmo tamanho), Integração 24 h (chamadas, erros 4xx/5xx, webhooks falhando; índice + EXPLAIN), linha de Alertas; valor total removido do banco; matriz de isolamento e testes.
-- [ ] Interrupção do ZIP: fica para a Fase 9 (auditoria trata exportação sem fim após 1 hora como interrompida).
-- [ ] Prints não verificados (o proprietário confere com o próprio login). Não publicar antes da aprovação.
+## Parte 2 (aguarda aprovação da Parte 1)
+- Ver plano aprovado. Ajustes do usuário:
+  - /o/{org}/notas/recebidas/{id} nunca tratada como /notas/{id}; id inválido nas duas → "Página não encontrada" (com teste)
+  - Trocar senha: conferir senha atual de verdade; mínimo igual ao cadastro (8); encerrar outras sessões e manter a atual; mensagens genéricas
+  - Troca de organização: seção não permitida no novo papel → Início, sem tela de "sem acesso"
+  - Nome em Minha conta: obrigatório, 2–80 caracteres, não só espaços, mensagem pt-BR

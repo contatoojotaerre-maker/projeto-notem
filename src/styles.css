@@ -97,6 +97,7 @@
 .app-collapsed .app-sidebar { width:76px; }
 .app-collapsed .app-main { margin-left:76px; }
 .app-collapsed .sidebar-label { display:none; }
+.menu-toggle { display:none; }
 .homologation-banner { background:var(--warning-surface);color:var(--warning-foreground);padding:10px 20px;position:sticky;top:0;z-index:40;display:flex;justify-content:center;gap:9px;font-size:12px; }
 .page-heading { font-size:26px;font-weight:600; }
 .empty-state { display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:350px;text-align:center;gap:14px; }
@@ -106,6 +107,7 @@
 .data-table td { padding:18px 20px;border-top:1px solid var(--border); }
 .field-select { border:1px solid var(--border);border-radius:6px;background:var(--background);height:36px;padding:0 10px;font-size:12px;min-width:0; }
 @media(max-width:900px) {
+ .menu-toggle { display:inline-flex; }
  .app-sidebar { transform:translateX(-100%);width:238px; }
  .app-main,.app-collapsed .app-main { margin-left:0; }
  .app-mobile-open .app-sidebar { transform:translateX(0);width:238px; }

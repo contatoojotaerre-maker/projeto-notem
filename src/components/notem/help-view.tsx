@@ -10,7 +10,7 @@ const steps: Step[] = [
   { title: 'Cadastrar empresa', text: 'Em Empresas, use "Nova empresa" e informe CNPJ, razão social e endereço.', to: 'newCompany' },
   { title: 'Enviar certificado', text: 'Na empresa, aba Certificado: envie o arquivo A1 (.pfx) e a senha.', to: 'companies' },
   { title: 'Configurar a parte fiscal', text: 'Na aba Configuração fiscal, responda às perguntas sobre regime e tributos.', to: 'companies' },
-  { title: 'Configurar serviço', text: 'Na aba Serviços, cadastre o serviço e use "Aplicar sugestão" para preencher a classificação IBS/CBS.', to: 'companies' },
+  { title: 'Configurar serviço', text: 'Na aba Serviços, cadastre o serviço e use "Ver sugestão da tabela oficial" e depois "Usar" para preencher a classificação IBS/CBS.', to: 'companies' },
   { title: 'Sincronizar notas', text: 'Na aba Sincronização, escolha o período para trazer as notas emitidas fora da notem.', to: 'companies' },
   { title: 'Cancelar nota', text: 'Em Notas, abra a nota autorizada e use "Cancelar nota", com motivo e justificativa.', to: 'notes' },
   { title: 'Criar integração e chave de API', text: 'Em Integrações, crie a integração e gere a chave do ambiente (ela aparece uma única vez).', to: 'integrations' },
@@ -22,7 +22,7 @@ function StepLink({ slug, to }: { slug: string; to: Step['to'] }) {
   if (to === 'newCompany') return <Link className={cls} to="/o/$orgSlug/empresas/nova" params={{ orgSlug: slug }}>Abrir</Link>;
   if (to === 'companies') return <Link className={cls} to="/o/$orgSlug/empresas" params={{ orgSlug: slug }}>Abrir Empresas</Link>;
   if (to === 'integrations') return <Link className={cls} to="/o/$orgSlug/integracoes" params={{ orgSlug: slug }}>Abrir Integrações</Link>;
-  return <Link className={cls} to="/o/$orgSlug/$section" params={{ orgSlug: slug, section: 'notas' }}>Abrir Notas</Link>;
+  return <Link className={cls} to="/o/$orgSlug/notas" params={{ orgSlug: slug }}>Abrir Notas</Link>;
 }
 export function HelpView({ slug }: { slug: string }) {
   const { data: contact } = useSuspenseQuery(supportContactQuery());

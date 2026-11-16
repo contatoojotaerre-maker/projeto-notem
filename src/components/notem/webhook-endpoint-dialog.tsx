@@ -70,12 +70,12 @@ function Body({ form: initial, onClose, onSave, companies, org, integration, env
           </Section>
           <Section title="Empresa" hint="Receba eventos de uma empresa ou de todas.">
             <Popover open={companyOpen} onOpenChange={setCompanyOpen}>
-              <PopoverTrigger asChild><Button type="button" variant="outline" role="combobox" aria-expanded={companyOpen} aria-label="Empresa" className="w-full justify-between font-normal"><span className="truncate">{company ? `${company.legal_name} · ${company.cnpj}` : 'Todas as empresas autorizadas'}</span><ChevronsUpDown className="opacity-50" /></Button></PopoverTrigger>
+              <PopoverTrigger asChild><Button type="button" variant="outline" role="combobox" aria-expanded={companyOpen} aria-label="Empresa" className="w-full justify-between font-normal"><span className="truncate">{company ? `${company.legal_name} · ${company.cnpj}` : 'Todas as empresas'}</span><ChevronsUpDown className="opacity-50" /></Button></PopoverTrigger>
               <PopoverContent className="p-0 w-[--radix-popover-trigger-width]" align="start">
                 <Command filter={(value, search) => value.toLowerCase().includes(search.toLowerCase()) || (normalizeCnpj(search) && value.toUpperCase().includes(normalizeCnpj(search))) ? 1 : 0}>
                   <CommandInput placeholder="Buscar por nome ou CNPJ" />
                   <CommandList><CommandEmpty>Nenhuma empresa encontrada</CommandEmpty><CommandGroup>
-                    <CommandItem value="todas as empresas autorizadas" onSelect={() => { setForm({ ...form, company_id: null }); setCompanyOpen(false) }}><Check className={cn(form.company_id ? 'opacity-0' : 'opacity-100')} />Todas as empresas autorizadas</CommandItem>
+                    <CommandItem value="todas as empresas" onSelect={() => { setForm({ ...form, company_id: null }); setCompanyOpen(false) }}><Check className={cn(form.company_id ? 'opacity-0' : 'opacity-100')} />Todas as empresas</CommandItem>
                     {companies.map(c => <CommandItem key={c.id} value={`${c.legal_name} ${c.cnpj}`} onSelect={() => { setForm({ ...form, company_id: c.id }); setCompanyOpen(false) }}><Check className={cn(form.company_id === c.id ? 'opacity-100' : 'opacity-0')} /><span className="truncate">{c.legal_name} · {c.cnpj}</span></CommandItem>)}
                   </CommandGroup></CommandList>
                 </Command>

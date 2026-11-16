@@ -22,4 +22,9 @@ describe("App routing", () => {
     const router = createRouter({ routeTree, context: { queryClient: new QueryClient() } });
     expect(router.matchRoutes(path).at(-1)?.routeId).toBe(rootRouteId);
   });
+  it('a lista de Notas tem rota própria (filtros no endereço), separada do detalhe', () => {
+    const router = createRouter({ routeTree, context: { queryClient: new QueryClient() } });
+    expect(router.matchRoutes('/o/org/notas').at(-1)?.routeId).toBe('/_authenticated/o/$orgSlug/notas/');
+    expect(router.matchRoutes('/o/org/notas/0b5d1c1e-8f7a-4a7e-9a1d-2f3e4d5c6b7a').at(-1)?.routeId).toBe('/_authenticated/o/$orgSlug/notas/$invoiceId');
+  });
 });

@@ -7,11 +7,12 @@ import { orgAlertsQuery } from '@/lib/panel-home.queries';
 import { webhookAlertsQuery } from '@/lib/webhooks.queries';
 import { severityLabels, type AlertSeverity, type PanelAlert } from '@/lib/alerts';
 import { dateTimeBr } from '@/lib/br-format';
+import { companyTabLabels } from '@/lib/panel-tabs';
 import { useWorkspace } from './app-shell';
 
 const badge: Record<AlertSeverity, string> = { impeditivo: 'error', atencao: 'warning', informativo: 'inactive' };
 export function SeverityBadge({ severity }: { severity: AlertSeverity }) { return <span className="status-badge" data-status={badge[severity]}>{severityLabels[severity]}</span>; }
-const linkLabel = (a: PanelAlert) => a.link.kind === 'invoice' ? 'Abrir nota' : a.link.kind === 'integration' ? 'Abrir integração' : `Abrir ${a.link.tab}`;
+const linkLabel = (a: PanelAlert) => a.link.kind === 'invoice' ? 'Abrir nota' : a.link.kind === 'integration' ? 'Abrir integração' : `Abrir ${companyTabLabels[a.link.tab]}`;
 export function AlertAction({ alert, slug }: { alert: PanelAlert; slug: string }) {
   const l = alert.link; const label = linkLabel(alert);
   if (l.kind === 'invoice') return <Link className="inline-flex items-center gap-1 text-sm underline underline-offset-4" to="/o/$orgSlug/notas/$invoiceId" params={{ orgSlug: slug, invoiceId: l.id }}>{label}<ArrowUpRight size={14} /></Link>;
