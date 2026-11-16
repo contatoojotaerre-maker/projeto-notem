@@ -6,7 +6,7 @@ import { batchAllowed, noteRpcArgs } from '@/lib/note-filters';
 import { WHATSAPP_PATTERN } from '@/lib/platform-settings.functions';
 import { zipName } from '@/lib/notes-export.server';
 import { ZIP_BATCH, ZIP_LIMIT } from '@/lib/notes-export.functions';
-import { LIMITS, SLOTS } from '@/lib/api-policy';
+import { PANEL_FILE_LIMITS } from '@/lib/api-policy';
 
 const ready = (ok: boolean, itens: { item: string; ok: boolean; mensagem: string }[] = [], avisos: { item: string; mensagem: string }[] = []) => ({ pronta_para_emitir: ok, itens, avisos }) as never;
 const base = (over: Partial<AlertInput> = {}): AlertInput => ({ now: Date.parse('2026-11-16T12:00:00Z'), companies: [], verifying: [], cancellations: [], syncErrors: [], webhooks: [], ...over });
@@ -41,7 +41,7 @@ describe('planilha CSV', () => {
 });
 
 describe('ZIP', () => {
-  it('limites aprovados', () => { expect(ZIP_LIMIT).toBe(500); expect(ZIP_BATCH).toBe(20); expect(SLOTS.painel_arquivos).toBe(1); expect(LIMITS.painel_arquivos.window).toBe(60); });
+  it('limites aprovados', () => { expect(ZIP_LIMIT).toBe(500); expect(ZIP_BATCH).toBe(20); expect(PANEL_FILE_LIMITS.concurrent).toBe(1); expect(PANEL_FILE_LIMITS.rate).toEqual({ max: 30, window: 60 }); });
   it('lote com uma nota fora do filtro é recusado inteiro', () => {
     const allowed = new Set(['a', 'b', 'c']);
     expect(batchAllowed(allowed, ['a', 'b'])).toBe(true);

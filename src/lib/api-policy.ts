@@ -23,10 +23,11 @@ export const LIMITS = {
   xml: { max: 60, window: 60 },
   sincronizacao: { max: 30, window: 60 },
   sem_chave: { max: 30, window: 60 },
-  painel_arquivos: { max: 30, window: 60 },
 } as const;
 /** Simultaneous operations. */
-export const SLOTS = { emissao: 2, evento: 1, pdf: 2, painel_arquivos: 1 } as const;
+export const SLOTS = { emissao: 2, evento: 1, pdf: 2 } as const;
+/** Panel file exports (ZIP batches): per user, counted in the same service-role-only counters/slots as the API. */
+export const PANEL_FILE_LIMITS = { rate: { max: 30, window: 60 }, concurrent: 1 } as const;
 export const SLOT_TTL_SECONDS = 120;
 
 export const limitMessages: Record<string, string> = {

@@ -6,7 +6,7 @@ import { z, integer } from './validation';
 import { requireOrgMember } from './panel-access';
 import { batchAllowed, noteFilters, noteRpcArgs, type NoteFilters } from './note-filters';
 import { CSV_LIMIT, csvTooLarge } from './notes-csv';
-import { LIMITS, SLOTS, limitMessages } from './api-policy';
+import { PANEL_FILE_LIMITS, limitMessages } from './api-policy';
 import { dayBr } from './br-format';
 
 export const ZIP_LIMIT = 500;
@@ -61,10 +61,10 @@ export const getExportFiles = createServerFn({ method: 'POST' }).middleware([req
   const start = await supabaseAdmin.from('admin_audit_events').select('details,created_at').eq('action', 'notas.exportacao_zip_inicio').eq('target_id', data.export_id).eq('actor_id', context.userId).eq('organization_id', data.organization_id).maybeSingle();
   if (start.error || !start.data || Date.now() - Date.parse(start.data.created_at) > 2 * 3_600_000) throw new Error('Exportação não encontrada ou expirada. Comece novamente.');
   const d = start.data.details as { ambiente: 'sandbox' | 'production'; filtros: NoteFilters; formatos: { xml: boolean; pdf: boolean } };
-  const rate = await supabaseAdmin.rpc('api_rate_check', { _org: data.organization_id, _rules: [{ scope: `painel:${context.userId}`, bucket: 'painel_arquivos', ...LIMITS.painel_arquivos }] as never });
+  const rate = await supabaseAdmin.rpc('api_rate_check', { _org: data.organization_id, _rules: [{ scope: `painel:${context.userId}`, bucket: 'painel_arquivos', ...PANEL_FILE_LIMITS.rate }] as never });
   if (rate.error) console.error('PANEL_RATE_CHECK_FAILED'); // counter outage: fail open, as in the API
   else if ((rate.data as { allowed?: boolean } | null)?.allowed === false) return { ok: false as const, retry: true, mensagem: limitMessages['painel_arquivos'] ?? '' };
-  const slot = await supabaseAdmin.rpc('api_slot_acquire', { _scope: `painel-arquivos:${context.userId}`, _max: SLOTS.painel_arquivos, _ttl: 120 });
+  const slot = await supabaseAdmin.rpc('api_slot_acquire', { _scope: `painel-arquivos:${context.userId}`, _max: PANEL_FILE_LIMITS.concurrent, _ttl: 120 });
   if (slot.error) console.error('PANEL_SLOT_FAILED');
   else if (!slot.data) return { ok: false as const, retry: true, mensagem: limitMessages['painel_lote'] ?? '' };
   try {
