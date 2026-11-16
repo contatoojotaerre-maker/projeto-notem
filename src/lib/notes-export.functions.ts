@@ -4,7 +4,7 @@ import { createServerFn } from '@tanstack/react-start';
 import { requireSupabaseAuth } from '@/integrations/supabase/auth-middleware';
 import { z, integer } from './validation';
 import { requireOrgMember } from './panel-access';
-import { noteFilters, noteRpcArgs, type NoteFilters } from './note-filters';
+import { batchAllowed, noteFilters, noteRpcArgs, type NoteFilters } from './note-filters';
 import { CSV_LIMIT, csvTooLarge } from './notes-csv';
 import { LIMITS, SLOTS, limitMessages } from './api-policy';
 import { dayBr } from './br-format';
@@ -69,7 +69,8 @@ export const getExportFiles = createServerFn({ method: 'POST' }).middleware([req
   else if (!slot.data) return { ok: false as const, retry: true, mensagem: limitMessages['painel_lote'] ?? '' };
   try {
     const allowed = new Map((await listed(context.supabase, data.organization_id, d.ambiente, d.filtros, ZIP_LIMIT + 1)).map(r => [r.id, r]));
-    const batch = data.ids.map(id => allowed.get(id)); if (batch.some(x => !x) || new Set(data.ids).size !== data.ids.length) throw new Error(refused);
+    if (!batchAllowed(new Set(allowed.keys()), data.ids)) throw new Error(refused);
+    const batch = data.ids.map(id => allowed.get(id));
     const { zipFiles } = await import('./notes-export.server');
     try { return { ok: true as const, ...await zipFiles(supabaseAdmin, data.organization_id, d.ambiente, batch as NonNullable<typeof batch[number]>[], d.formatos) }; }
     catch (e) { if (e instanceof Error && e.message === 'ZIP_NOTE_REFUSED') throw new Error(refused); console.error('PANEL_ZIP_FILES_FAILED'); throw new Error('Não foi possível preparar os arquivos deste lote. Tente novamente.'); }
