@@ -11,9 +11,13 @@ DECLARE d public.nfse_documents; x public.nfse_documents; t public.invoices; a p
  SELECT c.organization_id INTO org FROM public.companies c JOIN public.company_certificates cc ON cc.company_id=c.id AND cc.organization_id=c.organization_id WHERE public.normalize_cnpj(c.cnpj)=d.provider_cnpj LIMIT 1;
  -- Any invoice of the organization serves as a template (copied into the external note's environment).
  SELECT * INTO t FROM public.invoices WHERE organization_id=org ORDER BY (environment=d.environment) DESC, created_at LIMIT 1;
- SELECT user_id INTO owner FROM public.organization_members WHERE organization_id=org AND role IN ('owner','admin') ORDER BY role LIMIT 1;
- IF t.id IS NULL OR owner IS NULL THEN RAISE NOTICE 'NOTES_PANEL_DB_TESTS_SKIPPED (no invoice/owner)'; RETURN; END IF;
+ IF t.id IS NULL THEN RAISE NOTICE 'NOTES_PANEL_DB_TESTS_SKIPPED (no invoice)'; RETURN; END IF;
  BEGIN
+  -- Temporary owner of the organization (rolled back with everything else).
+  owner := gen_random_uuid();
+  INSERT INTO auth.users(id,email,aud,role) VALUES(owner,'fase8-owner-'||owner||'@example.invalid','authenticated','authenticated');
+  INSERT INTO public.profiles(id,display_name) VALUES(owner,'Teste') ON CONFLICT (id) DO NOTHING;
+  INSERT INTO public.organization_members(organization_id,user_id,role) VALUES(org,owner,'owner');
   FOR i IN 1..6 LOOP
    a:=t; a.id:=gen_random_uuid(); a.environment:=d.environment; a.status:=sts[i]; a.dps_number:=999999999999900+i; a.dps_id:=left(t.dps_id,30)||lpad((999999999999900+i)::text,15,'0');
    a.access_key:=CASE WHEN t.access_key IS NULL THEN NULL ELSE left(t.access_key,23)||lpad(i::text,13,'8')||right(t.access_key,14) END; a.external_id:=NULL; a.idempotency_key:=NULL; a.nfse_number:='T8'||i;
@@ -65,6 +69,6 @@ DECLARE d public.nfse_documents; x public.nfse_documents; t public.invoices; a p
   BEGIN PERFORM public.set_platform_support('a@b.co','5548999990000',owner); IF NOT EXISTS (SELECT 1 FROM public.platform_admins WHERE user_id=owner) THEN RAISE EXCEPTION 'TEST_FAIL_support_non_admin'; END IF; EXCEPTION WHEN OTHERS THEN IF position('SEM_PERMISSAO' IN SQLERRM)=0 THEN RAISE; END IF; END;
   RAISE EXCEPTION USING ERRCODE='ZX001', MESSAGE='notes panel assertions passed; rollback';
  EXCEPTION WHEN SQLSTATE 'ZX001' THEN NULL; END;
- IF EXISTS (SELECT 1 FROM public.invoices WHERE nfse_number LIKE 'T8_' AND emitted_at>'2098-12-31') OR EXISTS (SELECT 1 FROM public.organizations WHERE name='Teste painel Fase 8') THEN RAISE EXCEPTION 'TEST_FAIL_rollback'; END IF;
+ IF EXISTS (SELECT 1 FROM public.invoices WHERE nfse_number LIKE 'T8_' AND emitted_at>'2098-12-31') OR EXISTS (SELECT 1 FROM public.organizations WHERE name='Teste painel Fase 8') OR EXISTS (SELECT 1 FROM auth.users WHERE email LIKE 'fase8-%@example.invalid') THEN RAISE EXCEPTION 'TEST_FAIL_rollback'; END IF;
  RAISE NOTICE 'NOTES_PANEL_DB_TESTS_OK';
 END $test$;
