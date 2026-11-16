@@ -2,7 +2,7 @@
 
 ## Busca e totais
 - `list_org_notes`/`org_notes_count` montam só os filtros ativos (`org_notes_query`), com a mesma prova de posse para notas de fora da notem. Busca: chave de acesso (estrutura 9+14+27), número (só dígitos), documento do tomador normalizado (`note_taker_document` / `normalize_cnpj`) e nome sem acentos e minúsculo (`normalize_search_text`, trigram em `extensions`).
-- `org_notes_summary` só conta (sem valores desde a revisão do Início de 16/11/2026): emitidas = autorizadas, em cancelamento, canceladas e substituídas; canceladas; rejeitadas. Janela `[de, até)` em dias de Brasília, pela data de emissão. `note_amount` continua no banco, sem uso pelo Início.
+- `org_notes_summary` só conta (sem valores desde a revisão do Início de 16/11/2026): emitidas = autorizadas, em cancelamento, canceladas e substituídas; canceladas; rejeitadas. Janela `[de, até)` em dias de Brasília, pela data de emissão. `note_amount` foi removida em 16/11/2026 (nada mais dependia dela).
 - Teste: `src/test/notes-panel.database.sql` (desfaz tudo): notem 5/1/1 e de fora 4/1/0.
 
 ## Planos de consulta (EXPLAIN, 16/11/2026, dados reais da Group Jota)
