@@ -10,7 +10,7 @@ import { getPanelReceivedXml } from '@/lib/invoices.functions';
 import { requestCompanySync, refreshNoteFromGovernment } from '@/lib/adn-sync.functions';
 import { invoiceLabels } from '@/lib/invoices';
 import { pdfStatuses } from '@/lib/danfse';
-import { dateBr, dateTimeBr, moneyBr } from '@/lib/br-format';
+import { dateBr, dateTimeBr } from '@/lib/br-format';
 import { formatDocument } from '@/lib/note-display';
 import { CompanyLink, NotesTrail, PdfButton, TakerSection, ValuesSection, saveXml } from './note-sections';
 import type { SyncStatus } from '@/lib/nfse-documents';
@@ -19,7 +19,6 @@ import { useWorkspace } from './app-shell';
 import { IbsCbsSection } from './ibs-cbs-values';
 
 const when = (v: string | null | undefined) => dateTimeBr(v) || '—';
-const money = (v: unknown) => v == null || v === '' ? '—' : moneyBr(v);
 const optionLabel = (o: string) => o === 'news' ? 'Novidades desde a última sincronização' : `Últimos ${o.split(':')[1]} ${o === 'period:1' ? 'mês' : 'meses'}`;
 const situationLabel: Record<string, string> = { nunca_sincronizada: 'Nunca sincronizada', em_andamento: 'Sincronização em andamento', atualizada: 'Atualizada', erro: 'Interrompida' };
 
