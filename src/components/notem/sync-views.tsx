@@ -1,18 +1,18 @@
 import { useEffect, useState } from 'react';
 import { useServerFn } from '@tanstack/react-start';
 import { useQueryClient, useSuspenseQuery } from '@tanstack/react-query';
-import { ChevronLeft, ChevronRight, Download, RefreshCw, Inbox } from 'lucide-react';
+import { Download, RefreshCw } from 'lucide-react';
 import { toast } from 'sonner';
 import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { companySyncQuery, receivedQuery } from '@/lib/invoices.queries';
+import { companySyncQuery, receivedNoteQuery } from '@/lib/invoices.queries';
 import { getPanelReceivedXml } from '@/lib/invoices.functions';
 import { requestCompanySync, refreshNoteFromGovernment } from '@/lib/adn-sync.functions';
 import { invoiceLabels } from '@/lib/invoices';
 import { pdfStatuses } from '@/lib/danfse';
 import { dateBr, dateTimeBr, moneyBr } from '@/lib/br-format';
 import { formatDocument } from '@/lib/note-display';
-import { BackToNotes, PdfButton, TakerSection, ValuesSection, saveXml } from './note-sections';
+import { CompanyLink, NotesTrail, PdfButton, TakerSection, ValuesSection, saveXml } from './note-sections';
 import type { SyncStatus } from '@/lib/nfse-documents';
 import type { Env } from '@/lib/api-contract';
 import { useWorkspace } from './app-shell';
@@ -29,9 +29,10 @@ function countdown(ms: number) { const s = Math.max(0, Math.ceil(ms / 1000)); co
 /** Empresa → Sincronização: manual, per environment, respecting the ADN interval. */
 export function SyncTab({ companyId, organizationId }: { companyId: string; organizationId: string }) {
   const { data } = useSuspenseQuery(companySyncQuery({ company_id: companyId, organization_id: organizationId }));
+  const w = useWorkspace(); const environment = w.profile?.environment ?? 'production'; const e = data.environments.find(x => x.environment === environment);
   return <><h2 className="mb-2 text-lg font-medium">Sincronização com o Ambiente de Dados Nacional</h2>
-    <p className="mb-6 max-w-3xl text-sm text-muted-foreground">Importa as notas emitidas fora da notem e as notas recebidas por esta empresa. A sincronização é feita só quando você pede. Depois de uma consulta sem documentos novos, o governo exige 1 hora de intervalo.</p>
-    <div className="grid gap-6 lg:grid-cols-2">{data.environments.map(e => <SyncCard key={e.environment} companyId={companyId} organizationId={organizationId} environment={e.environment} status={e.status} nextQueryAt={e.next_query_at} firstCompletedAt={e.first_completed_at} proven={e.proven} canSync={data.canSync} />)}</div></>;
+    <p className="mb-6 max-w-3xl text-sm text-muted-foreground">Importa as notas emitidas fora da notem e as notas recebidas por esta empresa, no ambiente escolhido no topo. A sincronização é feita só quando você pede. Depois de uma consulta sem documentos novos, o governo exige 1 hora de intervalo.</p>
+    {e && <div className="max-w-2xl"><SyncCard key={e.environment} companyId={companyId} organizationId={organizationId} environment={e.environment} status={e.status} nextQueryAt={e.next_query_at} firstCompletedAt={e.first_completed_at} proven={e.proven} canSync={data.canSync} /></div>}</>;
 }
 function SyncCard(p: { companyId: string; organizationId: string; environment: Env; status: SyncStatus; nextQueryAt: string | null; firstCompletedAt: string | null; proven: boolean; canSync: boolean }) {
   const s = p.status; const now = useNow(); const qc = useQueryClient(); const run = useServerFn(requestCompanySync);
@@ -86,29 +87,26 @@ export function OfficialEvents({ events, name }: { events: OfficialEvent[]; name
 }
 
 /** Detail of a note issued outside notem: read only (cancel and substitute through the issuing system or the Portal Nacional). */
-export function ExternalDetail({ organizationId, slug, environment, id, data }: { organizationId: string; slug: string; environment: Env; id: string; data: { nota: DocOut; status: string; xml: string | null; officialEvents: OfficialEvent[]; canRefresh: boolean } }) {
+export function ExternalDetail({ organizationId, slug, environment, id, data }: { organizationId: string; slug: string; environment: Env; id: string; data: { nota: DocOut; status: string; company: { id: string; legal_name: string | null }; xml: string | null; officialEvents: OfficialEvent[]; canRefresh: boolean } }) {
   const n = data.nota;
-  return <><BackToNotes slug={slug} />
-    <div className="mb-8 flex flex-wrap items-center justify-between gap-4"><div><h1 className="page-heading">NFS-e {n.numero ?? ''}</h1><p className="mt-2 flex flex-wrap items-center gap-3 text-sm text-muted-foreground"><span className="status-badge" data-status="inactive">Emitida fora da notem</span>{invoiceLabels[data.status] ?? data.status} · {environment === 'sandbox' ? 'Homologação' : 'Produção'}</p></div>
+  return <><NotesTrail slug={slug} title={`NFS-e ${n.numero ?? ''}`} />
+    <div className="mb-8 flex flex-wrap items-center justify-between gap-4"><div><h1 className="page-heading">NFS-e {n.numero ?? ''}</h1><p className="mt-2 flex flex-wrap items-center gap-3 text-sm text-muted-foreground"><span className="status-badge" data-status="inactive">Emitida fora da notem</span>{invoiceLabels[data.status] ?? data.status} · {environment === 'sandbox' ? 'Homologação' : 'Produção'}</p><CompanyLink slug={slug} company={data.company} /></div>
       <div className="flex flex-wrap gap-3">{data.canRefresh && <RefreshButton organizationId={organizationId} environment={environment} id={id} />}{pdfStatuses.includes(data.status) && <PdfButton organizationId={organizationId} environment={environment} id={id} />}{data.xml && <Button onClick={() => saveXml(data.xml ?? '', `nfse-${n.numero ?? id}.xml`)}><Download />Baixar XML</Button>}</div></div>
     <p className="mb-8 max-w-3xl text-sm text-muted-foreground">Esta nota foi emitida por outro sistema ou pelo Portal Nacional e chegou pela sincronização com o governo. Para cancelar ou substituir, use o sistema que a emitiu ou o Portal Nacional.</p>
     <DocSummary n={n} /><OfficialEvents events={data.officialEvents} name={n.numero ?? id} />
     <details className="mt-8 border-y border-border py-5"><summary className="cursor-pointer font-medium">Detalhes técnicos</summary><dl className="mt-5 space-y-3 text-sm"><dt>Chave de acesso</dt><dd className="break-all font-mono">{n.chave_acesso}</dd></dl>{data.xml && <pre className="mt-5 max-h-80 overflow-auto whitespace-pre-wrap break-all bg-muted p-4 text-xs">{data.xml}</pre>}</details></>;
 }
 
-/** Empresa → Notas recebidas: notes where the company is taker or intermediary; read only. */
-export function ReceivedTab({ companyId, organizationId }: { companyId: string; organizationId: string }) {
-  const w = useWorkspace(); const environment = w.profile?.environment ?? 'production'; const [status, setStatus] = useState('all'); const [offset, setOffset] = useState(0);
-  return <><div className="mb-5 flex flex-wrap items-end justify-between gap-4"><div><h2 className="text-lg font-medium">Notas recebidas</h2><p className="mt-1 text-sm text-muted-foreground">Notas em que esta empresa é tomadora ou intermediária, trazidas pela sincronização · {environment === 'sandbox' ? 'Homologação' : 'Produção'}</p></div>
-    <Select value={status} onValueChange={v => { setStatus(v); setOffset(0); }}><SelectTrigger className="w-60" aria-label="Situação da nota recebida"><SelectValue /></SelectTrigger><SelectContent><SelectItem value="all">Todas as situações</SelectItem>{['authorized', 'cancellation_pending', 'cancelled', 'substituted', 'cancelled_by_authority'].map(s => <SelectItem key={s} value={s}>{invoiceLabels[s]}</SelectItem>)}</SelectContent></Select></div>
-    <ReceivedRows companyId={companyId} organizationId={organizationId} environment={environment} status={status} offset={offset} onPage={setOffset} /></>;
-}
-function ReceivedRows(p: { companyId: string; organizationId: string; environment: Env; status: string; offset: number; onPage: (n: number) => void }) {
-  const { data } = useSuspenseQuery(receivedQuery({ company_id: p.companyId, organization_id: p.organizationId, environment: p.environment, offset: p.offset, ...(p.status === 'all' ? {} : { status: p.status }) }));
-  const getXml = useServerFn(getPanelReceivedXml); const w = useWorkspace(); const canRefresh = (() => { const role = w.memberships.find(m => m.organization_id === p.organizationId)?.role; return w.isAdmin === true || ['owner', 'admin', 'operator'].includes(String(role)); })();
-  if (!data.rows.length) return <div className="flex items-center gap-3 border-y border-border py-8 text-muted-foreground"><Inbox className="size-5" />Nenhuma nota recebida. Sincronize a empresa para trazer as notas do governo.</div>;
-  return <><div className="divide-y divide-border">{data.rows.map(n => <details key={n.id} className="py-5"><summary className="flex cursor-pointer flex-wrap items-center gap-x-4 gap-y-1"><span className="font-medium">NFS-e {n.numero ?? '—'}</span><span className="text-sm">{n.prestador.nome ?? formatDocument(n.prestador.cnpj)}</span><span className="status-badge" data-status={n.situacao === 'autorizada' ? 'active' : 'inactive'}>{invoiceLabels[statusKey(n.situacao)] ?? n.situacao}</span><span className="text-sm text-muted-foreground">{money(n.valores['servico'])} · {dateBr(n.emitida_em) || '—'}</span>{n.papel === 'intermediario' && <span className="text-xs text-muted-foreground">como intermediária</span>}{n.origem === 'notem' && <span className="text-xs text-muted-foreground">emitida pela notem</span>}</summary>
-    <div className="mt-5"><p className="mb-4 text-sm">Prestador: {n.prestador.nome ?? '—'} · CNPJ {formatDocument(n.prestador.cnpj)}</p><DocSummary n={n as unknown as DocOut} />
-      <div className="mt-5 flex flex-wrap gap-3">{canRefresh && <RefreshButton organizationId={p.organizationId} environment={p.environment} id={n.id} companyId={p.companyId} />}{pdfStatuses.includes(statusKey(n.situacao)) && <PdfButton organizationId={p.organizationId} environment={p.environment} id={n.id} companyId={p.companyId} />}<Button variant="outline" onClick={async () => { try { const r = await getXml({ data: { organization_id: p.organizationId, environment: p.environment, company_id: p.companyId, id: n.id } }); saveXml(r.xml, r.filename); } catch { toast.error('Não foi possível baixar o XML.'); } }}><Download />Baixar XML</Button></div></div></details>)}</div>
-    <div className="mt-5 flex justify-end gap-2"><Button variant="outline" size="icon" aria-label="Notas recebidas anteriores" disabled={!p.offset} onClick={() => p.onPage(Math.max(0, p.offset - 50))}><ChevronLeft /></Button><Button variant="outline" size="icon" aria-label="Próximas notas recebidas" disabled={!data.more} onClick={() => p.onPage(p.offset + 50)}><ChevronRight /></Button></div></>;
+/** Notas › Recebidas › detail: read only (no cancel; the provider cancels in its own system or the Portal Nacional). */
+export function ReceivedDetail({ organizationId, slug, id }: { organizationId: string; slug: string; id: string }) {
+  const w = useWorkspace(); const environment = w.profile?.environment ?? 'production';
+  const { data } = useSuspenseQuery(receivedNoteQuery({ organization_id: organizationId, environment, id })); const getXml = useServerFn(getPanelReceivedXml);
+  const n = data.nota; const status = statusKey(n.situacao); const title = `NFS-e ${n.numero ?? ''}`.trim();
+  return <><NotesTrail slug={slug} direction="recebidas" title={title} />
+    <div className="mb-8 flex flex-wrap items-center justify-between gap-4"><div><h1 className="page-heading">{title}</h1><p className="mt-2 flex flex-wrap items-center gap-3 text-sm text-muted-foreground"><span className="status-badge" data-status={status === 'authorized' ? 'active' : 'inactive'}>{invoiceLabels[status] ?? n.situacao}</span>{n.papel === 'intermediario' ? 'Empresa como intermediária' : 'Empresa como tomadora'}{n.origem === 'notem' ? ' · emitida pela notem' : ''} · {environment === 'sandbox' ? 'Homologação' : 'Produção'}</p><CompanyLink slug={slug} company={data.company} /></div>
+      <div className="flex flex-wrap gap-3">{data.canRefresh && <RefreshButton organizationId={organizationId} environment={environment} id={id} />}{pdfStatuses.includes(status) && <PdfButton organizationId={organizationId} environment={environment} id={id} />}{data.xml && <Button onClick={async () => { try { const r = await getXml({ data: { organization_id: organizationId, environment, id } }); saveXml(r.xml, r.filename); } catch { toast.error('Não foi possível baixar o XML.'); } }}><Download />Baixar XML</Button>}</div></div>
+    <p className="mb-8 max-w-3xl text-sm text-muted-foreground">Nota recebida de outro prestador, trazida pela sincronização com o governo. Só quem emitiu pode cancelar ou substituir.</p>
+    <section className="mb-8 border-t border-border pt-5"><h2 className="mb-4 text-lg font-medium">Prestador</h2><dl className="grid gap-4 text-sm sm:grid-cols-2"><div><dt className="text-muted-foreground">Nome</dt><dd className="mt-1">{n.prestador.nome ?? '—'}</dd></div><div><dt className="text-muted-foreground">CNPJ</dt><dd className="mt-1">{formatDocument(n.prestador.cnpj)}</dd></div>{n.intermediario && <div><dt className="text-muted-foreground">Intermediário</dt><dd className="mt-1">{n.intermediario.nome ?? '—'} · {formatDocument(n.intermediario.documento)}</dd></div>}</dl></section>
+    <DocSummary n={n as unknown as DocOut} /><OfficialEvents events={data.officialEvents} name={n.numero ?? id} />
+    <details className="mt-8 border-y border-border py-5"><summary className="cursor-pointer font-medium">Detalhes técnicos</summary><dl className="mt-5 space-y-3 text-sm"><dt>Chave de acesso</dt><dd className="break-all font-mono">{n.chave_acesso}</dd></dl>{data.xml && <pre className="mt-5 max-h-80 overflow-auto whitespace-pre-wrap break-all bg-muted p-4 text-xs">{data.xml}</pre>}</details></>;
 }
