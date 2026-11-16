@@ -12,7 +12,7 @@ const pick = <T extends string>(v: unknown, options: readonly T[]) => typeof v =
 const clean = <T extends Record<string, unknown>>(o: T) => Object.fromEntries(Object.entries(o).filter(([, v]) => v !== undefined)) as Partial<T>;
 
 export const NOTE_STATUSES = ['processing', 'verifying', 'authorized', 'rejected', 'cancellation_pending', 'cancelled', 'substituted', 'cancelled_by_authority'] as const;
-export type NotesSearch = { busca?: string; empresa?: string; situacao?: string; origem?: 'notem' | 'externa'; data?: 'competencia'; de?: string; ate?: string; pagina?: number };
+export type NotesSearch = { busca?: string | undefined; empresa?: string | undefined; situacao?: string | undefined; origem?: 'notem' | 'externa' | undefined; data?: 'competencia' | undefined; de?: string | undefined; ate?: string | undefined; pagina?: number | undefined};
 /** ?busca, empresa, situacao, origem, data (competencia), de, ate, pagina — validated. */
 export function parseNotesSearch(s: Record<string, unknown>): NotesSearch {
   const de = day(s['de']), ate = day(s['ate']);
@@ -27,13 +27,13 @@ export function notesFilters(s: NotesSearch): NoteFilters {
 export const pageOffset = (pagina: number | undefined, size: number) => ((pagina ?? 1) - 1) * size;
 
 export const COMPANY_SEARCH_SITUATIONS = ['prontas', 'pendencia', 'inativas'] as const;
-export type CompaniesSearch = { busca?: string; situacao?: typeof COMPANY_SEARCH_SITUATIONS[number]; pagina?: number };
+export type CompaniesSearch = { busca?: string | undefined; situacao?: typeof COMPANY_SEARCH_SITUATIONS[number] | undefined; pagina?: number | undefined};
 export function parseCompaniesSearch(s: Record<string, unknown>): CompaniesSearch {
   return clean({ busca: str(s['busca']), situacao: pick(s['situacao'], COMPANY_SEARCH_SITUATIONS), pagina: page(s['pagina']) });
 }
 
 export const LOG_STATUSES = [200, 400, 401, 403, 404, 409, 413, 422, 429, 500, 502, 503] as const;
-export type LogsSearch = { de?: string; ate?: string; ultimas?: '24h'; ambiente?: 'sandbox' | 'production'; status?: number; empresa?: string; erros?: 1; pagina?: number };
+export type LogsSearch = { de?: string | undefined; ate?: string | undefined; ultimas?: '24h' | undefined; ambiente?: 'sandbox' | 'production' | undefined; status?: number | undefined; empresa?: string | undefined; erros?: 1 | undefined; pagina?: number | undefined};
 /** Requisições filters (also used by the Início shortcut: ?erros=1&ultimas=24h&ambiente=…). */
 export function parseLogsSearch(s: Record<string, unknown>): LogsSearch {
   const status = Number(s['status']); const de = day(s['de']), ate = day(s['ate']);
