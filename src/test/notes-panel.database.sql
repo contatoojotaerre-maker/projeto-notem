@@ -1,6 +1,6 @@
 -- Fase 8 notes panel (rollback-only; nothing persists, nothing is sent).
--- org_notes_summary sums numeric decimal strings (exact cents, never float), counts per origin, includes
--- external notes only with proof of possession, and the list search matches normalized taker document/name.
+-- org_notes_summary only counts (no amounts since the Início revision) per origin, includes external notes
+-- only with proof of possession, and the list search matches normalized taker document/name.
 DO $test$
 DECLARE d public.nfse_documents; x public.nfse_documents; t public.invoices; a public.invoices; org uuid; owner uuid; stranger uuid; org2 uuid;
   s record; n bigint; v text; k text; i int; vals text[] := ARRAY['0.10','0.20','1749.99','0.05','100.00','55.55']; sts text[] := ARRAY['authorized','authorized','authorized','cancellation_pending','cancelled','rejected'];
@@ -36,8 +36,8 @@ DECLARE d public.nfse_documents; x public.nfse_documents; t public.invoices; a p
   PERFORM set_config('request.jwt.claims',jsonb_build_object('sub',owner,'role','authenticated')::text,true);
   SET LOCAL ROLE authenticated;
   FOR s IN SELECT * FROM public.org_notes_summary(org,d.environment,f,tt) LOOP
-   IF s.origin='notem' AND (s.emitted,s.amount,s.cancelled,s.rejected) IS DISTINCT FROM (5::bigint,'1750.34',1::bigint,1::bigint) THEN RAISE EXCEPTION 'TEST_FAIL_summary_notem %', row_to_json(s); END IF;
-   IF s.origin='externa' AND (s.emitted,s.amount,s.cancelled,s.rejected) IS DISTINCT FROM (4::bigint,'33.63',1::bigint,0::bigint) THEN RAISE EXCEPTION 'TEST_FAIL_summary_externa %', row_to_json(s); END IF;
+   IF s.origin='notem' AND (s.emitted,s.cancelled,s.rejected) IS DISTINCT FROM (5::bigint,1::bigint,1::bigint) THEN RAISE EXCEPTION 'TEST_FAIL_summary_notem %', row_to_json(s); END IF;
+   IF s.origin='externa' AND (s.emitted,s.cancelled,s.rejected) IS DISTINCT FROM (4::bigint,1::bigint,0::bigint) THEN RAISE EXCEPTION 'TEST_FAIL_summary_externa %', row_to_json(s); END IF;
   END LOOP;
   -- Half-open window: one millisecond before/after leaves the notes out.
   IF (SELECT sum(emitted) FROM public.org_notes_summary(org,d.environment,'2099-01-15T09:00:00.001-03:00',tt) WHERE origin='externa')<>0 THEN RAISE EXCEPTION 'TEST_FAIL_window'; END IF;
