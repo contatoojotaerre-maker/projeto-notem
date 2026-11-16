@@ -1,4 +1,4 @@
-import { z, email as zEmail } from './validation';
+import { z, email as zEmail, objectRule } from './validation';
 import { CNPJ_PATTERN, isValidCnpj, normalizeCnpj } from './notem';
 
 export function validCpf(value: string) {
@@ -27,7 +27,7 @@ export const customerSchema = z.strictObject({
   if (c.tipo === 'estrangeiro' && !e.logradouro && !e.endereco_livre) issue(['endereco', 'logradouro'], 'Informe logradouro ou endereço livre.');
   if (c.tipo === 'estrangeiro' && (e.cep || e.codigo_municipio)) issue(['endereco'], 'Use endereço exterior para estrangeiro.');
   if (c.tipo !== 'estrangeiro' && (e.pais || e.cidade || e.endereco_livre || e.codigo_postal || e.estado_provincia_regiao)) issue(['endereco'], 'Use endereço nacional para CPF/CNPJ.');
-});
+}, objectRule);
 export type Customer = z.infer<typeof customerSchema>;
 export const customerCreate = z.looseObject({ id_externo: z.string().trim().min(1).max(100).nullable().optional() });
 export function customerOutput(row: { id: string; external_id: string | null; customer_data: unknown; created_at: string; updated_at: string }) {
