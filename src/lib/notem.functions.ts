@@ -43,6 +43,8 @@ export const updatePreferences = createServerFn({ method: 'POST' }).middleware([
   if (result.error) {console.error('notem: database error',result.error.code);throw new Error('Não foi possível carregar ou salvar os dados. Tente novamente.')};
   return { ok:true };
 });
+/** Empresas: pages of 50, like every panel list. */
+export const COMPANIES_PAGE=50;
 /** Empresas list. Rows come from the caller's own row rules; the situation (pronta / com pendência / inativa)
  *  uses the same readiness calculation as the Início and the API, in the selected environment. */
 export const getCompanies = createServerFn({method:'POST'}).middleware([requireSupabaseAuth]).inputValidator(z.object({organization_id:z.string().uuid(),search:z.string().default(''),page:integer().min(0).default(0),environment:z.enum(['sandbox','production']).default('production'),situacao:z.enum(['','prontas','pendencia','inativas']).default('')})).handler(async ({context,data}) => {
@@ -54,7 +56,7 @@ export const getCompanies = createServerFn({method:'POST'}).middleware([requireS
   const {supabaseAdmin}=await import('@/integrations/supabase/client.server');const {loadOrgReadiness}=await import('./panel-home.server');const {companySituation}=await import('./home-metrics');
   const states=new Map((await loadOrgReadiness(supabaseAdmin,data.organization_id,data.environment)).map(c=>[c.id,companySituation(c)]));
   const rows=(result.data??[]).map(c=>({...c,situacao:states.get(c.id)??(c.active?'pendencia' as const:'inativas' as const)})).filter(c=>!data.situacao||c.situacao===data.situacao);
-  return {rows:rows.slice(data.page*30,data.page*30+30),count:rows.length};
+  return {rows:rows.slice(data.page*COMPANIES_PAGE,data.page*COMPANIES_PAGE+COMPANIES_PAGE),count:rows.length};
 });
 export const getCompany = createServerFn({method:'POST'}).middleware([requireSupabaseAuth]).inputValidator(z.object({id:z.string().uuid(),organization_id:z.string().uuid()})).handler(async({context,data})=>{
   const result=await context.supabase.from('companies').select('*, municipalities(*)').eq('id',data.id).eq('organization_id',data.organization_id).single();if(result.error)throw new Error('Empresa não encontrada ou acesso não autorizado.');
