@@ -1,0 +1,961 @@
+{
+  "api": {
+    "empresa: corpo vazio": {
+      "status": 400,
+      "codigo": "REQUISICAO_INVALIDA",
+      "detalhes": [
+        {
+          "campo": "cnpj",
+          "mensagem": "Required"
+        },
+        {
+          "campo": "razao_social",
+          "mensagem": "Required"
+        },
+        {
+          "campo": "endereco",
+          "mensagem": "Required"
+        }
+      ]
+    },
+    "empresa: corpo lista": {
+      "status": 400,
+      "codigo": "REQUISICAO_INVALIDA",
+      "detalhes": [
+        {
+          "campo": "corpo",
+          "mensagem": "Expected object, received array"
+        }
+      ]
+    },
+    "empresa: corpo nulo": {
+      "status": 400,
+      "codigo": "REQUISICAO_INVALIDA",
+      "detalhes": [
+        {
+          "campo": "corpo",
+          "mensagem": "Expected object, received null"
+        }
+      ]
+    },
+    "empresa: tipo errado": {
+      "status": 400,
+      "codigo": "REQUISICAO_INVALIDA",
+      "detalhes": [
+        {
+          "campo": "razao_social",
+          "mensagem": "Expected string, received number"
+        }
+      ]
+    },
+    "empresa: booleano como texto": {
+      "status": 400,
+      "codigo": "REQUISICAO_INVALIDA",
+      "detalhes": [
+        {
+          "campo": "ativa",
+          "mensagem": "Expected boolean, received string"
+        }
+      ]
+    },
+    "empresa: campo desconhecido": {
+      "status": 400,
+      "codigo": "REQUISICAO_INVALIDA",
+      "detalhes": [
+        {
+          "campo": "corpo",
+          "mensagem": "Unrecognized key(s) in object: 'x'"
+        }
+      ]
+    },
+    "empresa: nome de campo desconhecido muito longo": {
+      "status": 400,
+      "codigo": "REQUISICAO_INVALIDA",
+      "detalhes": [
+        {
+          "campo": "corpo",
+          "mensagem": "Unrecognized key(s) in object: 'campo_com_nome_muito_longo_campo_com_nome_muito_longo_campo_com_nome_muito_longo_campo_com_nome_muito_longo_campo_com_nome_muito_longo_'"
+        }
+      ]
+    },
+    "empresa: 20 campos desconhecidos": {
+      "status": 400,
+      "codigo": "REQUISICAO_INVALIDA",
+      "detalhes": [
+        {
+          "campo": "corpo",
+          "mensagem": "Unrecognized key(s) in object: 'extra_01', 'extra_02', 'extra_03', 'extra_04', 'extra_05', 'extra_06', 'extra_07', 'extra_08', 'extra_09', 'extra_10', 'extra_11', 'extra_12', 'extra_13', 'extra_14', 'extra_15', 'extra_16', 'extra_17', 'extra_18', 'extra_19', 'extra_20'"
+        }
+      ]
+    },
+    "empresa: campo desconhecido no endereço": {
+      "status": 400,
+      "codigo": "REQUISICAO_INVALIDA",
+      "detalhes": [
+        {
+          "campo": "endereco",
+          "mensagem": "Unrecognized key(s) in object: 'uf'"
+        }
+      ]
+    },
+    "empresa: e-mail inválido (mensagem da notem)": {
+      "status": 400,
+      "codigo": "REQUISICAO_INVALIDA",
+      "detalhes": [
+        {
+          "campo": "email",
+          "mensagem": "E-mail inválido."
+        }
+      ]
+    },
+    "empresa: e-mail com + e .com.br": "OK",
+    "empresa: texto longo": {
+      "status": 400,
+      "codigo": "REQUISICAO_INVALIDA",
+      "detalhes": [
+        {
+          "campo": "razao_social",
+          "mensagem": "String must contain at most 200 character(s)"
+        }
+      ]
+    },
+    "empresa: texto vazio": {
+      "status": 400,
+      "codigo": "REQUISICAO_INVALIDA",
+      "detalhes": [
+        {
+          "campo": "razao_social",
+          "mensagem": "String must contain at least 1 character(s)"
+        }
+      ]
+    },
+    "empresa: CEP (mensagem da notem)": {
+      "status": 400,
+      "codigo": "REQUISICAO_INVALIDA",
+      "detalhes": [
+        {
+          "campo": "endereco.cep",
+          "mensagem": "CEP com 8 números."
+        }
+      ]
+    },
+    "empresa: CNPJ inválido (mensagem da notem)": {
+      "status": 400,
+      "codigo": "REQUISICAO_INVALIDA",
+      "detalhes": [
+        {
+          "campo": "cnpj",
+          "mensagem": "CNPJ inválido."
+        }
+      ]
+    },
+    "empresa PATCH: campo desconhecido": {
+      "status": 400,
+      "codigo": "REQUISICAO_INVALIDA",
+      "detalhes": [
+        {
+          "campo": "corpo",
+          "mensagem": "Unrecognized key(s) in object: 'y'"
+        }
+      ]
+    },
+    "empresa PATCH: id_externo vazio": {
+      "status": 400,
+      "codigo": "REQUISICAO_INVALIDA",
+      "detalhes": [
+        {
+          "campo": "id_externo",
+          "mensagem": "String must contain at least 1 character(s)"
+        }
+      ]
+    },
+    "configuração fiscal: vazia": {
+      "status": 400,
+      "codigo": "REQUISICAO_INVALIDA",
+      "detalhes": [
+        {
+          "campo": "simples_nacional",
+          "mensagem": "Required"
+        },
+        {
+          "campo": "regime_especial",
+          "mensagem": "Required"
+        },
+        {
+          "campo": "tributos_aproximados",
+          "mensagem": "Required"
+        }
+      ]
+    },
+    "configuração fiscal: opção inválida": {
+      "status": 400,
+      "codigo": "REQUISICAO_INVALIDA",
+      "detalhes": [
+        {
+          "campo": "simples_nacional",
+          "mensagem": "Invalid enum value. Expected 'nao_optante' | 'mei' | 'me_epp', received 'x'"
+        }
+      ]
+    },
+    "configuração fiscal: campo desconhecido": {
+      "status": 400,
+      "codigo": "REQUISICAO_INVALIDA",
+      "detalhes": [
+        {
+          "campo": "corpo",
+          "mensagem": "Unrecognized key(s) in object: 'z'"
+        }
+      ]
+    },
+    "configuração fiscal: percentual (mensagem da notem)": {
+      "status": 400,
+      "codigo": "REQUISICAO_INVALIDA",
+      "detalhes": [
+        {
+          "campo": "tributos_aproximados.percentual_simples",
+          "mensagem": "Use texto com ponto decimal e até 2 casas, ex.: \"2.00\"."
+        }
+      ]
+    },
+    "serviço: vazio": {
+      "status": 400,
+      "codigo": "REQUISICAO_INVALIDA",
+      "detalhes": [
+        {
+          "campo": "nome",
+          "mensagem": "Required"
+        },
+        {
+          "campo": "codigo_servico",
+          "mensagem": "Required"
+        },
+        {
+          "campo": "tributacao_iss",
+          "mensagem": "Required"
+        },
+        {
+          "campo": "retencao_iss",
+          "mensagem": "Required"
+        }
+      ]
+    },
+    "serviço: campo desconhecido": {
+      "status": 400,
+      "codigo": "REQUISICAO_INVALIDA",
+      "detalhes": [
+        {
+          "campo": "corpo",
+          "mensagem": "Unrecognized key(s) in object: 'k'"
+        }
+      ]
+    },
+    "serviço PATCH: nome longo": {
+      "status": 400,
+      "codigo": "REQUISICAO_INVALIDA",
+      "detalhes": [
+        {
+          "campo": "nome",
+          "mensagem": "String must contain at most 200 character(s)"
+        }
+      ]
+    },
+    "serviço: código (mensagem da notem)": {
+      "status": 400,
+      "codigo": "REQUISICAO_INVALIDA",
+      "detalhes": [
+        {
+          "campo": "codigo_servico",
+          "mensagem": "Código nacional de 6 dígitos."
+        }
+      ]
+    },
+    "certificado: vazio": {
+      "status": 400,
+      "codigo": "REQUISICAO_INVALIDA",
+      "detalhes": [
+        {
+          "campo": "arquivo_base64",
+          "mensagem": "Required"
+        },
+        {
+          "campo": "senha",
+          "mensagem": "Required"
+        }
+      ]
+    },
+    "certificado: senha longa": {
+      "status": 400,
+      "codigo": "REQUISICAO_INVALIDA",
+      "detalhes": [
+        {
+          "campo": "senha",
+          "mensagem": "String must contain at most 500 character(s)"
+        }
+      ]
+    },
+    "nota: vazia": {
+      "status": 400,
+      "codigo": "REQUISICAO_INVALIDA",
+      "detalhes": [
+        {
+          "campo": "valores",
+          "mensagem": "Required"
+        }
+      ]
+    },
+    "nota: UUID inválido": {
+      "status": 400,
+      "codigo": "REQUISICAO_INVALIDA",
+      "detalhes": [
+        {
+          "campo": "empresa_id",
+          "mensagem": "Invalid uuid"
+        }
+      ]
+    },
+    "nota: UUID fora do padrão": "OK",
+    "nota: opção inválida": {
+      "status": 400,
+      "codigo": "REQUISICAO_INVALIDA",
+      "detalhes": [
+        {
+          "campo": "retencao_iss",
+          "mensagem": "Invalid enum value. Expected 'nao_retido' | 'retido_tomador' | 'retido_intermediario', received 'x'"
+        }
+      ]
+    },
+    "nota: campo desconhecido": {
+      "status": 400,
+      "codigo": "REQUISICAO_INVALIDA",
+      "detalhes": [
+        {
+          "campo": "corpo",
+          "mensagem": "Unrecognized key(s) in object: 'extra'"
+        }
+      ]
+    },
+    "nota: campo desconhecido + regra da notem": {
+      "status": 400,
+      "codigo": "REQUISICAO_INVALIDA",
+      "detalhes": [
+        {
+          "campo": "corpo",
+          "mensagem": "Unrecognized key(s) in object: 'extra'"
+        },
+        {
+          "campo": "empresa_id",
+          "mensagem": "Informe empresa_id ou empresa_id_externo, nunca ambos."
+        }
+      ]
+    },
+    "nota: campo desconhecido em valores": {
+      "status": 400,
+      "codigo": "REQUISICAO_INVALIDA",
+      "detalhes": [
+        {
+          "campo": "valores",
+          "mensagem": "Unrecognized key(s) in object: 'x'"
+        }
+      ]
+    },
+    "nota: valor como número": {
+      "status": 400,
+      "codigo": "REQUISICAO_INVALIDA",
+      "detalhes": [
+        {
+          "campo": "valores.servico",
+          "mensagem": "Expected string, received number"
+        }
+      ]
+    },
+    "nota: valor sem duas casas (mensagem da notem)": {
+      "status": 400,
+      "codigo": "REQUISICAO_INVALIDA",
+      "detalhes": [
+        {
+          "campo": "valores.servico",
+          "mensagem": "Use texto decimal com duas casas."
+        }
+      ]
+    },
+    "nota: descrição longa": {
+      "status": 400,
+      "codigo": "REQUISICAO_INVALIDA",
+      "detalhes": [
+        {
+          "campo": "descricao",
+          "mensagem": "String must contain at most 2000 character(s)"
+        }
+      ]
+    },
+    "nota: competência em formato errado": {
+      "status": 400,
+      "codigo": "REQUISICAO_INVALIDA",
+      "detalhes": [
+        {
+          "campo": "competencia",
+          "mensagem": "Invalid"
+        }
+      ]
+    },
+    "nota: tomador com e-mail inválido (mensagem da notem)": {
+      "status": 400,
+      "codigo": "REQUISICAO_INVALIDA",
+      "detalhes": [
+        {
+          "campo": "tomador.email",
+          "mensagem": "E-mail inválido."
+        }
+      ]
+    },
+    "nota: tomador com campo desconhecido": {
+      "status": 400,
+      "codigo": "REQUISICAO_INVALIDA",
+      "detalhes": [
+        {
+          "campo": "tomador",
+          "mensagem": "Unrecognized key(s) in object: 'q'"
+        }
+      ]
+    },
+    "nota: tomador com tipo inválido": {
+      "status": 400,
+      "codigo": "REQUISICAO_INVALIDA",
+      "detalhes": [
+        {
+          "campo": "tomador.tipo",
+          "mensagem": "Invalid enum value. Expected 'pj' | 'pf' | 'estrangeiro', received 'z'"
+        }
+      ]
+    },
+    "nota: local sem 7 dígitos": {
+      "status": 400,
+      "codigo": "REQUISICAO_INVALIDA",
+      "detalhes": [
+        {
+          "campo": "local_prestacao.codigo_municipio",
+          "mensagem": "Invalid"
+        }
+      ]
+    },
+    "tomador: vazio": {
+      "status": 400,
+      "codigo": "REQUISICAO_INVALIDA",
+      "detalhes": [
+        {
+          "campo": "tipo",
+          "mensagem": "Required"
+        },
+        {
+          "campo": "nome",
+          "mensagem": "Required"
+        }
+      ]
+    },
+    "tomador: e-mail com subdomínio": "OK",
+    "tomador POST: id_externo vazio": {
+      "status": 400,
+      "codigo": "REQUISICAO_INVALIDA",
+      "detalhes": [
+        {
+          "campo": "id_externo",
+          "mensagem": "String must contain at least 1 character(s)"
+        }
+      ]
+    },
+    "cancelamento: vazio": {
+      "status": 400,
+      "codigo": "REQUISICAO_INVALIDA",
+      "detalhes": [
+        {
+          "campo": "motivo",
+          "mensagem": "Required"
+        },
+        {
+          "campo": "justificativa",
+          "mensagem": "Required"
+        }
+      ]
+    },
+    "cancelamento: campo desconhecido": {
+      "status": 400,
+      "codigo": "REQUISICAO_INVALIDA",
+      "detalhes": [
+        {
+          "campo": "corpo",
+          "mensagem": "Unrecognized key(s) in object: 'x'"
+        }
+      ]
+    },
+    "configuração fiscal: regra E0712 convertida (mensagem da notem)": {
+      "status": 422,
+      "codigo": "REGRA_DE_NEGOCIO",
+      "detalhes": [
+        {
+          "campo": "tributos_aproximados.modo",
+          "mensagem": "Para ME/EPP, informe o percentual do Simples ou os percentuais federal, estadual e municipal. Não informar não é permitido (E0712)."
+        },
+        {
+          "campo": "tributos_aproximados.modo",
+          "mensagem": "Confira os percentuais exigidos para o modo escolhido."
+        }
+      ]
+    },
+    "servidor: POST /empresas pelo manipulador da API": {
+      "status": 400,
+      "codigo": "REQUISICAO_INVALIDA",
+      "detalhes": [
+        {
+          "campo": "razao_social",
+          "mensagem": "Expected string, received number"
+        },
+        {
+          "campo": "corpo",
+          "mensagem": "Unrecognized key(s) in object: 'x'"
+        }
+      ]
+    },
+    "caminho: /empresas/abc": {
+      "status": 404,
+      "codigo": "NAO_ENCONTRADO",
+      "detalhes": []
+    },
+    "caminho: /empresas/{UUID fora do padrão}": {
+      "status": 404,
+      "codigo": "NAO_ENCONTRADO",
+      "detalhes": []
+    },
+    "caminho: /empresas/{UUID válido inexistente}": {
+      "status": 404,
+      "codigo": "NAO_ENCONTRADO",
+      "detalhes": []
+    }
+  },
+  "formularios": {
+    "empresa: formulário vazio": {
+      "exibida": "Required",
+      "detalhes": [
+        {
+          "campo": "organization_id",
+          "mensagem": "Required"
+        },
+        {
+          "campo": "cnpj",
+          "mensagem": "Required"
+        },
+        {
+          "campo": "legal_name",
+          "mensagem": "Required"
+        },
+        {
+          "campo": "email",
+          "mensagem": "Invalid input"
+        },
+        {
+          "campo": "phone",
+          "mensagem": "Required"
+        },
+        {
+          "campo": "postal_code",
+          "mensagem": "Required"
+        },
+        {
+          "campo": "street",
+          "mensagem": "Required"
+        },
+        {
+          "campo": "number",
+          "mensagem": "Required"
+        },
+        {
+          "campo": "complement",
+          "mensagem": "Required"
+        },
+        {
+          "campo": "district",
+          "mensagem": "Required"
+        },
+        {
+          "campo": "municipality_ibge_code",
+          "mensagem": "Required"
+        }
+      ]
+    },
+    "empresa: razão social vazia (mensagem da notem)": {
+      "exibida": "Informe a razão social.",
+      "detalhes": [
+        {
+          "campo": "legal_name",
+          "mensagem": "Informe a razão social."
+        }
+      ]
+    },
+    "empresa: e-mail inválido (mensagem da notem)": {
+      "exibida": "E-mail inválido.",
+      "detalhes": [
+        {
+          "campo": "email",
+          "mensagem": "E-mail inválido."
+        }
+      ]
+    },
+    "empresa: e-mail com + e .com.br": "OK",
+    "empresa: e-mail com subdomínio": "OK",
+    "empresa: UUID inválido": {
+      "exibida": "Invalid uuid",
+      "detalhes": [
+        {
+          "campo": "organization_id",
+          "mensagem": "Invalid uuid"
+        }
+      ]
+    },
+    "empresa: UUID fora do padrão": "OK",
+    "empresa: município sem 7 dígitos (mensagem da notem)": {
+      "exibida": "Selecione um município.",
+      "detalhes": [
+        {
+          "campo": "municipality_ibge_code",
+          "mensagem": "Selecione um município."
+        }
+      ]
+    },
+    "empresa: tipo errado": {
+      "exibida": "Expected string, received number",
+      "detalhes": [
+        {
+          "campo": "street",
+          "mensagem": "Expected string, received number"
+        }
+      ]
+    },
+    "organização: vazia": {
+      "exibida": "Required",
+      "detalhes": [
+        {
+          "campo": "name",
+          "mensagem": "Required"
+        },
+        {
+          "campo": "type",
+          "mensagem": "Selecione o tipo de organização."
+        }
+      ]
+    },
+    "organização: tipo inválido (mensagem da notem)": {
+      "exibida": "Selecione o tipo de organização.",
+      "detalhes": [
+        {
+          "campo": "type",
+          "mensagem": "Selecione o tipo de organização."
+        }
+      ]
+    },
+    "configuração fiscal: vazia": {
+      "exibida": "Required",
+      "detalhes": [
+        {
+          "campo": "company_id",
+          "mensagem": "Required"
+        },
+        {
+          "campo": "organization_id",
+          "mensagem": "Required"
+        },
+        {
+          "campo": "simples_nacional_option",
+          "mensagem": "Required"
+        },
+        {
+          "campo": "simples_nacional_regime",
+          "mensagem": "Required"
+        },
+        {
+          "campo": "special_tax_regime",
+          "mensagem": "Required"
+        },
+        {
+          "campo": "dps_series",
+          "mensagem": "Required"
+        },
+        {
+          "campo": "approx_taxes_mode",
+          "mensagem": "Required"
+        },
+        {
+          "campo": "approx_simples_percent",
+          "mensagem": "Required"
+        },
+        {
+          "campo": "approx_federal_percent",
+          "mensagem": "Required"
+        },
+        {
+          "campo": "approx_state_percent",
+          "mensagem": "Required"
+        },
+        {
+          "campo": "approx_municipal_percent",
+          "mensagem": "Required"
+        }
+      ]
+    },
+    "configuração fiscal: inteiro com fração": {
+      "exibida": "Expected integer, received float",
+      "detalhes": [
+        {
+          "campo": "simples_nacional_option",
+          "mensagem": "Expected integer, received float"
+        },
+        {
+          "campo": "approx_taxes_mode",
+          "mensagem": "Confira os percentuais exigidos para o modo escolhido."
+        }
+      ]
+    },
+    "configuração fiscal: número acima do limite": {
+      "exibida": "Number must be less than or equal to 3",
+      "detalhes": [
+        {
+          "campo": "simples_nacional_option",
+          "mensagem": "Number must be less than or equal to 3"
+        },
+        {
+          "campo": "approx_taxes_mode",
+          "mensagem": "Confira os percentuais exigidos para o modo escolhido."
+        }
+      ]
+    },
+    "configuração fiscal: percentual acima de 100": {
+      "exibida": "Number must be less than or equal to 100",
+      "detalhes": [
+        {
+          "campo": "approx_federal_percent",
+          "mensagem": "Number must be less than or equal to 100"
+        }
+      ]
+    },
+    "configuração fiscal: regime especial fora da lista": {
+      "exibida": "Invalid input",
+      "detalhes": [
+        {
+          "campo": "special_tax_regime",
+          "mensagem": "Invalid input"
+        },
+        {
+          "campo": "special_tax_regime",
+          "mensagem": "Para MEI, o regime especial deve ser Nenhum (E0174)."
+        }
+      ]
+    },
+    "configuração fiscal: série acima de 49999": {
+      "exibida": "Number must be less than or equal to 49999",
+      "detalhes": [
+        {
+          "campo": "dps_series",
+          "mensagem": "Number must be less than or equal to 49999"
+        }
+      ]
+    },
+    "configuração fiscal: ISS do Simples abaixo do mínimo (mensagem da notem)": {
+      "exibida": "A alíquota do ISS deve ser pelo menos 1,80%.",
+      "detalhes": [
+        {
+          "campo": "simples_iss_withholding_percent",
+          "mensagem": "A alíquota do ISS deve ser pelo menos 1,80%."
+        }
+      ]
+    },
+    "configuração fiscal: modo inválido": {
+      "exibida": "Invalid enum value. Expected 'percent_simples' | 'percent_by_sphere' | 'none', received 'x'",
+      "detalhes": [
+        {
+          "campo": "approx_taxes_mode",
+          "mensagem": "Invalid enum value. Expected 'percent_simples' | 'percent_by_sphere' | 'none', received 'x'"
+        }
+      ]
+    },
+    "serviço: nome vazio": {
+      "exibida": "String must contain at least 1 character(s)",
+      "detalhes": [
+        {
+          "campo": "name",
+          "mensagem": "String must contain at least 1 character(s)"
+        }
+      ]
+    },
+    "serviço: nome longo": {
+      "exibida": "String must contain at most 200 character(s)",
+      "detalhes": [
+        {
+          "campo": "name",
+          "mensagem": "String must contain at most 200 character(s)"
+        }
+      ]
+    },
+    "serviço: código de serviço sem 6 dígitos": {
+      "exibida": "Invalid",
+      "detalhes": [
+        {
+          "campo": "service_code",
+          "mensagem": "Invalid"
+        }
+      ]
+    },
+    "serviço: imunidade (regra da notem)": {
+      "exibida": "Informe o tipo de imunidade somente para tributação por imunidade.",
+      "detalhes": [
+        {
+          "campo": "immunity_type",
+          "mensagem": "Informe o tipo de imunidade somente para tributação por imunidade."
+        }
+      ]
+    },
+    "webhook: vazio": {
+      "exibida": "Required",
+      "detalhes": [
+        {
+          "campo": "organization_id",
+          "mensagem": "Required"
+        },
+        {
+          "campo": "integration_id",
+          "mensagem": "Required"
+        },
+        {
+          "campo": "environment",
+          "mensagem": "Required"
+        },
+        {
+          "campo": "url",
+          "mensagem": "Required"
+        },
+        {
+          "campo": "events",
+          "mensagem": "Required"
+        }
+      ]
+    },
+    "webhook: sem eventos (mensagem da notem)": {
+      "exibida": "Escolha pelo menos um evento.",
+      "detalhes": [
+        {
+          "campo": "events",
+          "mensagem": "Escolha pelo menos um evento."
+        }
+      ]
+    },
+    "webhook: evento inválido": {
+      "exibida": "Invalid enum value. Expected 'webhook.teste' | 'nota.autorizada' | 'nota.rejeitada' | 'nota.cancelada' | 'nota.cancelamento_em_analise' | 'nota.cancelamento_indeferido' | 'nota.substituida' | 'nota.cancelada_prefeitura' | 'nota.bloqueada_prefeitura' | 'nota.desbloqueada_prefeitura' | 'nota.manifestacao' | 'empresa.situacao_alterada' | 'certificado.vencendo' | 'certificado.vencido' | 'municipio.disponivel' | 'nota.*' | 'empresa.*' | 'certificado.*' | 'municipio.*', received 'x'",
+      "detalhes": [
+        {
+          "campo": "events.0",
+          "mensagem": "Invalid enum value. Expected 'webhook.teste' | 'nota.autorizada' | 'nota.rejeitada' | 'nota.cancelada' | 'nota.cancelamento_em_analise' | 'nota.cancelamento_indeferido' | 'nota.substituida' | 'nota.cancelada_prefeitura' | 'nota.bloqueada_prefeitura' | 'nota.desbloqueada_prefeitura' | 'nota.manifestacao' | 'empresa.situacao_alterada' | 'certificado.vencendo' | 'certificado.vencido' | 'municipio.disponivel' | 'nota.*' | 'empresa.*' | 'certificado.*' | 'municipio.*', received 'x'"
+        }
+      ]
+    },
+    "webhook: eventos demais": {
+      "exibida": "Array must contain at most 18 element(s)",
+      "detalhes": [
+        {
+          "campo": "events",
+          "mensagem": "Array must contain at most 18 element(s)"
+        }
+      ]
+    },
+    "webhook: descrição longa": {
+      "exibida": "String must contain at most 2000 character(s)",
+      "detalhes": [
+        {
+          "campo": "description",
+          "mensagem": "String must contain at most 2000 character(s)"
+        }
+      ]
+    },
+    "webhook: endereço inválido (mensagem da notem)": {
+      "exibida": "Informe um endereço HTTPS público, sem credenciais.",
+      "detalhes": [
+        {
+          "campo": "url",
+          "mensagem": "Informe um endereço HTTPS público, sem credenciais."
+        }
+      ]
+    },
+    "webhook: ambiente inválido": {
+      "exibida": "Invalid enum value. Expected 'sandbox' | 'production', received 'x'",
+      "detalhes": [
+        {
+          "campo": "environment",
+          "mensagem": "Invalid enum value. Expected 'sandbox' | 'production', received 'x'"
+        }
+      ]
+    },
+    "webhook: ativo como texto": {
+      "exibida": "Expected boolean, received string",
+      "detalhes": [
+        {
+          "campo": "auth_clear",
+          "mensagem": "Expected boolean, received string"
+        }
+      ]
+    },
+    "integração: vazia": {
+      "exibida": "Required",
+      "detalhes": [
+        {
+          "campo": "organization_id",
+          "mensagem": "Required"
+        },
+        {
+          "campo": "name",
+          "mensagem": "Required"
+        }
+      ]
+    },
+    "integração: escopo diferente de all": {
+      "exibida": "Invalid literal value, expected \"all\"",
+      "detalhes": [
+        {
+          "campo": "company_scope",
+          "mensagem": "Invalid literal value, expected \"all\""
+        }
+      ]
+    },
+    "integração: empresas selecionadas": {
+      "exibida": "Array must contain at most 0 element(s)",
+      "detalhes": [
+        {
+          "campo": "company_ids",
+          "mensagem": "Array must contain at most 0 element(s)"
+        }
+      ]
+    },
+    "integração: nome longo": {
+      "exibida": "String must contain at most 100 character(s)",
+      "detalhes": [
+        {
+          "campo": "name",
+          "mensagem": "String must contain at most 100 character(s)"
+        }
+      ]
+    },
+    "tomador: tipo inválido": {
+      "exibida": "Invalid enum value. Expected 'pj' | 'pf' | 'estrangeiro', received 'z'",
+      "detalhes": [
+        {
+          "campo": "tipo",
+          "mensagem": "Invalid enum value. Expected 'pj' | 'pf' | 'estrangeiro', received 'z'"
+        }
+      ]
+    },
+    "tomador: e-mail longo": {
+      "exibida": "String must contain at most 80 character(s)",
+      "detalhes": [
+        {
+          "campo": "email",
+          "mensagem": "String must contain at most 80 character(s)"
+        }
+      ]
+    }
+  }
+}
