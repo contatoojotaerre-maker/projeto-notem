@@ -2,7 +2,7 @@ import { ruleMessage } from './rule-error';
 import type { Json } from '@/integrations/supabase/types';
 import { type ApiCtx,type ApiResult } from './api.server';
 import { z } from './validation';
-import { ApiFailure,bodyHash,dateRange,MAX_SEARCH,fail,idempotencyKey,page,pageParams,parseBody,pct,withholdingMap,type Detail,type Env } from './api-contract';
+import { ApiFailure,bodyHash,dateRange,MAX_SEARCH,fail,idParam,idempotencyKey,page,pageParams,parseBody,pct,withholdingMap,type Detail,type Env } from './api-contract';
 import { invoiceRequest,invoiceOut,replayDecision,invoiceStatuses,rejectionGuidance,type Invoice,type InvoiceRequest } from './invoices';
 import { justificationError,substitutionReasons,type SubstitutionReason } from './fiscal-events';
 import { FISCAL_TEXT_MESSAGE,fiscalTextAccepted,normalizeCustomerText,normalizeFields,normalizeFiscalText } from './fiscal-text';
@@ -155,7 +155,7 @@ export async function getInvoiceEventXml(ctx:ApiCtx):Promise<ApiResult>{
 type Note={kind:'notem';id:string;invoice:Invoice}|{kind:'externa';id:string;doc:import('./nfse-documents').NfseDocument;companyId:string};
 /** notem invoice of the organization, or a note issued outside notem by one of its companies (proof of possession). */
 export async function loadNote(ctx:ApiCtx):Promise<Note>{
- const id=ctx.params['invoiceId'];if(!id||!zUuid(id))throw fail(404,'NAO_ENCONTRADO');
+ const id=idParam(ctx.params['invoiceId'],'id');
  const r=await ctx.db.from('invoices').select('*').eq('id',id).eq('organization_id',ctx.organization_id).eq('environment',ctx.env).maybeSingle();if(r.error)throw new Error('INVOICE_READ_FAILED');
  if(r.data){ctx.setCompany(r.data.company_id);return {kind:'notem',id,invoice:r.data};}
  const {loadExternalNote}=await import('./notes.server');const e=await loadExternalNote(ctx.db,ctx.organization_id,ctx.env,id);if(!e)throw fail(404,'NAO_ENCONTRADO');
@@ -163,14 +163,13 @@ export async function loadNote(ctx:ApiCtx):Promise<Note>{
 }
 /** Cancel, analysis and substitution are only for notes issued by notem. */
 async function loadOwnInvoice(ctx:ApiCtx){const n=await loadNote(ctx);if(n.kind==='externa'){const {EXTERNAL_MUTATION_MESSAGE}=await import('./nfse-documents');throw fail(409,'CONFLITO',[],EXTERNAL_MUTATION_MESSAGE);}return n.invoice;}
-export async function loadInvoice(ctx:ApiCtx){const id=ctx.params['invoiceId'];if(!id||!zUuid(id))throw fail(404,'NAO_ENCONTRADO');const r=await ctx.db.from('invoices').select('*').eq('id',id).eq('organization_id',ctx.organization_id).eq('environment',ctx.env).maybeSingle();if(r.error)throw new Error('INVOICE_READ_FAILED');if(!r.data)throw fail(404,'NAO_ENCONTRADO');ctx.setCompany(r.data.company_id);return r.data;}
-const zUuid=(id:string)=>/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(id);
+export async function loadInvoice(ctx:ApiCtx){const id=idParam(ctx.params['invoiceId'],'id');const r=await ctx.db.from('invoices').select('*').eq('id',id).eq('organization_id',ctx.organization_id).eq('environment',ctx.env).maybeSingle();if(r.error)throw new Error('INVOICE_READ_FAILED');if(!r.data)throw fail(404,'NAO_ENCONTRADO');ctx.setCompany(r.data.company_id);return r.data;}
 export async function getInvoice(ctx:ApiCtx){const n=await loadNote(ctx);if(n.kind==='notem')return {status:200,body:invoiceOut(n.invoice)};const {externalOut}=await import('./nfse-documents');return {status:200,body:externalOut(n.doc,n.companyId)};}
 async function noteXml(ctx:ApiCtx,n:Note){const {invoiceXml,documentXml}=await import('./notes.server');return n.kind==='notem'?await invoiceXml(ctx.db,n.invoice):await documentXml(ctx.db,n.doc);}
 export async function getInvoiceXml(ctx:ApiCtx){const n=await loadNote(ctx);const xml=await noteXml(ctx,n);if(!xml)throw fail(404,'NAO_ENCONTRADO',[], 'XML autorizado ainda não disponível.');return {status:200,body:xml,headers:{'Content-Type':'application/xml; charset=utf-8','Content-Disposition':`attachment; filename="nfse-${n.id}.xml"`}};}
 export async function getInvoicePdf(ctx:ApiCtx):Promise<ApiResult>{const n=await loadNote(ctx);const status=n.kind==='notem'?n.invoice.status:n.doc.status;const xml=pdfStatuses.includes(status)?await noteXml(ctx,n):null;if(!xml)throw fail(404,'NAO_ENCONTRADO',[], 'DANFSe ainda não disponível.');const companyId=n.kind==='notem'?n.invoice.company_id:n.companyId;const f=await ctx.db.from('company_fiscal_settings').select('print_danfse_receipt').eq('company_id',companyId).eq('organization_id',ctx.organization_id).maybeSingle();if(f.error)throw new Error('FISCAL_READ_FAILED');const number=n.kind==='notem'?n.invoice.nfse_number:n.doc.nfse_number;return {status:200,body:await generateDanfse(xml,status,f.data?.print_danfse_receipt??false),headers:{'Content-Type':'application/pdf','Content-Disposition':`attachment; filename="danfse-${number??n.id}.pdf"`}};}
 export async function listInvoices(ctx:ApiCtx){const {limite,offset}=pageParams(ctx.url);const p=ctx.url.searchParams;
- let company=p.get('empresa_id');if(company&&!zUuid(company))throw fail(400,'REQUISICAO_INVALIDA',[{campo:'empresa_id',mensagem:'Identificador inválido.'}]);
+ let company=p.get('empresa_id');if(company)idParam(company,'empresa_id');
  const external=p.get('empresa_id_externo');if(external){const c=await ctx.db.from('companies').select('id').eq('organization_id',ctx.organization_id).eq('external_id',external).maybeSingle();if(c.error)throw new Error('COMPANY_READ_FAILED');if(!c.data)return {status:200,body:page([],limite,offset)};company=c.data.id;}
  const status=p.get('situacao');let dbStatus:string|null=null;if(status){dbStatus=Object.entries(invoiceStatuses).find(([,label])=>label===status)?.[0]??null;if(!dbStatus)throw fail(400,'REQUISICAO_INVALIDA',[{campo:'situacao',mensagem:'Situação inválida.'}]);}
  const origin=p.get('origem');if(origin&&!['notem','externa'].includes(origin))throw fail(400,'REQUISICAO_INVALIDA',[{campo:'origem',mensagem:'Use notem ou externa.'}]);

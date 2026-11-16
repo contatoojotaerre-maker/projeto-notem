@@ -1,6 +1,6 @@
 import type { Json } from '@/integrations/supabase/types';
 import { customerCreate, customerSchema, customerOutput } from './customers';
-import { fail, parseBody, pageParams, page, isoBr } from './api-contract';
+import { fail, idParam, parseBody, pageParams, page, isoBr } from './api-contract';
 import { loadCompany, type ApiCtx } from './api.server';
 import { normalizeCustomerText } from './fiscal-text';
 
@@ -17,7 +17,7 @@ export async function listCustomers(ctx: ApiCtx) {
   const r = await q.order('created_at', { ascending: false }).order('id').range(offset, offset + limite); if (r.error) throw new Error('CUSTOMERS_READ_FAILED'); return { status: 200, body: page((r.data ?? []).map(output), limite, offset) };
 }
 async function find(ctx: ApiCtx) {
-  const c = await loadCompany(ctx); const id = ctx.params['customerId']; if (!id || !/^[0-9a-f-]{36}$/i.test(id)) throw fail(404, 'NAO_ENCONTRADO');
+  const c = await loadCompany(ctx); const id = idParam(ctx.params['customerId'], 'tomador_id');
   const r = await ctx.db.from('company_customers').select('*').eq('id', id).eq('company_id', c.id).eq('organization_id', ctx.organization_id).maybeSingle(); if (r.error) throw new Error('CUSTOMER_READ_FAILED'); if (!r.data) throw fail(404, 'NAO_ENCONTRADO'); return r.data;
 }
 export async function getCustomer(ctx: ApiCtx) { return { status: 200, body: output(await find(ctx)) }; }

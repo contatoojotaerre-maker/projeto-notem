@@ -132,7 +132,7 @@ export async function createService(ctx: ApiCtx): Promise<ApiResult> {
   if (r.error) serviceWriteError(r.error); refresh(ctx, c.id); return { status: 201, body: serviceOut(r.data as unknown as ServiceRow) };
 }
 async function loadService(ctx: ApiCtx, companyId: string) {
-  const id = ctx.params['servicoId'] ?? ''; if (!/^[0-9a-f-]{36}$/i.test(id ?? '')) throw fail(404, 'NAO_ENCONTRADO');
+  const id = idParam(ctx.params['servicoId'], 'servico_id');
   const r = await ctx.db.from('company_service_profiles').select(SERVICE_SELECT).eq('id', id).eq('company_id', companyId).eq('organization_id', ctx.organization_id).maybeSingle();
   if (r.error) throw new Error('SERVICE_READ_FAILED'); if (!r.data) throw fail(404, 'NAO_ENCONTRADO'); return r.data as unknown as ServiceRow;
 }

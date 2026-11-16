@@ -34,6 +34,11 @@ export const fail = (status: number, code: string, details: Detail[] = [], messa
 export function zodDetails(e: z.ZodError, map: Record<string, string> = {}): Detail[] {
   return e.issues.map(i => { const p = i.path.map(String).join('.'); return { campo: map[p] ?? (p || 'corpo'), mensagem: i.message }; });
 }
+const uuidRule = z.uuid();
+/** Identifiers in the path or query follow the same strict UUID rule as bodies: 400 with the documented name. */
+export function idParam(value: string | null | undefined, campo: string): string {
+  const r = uuidRule.safeParse(value ?? undefined); if (!r.success) throw fail(400, 'REQUISICAO_INVALIDA', [{ campo, mensagem: r.error.issues[0]?.message ?? 'Identificador inválido (UUID).' }]); return r.data;
+}
 export function parseBody<T>(schema: z.ZodType<T>, value: unknown): T { const r = schema.safeParse(value); if (!r.success) throw fail(400, 'REQUISICAO_INVALIDA', zodDetails(r.error)); return r.data; }
 
 // ---------- Pagination and filters ----------
