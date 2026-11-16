@@ -10,7 +10,6 @@ import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, 
 import { getLayoutStatus, updateNt009Start, updateFiscalPlatformSetting } from '@/lib/platform-settings.functions';
 
 export const layoutStatusQuery = () => queryOptions({ queryKey: ['layout-status'], queryFn: () => getLayoutStatus(), staleTime: 15_000 });
-const BRT = 'America/Sao_Paulo';
 const show = (iso: string) => dateTimeBr(iso);
 /** datetime-local value in Brasília time (UTC-3, no daylight saving since 2019). */
 const toLocal = (iso: string) => new Date(Date.parse(iso) - 3 * 3600_000).toISOString().slice(0, 16);
