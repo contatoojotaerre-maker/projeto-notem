@@ -99,6 +99,16 @@
 .app-collapsed .sidebar-label { display:none; }
 .menu-toggle { display:none; }
 .homologation-banner { background:var(--warning-surface);color:var(--warning-foreground);padding:10px 20px;position:sticky;top:0;z-index:40;display:flex;justify-content:center;gap:9px;font-size:12px; }
+/* Production banner: same place as the homologation one, neutral tone (always visible, also on phones). */
+.production-banner { background:var(--card);color:var(--foreground);border-bottom:1px solid var(--border);padding:8px 20px;position:sticky;top:0;z-index:40;display:flex;justify-content:center;gap:9px;font-size:12px; }
+/* Menu sub-items (Notas › Emitidas/Recebidas, Organização › Dados/Equipe); hidden when the menu is collapsed. */
+.nav-subitem { padding:8px 14px 8px 44px;font-size:12.5px; }
+.nav-item[data-parent-active="true"] { color:var(--foreground);font-weight:600; }
+.app-collapsed .nav-subitem { display:none; }
+.app-collapsed .nav-item[data-parent-active="true"] { background:var(--primary);color:var(--primary-foreground); }
+.breadcrumb-trail { display:flex;flex-wrap:wrap;align-items:center;gap:6px;font-size:13px;color:var(--muted-foreground);margin-bottom:10px; }
+.breadcrumb-trail a { text-decoration:underline;text-underline-offset:4px; }
+.breadcrumb-trail a:hover { color:var(--foreground); }
 .page-heading { font-size:26px;font-weight:600; }
 .empty-state { display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:350px;text-align:center;gap:14px; }
 .table-wrap { overflow:auto;border:1px solid var(--border);border-radius:8px; }
@@ -112,6 +122,8 @@
  .app-main,.app-collapsed .app-main { margin-left:0; }
  .app-mobile-open .app-sidebar { transform:translateX(0);width:238px; }
  .app-mobile-open .sidebar-label { display:initial; }
+ .app-mobile-open .nav-subitem,.app-collapsed.app-mobile-open .nav-subitem { display:flex; }
+ .app-mobile-open .nav-item[data-parent-active="true"] { background:transparent;color:var(--foreground); }
  .app-mobile-open .sidebar-collapsed-brand { display:none; }
  .app-mobile-open .sidebar-brand-row { padding:0 24px; }
  .topbar-search { display:none; }
