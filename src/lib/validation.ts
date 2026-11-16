@@ -69,10 +69,17 @@ z.config({ customError: issue => notemMessage(kindOf(issue as Issue)) });
 
 /** E-mail rule of notem (the zod 3 rule, kept explicitly so a zod update never changes it). */
 export const EMAIL_PATTERN = /^(?!\.)(?!.*\.\.)([A-Z0-9_'+\-.]*)[A-Z0-9_+-]@([A-Z0-9][A-Z0-9-]*\.)+[A-Z]{2,}$/i;
-export const email = (message?: string) => z.email({ pattern: EMAIL_PATTERN, ...(message ? { error: message } : {}) });
+/** The message applies only to the e-mail rule, never to length checks chained after it. */
+export const email = (message?: string) => z.string().email({ pattern: EMAIL_PATTERN, ...(message ? { error: message } : {}) });
 
 /** ISO date-time in UTC (Z required, seconds optional, any fraction): the criterion used before zod 4. */
 export const DATETIME_PATTERN = /^((\d\d[2468][048]|\d\d[13579][26]|\d\d0[48]|[02468][048]00|[13579][26]00)-02-29|\d{4}-((0[13578]|1[02])-(0[1-9]|[12]\d|3[01])|(0[469]|11)-(0[1-9]|[12]\d|30)|(02)-(0[1-9]|1\d|2[0-8])))T([01]\d|2[0-3]):[0-5]\d(:[0-5]\d(\.\d+)?)?Z$/;
 export const isoDateTime = () => z.string().regex(DATETIME_PATTERN, 'Data e hora inválidas.');
+
+/**
+ * Object-level notem rules run in the same situations as before zod 4: after field-rule failures
+ * (sizes, formats, integers, refinements), never after a wrong type or option.
+ */
+export const objectRule = { when: (p: z.core.ParsePayload) => p.issues.every(i => (i as { continue?: boolean }).continue === true || (i.code === 'invalid_type' && i.expected === 'int')) };
 
 export { z };
