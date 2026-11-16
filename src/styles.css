@@ -84,6 +84,13 @@
 .metric-label { font-size:12px;color:var(--muted-foreground); }
 .metric-value { margin-top:8px;font-size:26px;font-weight:600;font-variant-numeric:tabular-nums; }
 .metric-note { margin-top:6px;font-size:12px;color:var(--muted-foreground); }
+.metric-link { display:block;transition:background-color .15s; }
+.metric-link:hover,.metric-link:focus-visible { background:var(--secondary);outline:none; }
+.metric-trend { margin-top:6px;font-size:12px;color:var(--muted-foreground);font-variant-numeric:tabular-nums; }
+.metric-trend[data-tone="good"] { color:var(--success); }
+.metric-trend[data-tone="bad"] { color:var(--warning-foreground); }
+.metric-row { display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:12px;border:1px solid var(--border);border-radius:8px;padding:16px 22px;transition:background-color .15s; }
+.metric-row:hover,.metric-row:focus-visible { background:var(--secondary);outline:none; }
 .nav-count { margin-left:auto;min-width:20px;border-radius:999px;background:var(--destructive);color:var(--background);font-size:11px;font-weight:600;line-height:20px;text-align:center;padding:0 6px; }
 .app-sidebar { position:fixed;top:0;bottom:0;left:0;width:238px;z-index:30;background:var(--background);border-right:1px solid var(--border);display:flex;flex-direction:column;transition:width .2s,transform .2s; }
 .app-main { margin-left:238px; transition:margin .2s; min-height:100svh; }

@@ -88,6 +88,9 @@ BEGIN
   jsonb_build_object('n','list_org_notes(T, busca CNPJ)','q','select count(*) from public.list_org_notes($1,''production'',_search=>$2)','k','org'),
   jsonb_build_object('n','org_notes_count(T)','q','select public.org_notes_count($1,''production'')','k','org'),
   jsonb_build_object('n','org_notes_summary(T)','q','select coalesce(sum(emitted),0) from public.org_notes_summary($1,''production'',''2000-01-01'',''2100-01-01'')','k','org'),
+  -- Início: integration counts follow the request-log rule (owner, admin, developer, platform admin), per environment
+  jsonb_build_object('n','org_integration_summary(T, producao)','q','select coalesce(sum(calls),0) from public.org_integration_summary($1,''production'',now()-interval ''89 days'',now()+interval ''1 second'')','k','logs'),
+  jsonb_build_object('n','org_integration_summary(T, homologacao)','q','select coalesce(sum(calls),0) from public.org_integration_summary($1,''sandbox'',now()-interval ''89 days'',now()+interval ''1 second'')','k','logs'),
   jsonb_build_object('n','api_rate_limit_overrides','q','select count(*) from public.api_rate_limit_overrides','k','platform_only'),
   jsonb_build_object('n','admin_audit_events','q','select count(*) from public.admin_audit_events','k','platform_only'),
   jsonb_build_object('n','system_heartbeats','q','select count(*) from public.system_heartbeats','k','platform_only'),
