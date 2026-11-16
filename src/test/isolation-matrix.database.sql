@@ -207,7 +207,9 @@ BEGIN
     RAISE EXCEPTION USING ERRCODE='ZX002', MESSAGE='undo';
    EXCEPTION WHEN SQLSTATE 'ZX002' THEN NULL; WHEN OTHERS THEN st := SQLSTATE; msg := SQLERRM; END;
    refused := st='42501' OR (st='ok' AND rc=0 AND w->>'q' !~* '^select')
-     OR (st='P0001' AND msg ~* '(unauthori|não autoriz|sem_permiss|unavailable|required|acesso|permiss)')
+     OR (st='P0001' AND msg ~* '(unauthori|não autoriz|sem_permiss|unavailable|required|acesso|permiss|não podem ser alterad)')
+     -- composite foreign key (company_id, organization_id): a row pointing to another organization's company is refused by the database
+     OR st='23503'
      OR (st='ok' AND w->>'q' ~* '^select public\.accept' AND false);
    allowed := ARRAY(SELECT jsonb_array_elements_text((w->>'a')::jsonb));
    IF a = ANY(allowed) AND refused THEN fails := fails || format('%s deveria poder "%s" (%s %s)',a,w->>'n',st,left(msg,80));
