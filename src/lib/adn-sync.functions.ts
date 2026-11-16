@@ -37,8 +37,8 @@ export const refreshNoteFromGovernment = createServerFn({ method: 'POST' }).midd
   if (own.data) target = { ...own.data, created_by: context.userId };
   else {
     const ext = await notes.loadExternalNote(supabaseAdmin, data.organization_id, data.environment, data.id);
-    const rec = !ext && data.company_id ? await notes.loadReceivedNote(supabaseAdmin, data.organization_id, data.environment, data.company_id, data.id) : null;
-    const doc = ext?.doc ?? rec?.doc; const company = ext?.companyId ?? (rec ? data.company_id! : null);
+    const rec = ext ? null : data.company_id ? await notes.loadReceivedNote(supabaseAdmin, data.organization_id, data.environment, data.company_id, data.id).then(r => r && { doc: r.doc, companyId: data.company_id! }) : await notes.findReceivedNote(supabaseAdmin, data.organization_id, data.environment, data.id);
+    const doc = ext?.doc ?? rec?.doc; const company = ext?.companyId ?? rec?.companyId ?? null;
     if (doc && company) target = { id: '', company_id: company, organization_id: data.organization_id, created_by: context.userId, environment: data.environment, access_key: doc.access_key };
   }
   if (!target?.access_key) return { ok: false as const, mensagem: 'Nota não encontrada ou ainda sem chave de acesso.' };
