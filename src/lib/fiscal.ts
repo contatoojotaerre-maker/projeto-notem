@@ -1,4 +1,4 @@
-import { z } from 'zod';
+import { z } from './validation';
 import { normalizeCnpj } from './notem';
 import { IBSCBS_MESSAGES, allowedIbsCbsRegimes, defaultIbsCbsRegime } from './ibscbs';
 export const CNPJ_LOCK_MESSAGE = 'O CNPJ não pode ser alterado porque a empresa já tem certificado ou série. Cadastre uma nova empresa.';

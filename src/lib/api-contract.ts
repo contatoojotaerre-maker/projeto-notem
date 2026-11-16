@@ -1,6 +1,6 @@
 // Pure, client-safe translation between the public API v1 contract (Portuguese, readable values)
 // and the current database codes. Shared by API routes, the panel and tests.
-import { z } from 'zod';
+import { z } from './validation';
 import { DEFAULT_IBSCBS_REQUIRED_FROM, IBSCBS_REGIME_LABELS, allowedIbsCbsRegimes, ibsCbsMissingMessage, ibsCbsPendingWarning, serviceIbsCbsIssues, serviceNeedsReview, todayBr, type IbsCbsClassification, type ServiceIbsCbs } from './ibscbs';
 import { fiscalSchema, specialTaxRuleError, validReadinessCertificate } from './fiscal';
 import { agreementUnavailableMessage, certificateSituation } from './certificates';

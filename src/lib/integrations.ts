@@ -1,4 +1,4 @@
-import { z } from 'zod'
+import { z } from './validation'
 export const integrationSchema = z.object({ organization_id: z.string().uuid(), id: z.string().uuid().optional(), name: z.string().trim().min(1).max(100), description: z.string().max(2000).default(''), active: z.boolean().default(true), company_scope: z.literal('all').default('all'), company_ids: z.array(z.string().uuid()).max(0).default([]) })
 export const canManageIntegrations = (role?:string, admin=false)=>admin||['owner','admin','developer'].includes(role??'')
 export const keyEnvironment = (key:string)=>/^ntm_homolog_[a-f0-9]{64}$/.test(key)?'sandbox':/^ntm_prod_[a-f0-9]{64}$/.test(key)?'production':null

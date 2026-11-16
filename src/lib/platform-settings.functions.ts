@@ -1,5 +1,5 @@
 import { createServerFn } from '@tanstack/react-start';
-import { z } from 'zod';
+import { z } from './validation';
 import { requireSupabaseAuth } from '@/integrations/supabase/auth-middleware';
 
 export const getLayoutStatus = createServerFn({ method: 'POST' }).middleware([requireSupabaseAuth]).handler(async ({ context }) => {

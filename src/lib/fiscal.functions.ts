@@ -1,6 +1,6 @@
 import { createServerFn } from '@tanstack/react-start';
 import { requireSupabaseAuth } from '@/integrations/supabase/auth-middleware';
-import { z } from 'zod';
+import { z } from './validation';
 import { catalogNames, fiscalIds, fiscalSchema, serviceProfileSchema, seriesSchema,specialTaxRuleError } from './fiscal';
 import { IBSCBS_MESSAGES, ibsCbsServiceRuleError } from './ibscbs';
 const ruleMessages=new Set<string>(Object.values(IBSCBS_MESSAGES));

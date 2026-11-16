@@ -1,6 +1,6 @@
 import { createServerFn } from '@tanstack/react-start'
 import { setResponseHeader } from '@tanstack/react-start/server'
-import { z } from 'zod'
+import { z } from './validation'
 import { requireSupabaseAuth } from '@/integrations/supabase/auth-middleware'
 import { webhookInput, deliveryMessage } from './webhooks'
 

@@ -1,5 +1,5 @@
 import { createServerFn } from '@tanstack/react-start';
-import { z } from 'zod';
+import { z } from './validation';
 import { appLink } from '@/lib/app-url';
 import { requireSupabaseAuth } from '@/integrations/supabase/auth-middleware';
 import { companySchema, normalizeCnpj, roles, organizationSchema } from './notem';

@@ -1,6 +1,6 @@
 import { createServerFn } from '@tanstack/react-start';
 import { requireSupabaseAuth } from '@/integrations/supabase/auth-middleware';
-import { z } from 'zod';
+import { z } from './validation';
 import { requireOrgMember } from './panel-access';
 import { invoiceOut } from './invoices';
 import type { Json } from '@/integrations/supabase/types';

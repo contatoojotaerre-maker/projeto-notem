@@ -1,4 +1,4 @@
-import { z } from 'zod';
+import { z } from './validation';
 import { CNPJ_PATTERN, isValidCnpj, normalizeCnpj } from './notem';
 
 export function validCpf(value: string) {

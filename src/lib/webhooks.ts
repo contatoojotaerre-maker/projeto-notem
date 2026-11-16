@@ -1,4 +1,4 @@
-import { z } from 'zod'
+import { z } from './validation'
 import ipaddr from 'ipaddr.js'
 import { sanitizeBody } from './integrations'
 export const webhookTypes = ['webhook.teste','nota.autorizada','nota.rejeitada','nota.cancelada','nota.cancelamento_em_analise','nota.cancelamento_indeferido','nota.substituida','nota.cancelada_prefeitura','nota.bloqueada_prefeitura','nota.desbloqueada_prefeitura','nota.manifestacao','empresa.situacao_alterada','certificado.vencendo','certificado.vencido','municipio.disponivel'] as const

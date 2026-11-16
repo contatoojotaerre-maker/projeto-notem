@@ -1,5 +1,5 @@
 import { TAKER_MUNICIPALITY_REJECTION } from './ibscbs';
-import { z } from 'zod';
+import { z } from './validation';
 import type { Database, Json } from '@/integrations/supabase/types';
 import { customerSchema } from './customers';
 import { fiscalDecimal } from './dps';

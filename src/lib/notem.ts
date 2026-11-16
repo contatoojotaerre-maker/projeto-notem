@@ -1,4 +1,4 @@
-import { z } from 'zod';
+import { z } from './validation';
 
 export const roles = ['owner', 'admin', 'operator', 'viewer', 'developer'] as const;
 export const roleLabels = { owner: 'Proprietário', admin: 'Administrador', operator: 'Operador', viewer: 'Leitura', developer: 'Desenvolvedor' };

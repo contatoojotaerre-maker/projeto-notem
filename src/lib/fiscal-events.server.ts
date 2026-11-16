@@ -1,7 +1,7 @@
 import { ruleMessage } from './rule-error';
 // Cancellation (e101101) and fiscal analysis (e101103) requests: durable record before sending,
 // ambiguous replies are confirmed by consulting the event and never re-sent blindly.
-import { z } from 'zod';
+import { z } from './validation';
 import type { Database, Json } from '@/integrations/supabase/types';
 import type { DB, ApiResult } from './api.server';
 import { callTransmissor } from './transmissor.server';
