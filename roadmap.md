@@ -157,12 +157,12 @@
 - [ ] Publicar a atualização do zod — aguarda aprovação do proprietário.
 
 ## Fase 8 — painel da organização (aprovada em 16/11/2026, opção A para o ZIP, decisões 1 a 8)
-- [ ] Banco: pg_trgm no schema extensions; documento normalizado e índices (invoices e nfse_documents); list_org_notes com busca e filtro por emissão ou competência; org_notes_summary somando em numeric; suporte em platform_settings (função de leitura só com os dois campos, WhatsApp só dígitos com 55); EXPLAIN da busca por CNPJ e por nome.
-- [ ] Início (empresas, notas do período, pendências, últimas 10, estado vazio).
-- [ ] Notas: busca, período, CSV (limite de 10.000) e ZIP no navegador (500 notas, lotes de 20, um lote por vez por usuário, limite por minuto, IDs conferidos um a um com recusa do lote inteiro, auditoria do início e do fim ou da interrupção).
-- [ ] Modelos de serviço fora do menu, com o endereço antigo levando ao Início.
-- [ ] Alertas: fonte única, gravidade, filtros, contador no menu, horário de Brasília.
-- [ ] Ajuda e seção Suporte na Administração.
-- [ ] Nomes e menu ("Pronta para emitir", nova ordem).
-- [ ] Testes: totais com centavos exatos (incluindo notas de fora), busca, CSV, ZIP, alertas, matriz de isolamento, 587 testes, tipos e montagem; exame de segurança sem alerta novo pelo pg_trgm.
+- [x] Banco: pg_trgm no schema extensions; documento normalizado e índices (invoices e nfse_documents); list_org_notes com busca e filtro por emissão ou competência; org_notes_summary somando em numeric; suporte em platform_settings (função de leitura só com os dois campos, WhatsApp só dígitos com 55); EXPLAIN da busca por CNPJ e por nome.
+- [x] Início (empresas, notas do período, pendências, últimas 10, estado vazio).
+- [x] Notas: busca, período, CSV (limite de 10.000) e ZIP no navegador (500 notas, lotes de 20, um lote por vez por usuário, limite por minuto, IDs conferidos um a um com recusa do lote inteiro, auditoria do início e do fim ou da interrupção).
+- [x] Modelos de serviço fora do menu, com o endereço antigo levando ao Início.
+- [x] Alertas: fonte única, gravidade, filtros, contador no menu, horário de Brasília.
+- [x] Ajuda e seção Suporte na Administração.
+- [x] Nomes e menu ("Pronta para emitir", nova ordem).
+- [x] Testes: totais com centavos exatos (incluindo notas de fora), busca, CSV, ZIP, alertas, matriz de isolamento, 587 testes, tipos e montagem; exame de segurança sem alerta novo pelo pg_trgm.
 - [ ] Prints não verificados (o proprietário confere com o próprio login). Não publicar antes da aprovação.
