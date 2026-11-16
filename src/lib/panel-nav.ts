@@ -66,3 +66,6 @@ export const FOLLOWS_SELECTOR = ['Início', 'Notas emitidas', 'Notas recebidas',
 export const SHARED_REGISTRY = ['Cadastro', 'Configuração fiscal', 'Serviços', 'Certificado', 'Tomadores', 'Organização'] as const;
 export const SHARED_REGISTRY_NOTICE = 'Cadastro compartilhado entre produção e homologação.';
 export const environmentLabel = (env: string) => env === 'sandbox' ? 'homologação' : 'produção';
+
+/** /dashboard: with a single organization (and not a platform administrator) the panel opens straight on its Início. */
+export function dashboardTarget(w: { isAdmin: boolean; organizations: { slug: string }[] }) { return !w.isAdmin && w.organizations.length === 1 ? w.organizations[0]!.slug : null; }
