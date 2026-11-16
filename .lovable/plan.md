@@ -1,115 +1,64 @@
-# Fase 8: painel da organização
+# notem — Correções e reorganização do painel (plano das duas partes)
 
-Sem emissão pelo painel. Não serão alterados `transmissor/`, as regras fiscais, o leiaute da DPS nem a emissão e o cancelamento. Tudo respeita a organização e o ambiente selecionado (salvo no perfil, como hoje).
+Ordem: Parte 1 → relatório → sua aprovação → Parte 2 → relatório. Nada é publicado sem sua aprovação. Nada muda em `transmissor/`, regras fiscais, DPS, emissão, cancelamento, lógica da sincronização, permissões ou RLS. O contrato `/api/v1` e os webhooks ficam idênticos.
 
-## Decisões propostas (confirme ou ajuste)
+## Parte 1 — Defeitos (sem mudar a estrutura, sem migração)
 
-1. **Período: data de emissão** (`dhEmi`) para todos os números do Início, no horário de Brasília e por dias inteiros.
-   - Mês atual: dia 1 até hoje.
-   - Mês anterior: o mês fechado.
-   - Últimos 30 dias: hoje e os 29 dias anteriores.
-   - Texto abaixo dos números: "Notas emitidas no período, pela data de emissão (horário de Brasília)."
-2. **Valor total emitido:** soma do valor do serviço das notas autorizadas, incluindo as que estão com cancelamento em análise (continuam válidas até a decisão). Ficam fora as canceladas, as canceladas pela prefeitura e as substituídas.
-3. **Canceladas no período:** notas emitidas no período que hoje estão canceladas, pela mesma regra de data. A alternativa seria contar pela data do cancelamento, o que exige uma segunda regra no texto.
-4. **Fora da notem:** notas sincronizadas em que o prestador é uma empresa da organização com prova de posse (regra da Fase 7). Notas recebidas não entram no Início. Notas da notem que também chegam pela sincronização não são contadas duas vezes.
-5. **CSV:** limite de **10.000 notas por planilha**. Acima disso, o painel não gera um arquivo cortado: mostra "O filtro tem N notas; o limite por planilha é 10.000. Reduza o período."
-6. **ZIP:** a recomendação é a **opção A**.
-   - **Opção A (recomendada):** montagem no navegador, em partes.
-     - Limite de **500 notas por ZIP** (cerca de 60 MB com XML e PDF).
-     - O navegador pede os arquivos em lotes de 20 notas a funções do servidor que exigem login. Cada lote confere de novo a organização e a prova de posse, e o ZIP é montado no próprio navegador, com barra de progresso.
-     - Nenhum servidor ultrapassa o tempo limite, e nenhum arquivo fica guardado: não há link, porque não existe arquivo no servidor para expirar.
-     - Se a aba for fechada, o download para.
-   - **Opção B:** geração em segundo plano.
-     - Precisa de uma tabela nova de exportações, um bucket privado, processamento pelo agendador a cada minuto em várias etapas, aviso no painel e link assinado de 15 minutos.
-     - É mais complexa e mais lenta (minutos), e exige montar o ZIP em partes no servidor.
-   - Nas duas opções, acima de 500 notas o painel pede para reduzir o filtro.
-7. **PDF de nota de fora:** hoje o painel **já gera o DANFSe** das notas de fora e das recebidas a partir do XML oficial, então o ZIP inclui esse PDF. O PDF das notas da notem também é gerado na hora (não fica guardado), com a situação atual.
-8. **Gravidade dos alertas:**
-   - Impeditivo: certificado vencido; empresa ativa sem condição de emitir; IBS/CBS a partir de 01/01/2027.
-   - Atenção: certificado vencendo em até 7 dias; IBS/CBS antes de 01/01/2027; nota em verificação há mais de 30 minutos; cancelamento aguardando o governo há mais de 24 horas; erro na sincronização com o ADN; falha de webhook.
-   - Informativo: certificado vencendo em 15 ou 30 dias.
+1. **Telas de erro em português, dentro do painel com menu.** Três telas: "Página não encontrada" + "Voltar ao Início"; "Você não tem acesso a esta página. Fale com o proprietário ou administrador da organização." + "Voltar ao Início"; "Não foi possível carregar esta página." + "Tentar de novo" + "Voltar ao Início". Empresa, nota, integração ou organização inexistente ou de outra organização → "não encontrada" (nunca confirma que existe). Equipe/Organização/Administração sem papel → "sem acesso". Nenhum texto interno aparece. A tela cheia de último recurso (quando nem o painel carrega) e a página de erro do servidor também passam ao português.
+2. **Login volta ao endereço pedido.** Ao mandar para `/entrar`, o destino vai junto (`?destino=`) e fica guardado na aba do navegador para sobreviver ao retorno do Google e à definição de senha do convite. Só aceita caminhos internos: começa com `/`, sem `//`, sem `\`, sem protocolo, sem caracteres de controle; qualquer outro vira o destino padrão. As URLs de retorno do serviço de login não mudam.
+3. **Menu entre 768 e 900 px:** o botão de abrir aparece em toda largura em que o menu fica escondido. Conferência em 375, 768, 820, 900 e 1280 px.
+4. **Detalhe da nota legível:** um único conjunto de rótulos para nota da notem e nota de fora ("Base de cálculo", "Alíquota do ISS", "Valor líquido", "ISS retido"…), datas `dd/mm/aaaa hh:mm`, tomador "Pessoa jurídica / Pessoa física / Estrangeiro", endereço em linhas. O mesmo na aba Tomadores.
+5. **Datas em Brasília em todas as telas** pelo módulo único da Fase 8 (sincronização, chaves, chamadas, entregas, histórico da nota, equipe, convites, certificados, rodapés).
+6. **Códigos fixos em `?aba=`:** empresa `resumo` (hoje "Pronta para emitir"), `cadastro` ("Dados"), `fiscal`, `servicos`, `certificado`, `tomadores`, `recebidas`, `sincronizacao`; integração `chaves`, `webhooks`, `chamadas`, `configuracoes`, `como-testar` (`requisicoes` → `chamadas`). Nomes antigos (com ou sem acento, qualquer caixa) são convertidos e o endereço é reescrito. Alertas, Início e Ajuda geram só os códigos novos. Os rótulos das abas não mudam nesta parte.
+7. **Filtros no endereço:** Notas (busca, empresa, situação, origem, período por, de, até, página), Empresas (busca com espera de 0,35 s, situação, página) e Requisições (de, até, ambiente, situação, empresa, somente erros, página). Voltar do detalhe mantém os filtros. Valores inválidos no endereço são ignorados.
+8. **Atalhos do Início:** "Chamadas com erro" abre Requisições com "Somente erros", últimas 24 horas e o ambiente atual; "Webhooks falhando" abre a sub-aba do ambiente atual.
+9. **Restos:** retirar "Buscar na notem"; webhook "Todas as empresas"; "Empresa não autorizada" → "Empresa não encontrada nesta organização"; sai a coluna "Empresas" da lista de integrações.
+10. **Sem códigos internos:** "Criada por {nome}" e "Última alteração: Painel — {nome}" ou "API — integração {nome}"; município "Passo de Torres/SC"; CNPJ com máscara (inclusive alfanumérico); "Regime especial: Nenhum" (pelo nome).
+11. **PDF em um clique:** "Baixar PDF" já entrega o arquivo. Na nota da notem, "Baixar PDF" e "Baixar XML" juntos, no mesmo lugar da nota de fora.
+12. **Pequenos ajustes:** painel da conta fecha ao clicar fora e com Esc; "Recolher menu" lembrado no navegador (falha de armazenamento é ignorada); janela de cancelamento com "Voltar" e "Confirmar cancelamento"; "Verificar município"; Ajuda usa "Ver sugestão da tabela oficial" e "Usar"; Notas vazia diferencia "Ainda não há notas neste ambiente." de "Nenhuma nota com estes filtros." + "Limpar filtros".
 
-## O que será feito
+**Testes da Parte 1:** destino do login (`//site.com`, `https://…`, `/\site.com`, `javascript:`, `%2F%2F`, tabulação/quebra de linha, vazio, válidos); conversão de todos os `?aba=` antigos; leitura dos filtros do endereço; datas em Brasília; rótulos da nota e do tomador; máscara de CNPJ. Suíte atual, tipos, montagem, OpenAPI 3.1 e matriz (1.558) continuam passando.
 
-### 1. Início
-- **Empresas:** total, ativas e inativas, prontas para emitir e com pendência. A prontidão usa o mesmo cálculo da aba "Pronta para emitir", feito no servidor para todas as empresas de uma vez.
-- **Notas do período**, com seletor (mês atual é o padrão): emitidas (total, pela notem e fora da notem), valor total (com a mesma separação), canceladas e rejeitadas (só da notem). Valores em reais com duas casas.
-- **Pendências:** os 5 alertas mais graves, cada um com link para resolver, e "Ver todos os alertas". Sem pendências, aparece "Tudo em dia".
-- **Últimas 10 notas:** número, empresa, tomador, valor, situação, origem e data. Cada linha abre o detalhe da nota.
-- **Sem empresas:** estado vazio com "Cadastrar empresa", só para quem pode cadastrar.
-- Todos os perfis da organização veem o Início.
+## Parte 2 — Reorganização
 
-### 2. Notas
-- **Busca única:**
-  - número da nota;
-  - chave de acesso (50 caracteres);
-  - documento do tomador (CPF, CNPJ numérico ou alfanumérico, com ou sem pontuação, maiúsculas ou minúsculas; NIF);
-  - nome parcial do tomador, sem diferenciar acentos nem maiúsculas.
-- **Período:** filtro por emissão ou competência, com mês atual, mês anterior, últimos 30 dias ou intervalo personalizado, somado aos filtros de empresa, origem e situação.
-- **Exportar CSV:**
-  - separador `;`, UTF-8 com BOM, vírgula decimal e datas `dd/mm/aaaa`;
-  - colunas pedidas no briefing; a "série" é a série da DPS, a única que a nota tem;
-  - proteção contra fórmula para células que começam com `= + - @`, tab ou retorno.
-- **Baixar ZIP:**
-  - o usuário escolhe XML, PDF ou os dois, sempre com os filtros aplicados;
-  - organização em pastas: `{CNPJ}/NFSe_{numero}_{chave}.xml`, `NFSe_{numero}_{chave}.pdf` e `Cancelamento_{numero}_{chave}.xml` (XML oficial do evento).
-- **Permissão:** quem já vê as notas.
-- **Registro:** cada exportação é registrada na trilha de auditoria existente, com tipo, filtros, quantidade, quem e quando, sem o conteúdo.
+**2.1 Menu (6 itens):** Início · Notas (Emitidas · Recebidas) · Empresas · Alertas (contador) · Integrações · Organização (Dados · Equipe; só Prop, Adm, AP). `/ajuda` → Início; `/equipe` → `/organizacao?aba=equipe`.
 
-### 3. Modelos de serviço
-O item sai do menu, e o endereço antigo leva ao Início, sem erro.
+**2.2 Notas › Recebidas:** notas em que uma empresa da organização é tomadora ou intermediária, com a mesma busca, filtros (empresa, situação, período), planilha e ZIP, a mesma prova de posse e coluna Prestador. Detalhe em tela própria (`/o/{org}/notas/recebidas/{id}`), sem cancelar; "Atualizar com o governo", PDF e XML como hoje. A aba da empresa sai; o endereço antigo leva a Recebidas filtrada pela empresa. Detalhe da nota ganha link para a empresa.
 
-### 4. Alertas
-- **Uma única fonte**, que alimenta a tela Alertas, as Pendências do Início e o contador ao lado do menu (atualizado a cada minuto).
-- **Calculados na hora** (somem sozinhos quando o problema é resolvido):
-  - certificado vencendo ou vencido, pela validade do certificado ativo; os marcos de `certificate_expiry_notices` continuam servindo aos webhooks;
-  - empresa ativa sem condição de emitir, com o motivo;
-  - IBS/CBS pendente em serviço ativo;
-  - nota em verificação há mais de 30 minutos;
-  - cancelamento aguardando o governo há mais de 24 horas;
-  - erro na última sincronização da empresa.
-- **Guardados:** falhas de webhook, já gravadas hoje. Ficam abertas enquanto o endpoint continuar desativado ou sem entrega bem-sucedida depois do alerta; as antigas vão para "Histórico".
-- **Filtros:** por gravidade e por empresa.
-- **Datas:** no horário de Brasília. Hoje a tela usa o horário do navegador; isso será corrigido.
+**2.3 Empresa:** cabeçalho "Empresas › {razão social}", CNPJ, Ativa/Inativa, Desativar/Reativar, "Ver notas desta empresa". Aba **Resumo** (substitui "Pronta para emitir"): situação, o que falta com o botão que resolve (ou "Peça a um proprietário ou administrador"), validade do certificado, última sincronização do ambiente atual, serviços ativos, "Verificar município" e resposta do governo em "Detalhes técnicos". Demais abas: Cadastro, Configuração fiscal, Serviços, Certificado, Tomadores, Sincronização.
 
-### 5. Ajuda
-- **Passo a passo:** 8 passos curtos, cada um com link para a tela correspondente.
-- **Documentação da API:** o bloco fica oculto até a Fase 10.
-- **Suporte:** e-mail e WhatsApp numa seção nova "Suporte" da Administração, editável só pelo administrador da plataforma e registrada na auditoria. Se estiver vazio, o bloco não aparece. Não vou inventar contato.
+**2.4 Integração:** "Integrações › {nome}"; abas Chaves, Webhooks, Chamadas, Configurações, Como testar.
 
-### 6. Nomes e menu
-- A aba "Situação" passa a se chamar "Pronta para emitir".
-- Ordem do menu: Início, Notas, Empresas, Alertas, Integrações, Equipe, Organização, Ajuda.
-- Ao abrir uma organização, a primeira tela já é o Início.
+**2.5 Organização:** Dados (nome; tipo só leitura; "Identificador no painel") e Equipe (tabela atual, sem ações novas).
+
+**2.6 Topo e telas gerais:** botão "?" com a janela pequena (frase da emissão pela API, documentação oculta até existir, suporte por e-mail e `wa.me`, ocultos se vazios); Ajuda e passo a passo removidos, orientações no Resumo e nos estados vazios; **Minha conta** (nome editável, e-mail só leitura, trocar senha com a senha atual e, se o serviço de login exigir, código de confirmação por e-mail; contas que entram só com Google recebem "definir senha" pelo e-mail de recuperação; tema; Sair); marca → Início da organização atual; `/dashboard` vai direto ao Início quando há uma única organização (lista para várias ou AP); trocar de organização mantém a seção (detalhe → lista da seção); Administração esconde as 4 telas "em breve" (endereços → Organizações) e ganha ícones próprios para Suporte e Organizações.
+
+**2.7 Regra única de ambiente:** seguem o seletor Início, Notas (Emitidas e Recebidas), Alertas (incluindo o histórico de falhas de webhook), Chaves (só o ambiente atual), Webhooks (sem sub-abas), Chamadas (sem filtro de ambiente), Sincronização (só o cartão atual) e situação "Pronta para emitir". Cadastro, Configuração fiscal, Serviços, Certificado, Tomadores e Organização mostram "Cadastro compartilhado entre produção e homologação." Faixa em produção "Produção — notas com validade fiscal" e homologação como hoje, sempre visível no celular. Confirmações dizem o ambiente ("Gerar chave de **produção**?") ao gerar/revogar chave, criar/alterar webhook e reenviar entrega. Aviso de cadastro alterado pela homologação continua igual.
+
+**2.8 Glossário** aplicado no painel, mensagens e trechos de `docs/api/` que citam o painel (inclui "Esgotada" em `webhooks.md`). Títulos do navegador = título da página ("Empresa · Group Jota"), um único "voltar" (caminho clicável), páginas de 50 com "Página N de M" em todas as listas.
+
+**2.9 Redirecionamentos:** `ajuda`, `equipe`, `modelos-de-servico`, abas antigas da empresa (inclusive `recebidas`) e da integração, telas "em breve" de `/admin/` — com teste para cada um.
+
+**2.10 Documentação:** `docs/interno/mapa-do-painel.md` com a estrutura nova; trechos de `docs/api/` e descrições do `openapi.yaml` que citam telas, sem mudar o contrato.
+
+**Testes da Parte 2:** todos os redirecionamentos; regra de ambiente por tela da lista; Recebidas com a mesma prova de posse (empresa sem certificado não vê; outra organização 404); matriz de isolamento ampliada com as consultas de Recebidas e o resumo da empresa; suíte atual passando.
+
+## Migração (só na Parte 2) — justificativa
+
+Recebidas em toda a organização com busca, planilha e ZIP exige que a lista, a contagem e a revalidação do ZIP usem a mesma função do banco das Emitidas (regra do projeto: listas e exportações nunca divergem). A migração:
+- acrescenta o sentido "recebidas" à função de filtros das notas (prova de posse avaliada nas regras de acesso de quem consulta, como já é hoje), com busca por número, nome/CNPJ do prestador e chave de acesso;
+- cria os índices necessários (conferidos com EXPLAIN) e revoga/concede permissões como as demais funções.
+Não altera tabelas, permissões, RLS nem regras fiscais.
 
 ## Detalhes técnicos
 
-- **Sem tabelas novas** na opção A. Mudanças no banco:
-  - duas colunas em `platform_settings` (`support_email`, `support_whatsapp`), com verificação de formato, mais uma função só para o administrador da plataforma, com auditoria;
-  - `list_org_notes` ganha `_search` e `_date_field` (emissão ou competência), mantendo a prova de posse;
-  - função nova `org_notes_summary(_org,_env,_from,_to)`, no mesmo padrão de quem chama (RLS do próprio usuário), que conta e soma no banco os valores de `sent_values`/`summary`.
-- **Índices novos:**
-  - `invoices`: `(organization_id, environment, competence)`, `(organization_id, environment, nfse_number)`, `(environment, access_key)`, `(organization_id, environment, (customer_snapshot->>'documento'))` e índice de trigramas no nome normalizado do tomador;
-  - `nfse_documents`: `(environment, provider_cnpj, competence)`, `(environment, provider_cnpj, nfse_number)` e índice de trigramas em `taker_name`.
-  - Continuam em uso `invoices_list`, `nfse_documents_provider_idx`, `nfse_documents_taker_idx` e a chave única por ambiente.
-- **Funções do servidor** (com login, `requireOrgMember` e tudo filtrado pela organização):
-  - `getOrgDashboard`, `getOrgAlerts` (lista e contagem), `exportInvoicesCsv` e `getExportFiles` (lote de 20 notas);
-  - os alertas e a prontidão usam leituras em lote (cerca de 7 consultas por organização) e o cálculo puro `computeReadiness`, já usado hoje.
-- **ZIP:** biblioteca `fflate` (MIT), na versão estável com pelo menos duas semanas, travada exata.
-- **Formatação:** um módulo único para moeda e datas de Brasília, usado pelas telas novas e pelo CSV.
-- **Auditoria das exportações:** `admin_audit_events` com `action='notas.exportacao_csv'` ou `'notas.exportacao_zip'` e `details` sem dados das notas.
+- Erros: componentes `PanelNotFound` / `PanelForbidden` / `PanelError` como `notFoundComponent`/`errorComponent` das rotas filhas de `_authenticated` (renderizam no `<Outlet />` do AppShell); loaders lançam `notFound()` e um erro de acesso tipado; `defaultErrorComponent`/`defaultNotFoundComponent` do roteador e `__root` em português; `src/lib/error-page.ts` traduzido.
+- Destino do login: módulo único `safeInternalPath()`; `_authenticated/route.tsx` recebe só o acréscimo do `search: { destino }` no `redirect` (mudança mínima justificada no layout gerenciado).
+- Notas ganha rota própria (`notas/index.tsx`) com `validateSearch`; Empresas e Integração ganham `validateSearch` com os códigos de aba e filtros; mapa de nomes antigos → códigos em um módulo testado (`panel-tabs.ts`), usado também por `alerts.ts`.
+- Nomes de autores: função do servidor que confere a participação na organização antes de ler os nomes dos membros (padrão já usado nas chaves).
+- Parte 2: `noteFilters` ganha `direction`; CSV e ZIP passam o mesmo campo; nova função do servidor para o detalhe da recebida resolve a empresa pela prova de posse; histórico de webhooks e chamadas recebem o ambiente; `updatePreferences` aceita o nome.
+- AGENTS.md: atualizar as regras de telas/rotas do painel e de destino do login.
 
-## Testes
-- **Início:** os números são conferidos com uma consulta independente nos 3 períodos e nos 2 ambientes, com notas de fora, canceladas, rejeitadas e substituídas.
-- **Busca:** número, chave, CNPJ com e sem pontuação, CNPJ alfanumérico, CPF e nome parcial com acento.
-- **CSV:** BOM, separador, decimais, datas, acentos, proteção contra fórmula e limite.
-- **ZIP:** pastas, eventos de cancelamento, filtros, limite e recusa de notas de outra organização no lote.
-- **Alertas:** cada tipo aparece no cenário certo e some quando resolvido.
-- **Isolamento:** a matriz ganha as funções novas (resumo, busca, alertas, exportação e suporte). Usuário de outra organização recebe 0 registros ou 404. Trago o total (hoje 1.495) e as falhas.
-- **Regras gerais:** os 587 testes, a verificação de tipos e a montagem.
+## Não verificado
 
-## Prints
-O banco do projeto não permite que eu entre no painel com login. Para os prints em produção e homologação, preciso que você me passe um usuário de teste pelo formulário seguro (e-mail e senha), membro de uma organização de teste. Sem isso, entrego os testes automáticos e marco os prints como não verificados.
-
-## Fora desta fase
-Administração (Fase 9), documentação pública (Fase 10), e-mails de alerta e gráficos. Não publico antes da sua aprovação.
+Telas com login não podem ser abertas no navegador de teste (o login deste projeto é gerenciado fora da Lovable); serão conferidas pelo código e por testes, e marcadas como não verificadas no relatório.
