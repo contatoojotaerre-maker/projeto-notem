@@ -44,3 +44,4 @@
 - Public refusal text for fiscal builders comes only from `RuleError`; any other caught error maps to a fixed message so library/internal text never reaches partners.
 - New public tables inherit broad default grants here: every migration revokes anon/authenticated and grants back only what the policies need (column grants for partial updates).
 - Panel server functions that read with the service role first check organization membership or platform admin server-side (`requireOrgMember`).
+- zod is imported only through `src/lib/validation.ts` (lint and test enforced), which installs notem's Portuguese error map and pins the e-mail, date-time and integer rules; field messages win, API path/query/body IDs share the strict UUID rule (`idParam`), and `src/test/validation-messages.snapshot.json` must stay identical, so library updates never change partner-facing text.
