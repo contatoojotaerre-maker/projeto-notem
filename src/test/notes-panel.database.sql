@@ -20,14 +20,14 @@ DECLARE d public.nfse_documents; x public.nfse_documents; t public.invoices; a p
   INSERT INTO public.organization_members(organization_id,user_id,role) VALUES(org,owner,'owner');
   FOR i IN 1..6 LOOP
    a:=t; a.id:=gen_random_uuid(); a.environment:=d.environment; a.status:=sts[i]; a.dps_number:=999999999999900+i; a.dps_id:=left(t.dps_id,30)||lpad((999999999999900+i)::text,15,'0');
-   a.access_key:=CASE WHEN t.access_key IS NULL THEN NULL ELSE left(t.access_key,23)||lpad(i::text,13,'8')||right(t.access_key,14) END; a.external_id:=NULL; a.idempotency_key:=NULL; a.nfse_number:='T8'||i;
+   a.access_key:=CASE WHEN t.access_key IS NULL THEN NULL ELSE left(t.access_key,23)||lpad(i::text,13,'8')||right(t.access_key,14) END; a.external_id:=NULL; a.idempotency_key:=NULL; a.nfse_number:=(98000000+i)::text;
    a.substitutes_invoice_id:=NULL; a.substituted_by_invoice_id:=NULL; a.cancellation:=NULL; a.pending_operation:=NULL; a.emitted_at:='2099-01-10T12:00:00-03:00';
    a.sent_values:=jsonb_set(coalesce(t.sent_values,'{}'),'{servico}',to_jsonb(vals[i]));
    a.customer_snapshot:=jsonb_build_object('nome','José Ação Teste Fase Oito','documento','12.345.678/0001-95');
    INSERT INTO public.invoices SELECT (a).*;
   END LOOP;
   FOR i IN 1..4 LOOP
-   x:=d; x.id:=gen_random_uuid(); x.status:=ests[i]; x.access_key:=left(d.access_key,23)||lpad(i::text,13,'9')||right(d.access_key,14); x.nfse_number:='E8'||i;
+   x:=d; x.id:=gen_random_uuid(); x.status:=ests[i]; x.access_key:=left(d.access_key,23)||lpad(i::text,13,'9')||right(d.access_key,14); x.nfse_number:=(99000000+i)::text;
    x.issued_at:='2099-01-15T09:00:00-03:00'; x.authorized_at:=x.issued_at; x.taker_name:='Ação Externa Fase Oito'; x.taker_document:='98765432000198';
    x.summary:=jsonb_set(coalesce(d.summary,'{}'),'{valores}',coalesce(d.summary->'valores','{}')||jsonb_build_object('valor_servico',evals[i]));
    INSERT INTO public.nfse_documents SELECT (x).*;
@@ -47,7 +47,7 @@ DECLARE d public.nfse_documents; x public.nfse_documents; t public.invoices; a p
   IF public.org_notes_count(org,d.environment,NULL,NULL,NULL,f,tt,'emissao','acao externa')<>4 THEN RAISE EXCEPTION 'TEST_FAIL_search_name_external'; END IF;
   IF public.org_notes_count(org,d.environment,NULL,NULL,NULL,f,tt,'emissao','JOSÉ AÇÃO')<>6 THEN RAISE EXCEPTION 'TEST_FAIL_search_name_notem'; END IF;
   IF public.org_notes_count(org,d.environment,NULL,NULL,NULL,f,tt,'emissao','98.765.432/0001-98')<>4 THEN RAISE EXCEPTION 'TEST_FAIL_search_doc_external'; END IF;
-  IF public.org_notes_count(org,d.environment,NULL,NULL,NULL,f,tt,'emissao','E82')<>1 THEN RAISE EXCEPTION 'TEST_FAIL_search_number'; END IF;
+  IF public.org_notes_count(org,d.environment,NULL,NULL,NULL,f,tt,'emissao','99000002')<>1 THEN RAISE EXCEPTION 'TEST_FAIL_search_number'; END IF;
   IF public.org_notes_count(org,d.environment,NULL,NULL,NULL,f,tt,'emissao','100%_')<>0 THEN RAISE EXCEPTION 'TEST_FAIL_search_wildcards'; END IF;
   RESET ROLE;
   -- A member of another organization sees none of these notes (no proof of possession, other tenant).
@@ -69,6 +69,6 @@ DECLARE d public.nfse_documents; x public.nfse_documents; t public.invoices; a p
   BEGIN PERFORM public.set_platform_support('a@b.co','5548999990000',owner); IF NOT EXISTS (SELECT 1 FROM public.platform_admins WHERE user_id=owner) THEN RAISE EXCEPTION 'TEST_FAIL_support_non_admin'; END IF; EXCEPTION WHEN OTHERS THEN IF position('SEM_PERMISSAO' IN SQLERRM)=0 THEN RAISE; END IF; END;
   RAISE EXCEPTION USING ERRCODE='ZX001', MESSAGE='notes panel assertions passed; rollback';
  EXCEPTION WHEN SQLSTATE 'ZX001' THEN NULL; END;
- IF EXISTS (SELECT 1 FROM public.invoices WHERE nfse_number LIKE 'T8_' AND emitted_at>'2098-12-31') OR EXISTS (SELECT 1 FROM public.organizations WHERE name='Teste painel Fase 8') OR EXISTS (SELECT 1 FROM auth.users WHERE email LIKE 'fase8-%@example.invalid') THEN RAISE EXCEPTION 'TEST_FAIL_rollback'; END IF;
+ IF EXISTS (SELECT 1 FROM public.invoices WHERE nfse_number LIKE '9800000_' AND emitted_at>'2098-12-31') OR EXISTS (SELECT 1 FROM public.organizations WHERE name='Teste painel Fase 8') OR EXISTS (SELECT 1 FROM auth.users WHERE email LIKE 'fase8-%@example.invalid') THEN RAISE EXCEPTION 'TEST_FAIL_rollback'; END IF;
  RAISE NOTICE 'NOTES_PANEL_DB_TESTS_OK';
 END $test$;
