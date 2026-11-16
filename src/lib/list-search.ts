@@ -20,10 +20,16 @@ export function parseNotesSearch(s: Record<string, unknown>): NotesSearch {
 }
 export const NOTES_PAGE = 50;
 export const hasNoteFilters = (s: NotesSearch) => Boolean(s.busca || s.empresa || s.situacao || s.origem || s.de || s.ate);
-/** Filters of list_org_notes for the list, the CSV and the ZIP. */
-export function notesFilters(s: NotesSearch): NoteFilters {
-  return { ...s.empresa ? { company_id: s.empresa } : {}, ...s.situacao ? { status: s.situacao } : {}, ...s.origem ? { origin: s.origem } : {}, ...s.de ? { from: s.de } : {}, ...s.ate ? { to: s.ate } : {}, date_field: s.data === 'competencia' ? 'competencia' : 'emissao', ...s.busca ? { search: s.busca.trim() } : {} };
+export type NotesDirection = 'emitidas' | 'recebidas';
+/** Filters of list_org_notes for the list, the CSV and the ZIP (Recebidas ignore the origin filter). */
+export function notesFilters(s: NotesSearch, direction: NotesDirection = 'emitidas'): NoteFilters {
+  const received = direction === 'recebidas';
+  return { ...s.empresa ? { company_id: s.empresa } : {}, ...s.situacao ? { status: s.situacao } : {}, ...s.origem && !received ? { origin: s.origem } : {}, ...s.de ? { from: s.de } : {}, ...s.ate ? { to: s.ate } : {}, date_field: s.data === 'competencia' ? 'competencia' : 'emissao', ...s.busca ? { search: s.busca.trim() } : {}, direction };
 }
+/** Situations a received note can have (it is always authorized when it reaches the ADN). */
+export const RECEIVED_STATUSES = ['authorized', 'cancellation_pending', 'cancelled', 'substituted', 'cancelled_by_authority'] as const;
+/** Recebidas: same address filters without the origin. */
+export function parseReceivedSearch(s: Record<string, unknown>): NotesSearch { const { origem: _o, ...rest } = parseNotesSearch(s); return rest; }
 export const pageOffset = (pagina: number | undefined, size: number) => ((pagina ?? 1) - 1) * size;
 
 export const COMPANY_SEARCH_SITUATIONS = ['prontas', 'pendencia', 'inativas'] as const;
