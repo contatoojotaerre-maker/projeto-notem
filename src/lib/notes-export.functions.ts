@@ -15,6 +15,7 @@ const scope = z.object({ organization_id: z.string().uuid(), environment: z.enum
 const kinds = z.object({ xml: z.boolean(), pdf: z.boolean() }).refine(k => k.xml || k.pdf, 'Escolha XML, PDF ou os dois.');
 const refused = 'Lote recusado: há nota fora do filtro ou de outra organização.';
 type Caller = Parameters<typeof requireOrgMember>[0];
+const fileBase = (f: NoteFilters) => f.direction === 'recebidas' ? 'notas-recebidas' : 'notas';
 
 async function audit(row: { action: string; actor: string; org: string; target: string | null; details: Record<string, unknown> }) {
   const { supabaseAdmin } = await import('@/integrations/supabase/client.server');
@@ -35,10 +36,11 @@ export const exportInvoicesCsv = createServerFn({ method: 'POST' }).middleware([
   const total = await count(context.supabase, data.organization_id, data.environment, data.filters);
   if (total > CSV_LIMIT) return { ok: false as const, mensagem: csvTooLarge(total) };
   const rows = await listed(context.supabase, data.organization_id, data.environment, data.filters, CSV_LIMIT);
-  const { csvRows } = await import('./notes-export.server'); const { buildNotesCsv } = await import('./notes-csv');
-  const csv = buildNotesCsv(await csvRows(context.supabase, data.organization_id, data.environment, rows));
+  const { csvRows, receivedCsvRows } = await import('./notes-export.server'); const { buildNotesCsv, buildReceivedCsv } = await import('./notes-csv');
+  const received = data.filters.direction === 'recebidas';
+  const csv = received ? buildReceivedCsv(await receivedCsvRows(context.supabase, data.organization_id, data.environment, rows)) : buildNotesCsv(await csvRows(context.supabase, data.organization_id, data.environment, rows));
   await audit({ action: 'notas.exportacao_csv', actor: context.userId, org: data.organization_id, target: null, details: { ambiente: data.environment, filtros: data.filters, quantidade: rows.length } });
-  return { ok: true as const, csv, count: rows.length, filename: `notas-${data.environment === 'sandbox' ? 'homologacao' : 'producao'}-${dayBr()}.csv` };
+  return { ok: true as const, csv, count: rows.length, filename: `${fileBase(data.filters)}-${data.environment === 'sandbox' ? 'homologacao' : 'producao'}-${dayBr()}.csv` };
 });
 
 /** Starts a ZIP: freezes the filters in the audit row and returns the ids the browser will request in batches. */
@@ -50,7 +52,7 @@ export const startZipExport = createServerFn({ method: 'POST' }).middleware([req
   const rows = await listed(context.supabase, data.organization_id, data.environment, data.filters, ZIP_LIMIT);
   const id = crypto.randomUUID();
   await audit({ action: 'notas.exportacao_zip_inicio', actor: context.userId, org: data.organization_id, target: id, details: { ambiente: data.environment, filtros: data.filters, formatos: data.kinds, quantidade: rows.length } });
-  return { ok: true as const, export_id: id, ids: rows.map(r => r.id), filename: `notas-${data.environment === 'sandbox' ? 'homologacao' : 'producao'}-${dayBr()}.zip` };
+  return { ok: true as const, export_id: id, ids: rows.map(r => r.id), filename: `${fileBase(data.filters)}-${data.environment === 'sandbox' ? 'homologacao' : 'producao'}-${dayBr()}.zip` };
 });
 
 /** One batch at a time per user, limited per minute; each id is checked against the frozen filter (organization,
