@@ -2227,6 +2227,8 @@ export type Database = {
           nt009r1_production_starts_at: string
           nt009r2_production_starts_at: string | null
           nt009r2_sandbox_starts_at: string | null
+          support_email: string | null
+          support_whatsapp: string | null
           updated_at: string
           updated_by: string | null
         }
@@ -2237,6 +2239,8 @@ export type Database = {
           nt009r1_production_starts_at?: string
           nt009r2_production_starts_at?: string | null
           nt009r2_sandbox_starts_at?: string | null
+          support_email?: string | null
+          support_whatsapp?: string | null
           updated_at?: string
           updated_by?: string | null
         }
@@ -2247,6 +2251,8 @@ export type Database = {
           nt009r1_production_starts_at?: string
           nt009r2_production_starts_at?: string | null
           nt009r2_sandbox_starts_at?: string | null
+          support_email?: string | null
+          support_whatsapp?: string | null
           updated_at?: string
           updated_by?: string | null
         }
@@ -3338,6 +3344,7 @@ export type Database = {
       list_org_notes: {
         Args: {
           _company?: string
+          _date_field?: string
           _env: Database["public"]["Enums"]["environment"]
           _external_id?: string
           _from?: string
@@ -3345,6 +3352,7 @@ export type Database = {
           _offset?: number
           _org: string
           _origin?: string
+          _search?: string
           _status?: string
           _taker?: string
           _to?: string
@@ -3379,6 +3387,53 @@ export type Database = {
       }
       normalize_cnpj: { Args: { value: string }; Returns: string }
       normalize_municipality_name: { Args: { value: string }; Returns: string }
+      normalize_search_text: { Args: { value: string }; Returns: string }
+      note_amount: { Args: { value: string }; Returns: number }
+      note_taker_document: { Args: { snapshot: Json }; Returns: string }
+      org_notes_count: {
+        Args: {
+          _company?: string
+          _date_field?: string
+          _env: Database["public"]["Enums"]["environment"]
+          _from?: string
+          _org: string
+          _origin?: string
+          _search?: string
+          _status?: string
+          _to?: string
+        }
+        Returns: number
+      }
+      org_notes_query: {
+        Args: {
+          _company: string
+          _date_field: string
+          _external_id: string
+          _from: string
+          _origin: string
+          _search: string
+          _status: string
+          _taker: string
+          _to: string
+        }
+        Returns: string
+      }
+      org_notes_search_terms: { Args: { _search: string }; Returns: string[] }
+      org_notes_summary: {
+        Args: {
+          _env: Database["public"]["Enums"]["environment"]
+          _from: string
+          _org: string
+          _to: string
+        }
+        Returns: {
+          amount: string
+          cancelled: number
+          emitted: number
+          origin: string
+          rejected: number
+        }[]
+      }
       org_proven_cnpj: {
         Args: { _cnpj: string; _org: string }
         Returns: boolean
@@ -3459,6 +3514,13 @@ export type Database = {
           organization_name: string
           requires_explicit_acceptance: boolean
           role: Database["public"]["Enums"]["org_role"]
+        }[]
+      }
+      platform_support_contact: {
+        Args: never
+        Returns: {
+          support_email: string
+          support_whatsapp: string
         }[]
       }
       put_xml_file: {
@@ -3630,6 +3692,8 @@ export type Database = {
           nt009r1_production_starts_at: string
           nt009r2_production_starts_at: string | null
           nt009r2_sandbox_starts_at: string | null
+          support_email: string | null
+          support_whatsapp: string | null
           updated_at: string
           updated_by: string | null
         }
@@ -3649,6 +3713,8 @@ export type Database = {
           nt009r1_production_starts_at: string
           nt009r2_production_starts_at: string | null
           nt009r2_sandbox_starts_at: string | null
+          support_email: string | null
+          support_whatsapp: string | null
           updated_at: string
           updated_by: string | null
         }
@@ -3658,6 +3724,13 @@ export type Database = {
           isOneToOne: true
           isSetofReturn: false
         }
+      }
+      set_platform_support: {
+        Args: { _actor: string; _email: string; _whatsapp: string }
+        Returns: {
+          support_email: string
+          support_whatsapp: string
+        }[]
       }
       special_tax_rule_error: {
         Args: {
