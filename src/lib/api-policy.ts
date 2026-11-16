@@ -23,14 +23,17 @@ export const LIMITS = {
   xml: { max: 60, window: 60 },
   sincronizacao: { max: 30, window: 60 },
   sem_chave: { max: 30, window: 60 },
+  painel_arquivos: { max: 30, window: 60 },
 } as const;
 /** Simultaneous operations. */
-export const SLOTS = { emissao: 2, evento: 1, pdf: 2 } as const;
+export const SLOTS = { emissao: 2, evento: 1, pdf: 2, painel_arquivos: 1 } as const;
 export const SLOT_TTL_SECONDS = 120;
 
 export const limitMessages: Record<string, string> = {
   municipio: 'Aguarde 1 minuto entre verificações do município para esta empresa e ambiente.',
   simultaneas: 'Há operações simultâneas demais para este recurso. Aguarde a anterior terminar.',
+  painel_arquivos: 'Muitos pedidos de arquivos em pouco tempo. Aguarde alguns segundos; o download continua de onde parou.',
+  painel_lote: 'Já há um lote de arquivos sendo preparado para você. Aguarde ele terminar.',
 };
 
 const clean = (p: string) => p.replace(/\/+$/, '') || '/';
