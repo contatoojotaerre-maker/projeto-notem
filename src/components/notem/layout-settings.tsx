@@ -1,3 +1,4 @@
+import { dateTimeBr } from '@/lib/br-format';
 import { useState } from 'react';
 import { queryOptions, useQueryClient, useSuspenseQuery } from '@tanstack/react-query';
 import { useServerFn } from '@tanstack/react-start';
@@ -10,7 +11,7 @@ import { getLayoutStatus, updateNt009Start, updateFiscalPlatformSetting } from '
 
 export const layoutStatusQuery = () => queryOptions({ queryKey: ['layout-status'], queryFn: () => getLayoutStatus(), staleTime: 15_000 });
 const BRT = 'America/Sao_Paulo';
-const show = (iso: string) => new Date(iso).toLocaleString('pt-BR', { timeZone: BRT, dateStyle: 'short', timeStyle: 'short' });
+const show = (iso: string) => dateTimeBr(iso);
 /** datetime-local value in Brasília time (UTC-3, no daylight saving since 2019). */
 const toLocal = (iso: string) => new Date(Date.parse(iso) - 3 * 3600_000).toISOString().slice(0, 16);
 
@@ -75,7 +76,7 @@ export function LayoutSettings() {
     </section>
     <FiscalDateSettings status={s} />
     <AlertDialog open={confirm} onOpenChange={setConfirm}><AlertDialogContent><AlertDialogHeader><AlertDialogTitle>Alterar o início do leiaute NT 009?</AlertDialogTitle>
-      <AlertDialogDescription>Notas de produção enviadas a partir de {value ? new Date(`${value}:00-03:00`).toLocaleString('pt-BR', { timeZone: BRT, dateStyle: 'short', timeStyle: 'short' }) : '-'} usarão o leiaute NT 009. A alteração fica registrada na trilha de auditoria.</AlertDialogDescription></AlertDialogHeader>
+      <AlertDialogDescription>Notas de produção enviadas a partir de {value ? dateTimeBr(`${value}:00-03:00`) : '-'} usarão o leiaute NT 009. A alteração fica registrada na trilha de auditoria.</AlertDialogDescription></AlertDialogHeader>
       <AlertDialogFooter><AlertDialogCancel disabled={busy}>Cancelar</AlertDialogCancel><AlertDialogAction disabled={busy} onClick={e => { e.preventDefault(); void apply(); }}>Confirmar</AlertDialogAction></AlertDialogFooter></AlertDialogContent></AlertDialog>
   </>;
 }
