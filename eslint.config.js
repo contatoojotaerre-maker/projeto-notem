@@ -29,12 +29,20 @@ export default tseslint.config(
               message:
                 "TanStack Start does not use the Next.js `server-only` package. Rename the module to `*.server.ts` or mark it with `@tanstack/react-start/server-only`.",
             },
+            {
+              name: "zod",
+              message: "Import `z` from `@/lib/validation` so notem's Portuguese error messages are always installed.",
+            },
           ],
         },
       ],
       "react-refresh/only-export-components": ["warn", { allowConstantExport: true }],
       "@typescript-eslint/no-unused-vars": "off",
     },
+  },
+  {
+    files: ["src/lib/validation.ts"],
+    rules: { "no-restricted-imports": "off" },
   },
   eslintPluginPrettier,
 );
