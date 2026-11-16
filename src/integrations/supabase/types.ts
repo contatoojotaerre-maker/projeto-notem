@@ -3345,6 +3345,7 @@ export type Database = {
         Args: {
           _company?: string
           _date_field?: string
+          _direction?: string
           _env: Database["public"]["Enums"]["environment"]
           _external_id?: string
           _from?: string
@@ -3406,6 +3407,7 @@ export type Database = {
         Args: {
           _company?: string
           _date_field?: string
+          _direction?: string
           _env: Database["public"]["Enums"]["environment"]
           _from?: string
           _org: string
@@ -3420,6 +3422,7 @@ export type Database = {
         Args: {
           _company: string
           _date_field: string
+          _direction?: string
           _external_id: string
           _from: string
           _origin: string
