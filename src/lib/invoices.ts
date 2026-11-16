@@ -1,5 +1,5 @@
 import { TAKER_MUNICIPALITY_REJECTION } from './ibscbs';
-import { z, objectRule } from './validation';
+import { z } from './validation';
 import type { Database, Json } from '@/integrations/supabase/types';
 import { customerSchema } from './customers';
 import { fiscalDecimal } from './dps';
@@ -65,7 +65,7 @@ export const invoiceRequest=z.strictObject({
  if(Number(Boolean(v.empresa_id))+Number(Boolean(v.empresa_id_externo))!==1)c.addIssue({code:'custom',path:['empresa_id'],message:'Informe empresa_id ou empresa_id_externo, nunca ambos.'});
  if(Number(Boolean(v.servico_id))+Number(Boolean(v.servico_id_externo))!==1)c.addIssue({code:'custom',path:['servico_id'],message:'Informe servico_id ou servico_id_externo, nunca ambos.'});
  if([v.tomador,v.tomador_id,v.tomador_id_externo].filter(Boolean).length>1)c.addIssue({code:'custom',path:['tomador'],message:'Informe somente uma forma de identificar o tomador.'});
-}, objectRule);
+});
 export type InvoiceRequest=z.infer<typeof invoiceRequest>;
 export function invoiceOut(i:Invoice){
  const obj=(v:unknown)=>v&&typeof v==='object'&&!Array.isArray(v)?v as Record<string,Json|undefined>:{};

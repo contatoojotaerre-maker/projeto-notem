@@ -82,10 +82,4 @@ export const isoDateTime = () => z.string().regex(DATETIME_PATTERN, 'Data e hora
  */
 export const integer = () => z.number().refine(Number.isInteger, 'Informe um número inteiro.');
 
-/**
- * Object-level notem rules run in the same situations as before zod 4: after field-rule failures
- * (sizes, formats, integers, refinements), never after a wrong type or option.
- */
-export const objectRule = { when: (p: z.core.ParsePayload) => p.issues.every(i => (i as { continue?: boolean }).continue === true || (i.code === 'invalid_type' && i.expected === 'int')) };
-
 export { z };
