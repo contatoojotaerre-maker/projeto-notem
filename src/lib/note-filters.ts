@@ -17,3 +17,7 @@ export function noteRpcArgs(f: NoteFilters) {
   out['_date_field'] = f.date_field ?? 'emissao'; if (f.search && f.search.trim()) out['_search'] = f.search.trim();
   return out;
 }
+/** A ZIP batch is accepted only when every id is distinct and inside the frozen filter; one foreign id refuses all. */
+export function batchAllowed(allowed: ReadonlySet<string>, ids: readonly string[]) {
+  return ids.length > 0 && new Set(ids).size === ids.length && ids.every(id => allowed.has(id));
+}

@@ -84,6 +84,10 @@ BEGIN
   jsonb_build_object('n','nfse_document_events','q','select count(e.id) from public.nfse_document_events e where e.invoice_id in (select id from public.invoices where organization_id=$1) or exists(select 1 from public.nfse_documents d where d.environment=e.environment and d.access_key=e.access_key and ((d.invoice_id is null and d.provider_cnpj=$2) or d.taker_document=$2 or d.intermediary_document=$2))','k','org'),
   jsonb_build_object('n','adn_sync_cursors','q','select count(cnpj) from public.adn_sync_cursors where cnpj=$2','k','org'),
   jsonb_build_object('n','list_org_notes(T)','q','select count(*) from public.list_org_notes($1,''production'')','k','org'),
+  -- Fase 8 panel: search/count/summary keep the organization scope and proof of possession
+  jsonb_build_object('n','list_org_notes(T, busca CNPJ)','q','select count(*) from public.list_org_notes($1,''production'',_search=>$2)','k','org'),
+  jsonb_build_object('n','org_notes_count(T)','q','select public.org_notes_count($1,''production'')','k','org'),
+  jsonb_build_object('n','org_notes_summary(T)','q','select coalesce(sum(emitted),0) from public.org_notes_summary($1,''production'',''2000-01-01'',''2100-01-01'')','k','org'),
   jsonb_build_object('n','api_rate_limit_overrides','q','select count(*) from public.api_rate_limit_overrides','k','platform_only'),
   jsonb_build_object('n','admin_audit_events','q','select count(*) from public.admin_audit_events','k','platform_only'),
   jsonb_build_object('n','system_heartbeats','q','select count(*) from public.system_heartbeats','k','platform_only'),
@@ -154,6 +158,9 @@ BEGIN
   jsonb_build_object('n','RPC ibscbs_service_rule_error','q','select public.ibscbs_service_rule_error(''010501'',''000001'',''100501'',null)','a',all_auth),
   jsonb_build_object('n','RPC ibscbs_regime_default','q','select public.ibscbs_regime_default(1)','a',all_auth),
   jsonb_build_object('n','RPC set_fiscal_platform_setting','q','select public.set_fiscal_platform_setting(''ibscbs_required_production_from'',''2026-12-01'',$3)','a','[]'),
+  -- Fase 8: support contact is read and written only by the server (service role), never directly by users
+  jsonb_build_object('n','RPC platform_support_contact','q','select count(*) from public.platform_support_contact()','a','[]'),
+  jsonb_build_object('n','RPC set_platform_support','q','select count(*) from public.set_platform_support(''x@y.co'',''5548999990000'',$3)','a','[]'),
   jsonb_build_object('n','alterar data IBS/CBS direto','q','update public.platform_settings set ibscbs_required_production_from=ibscbs_required_production_from','a','[]'),
   jsonb_build_object('n','alterar catalogo ibscbs_classifications','q','update public.ibscbs_classifications set code=code','a','[]'),
   jsonb_build_object('n','apagar catalogo ibscbs_classifications','q','delete from public.ibscbs_classifications','a','[]'),
