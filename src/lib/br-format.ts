@@ -35,7 +35,7 @@ export function dateTimeBr(value: string | null | undefined) {
 }
 /** Brasília calendar day (YYYY-MM-DD) of an instant. */
 export function dayBr(now = Date.now()) { const d = shift(now); return `${d.getUTCFullYear()}-${pad(d.getUTCMonth() + 1)}-${pad(d.getUTCDate())}`; }
-const addDays = (day: string, n: number) => { const d = new Date(`${day}T00:00:00Z`); d.setUTCDate(d.getUTCDate() + n); return d.toISOString().slice(0, 10); };
+export const addDays = (day: string, n: number) => { const d = new Date(`${day}T00:00:00Z`); d.setUTCDate(d.getUTCDate() + n); return d.toISOString().slice(0, 10); };
 
 export const PERIODS = ['mes_atual', 'mes_anterior', 'ultimos_30'] as const;
 export type Period = typeof PERIODS[number];
