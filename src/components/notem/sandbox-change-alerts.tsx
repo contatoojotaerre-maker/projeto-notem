@@ -1,3 +1,4 @@
+import { dateTimeBr } from '@/lib/br-format';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { useServerFn } from '@tanstack/react-start';
 import { useState } from 'react';
@@ -24,7 +25,7 @@ export function SandboxChangeAlerts({ organizationId }: { organizationId: string
     <AlertTitle>Cadastro alterado pela chave de homologação</AlertTitle>
     <AlertDescription>
       <p className="text-muted-foreground">Empresa, configuração fiscal, serviços, tomadores e certificado são os mesmos em homologação e produção.</p>
-      <ul className="mt-2 space-y-1">{data.rows.slice(0, 5).map(r => <li key={r.id}>{sandboxChangeMessage(r.item as SandboxItem, r.action as SandboxAction, r.integration)}{r.company ? ` · ${r.company}` : ''} · {new Date(r.created_at).toLocaleString('pt-BR', { dateStyle: 'short', timeStyle: 'short' })}</li>)}</ul>
+      <ul className="mt-2 space-y-1">{data.rows.slice(0, 5).map(r => <li key={r.id}>{sandboxChangeMessage(r.item as SandboxItem, r.action as SandboxAction, r.integration)}{r.company ? ` · ${r.company}` : ''} · {dateTimeBr(r.created_at)}</li>)}</ul>
       {data.rows.length > 5 && <p className="mt-1 text-muted-foreground">e mais {data.rows.length - 5} alteração(ões).</p>}
       {data.canAcknowledge && <Button className="mt-3" size="sm" variant="outline" disabled={busy} onClick={acknowledge}>{busy && <Loader2 className="animate-spin" />}Marcar como lido</Button>}
     </AlertDescription>

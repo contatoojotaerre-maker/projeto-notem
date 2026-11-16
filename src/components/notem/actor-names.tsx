@@ -16,3 +16,4 @@ export function useMunicipalityName(code: string | null | undefined) {
   return m ? `${m.name}/${m.state}` : null;
 }
 export function MunicipalityName({ code }: { code: string | null | undefined }) { const name = useMunicipalityName(code); return <>{name ?? (code ? `Município IBGE ${code}` : '—')}</>; }
+export function ActorName({ organizationId, id }: { organizationId: string; id: string | null | undefined }) { const name = useActorNames(organizationId, [id]); return <>{name(id)}</>; }

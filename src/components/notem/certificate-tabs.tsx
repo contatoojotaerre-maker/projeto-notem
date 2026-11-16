@@ -10,13 +10,14 @@ import { Label } from '@/components/ui/label';
 import { getCertificates, uploadCertificate, getAgreementQueries, checkAgreement } from '@/lib/certificates.functions';
 import { certificateSituation, cooldownRemaining, formatGovernmentValue, agreementFieldLabels, translateTransmissorError, MAX_CERTIFICATE_BYTES } from '@/lib/certificates';
 import { formatCnpj } from '@/lib/notem';
+import { dateBr, dateTimeBr } from '@/lib/br-format';
 import { useWorkspace } from '@/components/notem/app-shell';
 import { fiscalQuery } from '@/lib/fiscal.queries';
 import { fiscalSchema,validReadinessCertificate } from '@/lib/fiscal';
 import { formatAgreementField,agreementUnavailableMessage } from '@/lib/certificates';
 
-const fmt = (d: string) => new Date(d).toLocaleDateString('pt-BR');
-const fmtTime = (d: string) => new Date(d).toLocaleString('pt-BR');
+const fmt = (d: string) => dateBr(d);
+const fmtTime = (d: string) => dateTimeBr(d);
 
 export function CertificateTab({ companyId, organizationId, canUse }: { companyId: string; organizationId: string; canUse: boolean }) {
   const qc = useQueryClient(); const fetchCerts = useServerFn(getCertificates); const upload = useServerFn(uploadCertificate);
@@ -70,7 +71,7 @@ export function ReadinessTab({ companyId, organizationId, canUse,cnpj }: { compa
   const readiness = useQuery({ queryKey: ['readiness', companyId, environment], queryFn: () => fetchReadiness({ data: { id: companyId, organization_id: organizationId, environment } }) });
   return <div className="space-y-6"><div><p className="text-lg font-medium">{readiness.data ? (readiness.data.pronta_para_emitir ? 'Pronta para emitir' : 'Ainda não está pronta para emitir') : 'Calculando situação…'}</p><p className="text-sm text-muted-foreground">Mesmo cálculo usado pela API, no ambiente {environment === 'production' ? 'Produção' : 'Homologação'}.</p>{readiness.data && <ul className="mt-4 divide-y divide-border border-y border-border">{readiness.data.itens.map(i => <li key={i.item} className="flex items-start justify-between gap-4 py-3"><span className="text-sm">{readinessLabels[i.item] ?? i.item}<span className="block text-xs text-muted-foreground">{i.mensagem}</span></span><span className="status-badge" data-status={i.ok === true ? 'active' : 'inactive'}>{i.ok === true ? 'OK' : i.ok === null ? 'Não verificado' : 'Pendente'}</span></li>)}</ul>}{readiness.data?.avisos?.length ? <ul className="mt-4 space-y-2">{readiness.data.avisos.map(a => <li key={a.item} role="status" className="border-l-2 border-primary pl-3 text-sm">{a.mensagem}</li>)}</ul> : null}</div><div className="rounded-lg border border-border p-6">
     <div className="flex flex-wrap items-center justify-between gap-3"><div><h2 className="text-lg font-medium">Município atendido pelo emissor nacional</h2><p className="text-sm text-muted-foreground">Ambiente: {environment === 'production' ? 'Produção' : 'Homologação'}</p></div>
-      {canUse && <div className="text-right"><Button onClick={run} disabled={busy || remaining > 0}>{busy ? 'Verificando…' : last ? 'Verificar novamente' : 'Verificar'}</Button>{remaining > 0 && <p className="mt-1 text-xs text-muted-foreground">Poderá verificar novamente em {Math.ceil(remaining / 1000)} s</p>}</div>}</div>
+      {canUse && <div className="text-right"><Button onClick={run} disabled={busy || remaining > 0}>{busy ? 'Verificando…' : last ? 'Verificar município novamente' : 'Verificar município'}</Button>{remaining > 0 && <p className="mt-1 text-xs text-muted-foreground">Poderá verificar novamente em {Math.ceil(remaining / 1000)} s</p>}</div>}</div>
     {message && <p role="alert" className="mt-4 text-sm text-destructive">{message}</p>}
     {isLoading ? <p className="mt-4 text-sm text-muted-foreground">Carregando…</p> : !last ? <p className="mt-4 text-sm text-muted-foreground">Ainda não verificado neste ambiente.</p> : <div className="mt-4 space-y-3 text-sm">
       <p className="text-muted-foreground">Consultado em {fmtTime(last.created_at)}</p>
