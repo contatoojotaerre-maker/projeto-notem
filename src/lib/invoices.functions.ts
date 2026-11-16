@@ -3,6 +3,7 @@ import { requireSupabaseAuth } from '@/integrations/supabase/auth-middleware';
 import { z, integer } from './validation';
 import { requireOrgMember } from './panel-access';
 import { invoiceOut } from './invoices';
+import { noteFilterShape, noteRpcArgs } from './note-filters';
 import type { Json } from '@/integrations/supabase/types';
 import type { SupabaseClient } from '@supabase/supabase-js';
 import type { Database } from '@/integrations/supabase/types';
@@ -33,20 +34,13 @@ export const substitutePanelInvoice = createServerFn({ method: 'POST' }).middlew
   return panelOutcome(() => issueSubstitution({ db: supabaseAdmin, organization_id: data.organization_id, env: data.environment, integration_id: null, origin: 'panel', actor: context.userId, setCompany: () => {} }, original.data, data.body as Json, data.idempotency_key, hash), data.id);
 });
 const scope=z.object({organization_id:z.string().uuid(),environment:z.enum(['sandbox','production'])});
-const customerName=(v:unknown)=>v&&typeof v==='object'&&!Array.isArray(v)?(v as Record<string,unknown>):{};
 /** notem and external notes in one list (external: issued outside notem by a company of the organization with proof of possession). */
-export const getPanelInvoices=createServerFn({method:'POST'}).middleware([requireSupabaseAuth]).inputValidator(scope.extend({company_id:z.string().uuid().optional(),status:z.string().max(40).optional(),origin:z.enum(['notem','externa']).optional(),from:z.string().regex(/^\d{4}-\d{2}-\d{2}$/).optional(),to:z.string().regex(/^\d{4}-\d{2}-\d{2}$/).optional(),offset:integer().min(0).default(0)})).handler(async({context,data})=>{
- const [r,companies]=await Promise.all([context.supabase.rpc('list_org_notes',{_org:data.organization_id,_env:data.environment,...Object.fromEntries(Object.entries({_company:data.company_id,_origin:data.origin,_status:data.status,_from:data.from?data.from+'T00:00:00-03:00':undefined,_to:data.to?data.to+'T23:59:59.999-03:00':undefined}).filter(([,v])=>v!=null)) as Record<string,string>,_limit:51,_offset:data.offset}),context.supabase.from('companies').select('id,legal_name').eq('organization_id',data.organization_id).order('legal_name')]);
- if(r.error||companies.error)throw new Error('Não foi possível carregar as notas.');
- const rows=(r.data??[]).slice(0,50);const own=rows.filter(x=>x.origin==='notem').map(x=>x.id),ext=rows.filter(x=>x.origin==='externa').map(x=>x.id);
- const [inv,docs]=await Promise.all([own.length?context.supabase.from('invoices').select('id,status,company_id,nfse_number,external_id,customer_snapshot,sent_values,emitted_at').eq('organization_id',data.organization_id).in('id',own):Promise.resolve({data:[],error:null}),ext.length?context.supabase.from('nfse_documents').select('id,status,nfse_number,taker_name,taker_document,summary,issued_at,authorized_at,created_at').in('id',ext):Promise.resolve({data:[],error:null})]);
- if(inv.error||docs.error)throw new Error('Não foi possível carregar as notas.');
- const out=rows.map(x=>{
-  if(x.origin==='notem'){const i=(inv.data??[]).find(v=>v.id===x.id);return i?{id:i.id,origin:'notem' as const,status:i.status,company_id:i.company_id,number:i.nfse_number,external_id:i.external_id,customer:i.customer_snapshot,values:i.sent_values,emitted_at:i.emitted_at}:null;}
-  const d=(docs.data??[]).find(v=>v.id===x.id);if(!d)return null;const v=customerName(customerName(d.summary)['valores']);
-  return {id:d.id,origin:'externa' as const,status:d.status,company_id:x.company_id,number:d.nfse_number,external_id:null,customer:{nome:d.taker_name,documento:d.taker_document},values:{servico:v['valor_servico']??null},emitted_at:d.issued_at??d.authorized_at??d.created_at};
- }).filter((x):x is NonNullable<typeof x>=>x!==null);
- return {rows:out,more:(r.data?.length??0)>50,companies:companies.data??[]};
+export const getPanelInvoices=createServerFn({method:'POST'}).middleware([requireSupabaseAuth]).inputValidator(scope.extend({...noteFilterShape,offset:integer().min(0).default(0)})).handler(async({context,data})=>{
+ const [r,companies,count]=await Promise.all([context.supabase.rpc('list_org_notes',{_org:data.organization_id,_env:data.environment,...noteRpcArgs(data),_limit:51,_offset:data.offset}),context.supabase.from('companies').select('id,legal_name').eq('organization_id',data.organization_id).order('legal_name'),context.supabase.rpc('org_notes_count',{_org:data.organization_id,_env:data.environment,...noteRpcArgs(data)})]);
+ if(r.error||companies.error||count.error)throw new Error('Não foi possível carregar as notas.');
+ const {enrichNotes}=await import('./notes-list.server');
+ const rows=await enrichNotes(context.supabase,data.organization_id,(r.data??[]).slice(0,50));
+ return {rows,more:(r.data?.length??0)>50,total:Number(count.data??0),companies:companies.data??[]};
 });
 async function readFiles(table:'invoices'|'invoice_fiscal_events'|'nfse_documents'|'nfse_document_events',ids:string[]){const {supabaseAdmin}=await import('@/integrations/supabase/client.server');const {xmlRefs,readXml}=await import('./xml-files.server');const refs=await xmlRefs(supabaseAdmin,table,ids);const out:Record<string,Record<string,string>>={};for(const [id,kinds] of Object.entries(refs))for(const [kind,ref] of Object.entries(kinds))(out[id]??={})[kind]=await readXml(supabaseAdmin,ref);return out;}
 const eventNames:Record<string,string>={'101101':'Cancelamento','101103':'Solicitação de análise fiscal do cancelamento','105102':'Cancelamento por substituição','105104':'Cancelamento deferido','105105':'Cancelamento indeferido','305101':'Cancelamento por ofício','305102':'Bloqueio por ofício','305103':'Desbloqueio por ofício'};
