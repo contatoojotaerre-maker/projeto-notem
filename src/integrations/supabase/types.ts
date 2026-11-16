@@ -3388,7 +3388,6 @@ export type Database = {
       normalize_cnpj: { Args: { value: string }; Returns: string }
       normalize_municipality_name: { Args: { value: string }; Returns: string }
       normalize_search_text: { Args: { value: string }; Returns: string }
-      note_amount: { Args: { value: string }; Returns: number }
       note_taker_document: { Args: { snapshot: Json }; Returns: string }
       org_integration_summary: {
         Args: {
