@@ -20,7 +20,7 @@
 - [x] S-05 registros mínimos (downloads só tipo/tamanho, documentos mascarados, sem contato/endereço); leitura owner/admin/developer
 - [x] S-06 convites com validade de 7 dias, lista e revogação registrada
 - [x] S-07 bibliotecas atualizadas (vite, TanStack/seroval, vitest e transitivas)
-- [ ] S-07b zod v3 → v4 em etapa separada (64 pontos em 17 arquivos; muda mensagens de erro da API) — aguarda aprovação
+- [x] S-07b zod v3 → v4 em etapa separada (64 pontos em 17 arquivos; muda mensagens de erro da API) — aguarda aprovação
 - [x] S-08 corpo limitado a 200 KB durante a leitura (413)
 - [x] S-09..S-18, S-24 (concessões, cabeçalhos, mensagens fixas, idempotência, tetos, retenção, OIDC, auditoria admin, última organização, chave webhook, /status)
 - [x] S-23 passo a passo de rotação da conta notem-painel entregue (execução fica com o proprietário)
@@ -148,9 +148,10 @@
 - [x] Parte 3: painel (selo/filtro de origem, abas Sincronização e Notas recebidas, Atualizar com o governo) e testes. Telas não verificadas com sessão real (projeto sem login de teste disponível).
 
 ## Atualização do zod 3 → 4 (aprovada em 16/11/2026)
-- [ ] Passo 1: retrato "antes" das mensagens de erro (API, painel, servidor e navegador) no zod 3.
-- [ ] Passo 2: mensagens em português da notem para todo erro sem texto próprio; nome de campo não aceito até 60 caracteres e no máximo 5 nomes ("e mais N"); mensagem da notem sempre vence.
-- [ ] Passo 3: zod 4.6.7 exato; strictObject/looseObject; e-mail e data e hora com a regra atual; retrato idêntico ao do passo 2 (exceto UUID fora do padrão).
-- [ ] UUID fora do padrão recusado com 400 REQUISICAO_INVALIDA com campo, inclusive em parâmetros de caminho; registrar no histórico da API em docs/api/.
-- [ ] Confirmar que o módulo de mensagens é carregado em servidor, navegador e funções do Supabase.
-- [ ] Testes, tipos, montagem, OpenAPI, matriz de isolamento e XSD dos exemplos; relatório. Não publicar antes da aprovação.
+- [x] Passo 1: retrato "antes" das mensagens de erro (API, painel, servidor e navegador) no zod 3.
+- [x] Passo 2: mensagens em português da notem para todo erro sem texto próprio; nome de campo não aceito até 60 caracteres e no máximo 5 nomes ("e mais N"); mensagem da notem sempre vence.
+- [x] Passo 3: zod 4.6.7 exato; strictObject/looseObject; e-mail e data e hora com a regra atual; retrato idêntico ao do passo 2 (exceto UUID fora do padrão).
+- [x] UUID fora do padrão recusado com 400 REQUISICAO_INVALIDA com campo, inclusive em parâmetros de caminho; registrar no histórico da API em docs/api/.
+- [x] Confirmar que o módulo de mensagens é carregado em servidor, navegador e funções do Supabase.
+- [x] Testes, tipos, montagem, OpenAPI, matriz de isolamento e XSD dos exemplos; relatório.
+- [ ] Publicar a atualização do zod — aguarda aprovação do proprietário.
