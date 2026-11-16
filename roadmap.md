@@ -165,4 +165,6 @@
 - [x] Ajuda e seção Suporte na Administração.
 - [x] Nomes e menu ("Pronta para emitir", nova ordem).
 - [x] Testes: totais com centavos exatos (incluindo notas de fora), busca, CSV, ZIP, alertas, matriz de isolamento, 587 testes, tipos e montagem; exame de segurança sem alerta novo pelo pg_trgm.
+- [x] Revisão do Início (16/11/2026): só números — Empresas (4 quadros com filtro no endereço), Notas (3 quadros, fora da notem, comparação do mesmo tamanho), Integração 24 h (chamadas, erros 4xx/5xx, webhooks falhando; índice + EXPLAIN), linha de Alertas; valor total removido do banco; matriz de isolamento e testes.
+- [ ] Interrupção do ZIP: fica para a Fase 9 (auditoria trata exportação sem fim após 1 hora como interrompida).
 - [ ] Prints não verificados (o proprietário confere com o próprio login). Não publicar antes da aprovação.

@@ -2,8 +2,8 @@
 
 ## Busca e totais
 - `list_org_notes`/`org_notes_count` montam só os filtros ativos (`org_notes_query`), com a mesma prova de posse para notas de fora da notem. Busca: chave de acesso (estrutura 9+14+27), número (só dígitos), documento do tomador normalizado (`note_taker_document` / `normalize_cnpj`) e nome sem acentos e minúsculo (`normalize_search_text`, trigram em `extensions`).
-- `org_notes_summary` soma `note_amount(...)` (texto decimal → `numeric`, nunca float) e devolve texto com 2 casas. Emitidas = autorizadas, em cancelamento, canceladas e substituídas; o valor soma só autorizadas e em cancelamento. Janela `[de, até)` em dias de Brasília.
-- Teste: `src/test/notes-panel.database.sql` (desfaz tudo). Em 16/11/2026: 0,10 + 0,20 + 1.749,99 + 0,05 = "1750.34" (notem) e 0,10 + 0,20 + 33,33 = "33.63" (de fora), centavos exatos.
+- `org_notes_summary` só conta (sem valores desde a revisão do Início de 16/11/2026): emitidas = autorizadas, em cancelamento, canceladas e substituídas; canceladas; rejeitadas. Janela `[de, até)` em dias de Brasília, pela data de emissão. `note_amount` continua no banco, sem uso pelo Início.
+- Teste: `src/test/notes-panel.database.sql` (desfaz tudo): notem 5/1/1 e de fora 4/1/0.
 
 ## Planos de consulta (EXPLAIN, 16/11/2026, dados reais da Group Jota)
 - CNPJ do tomador (`12.345.678/0001-95`): `Index Scan using invoices_taker_document_idx` e `Index Scan using nfse_documents_taker_norm_idx`, ambos com `Index Cond` no documento normalizado `12345678000195`.
@@ -15,3 +15,12 @@
 
 ## Suporte
 - `platform_settings` continua sem leitura para usuários. `platform_support_contact()` e `set_platform_support()` só executam com service role; o servidor confere login (leitura) ou administrador da plataforma (escrita, auditada).
+
+## Início (revisão de 16/11/2026)
+- Só números: Empresas (Total, Prontas, Com pendência, Inativas → `/empresas?situacao=prontas|pendencia|inativas`), Notas (Emitidas, Canceladas, Rejeitadas), Integração (24 h) e uma linha de Alertas. Sem valor total, últimas notas, “Ativas” ou lista de pendências.
+- Situação da empresa: `companySituation` (`src/lib/home-metrics.ts`), a mesma no Início e no filtro da lista; a prontidão usa o ambiente selecionado.
+- Comparação (`comparisonPeriods`): mês atual × mês anterior do dia 1 ao mesmo dia (limitado ao último dia daquele mês); mês anterior × mês retrasado; últimos 30 × 30 anteriores. Anterior zero → “—”. Compara o número grande (só notas da notem). Canceladas/Rejeitadas: subir usa o tom de atenção; Emitidas: subir usa o tom positivo.
+- Integração: `org_integration_summary(_org, _env, _de, _até)` (invoker; a regra de linha dos registros vale: proprietário, administrador, desenvolvedor e admin da plataforma). Conta só chamadas com chave encontrada e não recusadas com 401. Erro = status ≥ 400 (4xx do pedido, 5xx da notem). O bloco aparece só para esses papéis. “Webhooks falhando” = alertas `webhook_falha` (mesma regra da tela Alertas).
+- Índice `api_logs_org_env_auth_date (organization_id, environment, created_at) INCLUDE (status_code) WHERE key_id IS NOT NULL AND status_code <> 401`. EXPLAIN ANALYZE (16/11/2026, Group Jota, produção, 24 h): `Index Only Scan using api_logs_org_env_auth_date`, `Index Cond` em organização, ambiente e intervalo, `Heap Fetches: 0`, 0,17 ms.
+- Testes: `src/test/home-metrics.test.ts` (períodos, mesmo tamanho, anterior zero, virada de ano, fora da notem, alertas), `src/test/home-integration.database.sql` (por ambiente, por organização e por papel; desfaz tudo) e a matriz de isolamento (`org_integration_summary` por ambiente).
+- Interrupção do ZIP: não registrada agora; a tela de auditoria da Fase 9 tratará exportação sem fim após 1 hora como interrompida.
