@@ -10,7 +10,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Brand } from './brand';
 
-export function AuthScreen({ mode = 'login', destination }: {mode?:'login'|'forgot'|'reset'|'invite';destination?:string}) {
+export function AuthScreen({ mode = 'login', destination }: {mode?:'login'|'forgot'|'reset'|'invite';destination?:string|undefined}) {
   const [email,setEmail]=useState(''); const [password,setPassword]=useState(''); const [confirm,setConfirm]=useState('');
   const [show,setShow]=useState(false); const [remember,setRemember]=useState(true); const [busy,setBusy]=useState(false);const [error,setError]=useState('');const [message,setMessage]=useState('');const [validLink,setValidLink]=useState(false);
   const navigate=useNavigate();const finish=useServerFn(finishSignIn);
