@@ -104,7 +104,7 @@ export async function createInvoice(ctx:ApiCtx):Promise<ApiResult>{
  return issueInvoice(c,v,key,hash,issues);
 }
 const withholdingName:Record<number,'nao_retido'|'retido_tomador'|'retido_intermediario'>={1:'nao_retido',2:'retido_tomador',3:'retido_intermediario'};
-const substitutionHead=z.object({motivo:z.enum(Object.keys(substitutionReasons) as [SubstitutionReason,...SubstitutionReason[]]),justificativa:z.string().max(2000)}).passthrough();
+const substitutionHead=z.looseObject({motivo:z.enum(Object.keys(substitutionReasons) as [SubstitutionReason,...SubstitutionReason[]]),justificativa:z.string().max(2000)});
 /** Builds the substitute request: omitted fields come from the original invoice. */
 export function substitutionBody(original:Invoice,body:Record<string,unknown>){
  const has=(k:string)=>Object.prototype.hasOwnProperty.call(body,k);const os=(original.service_snapshot??{}) as Record<string,unknown>,loc=(original.service_location??{}) as Record<string,unknown>,sent=(original.sent_values??{}) as Record<string,unknown>;

@@ -54,14 +54,14 @@ export const rejectionGuidance:Record<string,{campo:string;mensagem:string}>={
  E0714:{campo:'assinatura',mensagem:'O governo recusou a assinatura da DPS. Confira o certificado e a assinatura no transmissor antes de repetir a emissão.'},
 };
 const selector=z.string().trim().min(1).max(100);
-export const invoiceRequest=z.object({
+export const invoiceRequest=z.strictObject({
  empresa_id:z.string().uuid().optional(),empresa_id_externo:selector.optional(),id_externo:selector.nullable().optional(),
  servico_id:z.string().uuid().optional(),servico_id_externo:selector.optional(),competencia:z.string().regex(/^\d{4}-\d{2}-\d{2}$/).optional(),descricao:z.string().trim().min(1).max(2000).optional(),
  tomador:customerSchema.nullable().optional(),tomador_id:z.string().uuid().optional(),tomador_id_externo:selector.optional(),
- valores:z.object({servico:fiscalDecimal,desconto_incondicionado:fiscalDecimal.optional(),desconto_condicionado:fiscalDecimal.optional()}).strict(),
+ valores:z.strictObject({servico:fiscalDecimal,desconto_incondicionado:fiscalDecimal.optional(),desconto_condicionado:fiscalDecimal.optional()}),
  retencao_iss:z.enum(['nao_retido','retido_tomador','retido_intermediario']).nullable().optional(),aliquota_iss_simples:z.string().regex(/^\d{1,2}(\.\d{1,2})?$/).nullable().optional(),
- local_prestacao:z.object({codigo_municipio:z.string().regex(/^\d{7}$/)}).strict().nullable().optional(),informacoes_complementares:z.string().max(2000).nullable().optional(),
-}).strict().superRefine((v,c)=>{
+ local_prestacao:z.strictObject({codigo_municipio:z.string().regex(/^\d{7}$/)}).nullable().optional(),informacoes_complementares:z.string().max(2000).nullable().optional(),
+}).superRefine((v,c)=>{
  if(Number(Boolean(v.empresa_id))+Number(Boolean(v.empresa_id_externo))!==1)c.addIssue({code:'custom',path:['empresa_id'],message:'Informe empresa_id ou empresa_id_externo, nunca ambos.'});
  if(Number(Boolean(v.servico_id))+Number(Boolean(v.servico_id_externo))!==1)c.addIssue({code:'custom',path:['servico_id'],message:'Informe servico_id ou servico_id_externo, nunca ambos.'});
  if([v.tomador,v.tomador_id,v.tomador_id_externo].filter(Boolean).length>1)c.addIssue({code:'custom',path:['tomador'],message:'Informe somente uma forma de identificar o tomador.'});

@@ -72,10 +72,10 @@ export function page<T>(rows: T[], limite: number, offset: number) { const more 
 // ---------- Company ----------
 const text = (max: number) => z.string().max(max);
 export const externalId = z.string().trim().min(1).max(100).nullable();
-const address = z.object({ cep: z.string().regex(/^\d{8}$/, 'CEP com 8 números.'), logradouro: text(200), numero: text(30), complemento: text(100).nullable().optional(), bairro: text(100), codigo_municipio: z.string().regex(/^\d{7}$/, 'Código IBGE de 7 dígitos.') }).strict();
+const address = z.strictObject({ cep: z.string().regex(/^\d{8}$/, 'CEP com 8 números.'), logradouro: text(200), numero: text(30), complemento: text(100).nullable().optional(), bairro: text(100), codigo_municipio: z.string().regex(/^\d{7}$/, 'Código IBGE de 7 dígitos.') });
 const companyBase = { id_externo: externalId.optional(), cnpj: z.string().max(18).transform(normalizeCnpj).refine(v => v.length === 14, 'CNPJ com 14 caracteres.').refine(isValidCnpj, 'CNPJ inválido.'), razao_social: z.string().trim().min(1).max(200), nome_fantasia: text(200).optional(), inscricao_municipal: text(50).optional(), email: z.union([z.string().email('E-mail inválido.'), z.literal('')]).optional(), telefone: z.string().regex(/^\d{0,15}$/, 'Somente números.').optional(), ativa: z.boolean().optional() };
-export const companyCreate = z.object({ ...companyBase, endereco: address }).strict();
-export const companyPatch = z.object({ ...companyBase, endereco: address.partial().strict() }).partial().strict();
+export const companyCreate = z.strictObject({ ...companyBase, endereco: address });
+export const companyPatch = z.strictObject({ ...companyBase, endereco: address.partial() }).partial();
 export type CompanyRow = { id: string; external_id: string | null; cnpj: string; legal_name: string; trade_name: string; municipal_registration: string; email: string; phone: string; postal_code: string; street: string; number: string; complement: string; district: string; municipality_ibge_code: string; state: string; active: boolean; created_at: string; updated_at: string; municipalities?: { name: string } | null };
 export function companyOut(c: CompanyRow) {
   return { id: c.id, id_externo: c.external_id, cnpj: c.cnpj, razao_social: c.legal_name, nome_fantasia: c.trade_name || null, inscricao_municipal: c.municipal_registration || null, email: c.email || null, telefone: c.phone || null,
@@ -100,11 +100,11 @@ export const specialMap = { nenhum: 0, ato_cooperado: 1, estimativa: 2, microemp
 export const ibsCbsRegimeMap = { pelo_simples: 1, cbs_simples_ibs_regular: 2, regime_regular: 3 } as const;
 export const modeMap = { percentual_simples: 'percent_simples', percentual_por_esfera: 'percent_by_sphere', nao_informar: 'none' } as const;
 const keys = <T extends object>(o: T) => Object.keys(o) as [keyof T & string, ...(keyof T & string)[]];
-export const fiscalIn = z.object({
+export const fiscalIn = z.strictObject({
   simples_nacional: z.enum(keys(simplesMap)), regime_apuracao_simples: z.enum(keys(regimeMap)).nullable().optional(), regime_especial: z.enum(keys(specialMap)),
-  tributos_aproximados: z.object({ modo: z.enum(keys(modeMap)), percentual_simples: pctIn.optional(), federal: pctIn.optional(), estadual: pctIn.optional(), municipal: pctIn.optional() }).strict(),
+  tributos_aproximados: z.strictObject({ modo: z.enum(keys(modeMap)), percentual_simples: pctIn.optional(), federal: pctIn.optional(), estadual: pctIn.optional(), municipal: pctIn.optional() }),
   aliquota_iss_simples: pctIn.optional(), serie_dps: z.unknown().optional(), imprimir_canhoto_danfse: z.boolean().optional(), regime_apuracao_ibscbs: z.enum(keys(ibsCbsRegimeMap)).nullable().optional(),
-}).strict();
+});
 const fiscalFieldMap: Record<string, string> = { simples_nacional_option: 'simples_nacional', simples_nacional_regime: 'regime_apuracao_simples', special_tax_regime: 'regime_especial', approx_taxes_mode: 'tributos_aproximados.modo', approx_simples_percent: 'tributos_aproximados.percentual_simples', approx_federal_percent: 'tributos_aproximados.federal', approx_state_percent: 'tributos_aproximados.estadual', approx_municipal_percent: 'tributos_aproximados.municipal', simples_iss_withholding_percent: 'aliquota_iss_simples', ibscbs_simples_regime: 'regime_apuracao_ibscbs' };
 /** Converts contract values to DB codes and applies the same rules as the panel (E0713, ISS do Simples). */
 export function fiscalToDb(v: z.infer<typeof fiscalIn>, ids: { company_id: string; organization_id: string }, dps_series: number | null, receipt=false) {
@@ -147,10 +147,10 @@ export const taxationMap = { tributavel: 1, imunidade: 2, exportacao: 3, nao_inc
 export const immunityMap = { nao_informado: 0, entes_federativos: 1, templos: 2, partidos_sindicatos_entidades: 3, livros_jornais_papel: 4, fonogramas_musicais: 5 } as const;
 export const withholdingMap = { nao_retido: 1, retido_tomador: 2, retido_intermediario: 3 } as const;
 /** classificacao_ibscbs of a service: notem sends only the classification; the government calculates the values. */
-const ibsCbsServiceIn = z.object({ codigo_classificacao: z.string().regex(/^\d{6}$/, 'Classificação tributária de 6 dígitos.'), indicador_operacao: z.string().regex(/^\d{6}$/, 'Indicador de operação de 6 dígitos.').nullable().optional(), consumidor_final: z.boolean().optional(), atividade_simples: z.string().regex(/^(0[7-9]|1[0-4]|90)$/, 'Atividade do Simples: 07 a 14 ou 90.').nullable().optional(), cst: z.unknown().optional(), descricao: z.unknown().optional(), situacao: z.unknown().optional() }).strict();
+const ibsCbsServiceIn = z.strictObject({ codigo_classificacao: z.string().regex(/^\d{6}$/, 'Classificação tributária de 6 dígitos.'), indicador_operacao: z.string().regex(/^\d{6}$/, 'Indicador de operação de 6 dígitos.').nullable().optional(), consumidor_final: z.boolean().optional(), atividade_simples: z.string().regex(/^(0[7-9]|1[0-4]|90)$/, 'Atividade do Simples: 07 a 14 ou 90.').nullable().optional(), cst: z.unknown().optional(), descricao: z.unknown().optional(), situacao: z.unknown().optional() });
 const serviceBase = { id_externo: externalId.optional(), nome: z.string().trim().min(1).max(200), ativo: z.boolean(), codigo_servico: z.string().regex(/^\d{6}$/, 'Código nacional de 6 dígitos.'), codigo_municipal: text(20).nullable().optional(), codigo_nbs: z.string().regex(/^\d{9}$/, 'Código NBS de 9 dígitos.').nullable().optional(), descricao_padrao: text(2000).optional(), tributacao_iss: z.enum(keys(taxationMap)), tipo_imunidade: z.enum(keys(immunityMap)).nullable().optional(), retencao_iss: z.enum(keys(withholdingMap)), indicador_operacao_ibscbs: z.string().regex(/^\d{6}$/).nullable().optional(), classificacao_ibscbs: ibsCbsServiceIn.nullable().optional(), numero_beneficio_municipal: text(50).nullable().optional(), descricao_servico: z.unknown().optional(), id: z.unknown().optional() };
-export const serviceCreate = z.object({ ...serviceBase, ativo: z.boolean().default(true) }).strict();
-export const servicePatch = z.object(serviceBase).partial().strict();
+export const serviceCreate = z.strictObject({ ...serviceBase, ativo: z.boolean().default(true) });
+export const servicePatch = z.strictObject(serviceBase).partial();
 export type ServiceRow = { id: string; external_id: string | null; name: string; active: boolean; service_code: string; municipal_tax_code: string | null; nbs_code: string | null; default_description: string; iss_taxation: number; immunity_type: number | null; iss_withholding: number; ibscbs_operation_indicator: string | null; municipal_benefit_number: string | null; ibscbs_classification?: string | null; ibscbs_final_consumer?: boolean; simples_activity_code?: string | null; service_codes?: { description: string } | null; ibscbs_classifications?: IbsCbsClassification | null; ibscbs_operation_indicators?: { code: string; active: boolean } | null };
 export function serviceOut(s: ServiceRow) {
   return { id: s.id, id_externo: s.external_id, nome: s.name, ativo: s.active, codigo_servico: s.service_code, descricao_servico: s.service_codes?.description ?? null, codigo_municipal: s.municipal_tax_code, codigo_nbs: s.nbs_code, descricao_padrao: s.default_description,
@@ -181,7 +181,7 @@ export function serviceToDb(v: z.infer<typeof servicePatch>, current: Partial<Se
 }
 
 // ---------- Certificate ----------
-export const certificateIn = z.object({ arquivo_base64: z.string().min(1).max(140_000).regex(/^[A-Za-z0-9+/=\s]+$/, 'Base64 inválido.'), senha: z.string().min(1).max(500) }).strict();
+export const certificateIn = z.strictObject({ arquivo_base64: z.string().min(1).max(140_000).regex(/^[A-Za-z0-9+/=\s]+$/, 'Base64 inválido.'), senha: z.string().min(1).max(500) });
 export const transmissorToContract: Record<string, string> = { SENHA_OU_ARQUIVO_INVALIDO: 'CERTIFICADO_SENHA_OU_ARQUIVO_INVALIDO', ARQUIVO_INVALIDO: 'CERTIFICADO_SENHA_OU_ARQUIVO_INVALIDO', SEM_CHAVE_PRIVADA: 'CERTIFICADO_SEM_CHAVE_PRIVADA', CERTIFICADO_VENCIDO: 'CERTIFICADO_VENCIDO', CERTIFICADO_AINDA_NAO_VALIDO: 'CERTIFICADO_AINDA_NAO_VALIDO', CNPJ_NAO_ENCONTRADO: 'CERTIFICADO_CNPJ_NAO_ENCONTRADO', CNPJ_DIVERGENTE: 'CERTIFICADO_CNPJ_DIVERGENTE' };
 export type CertRow = { holder: string; cnpj: string; issuer: string; serial_number: string; valid_from: string; valid_until: string; status: string };
 export function certificateOut(c: CertRow, now = new Date()) {
