@@ -1,9 +1,9 @@
 import { useEffect, useState } from 'react';
 import { Link } from '@tanstack/react-router';
 import { useSuspenseQuery } from '@tanstack/react-query';
-import { ArrowLeft, Download, ChevronLeft, ChevronRight, Search, Users, Inbox } from 'lucide-react';
+import { Download, ChevronLeft, ChevronRight, Search, Users, Inbox } from 'lucide-react';
 import { PERIODS, periodLabels, periodDays, moneyBr, dateBr, dateTimeBr, type Period } from '@/lib/br-format';
-import { NOTES_PAGE, hasNoteFilters, notesFilters, pageOffset, parseNotesSearch, recallList, rememberList, type NotesSearch } from '@/lib/list-search';
+import { NOTES_PAGE, hasNoteFilters, notesFilters, pageOffset, rememberList, type NotesSearch } from '@/lib/list-search';
 import { NotesExport } from './notes-export';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -17,18 +17,11 @@ import { IbsCbsSection } from './ibs-cbs-values';
 import { InvoiceActions, PendingNotice, cancelReasonLabels, cancellationStatusLabels } from './invoice-actions';
 import { ExternalDetail, OfficialEvents, RefreshButton } from './sync-views';
 import { formatDocument } from '@/lib/note-display';
-import { PdfButton, TakerDetails, TakerSection, ValuesSection, saveXml } from './note-sections';
+import { BackToNotes, PdfButton, TakerDetails, TakerSection, ValuesSection, saveXml } from './note-sections';
 
 const object = (v: unknown): Record<string, unknown> => v && typeof v === 'object' && !Array.isArray(v) ? v as Record<string, unknown> : {};
 const display = (v: unknown) => v == null || v === '' ? '—' : typeof v === 'object' ? JSON.stringify(v) : String(v);
 const eventNames: Record<string, string> = { '101101': 'Cancelamento', '101103': 'Análise fiscal do cancelamento' };
-
-/** "← Notas" back to the list with the filters the user had (kept in the address and remembered in this tab). */
-export function BackToNotes({ slug }: { slug: string }) {
-  const [search, setSearch] = useState<NotesSearch>({});
-  useEffect(() => { setSearch(parseNotesSearch(recallList(`notas:${slug}`))); }, [slug]);
-  return <Button variant="ghost" asChild className="mb-6"><Link to="/o/$orgSlug/notas" params={{ orgSlug: slug }} search={search}><ArrowLeft />Notas</Link></Button>;
-}
 
 export function InvoiceList({ organizationId, slug, search, onSearch }: { organizationId: string; slug: string; search: NotesSearch; onSearch: (next: NotesSearch) => void }) {
   const w = useWorkspace(); const environment = w.profile?.environment ?? 'production';

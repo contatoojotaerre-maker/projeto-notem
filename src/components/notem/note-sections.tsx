@@ -1,6 +1,8 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
+import { Link } from '@tanstack/react-router';
 import { useServerFn } from '@tanstack/react-start';
-import { Download } from 'lucide-react';
+import { ArrowLeft, Download } from 'lucide-react';
+import { parseNotesSearch, recallList, type NotesSearch } from '@/lib/list-search';
 import { toast } from 'sonner';
 import { Button } from '@/components/ui/button';
 import { getPanelInvoicePdf } from '@/lib/invoices.functions';
@@ -28,3 +30,10 @@ export function PdfButton({ organizationId, environment, id, companyId, variant 
   return <Button variant={variant} disabled={busy} onClick={async () => { setBusy(true); try { const r = await get({ data: { organization_id: organizationId, environment, id, ...(companyId ? { company_id: companyId } : {}) } }); await deliverFile(new Blob([Uint8Array.from(atob(r.base64), c => c.charCodeAt(0))], { type: 'application/pdf' }), r.filename); } catch { toast.error('Não foi possível preparar o PDF. Tente novamente.'); } finally { setBusy(false); } }}><Download />{busy ? 'Preparando PDF…' : 'Baixar PDF'}</Button>;
 }
 export function saveXml(xml: string, name: string) { void deliverFile(new Blob([xml], { type: 'application/xml;charset=utf-8' }), name); }
+
+/** "← Notas" back to the list with the filters the user had (kept in the address and remembered in this tab). */
+export function BackToNotes({ slug }: { slug: string }) {
+  const [search, setSearch] = useState<NotesSearch>({});
+  useEffect(() => { setSearch(parseNotesSearch(recallList(`notas:${slug}`))); }, [slug]);
+  return <Button variant="ghost" asChild className="mb-6"><Link to="/o/$orgSlug/notas" params={{ orgSlug: slug }} search={search}><ArrowLeft />Notas</Link></Button>;
+}
