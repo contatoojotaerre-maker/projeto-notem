@@ -153,4 +153,5 @@
 - [x] Passo 3: zod 4.6.7 exato; strictObject/looseObject; e-mail e data e hora com a regra atual; retrato idêntico ao do passo 2 (exceto UUID fora do padrão).
 - [x] UUID fora do padrão recusado com 400 REQUISICAO_INVALIDA com campo, inclusive em parâmetros de caminho; registrar no histórico da API em docs/api/.
 - [x] Confirmar que o módulo de mensagens é carregado em servidor, navegador e funções do Supabase.
-- [ ] Testes, tipos, montagem, OpenAPI, matriz de isolamento e XSD dos exemplos; relatório. Não publicar antes da aprovação.
+- [x] Testes, tipos, montagem, OpenAPI, matriz de isolamento e XSD dos exemplos; relatório.
+- [ ] Publicar a atualização do zod — aguarda aprovação do proprietário.
