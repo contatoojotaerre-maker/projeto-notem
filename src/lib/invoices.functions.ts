@@ -36,11 +36,11 @@ export const substitutePanelInvoice = createServerFn({ method: 'POST' }).middlew
 const scope=z.object({organization_id:z.string().uuid(),environment:z.enum(['sandbox','production'])});
 /** notem and external notes in one list (external: issued outside notem by a company of the organization with proof of possession). */
 export const getPanelInvoices=createServerFn({method:'POST'}).middleware([requireSupabaseAuth]).inputValidator(scope.extend({...noteFilterShape,offset:integer().min(0).default(0)})).handler(async({context,data})=>{
- const [r,companies]=await Promise.all([context.supabase.rpc('list_org_notes',{_org:data.organization_id,_env:data.environment,...noteRpcArgs(data),_limit:51,_offset:data.offset}),context.supabase.from('companies').select('id,legal_name').eq('organization_id',data.organization_id).order('legal_name')]);
- if(r.error||companies.error)throw new Error('Não foi possível carregar as notas.');
+ const [r,companies,count]=await Promise.all([context.supabase.rpc('list_org_notes',{_org:data.organization_id,_env:data.environment,...noteRpcArgs(data),_limit:51,_offset:data.offset}),context.supabase.from('companies').select('id,legal_name').eq('organization_id',data.organization_id).order('legal_name'),context.supabase.rpc('org_notes_count',{_org:data.organization_id,_env:data.environment,...noteRpcArgs(data)})]);
+ if(r.error||companies.error||count.error)throw new Error('Não foi possível carregar as notas.');
  const {enrichNotes}=await import('./notes-list.server');
  const rows=await enrichNotes(context.supabase,data.organization_id,(r.data??[]).slice(0,50));
- return {rows,more:(r.data?.length??0)>50,companies:companies.data??[]};
+ return {rows,more:(r.data?.length??0)>50,total:Number(count.data??0),companies:companies.data??[]};
 });
 async function readFiles(table:'invoices'|'invoice_fiscal_events'|'nfse_documents'|'nfse_document_events',ids:string[]){const {supabaseAdmin}=await import('@/integrations/supabase/client.server');const {xmlRefs,readXml}=await import('./xml-files.server');const refs=await xmlRefs(supabaseAdmin,table,ids);const out:Record<string,Record<string,string>>={};for(const [id,kinds] of Object.entries(refs))for(const [kind,ref] of Object.entries(kinds))(out[id]??={})[kind]=await readXml(supabaseAdmin,ref);return out;}
 const eventNames:Record<string,string>={'101101':'Cancelamento','101103':'Solicitação de análise fiscal do cancelamento','105102':'Cancelamento por substituição','105104':'Cancelamento deferido','105105':'Cancelamento indeferido','305101':'Cancelamento por ofício','305102':'Bloqueio por ofício','305103':'Desbloqueio por ofício'};
