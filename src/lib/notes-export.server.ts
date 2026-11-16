@@ -61,9 +61,9 @@ export async function zipFiles(db: DB, org: string, env: Env, listed: (Listed & 
     let xml: string | null = null, status = '', number: string | null = null, key: string | null = null; let events: { code: string; xml: string | null }[] = [];
     if (l.origin === 'notem') {
       const r = await db.from('invoices').select('id,organization_id,environment,status,nfse_number,access_key').eq('id', l.id).eq('organization_id', org).eq('environment', env).maybeSingle();
-      if (r.error || !r.data) throw new Error('ZIP_NOTE_REFUSED');
-      status = r.data.status; number = r.data.nfse_number; key = r.data.access_key; xml = await notes.invoiceXml(db, r.data);
-      if (cancelled.includes(status)) events = await Promise.all(CANCEL_CODES.map(async code => ({ code, xml: code === '101101' ? await notes.invoiceEventXml(db, r.data, code) : key ? await notes.documentEventXml(db, env, key, code) : null })));
+      if (r.error || !r.data) throw new Error('ZIP_NOTE_REFUSED'); const row = r.data;
+      status = row.status; number = row.nfse_number; key = row.access_key; xml = await notes.invoiceXml(db, row);
+      if (cancelled.includes(status)) events = await Promise.all(CANCEL_CODES.map(async code => ({ code, xml: code === '101101' ? await notes.invoiceEventXml(db, row, code) : key ? await notes.documentEventXml(db, env, key, code) : null })));
     } else {
       const ext = await notes.loadExternalNote(db, org, env, l.id); if (!ext) throw new Error('ZIP_NOTE_REFUSED');
       status = ext.doc.status; number = ext.doc.nfse_number; key = ext.doc.access_key; xml = await notes.documentXml(db, ext.doc);
