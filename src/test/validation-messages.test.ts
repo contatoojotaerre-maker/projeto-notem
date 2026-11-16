@@ -13,6 +13,7 @@ import { customerCreate, customerSchema } from '@/lib/customers';
 import { eventBody } from '@/lib/fiscal-events.server';
 import { loadCompany } from '@/lib/api.server';
 import { createCompany } from '@/lib/api-companies.server';
+import { loadInvoice } from '@/lib/api-invoices.server';
 import { apiCtx, tableDb } from './fake-db';
 import { runFormCases } from './validation-cases';
 
@@ -64,6 +65,7 @@ async function snapshot() {
   api['servidor: POST /empresas pelo manipulador da API'] = await run(() => createCompany(apiCtx(tableDb({}).db, { ...comp, razao_social: 5, x: 1 }, '/api/v1/empresas') as never));
   for (const [n, id] of [['caminho: /empresas/abc', 'abc'], ['caminho: /empresas/{UUID fora do padrão}', OLD], ['caminho: /empresas/{UUID válido inexistente}', U]] as const)
     api[n] = await run(() => loadCompany(apiCtx(tableDb({ companies: null }).db, {}, `/api/v1/empresas/${id}`, { id }) as never));
+  api['caminho: /notas/{UUID fora do padrão}'] = await run(() => loadInvoice(apiCtx(tableDb({ invoices: null }).db, {}, `/api/v1/notas/${OLD}`, { invoiceId: OLD }) as never));
   return { api, formularios: runFormCases() };
 }
 

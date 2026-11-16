@@ -313,7 +313,16 @@
         }
       ]
     },
-    "nota: UUID fora do padrão": "OK",
+    "nota: UUID fora do padrão": {
+      "status": 400,
+      "codigo": "REQUISICAO_INVALIDA",
+      "detalhes": [
+        {
+          "campo": "empresa_id",
+          "mensagem": "Identificador inválido (UUID)."
+        }
+      ]
+    },
     "nota: opção inválida": {
       "status": 400,
       "codigo": "REQUISICAO_INVALIDA",
@@ -516,19 +525,39 @@
       ]
     },
     "caminho: /empresas/abc": {
-      "status": 404,
-      "codigo": "NAO_ENCONTRADO",
-      "detalhes": []
+      "status": 400,
+      "codigo": "REQUISICAO_INVALIDA",
+      "detalhes": [
+        {
+          "campo": "id",
+          "mensagem": "Identificador inválido (UUID)."
+        }
+      ]
     },
     "caminho: /empresas/{UUID fora do padrão}": {
-      "status": 404,
-      "codigo": "NAO_ENCONTRADO",
-      "detalhes": []
+      "status": 400,
+      "codigo": "REQUISICAO_INVALIDA",
+      "detalhes": [
+        {
+          "campo": "id",
+          "mensagem": "Identificador inválido (UUID)."
+        }
+      ]
     },
     "caminho: /empresas/{UUID válido inexistente}": {
       "status": 404,
       "codigo": "NAO_ENCONTRADO",
       "detalhes": []
+    },
+    "caminho: /notas/{UUID fora do padrão}": {
+      "status": 400,
+      "codigo": "REQUISICAO_INVALIDA",
+      "detalhes": [
+        {
+          "campo": "id",
+          "mensagem": "Identificador inválido (UUID)."
+        }
+      ]
     }
   },
   "formularios": {
@@ -610,7 +639,15 @@
         }
       ]
     },
-    "empresa: UUID fora do padrão": "OK",
+    "empresa: UUID fora do padrão": {
+      "exibida": "Identificador inválido (UUID).",
+      "detalhes": [
+        {
+          "campo": "organization_id",
+          "mensagem": "Identificador inválido (UUID)."
+        }
+      ]
+    },
     "empresa: município sem 7 dígitos (mensagem da notem)": {
       "exibida": "Selecione um município.",
       "detalhes": [
