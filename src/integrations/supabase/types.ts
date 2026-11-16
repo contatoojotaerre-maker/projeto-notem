@@ -3390,6 +3390,19 @@ export type Database = {
       normalize_search_text: { Args: { value: string }; Returns: string }
       note_amount: { Args: { value: string }; Returns: number }
       note_taker_document: { Args: { snapshot: Json }; Returns: string }
+      org_integration_summary: {
+        Args: {
+          _env: Database["public"]["Enums"]["environment"]
+          _from: string
+          _org: string
+          _to: string
+        }
+        Returns: {
+          calls: number
+          client_errors: number
+          server_errors: number
+        }[]
+      }
       org_notes_count: {
         Args: {
           _company?: string
@@ -3427,7 +3440,6 @@ export type Database = {
           _to: string
         }
         Returns: {
-          amount: string
           cancelled: number
           emitted: number
           origin: string
