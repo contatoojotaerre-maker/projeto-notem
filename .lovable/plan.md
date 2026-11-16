@@ -1,88 +1,81 @@
-# Fase C · Parte 3 — IBS/CBS na NFS-e
+# Atualização do zod 3 → 4 (sem mudar comportamento nem contrato)
 
-Princípio mantido: a notem envia só a classificação; o governo calcula e devolve os valores. Nada é enviado ao governo para teste; não toco em `transmissor/`.
+## O que já conferi (sem alterar o projeto)
+Comparei, numa cópia temporária fora do projeto, as mesmas validações com o zod 3.25.76 (atual) e o 4.6.7.
 
-## O que já existe hoje (conferido)
-- Catálogo de indicadores de operação com 26 códigos: faltam os 7 novos e os 5 que saem ainda estão ativos.
-- Perfil de serviço já tem "indicador de operação" e NBS (o único serviço cadastrado, 01.05.01 da Group Jota, está sem NBS e sem indicador).
-- A API de serviços já expõe `indicador_operacao_ibscbs`.
-- O DANFSe já tem o bloco "TRIBUTAÇÃO IBS/CBS", mas com dois campos errados (ver 3.5).
-- Nenhuma nota emitida até agora tem competência a partir de 01/10/2026 com o grupo IBS/CBS; nenhuma rejeição E0855 registrada.
+- **Versão:** `zod@4.6.7` é a última estável, publicada em 12/10/2026 (35 dias). As ferramentas do TanStack já usam o zod 4 internamente e o `@hookform/resolvers` 5.2.2 aceita 3 ou 4. **Nenhuma outra dependência precisa mudar.**
+- **Mensagens em inglês hoje (o ponto principal):** em 40 casos típicos, **todas** as mensagens padrão do zod chegam ao parceiro em inglês, e mudam de texto na v4. Exemplos:
+  - campo ausente: "Required" → v4 "Invalid input: expected string, received undefined";
+  - campo desconhecido: "Unrecognized key(s) in object: 'x'" → v4 `Unrecognized key: "x"`;
+  - opção inválida: "Invalid enum value. Expected 'pj' | 'pf' | 'estrangeiro', received 'z'";
+  - texto longo: "String must contain at most 2000 character(s)";
+  - UUID: "Invalid uuid"; formato (ex.: `competencia`): "Invalid"; tipo errado: "Expected string, received number".
+  - No painel também aparecem: nome do serviço vazio e descrição do webhook longa mostram texto em inglês.
+  - As mensagens que a notem já escreve (CNPJ inválido, E0712, "nunca ambos" etc.) ficam iguais nas duas versões.
+- **Quais erros aparecem e em que ordem:** iguais nas duas versões em todos os casos testados, inclusive em combinações (campo desconhecido junto com uma regra da notem).
+- **UUIDs:**
+  - No banco, todos os identificadores de todas as tabelas, inclusive os usuários, já seguem a regra rígida (0 fora do padrão).
+  - Nos testes, só `src/test/webhooks.test.ts` usa `00000000-0000-0000-0000-000000000001/…02`, em 2 linhas. Os demais já são válidos.
+  - Na documentação, o exemplo de webhook do `openapi.yaml` usa esses mesmos dois.
+  - **Única mudança de resultado esperada:** um UUID fora do padrão (ex.: `00000000-0000-0000-0000-000000000001`) hoje passa na API e cai em 404. Com a regra rígida, passa a ser recusado com 400 antes de consultar. Como nenhum ID real fica fora do padrão, isso não afeta nenhum registro existente.
+- **E-mail:** comparei as duas regras em 3 milhões de combinações aleatórias e em casos reais (com `+`, subdomínio, `.com.br`, `.gov.br`, apóstrofo e maiúsculas): **0 divergências**. Hoje há só 2 e-mails gravados (1 empresa e 1 usuário), e os dois passam nas duas versões.
+- **Data e hora (`.datetime()`, só nos filtros de logs do painel):** fuso `-03:00` é recusado nas duas versões, como hoje. **Diferença:** a v4 recusa hora sem segundos (`2026-11-15T10:00Z`), que hoje é aceita. O painel sempre envia com segundos, mas manterei o critério atual exatamente.
+- **`.default()` (26 usos):** todos os padrões são valores fixos que já passam na própria validação (`''`, `false`, `true`, `0`, `null`, `[]`, `'all'`). Não há `.default()` dentro de campo opcional nem de `.partial()`, então o resultado é o mesmo. Não precisa de `.prefault()`.
+- **`z.record`:** o único uso já tem chave e valor.
+- **`superRefine`:** os 4 usos só acrescentam erros com caminho fixo e não usam `ctx.path`. Funcionam iguais na v4.
+- **Códigos de erro e `error.errors`:** nenhum código da notem depende dos nomes do zod e não há uso de `error.errors`. Tudo lê `error.issues`, mensagem e caminho.
+- **Números:** valores fiscais são texto decimal. A v4 recusa `Infinity` e inteiros acima do limite seguro. Isso só seria alcançável por chamadas forjadas do painel (JSON não transmite `Infinity`), e esses valores já eram recusados por limites ou pelo banco.
 
-## Decisões para aprovar
-1. **Data de obrigatoriedade x E0855.** O Anexo VI v1.04.01 (regra E0855) diz que o grupo é obrigatório para competência a partir de **01/10/2026**. O briefing pede padrão 01/01/2027. Proposta: manter 01/01/2027, mas com **uma data por ambiente** (homologação e produção), para o administrador poder antecipar só a homologação, se o governo começar a cobrar lá. A rejeição E0855 vira uma mensagem clara avisando que a data precisa ser antecipada.
-2. **Bloco IBS/CBS no DANFSe.** A NT 008 v1.02 (item 2.3) só permite suprimir os blocos de tomador, destinatário, intermediário e ISSQN; o de IBS/CBS não está na lista. Proposta: **o bloco sempre aparece**, preenchido quando a NFS-e tiver o grupo e com "-" quando não tiver (como hoje). Se preferir ocultar quando não houver o grupo, eu faço, mas isso diverge do modelo oficial.
-3. **Regime de apuração do IBS/CBS.** O Anexo VI tem três valores: 1 (pelo Simples), **2 (CBS pelo Simples e IBS pelo regime regular, para quem ultrapassa o sublimite)** e 3 (regular). Proposta: oferecer só 1 e 3, como no briefing, e documentar o 2 como não suportado nesta fase.
-4. **Compatibilidade da API.** `indicador_operacao_ibscbs` (campo atual) continua aceito e devolvido, marcado como obsoleto, com o mesmo valor de `classificacao_ibscbs.indicador_operacao`. Se os dois vierem com valores diferentes, a resposta é 422.
-5. **Outros casos não suportados que achei nas regras** (além dos que estão no briefing), bloqueados com mensagem clara:
-   - subitens que exigem `tpOper`: 25.05, 15.09, 17.12 e 10.05 (E0903);
-   - CST 800 e 811 (transferência/ajuste de crédito, que dependem de NFS-e de crédito/débito, recusadas pelo release 1);
-   - cClassTrib 550016/550022 (exigem Tributação Regular) e 515001 (Diferimento), que já estão no briefing.
-   Os 820xxx (documentos informativos) ficam permitidos.
+## Como vou fazer (em 3 passos, para provar que nada mudou)
+1. **Retrato "antes" (zod 3, sem mudar código):** um teste novo registra as respostas de erro de todas as validações da API (empresas, endereço, configuração fiscal, serviços, certificado, notas, tomadores, cancelamento/substituição) e dos formulários do painel (empresa, organização, configuração fiscal, serviço, webhook, integração). Ele cobre a mensagem exibida, para entradas inválidas típicas: campo ausente, tipo errado, UUID inválido, e-mail inválido, opção inválida, campo desconhecido, texto longo, formato, lista vazia e números fora do limite. O retrato fica guardado.
+2. **Mensagens em português controladas pela notem (ainda no zod 3):** um único módulo da notem passa a definir o texto de todo erro sem mensagem própria. Todos os arquivos passam a importar o zod por ele. As mensagens que já escrevemos não mudam. Gero o retrato de novo e entrego a diferença 1 → 2: é a lista do que estava em inglês e como ficou. Proposta de textos:
 
-## 3.1 Catálogos (somente leitura, versionados)
-- **Classificações (cClassTrib):** as 73 linhas com NFSE = Sim do CSV, com todos os campos pedidos (CST e descrição, exige tributação, reduções IBS/CBS, tributação regular, crédito presumido, diferimento, tipo de receita bruta do Simples, tipo de doação, URL da legislação).
-- **Indicadores (cIndOp v1.03):** os 28 com indNFSe = S; os 7 novos entram; 030103, 030104, 050103, 050104 e 080101 ficam **inativos**, sem ser apagados. Também guardo o "local de incidência na NFS-e" de cada código.
-- **Correlação (Anexo VIII):** 209 itens, com NBS, cClassTrib e cIndOp alternativos. Usada só como sugestão.
-- Registro de versão de cada catálogo: arquivo de origem, versão, SHA-256, quantidade de linhas e data de carga. A carga é idempotente e gerada a partir dos arquivos em `docs/referencias/rtc/`.
+| Situação | Hoje | Novo |
+|---|---|---|
+| Campo ausente | Required | Campo obrigatório. |
+| Tipo errado | Expected string/number/boolean/object/array… | Informe um texto. / Informe um número. / Informe true ou false. / Informe um objeto JSON. / Informe uma lista. |
+| Inteiro | Expected integer, received float | Informe um número inteiro. |
+| Campo desconhecido | Unrecognized key(s) in object: 'x' | Campo não aceito: x. (vários: "Campos não aceitos: x, y.") |
+| Opção inválida | Invalid enum value. Expected … | Valor inválido. Use: pj, pf ou estrangeiro. |
+| Texto curto | String must contain at least 1 character(s) | Informe um valor. (N>1: "Use pelo menos N caracteres.") |
+| Texto longo | String must contain at most N character(s) | Use no máximo N caracteres. |
+| Número fora do limite | Number must be … | Informe um valor maior/menor ou igual a N. |
+| Lista | Array must contain … | Informe pelo menos/no máximo N item(ns). |
+| UUID | Invalid uuid | Identificador inválido (UUID). |
+| E-mail sem texto próprio | Invalid email | E-mail inválido. |
+| Formato | Invalid | Formato inválido. |
+| Data e hora | Invalid datetime | Data e hora inválidas. |
+| Qualquer outro caso | Invalid input / Invalid | Valor inválido. |
 
-## 3.2 Cadastros
-- **Configuração fiscal (só ME/EPP):** "Regime de apuração do IBS/CBS", com "Pelo Simples Nacional (DAS)" como padrão e "Pelo regime regular". As empresas ME/EPP existentes recebem o padrão. Para não optante e MEI o campo não se aplica.
-- **Perfil de serviço**, em uma seção nova "IBS/CBS":
-  - NBS;
-  - classificação (cClassTrib, só do catálogo; o CST vem junto);
-  - indicador de operação: obrigatório se a classificação exige tributação (E0860) e proibido se não exige (E0859); códigos inativos não podem ser escolhidos;
-  - "Consumo pessoal" (desligado por padrão);
-  - código de atividade do Simples, com as regras de "se e somente se": 16.01 → 10, 99.04.01 → 11, 7.02/7.05 → 12 ou 13.
-- **Sugestão do Anexo VIII:** ao escolher o código de serviço, aparece um quadro com NBS, classificação, indicador e atividade, e o botão "Aplicar sugestão". Nunca aplico sozinho. Um valor sugerido que a NFS-e não aceita (por exemplo cIndOp 080101/130101/130201, cClassTrib 011001/011005) ou que esta fase bloqueia aparece como "não aplicável" e não é copiado. "IMP" (atividade impeditiva no Simples) aparece como alerta.
-- **Serviço "a revisar":** um serviço com indicador inativo ou com classificação incoerente recebe essa marca na lista e na situação da empresa.
-- **Endereço do tomador:** aviso fixo no cadastro de tomadores e na emissão: "o município do tomador deve ser o mesmo do cadastro na Receita Federal". Também documentado na API.
-- As regras ficam no esquema compartilhado (painel e API) e também em gatilhos do banco.
+Números com separador brasileiro ("1.024"). Os códigos (`REQUISICAO_INVALIDA`, `REGRA_DE_NEGOCIO`), os status e os campos (`campo`, incluindo `corpo`) não mudam.
 
-## 3.3 Situação da empresa ("pronta para emitir")
-- Datas novas, só o administrador da plataforma altera, com confirmação e auditoria, na página "Leiaute fiscal": obrigatoriedade do IBS/CBS (por ambiente, padrão 01/01/2027) e vigência do perfil `nt009r2` (por ambiente, vazia).
-- **Antes da data:** aviso "Classificação IBS/CBS pendente — obrigatória a partir de 01/01/2027". Ele vai num campo novo `avisos` e **não bloqueia** (hoje qualquer item pendente bloquearia).
-- **A partir da data:** a classificação completa entra nos itens da empresa (regime, para ME/EPP) e dos serviços ativos.
-- A rotina diária que já existe recalcula a situação, então `empresa.situacao_alterada` dispara quando a data é ultrapassada.
+3. **Troca para o zod 4.6.7:** adapto o módulo de mensagens ao formato da v4 e gero o retrato de novo. Ele tem de ser **idêntico ao do passo 2**, com uma única diferença esperada e já explicada: o UUID fora do padrão. Ajustes no código:
+   - `.strict()` (16) → `z.strictObject`; `.passthrough()` (2) → `z.looseObject`. Campo desconhecido continua recusado com o mesmo código, campo e mensagem; o retrato confirma.
+   - E-mail: fixo a regra atual como regra da notem, para não depender de mudanças futuras do zod.
+   - Data e hora dos filtros de logs: regra da notem idêntica à de hoje (Z obrigatório, segundos opcionais, frações livres). Faço um teste com os 9 casos que comparei.
+   - `.uuid()` continua rígido na API (sem `z.guid()`).
+   - Mantenho `.uuid()`, `.email()` e `superRefine` na forma atual, que a v4 ainda aceita. Assim a mudança fica menor; uma troca só de forma pode ficar para depois.
+   - Uma regra da verificação do código impede importar o zod diretamente fora do módulo da notem.
 
-## 3.4 DPS
-- **Perfil `nt009r1`:** grupo `IBSCBS` somente quando a competência for igual ou posterior à data de obrigatoriedade do ambiente, nesta ordem: `indFinal` (se marcado) → `cIndOp` (se exige tributação) → `indDest`=0 → `valores/trib/CST` → `cClassTrib` → `gIBSCBS` vazio (se exige tributação).
-- **Validação antes da numeração** (422, sem consumir número):
-  - NBS presente (E0322);
-  - CST igual aos 3 primeiros dígitos (E0959);
-  - indicador de operação de acordo com "exige tributação" (E0859/E0860);
-  - tomador com CPF/CNPJ e endereço nacional quando houver tributação e o indicador apontar para o endereço do tomador ou do destinatário (E0239/E0243). Isso também impede o caso de tomador estrangeiro;
-  - casos não suportados.
-- A classificação vai junto com a nota no momento da numeração, para a remontagem/conversão usar exatamente o que foi validado.
-- **Leiaute antigo (`nt004`):** não monta o grupo. Se a competência exigir IBS/CBS e o leiaute vigente ainda for o antigo, a nota é bloqueada antes da numeração. Uma DPS antiga que precisar do grupo não é convertida: fica como "não enviada".
-- **Perfil `nt009r2` (desligado):** `regApIBSCBSSN` em `regTrib`, `cAtvSN` em `cServ`, `indDest`/`dest` na raiz, `opSimpNac`=4 aceito só nesse perfil (sem opção no cadastro por enquanto). Testado pela estrutura do Anexo VI, porque ainda não existe XSD.
-- **Rejeições traduzidas:** E0855, E0322, E0859, E0860, E0958, E0959, E0960/E0961, E0239/E0243 e a divergência de município do tomador com o cadastro da Receita. Esta última ainda tem código "EXXX" no Anexo VI, então será reconhecida pelo texto oficial.
+## Testes e dados de teste
+- Os 563 testes atuais devem passar sem mudar o que conferem. Única alteração de dado: em `src/test/webhooks.test.ts`, os 2 UUIDs fora do padrão viram UUIDs válidos. Também troco o exemplo do `openapi.yaml` pelos mesmos valores válidos, só na documentação.
+- Testes novos: o retrato (comparado com o arquivo guardado), "nenhuma mensagem do retrato contém texto padrão do zod", a lista de e-mails, os casos de data e hora e o UUID rígido.
+- Rodo de novo: suíte completa, verificação de tipos, montagem do app, OpenAPI 3.1, matriz de isolamento (1.495 verificações) e os exemplos de DPS no esquema oficial do release 1.
 
-## 3.5 Leitura, API, webhooks e DANFSe
-- **Leitura da NFS-e autorizada e das notas do ADN:** localidade de incidência, `vBC`, alíquotas, reduções e alíquotas efetivas, `vIBSTot`, IBS UF/Mun, `vCBS`, `vTotNF`, `vReceitaBrutaSN`, `gTribSN`, `verCalcIBSCBS`. Ficam guardados com a nota da notem e com as notas externas/recebidas.
-- **API:**
-  - objeto `ibs_cbs` (somente leitura, null sem o grupo) em notas, notas recebidas e webhooks;
-  - `classificacao_ibscbs` em serviços e `regime_apuracao_ibscbs` na configuração fiscal;
-  - `avisos` na situação da empresa;
-  - novos `GET /catalogos/classificacoes-tributarias`, `GET /catalogos/indicadores-operacao` (com inativos sob parâmetro) e `GET /catalogos/sugestao-classificacao?codigo_servico=`.
-  - Tudo documentado em `docs/api/` (OpenAPI 3.1 validado), explicando que os valores são calculados pelo governo.
-- **Painel:** os valores de IBS/CBS aparecem no detalhe da nota.
-- **DANFSe**, conferido campo a campo com a NT 008 v1.02:
-  - "Exclusões e Reduções da Base de Cálculo" passa a ser a soma oficial (desconto incondicionado + ajuste + ISSQN + PIS + COFINS); hoje mostra só o ajuste;
-  - "Total do IBS/CBS" passa a ser `vIBSTot + vCBS`; hoje aparece "-".
+## Documentação
+- `docs/interno/validacao-mensagens.md`: regra "mensagens sempre da notem", tabela acima e lista do que mudou de inglês para português.
+- Regra técnica no AGENTS.md: validação importa o zod só pelo módulo da notem.
+- `docs/api/`: nenhuma página promete os textos antigos em inglês. Acrescento só uma nota de que as mensagens de `detalhes` são em português e podem ser melhoradas, enquanto `codigo` e `campo` são estáveis.
 
-## Testes
-- Carga dos catálogos: contagens (73/28/209) e os 5 inativos.
-- Cada regra do cadastro e da validação antes da numeração, com um teste por regra.
-- DPS com IBS/CBS validadas no XSD do release 1: Simples e não optante; tributação integral; redução (200052); isenção/imunidade sem `cIndOp`/`gIBSCBS` (410999). Antes da data, a DPS sai sem o grupo.
-- `nt009r2` pela estrutura do Anexo VI; troca de datas e permissão do administrador.
-- Leitura e DANFSe com uma NFS-e de exemplo com o grupo, nos dois formatos.
-- API: contrato e OpenAPI; isolamento entre organizações reexecutado.
+## Fora do escopo
+- Regras fiscais, banco, permissões, migrações e `transmissor/`: nada muda.
+- Sem publicação antes da sua aprovação.
 
-## Detalhes técnicos
-- Migrações: `ibscbs_classifications`, `ibscbs_service_correlations`, `fiscal_catalog_versions`; colunas novas em `ibscbs_operation_indicators`, `company_fiscal_settings`, `company_service_profiles` e `platform_settings`. Todas com revogação de anon/authenticated e grants mínimos.
-- Funções: `set_*` de datas auditadas e só para administrador da plataforma; RPC de busca estendida.
-- Código: `src/lib/ibscbs.ts` (regras compartilhadas puras), `dps.ts`/`dps-layout.ts` (grupo e perfil r2), `nfse-layout-read.ts`/`nfse-xml.ts` (leitura), `api-contract.ts`, `readiness`, `danfse.server.ts`, rotas `/api/v1/catalogos/*`, `fiscal-tabs.tsx`, `layout-settings.tsx`.
-- Documentação: `docs/interno/ibs-cbs.md` e regra em `src/lib/AGENTS.md`.
+## Pontos para você decidir
+1. Os textos da tabela (posso ajustar qualquer um).
+2. Aceitar a recusa (400) de UUID fora do padrão na API, que hoje cai em 404.
+3. Erro de validação interna das funções do painel (só acontece se alguém burlar o formulário): hoje a tela mostra um bloco técnico. Com o passo 2 o conteúdo fica em português, mas o formato continua. Proponho não mexer agora.
 
-Ao final: relatório e pausa. Publico só depois da sua aprovação.
+## Não será possível verificar
+- Telas com login real: o login deste projeto não pode ser simulado aqui. Confiro a montagem e as validações dos formulários por testes.
+- Chamadas com chave real.
