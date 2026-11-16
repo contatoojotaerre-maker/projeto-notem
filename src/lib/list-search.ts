@@ -39,13 +39,14 @@ export function parseCompaniesSearch(s: Record<string, unknown>): CompaniesSearc
 }
 
 export const LOG_STATUSES = [200, 400, 401, 403, 404, 409, 413, 422, 429, 500, 502, 503] as const;
-export type LogsSearch = { de?: string | undefined; ate?: string | undefined; ultimas?: '24h' | undefined; ambiente?: 'sandbox' | 'production' | undefined; status?: number | undefined; empresa?: string | undefined; erros?: 1 | undefined; pagina?: number | undefined};
-/** Requisições filters (also used by the Início shortcut: ?erros=1&ultimas=24h&ambiente=…). */
+export type LogsSearch = { de?: string | undefined; ate?: string | undefined; ultimas?: '24h' | undefined; status?: number | undefined; empresa?: string | undefined; erros?: 1 | undefined; pagina?: number | undefined};
+/** Chamadas filters (also used by the Início shortcut: ?erros=1&ultimas=24h). The environment is always the one of the
+ *  selector at the top, so an old ?ambiente= is dropped. */
 export function parseLogsSearch(s: Record<string, unknown>): LogsSearch {
   const status = Number(s['status']); const de = day(s['de']), ate = day(s['ate']);
-  return clean({ de, ate: ate && (!de || ate >= de) ? ate : undefined, ultimas: pick(s['ultimas'], ['24h'] as const), ambiente: pick(s['ambiente'], ['sandbox', 'production'] as const), status: (LOG_STATUSES as readonly number[]).includes(status) ? status : undefined, empresa: typeof s['empresa'] === 'string' && UUID.test(s['empresa']) ? s['empresa'] : undefined, erros: s['erros'] === 1 || s['erros'] === '1' || s['erros'] === true ? 1 as const : undefined, pagina: page(s['pagina']) });
+  return clean({ de, ate: ate && (!de || ate >= de) ? ate : undefined, ultimas: pick(s['ultimas'], ['24h'] as const), status: (LOG_STATUSES as readonly number[]).includes(status) ? status : undefined, empresa: typeof s['empresa'] === 'string' && UUID.test(s['empresa']) ? s['empresa'] : undefined, erros: s['erros'] === 1 || s['erros'] === '1' || s['erros'] === true ? 1 as const : undefined, pagina: page(s['pagina']) });
 }
-/** Instant range of the Requisições filters (Brasília days; "últimas 24 horas" wins over the days). */
+/** Instant range of the Chamadas filters (Brasília days; "últimas 24 horas" wins over the days). */
 export function logsRange(s: LogsSearch, now = Date.now()): { from?: string; until?: string } {
   if (s.ultimas === '24h') return { from: new Date(now - 86_400_000).toISOString() };
   const out: { from?: string; until?: string } = {};
