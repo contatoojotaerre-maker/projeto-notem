@@ -423,7 +423,7 @@ Contagem a partir de qualquer tela da organização, com o menu aberto (computad
 
 | De | Para | Como |
 |---|---|---|
-| Início › quadros de Empresas | Empresas | `?situacao=prontas|pendencia|inativas` |
+| Início › quadros de Empresas | Empresas | `?situacao=prontas`, `pendencia` ou `inativas` |
 | Início › Chamadas / Erros / Webhooks | Integração | `?aba=requisicoes` / `?aba=webhooks`, ou lista de Integrações |
 | Início › "Ver alertas" | Alertas | seção `alertas` |
 | Início vazio › "Cadastrar empresa" | Nova empresa | `/o/{org}/empresas/nova` |
