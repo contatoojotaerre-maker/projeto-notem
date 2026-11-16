@@ -16,7 +16,7 @@ export function AuthScreen({ mode = 'login', destination }: {mode?:'login'|'forg
   const navigate=useNavigate();const finish=useServerFn(finishSignIn);
   // Validated when saved and again when read back (takeDestination), then deleted.
   const goOn=()=>navigate({href:takeDestination(),replace:true});
-  if(typeof window!=='undefined'&&destination&&(mode==='login'||mode==='invite'))rememberDestination(destination);
+  useEffect(()=>{if(destination&&(mode==='login'||mode==='invite'))rememberDestination(destination);},[destination,mode]);
   useEffect(()=>{
     const hash=new URLSearchParams(window.location.hash.slice(1));
     const type=hash.get('type');
