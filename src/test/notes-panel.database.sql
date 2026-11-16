@@ -9,12 +9,13 @@ DECLARE d public.nfse_documents; x public.nfse_documents; t public.invoices; a p
  SELECT dd.* INTO d FROM public.nfse_documents dd WHERE dd.invoice_id IS NULL AND EXISTS (SELECT 1 FROM public.companies c JOIN public.company_certificates cc ON cc.company_id=c.id AND cc.organization_id=c.organization_id WHERE public.normalize_cnpj(c.cnpj)=dd.provider_cnpj AND public.normalize_cnpj(cc.cnpj)=dd.provider_cnpj) ORDER BY dd.created_at LIMIT 1;
  IF d.id IS NULL THEN RAISE NOTICE 'NOTES_PANEL_DB_TESTS_SKIPPED (no external note with proof of possession)'; RETURN; END IF;
  SELECT c.organization_id INTO org FROM public.companies c JOIN public.company_certificates cc ON cc.company_id=c.id AND cc.organization_id=c.organization_id WHERE public.normalize_cnpj(c.cnpj)=d.provider_cnpj LIMIT 1;
- SELECT * INTO t FROM public.invoices WHERE organization_id=org AND environment=d.environment ORDER BY created_at LIMIT 1;
- SELECT user_id INTO owner FROM public.organization_members WHERE organization_id=org AND role='owner' LIMIT 1;
+ -- Any invoice of the organization serves as a template (copied into the external note's environment).
+ SELECT * INTO t FROM public.invoices WHERE organization_id=org ORDER BY (environment=d.environment) DESC, created_at LIMIT 1;
+ SELECT user_id INTO owner FROM public.organization_members WHERE organization_id=org AND role IN ('owner','admin') ORDER BY role LIMIT 1;
  IF t.id IS NULL OR owner IS NULL THEN RAISE NOTICE 'NOTES_PANEL_DB_TESTS_SKIPPED (no invoice/owner)'; RETURN; END IF;
  BEGIN
   FOR i IN 1..6 LOOP
-   a:=t; a.id:=gen_random_uuid(); a.status:=sts[i]; a.dps_number:=999999999999900+i; a.dps_id:=left(t.dps_id,30)||lpad((999999999999900+i)::text,15,'0');
+   a:=t; a.id:=gen_random_uuid(); a.environment:=d.environment; a.status:=sts[i]; a.dps_number:=999999999999900+i; a.dps_id:=left(t.dps_id,30)||lpad((999999999999900+i)::text,15,'0');
    a.access_key:=CASE WHEN t.access_key IS NULL THEN NULL ELSE left(t.access_key,23)||lpad(i::text,13,'8')||right(t.access_key,14) END; a.external_id:=NULL; a.idempotency_key:=NULL; a.nfse_number:='T8'||i;
    a.substitutes_invoice_id:=NULL; a.substituted_by_invoice_id:=NULL; a.cancellation:=NULL; a.pending_operation:=NULL; a.emitted_at:='2099-01-10T12:00:00-03:00';
    a.sent_values:=jsonb_set(coalesce(t.sent_values,'{}'),'{servico}',to_jsonb(vals[i]));
