@@ -1,5 +1,5 @@
 import { createServerFn } from '@tanstack/react-start';
-import { z } from './validation';
+import { z, email as zEmail } from './validation';
 import { appLink } from '@/lib/app-url';
 import { requireSupabaseAuth } from '@/integrations/supabase/auth-middleware';
 import { companySchema, normalizeCnpj, roles, organizationSchema } from './notem';
@@ -94,7 +94,7 @@ export const getTeam = createServerFn({method:'POST'}).middleware([requireSupaba
   if(!admin.data&&!role.data)throw new Error('Acesso não autorizado.');
   const result=await context.supabase.rpc('organization_team',{org_id:data.organization_id});if(result.error){console.error('notem: database error',result.error.code);throw new Error('Não foi possível carregar ou salvar os dados. Tente novamente.')};return result.data ?? [];
 });
-export const inviteFirstMember = createServerFn({method:'POST'}).middleware([requireSupabaseAuth]).inputValidator(z.object({organization_id:z.string().uuid(),email:z.string().email().transform(v=>v.trim().toLowerCase()),role:z.enum(roles)})).handler(async({context,data})=>{
+export const inviteFirstMember = createServerFn({method:'POST'}).middleware([requireSupabaseAuth]).inputValidator(z.object({organization_id:z.string().uuid(),email:zEmail().transform(v=>v.trim().toLowerCase()),role:z.enum(roles)})).handler(async({context,data})=>{
   const allowed=await context.supabase.rpc('is_platform_admin');if(allowed.error||!allowed.data)throw new Error('Acesso não autorizado.');
   const {supabaseAdmin}=await import('@/integrations/supabase/client.server');
   const members=await supabaseAdmin.from('organization_members').select('id',{count:'exact',head:true}).eq('organization_id',data.organization_id);if(members.error){console.error('notem: database error',members.error.code);throw new Error('Não foi possível carregar ou salvar os dados. Tente novamente.')};if(members.count)throw new Error('Esta organização já tem membros. Convites adicionais estarão disponíveis em uma próxima fase.');

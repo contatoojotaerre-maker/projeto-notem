@@ -1,6 +1,6 @@
 // Pure, client-safe translation between the public API v1 contract (Portuguese, readable values)
 // and the current database codes. Shared by API routes, the panel and tests.
-import { z } from './validation';
+import { z, email as zEmail } from './validation';
 import { DEFAULT_IBSCBS_REQUIRED_FROM, IBSCBS_REGIME_LABELS, allowedIbsCbsRegimes, ibsCbsMissingMessage, ibsCbsPendingWarning, serviceIbsCbsIssues, serviceNeedsReview, todayBr, type IbsCbsClassification, type ServiceIbsCbs } from './ibscbs';
 import { fiscalSchema, specialTaxRuleError, validReadinessCertificate } from './fiscal';
 import { agreementUnavailableMessage, certificateSituation } from './certificates';
@@ -73,7 +73,7 @@ export function page<T>(rows: T[], limite: number, offset: number) { const more 
 const text = (max: number) => z.string().max(max);
 export const externalId = z.string().trim().min(1).max(100).nullable();
 const address = z.strictObject({ cep: z.string().regex(/^\d{8}$/, 'CEP com 8 números.'), logradouro: text(200), numero: text(30), complemento: text(100).nullable().optional(), bairro: text(100), codigo_municipio: z.string().regex(/^\d{7}$/, 'Código IBGE de 7 dígitos.') });
-const companyBase = { id_externo: externalId.optional(), cnpj: z.string().max(18).transform(normalizeCnpj).refine(v => v.length === 14, 'CNPJ com 14 caracteres.').refine(isValidCnpj, 'CNPJ inválido.'), razao_social: z.string().trim().min(1).max(200), nome_fantasia: text(200).optional(), inscricao_municipal: text(50).optional(), email: z.union([z.string().email('E-mail inválido.'), z.literal('')]).optional(), telefone: z.string().regex(/^\d{0,15}$/, 'Somente números.').optional(), ativa: z.boolean().optional() };
+const companyBase = { id_externo: externalId.optional(), cnpj: z.string().max(18).transform(normalizeCnpj).refine(v => v.length === 14, 'CNPJ com 14 caracteres.').refine(isValidCnpj, 'CNPJ inválido.'), razao_social: z.string().trim().min(1).max(200), nome_fantasia: text(200).optional(), inscricao_municipal: text(50).optional(), email: z.union([zEmail('E-mail inválido.'), z.literal('')]).optional(), telefone: z.string().regex(/^\d{0,15}$/, 'Somente números.').optional(), ativa: z.boolean().optional() };
 export const companyCreate = z.strictObject({ ...companyBase, endereco: address });
 export const companyPatch = z.strictObject({ ...companyBase, endereco: address.partial() }).partial();
 export type CompanyRow = { id: string; external_id: string | null; cnpj: string; legal_name: string; trade_name: string; municipal_registration: string; email: string; phone: string; postal_code: string; street: string; number: string; complement: string; district: string; municipality_ibge_code: string; state: string; active: boolean; created_at: string; updated_at: string; municipalities?: { name: string } | null };

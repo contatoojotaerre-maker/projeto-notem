@@ -1,4 +1,4 @@
-import { z } from './validation';
+import { z, email as zEmail } from './validation';
 
 export const roles = ['owner', 'admin', 'operator', 'viewer', 'developer'] as const;
 export const roleLabels = { owner: 'Proprietário', admin: 'Administrador', operator: 'Operador', viewer: 'Leitura', developer: 'Desenvolvedor' };
@@ -27,7 +27,7 @@ export const companySchema = z.object({
   id: z.string().uuid().optional(), organization_id: z.string().uuid(),
   cnpj: z.string().transform(normalizeCnpj).refine(isValidCnpj, 'CNPJ inválido.'),
   legal_name: z.string().trim().min(1, 'Informe a razão social.'), trade_name: z.string().default(''),
-  municipal_registration: z.string().default(''), email: z.union([z.string().email('E-mail inválido.'),z.literal('')]),
+  municipal_registration: z.string().default(''), email: z.union([zEmail('E-mail inválido.'),z.literal('')]),
   phone: z.string().transform(digits), postal_code: z.string().transform(digits).refine(v => v === '' || v.length === 8, 'CEP inválido.'),
   street: z.string(), number: z.string(), complement: z.string(), district: z.string(),
   municipality_ibge_code: z.string().regex(/^\d{7}$/, 'Selecione um município.'),
