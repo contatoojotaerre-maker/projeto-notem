@@ -1,6 +1,8 @@
 import { readFileSync } from 'node:fs';
 import { describe, expect, it } from 'vitest';
-import { DISPLAY_NAME_MESSAGE, PASSWORD_MIN, displayNameError, displayNameSchema, hasPasswordLogin, passwordChangeError, passwordChangeSchema, passwordMessages, passwordUpdateMessage } from '@/lib/account';
+import { DISPLAY_NAME_MESSAGE, displayNameError, displayNameSchema, hasPasswordLogin, passwordChangeError, passwordChangeSchema, passwordMessages } from '@/lib/account';
+import { passwordRuleMessages } from '@/lib/password-rule';
+import { authErrorMessage } from '@/lib/auth-messages';
 
 describe('Minha conta: nome', () => {
   it.each(['', '   ', 'A', ' A ', 'x'.repeat(81)])('recusa %j', v => { expect(displayNameError(v)).toBe(DISPLAY_NAME_MESSAGE); });
@@ -9,20 +11,17 @@ describe('Minha conta: nome', () => {
 });
 
 describe('Minha conta: trocar senha', () => {
-  it('mínimo igual ao cadastro (8)', () => {
-    expect(PASSWORD_MIN).toBe(8);
-    expect(passwordChangeError({ current: 'atual123', next: '1234567', confirm: '1234567' })).toBe(passwordMessages.short);
-    expect(passwordChangeError({ current: 'atual123', next: '12345678', confirm: '12345678' })).toBeNull();
-    expect(passwordChangeSchema.safeParse({ current: 'x', next: '1234567' }).success).toBe(false);
+  it('usa a regra única de senha (10+, maiúscula, minúscula, número, especial)', () => {
+    expect(passwordChangeError({ current: 'Atual#2026x', next: 'Senha#123', confirm: 'Senha#123' })).toBe(passwordRuleMessages.length);
+    expect(passwordChangeError({ current: 'Atual#2026x', next: 'senha#12345', confirm: 'senha#12345' })).toBe(passwordRuleMessages.upper);
+    expect(passwordChangeError({ current: 'Atual#2026x', next: 'Senha#12345', confirm: 'Senha#12345' })).toBeNull();
+    expect(passwordChangeSchema.safeParse({ current: 'x', next: 'Senha12345' }).success).toBe(false);
+    expect(passwordChangeSchema.safeParse({ current: 'x', next: 'Senha#12345' }).success).toBe(true);
   });
   it('exige a senha atual, confirmação igual e senha nova diferente', () => {
-    expect(passwordChangeError({ current: '', next: '12345678', confirm: '12345678' })).toBe(passwordMessages.current);
-    expect(passwordChangeError({ current: 'a', next: '12345678', confirm: '12345679' })).toBe(passwordMessages.confirm);
-    expect(passwordChangeError({ current: '12345678', next: '12345678', confirm: '12345678' })).toBe(passwordMessages.same);
-  });
-  it('erro desconhecido do serviço de login vira mensagem genérica', () => {
-    expect(passwordUpdateMessage('qualquer_coisa')).toBe(passwordMessages.failed);
-    expect(passwordUpdateMessage(undefined)).toBe(passwordMessages.failed);
+    expect(passwordChangeError({ current: '', next: 'Senha#12345', confirm: 'Senha#12345' })).toBe(passwordMessages.current);
+    expect(passwordChangeError({ current: 'a', next: 'Senha#12345', confirm: 'Senha#12346' })).toBe(passwordRuleMessages.confirm);
+    expect(passwordChangeError({ current: 'Senha#12345', next: 'Senha#12345', confirm: 'Senha#12345' })).toBe(passwordMessages.same);
   });
   it('conta só com Google não tem senha', () => {
     expect(hasPasswordLogin(['google'])).toBe(false);
