@@ -15,6 +15,7 @@
   --color-accent: var(--accent); --color-accent-foreground: var(--foreground);
   --color-destructive: var(--destructive); --color-destructive-foreground: var(--on-status);
   --color-border: var(--border); --color-input: var(--border); --color-ring: var(--primary);
+  --color-success: var(--success);
   --color-warning: var(--warning); --color-warning-foreground: var(--warning-foreground);
   --color-warning-surface: var(--warning-surface); --color-highlight: var(--highlight);
   --radius-sm: 4px; --radius-md: 6px; --radius-lg: 8px; --radius-xl: 8px;

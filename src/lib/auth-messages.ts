@@ -46,7 +46,7 @@ function codeOf(e: AuthLike): string {
   if (text.includes(`${PASSWORD_MAX_BYTES} characters`)) return 'password_too_long';
   if (text.includes('rate limit') || e.status === 429) return 'over_request_rate_limit';
   if (text.includes('email not confirmed')) return 'email_not_confirmed';
-  if (text.includes('signups not allowed') || text.includes('signup')) return 'signup_disabled';
+  if (text.includes('signups not allowed')) return 'signup_disabled';
   if (text.includes('expired') || text.includes('invalid jwt') || text.includes('invalid token')) return 'session_expired';
   if (text.includes('failed to fetch') || text.includes('network')) return 'network';
   return '';
