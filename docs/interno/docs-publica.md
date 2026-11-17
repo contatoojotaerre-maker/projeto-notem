@@ -12,7 +12,7 @@
 ## Domínios
 | Endereço | Resultado |
 |---|---|
-| `docs.notemfiscal.com.br/*` | documentação; `/entrar`, `/esqueci-senha`, `/definir-senha`, `/redefinir-senha`, `/o/*`, `/admin*`, `/conta*`, `/dashboard*` → 301 app.; `/api/*`, `/_serverFn/*` → "Página não encontrada" (404); `/docs/*` → 301 sem o prefixo |
+| `docs.notemfiscal.com.br/*` | documentação; `/entrar`, `/esqueci-senha`, `/definir-senha`, `/redefinir-senha`, `/o/*`, `/admin*`, `/conta*`, `/dashboard*` → 301 app.; `/api` e `/api/*` (qualquer método) → 404 em JSON no formato de erro da API (`NAO_ENCONTRADO`, mensagem apontando `https://app.notemfiscal.com.br/api/v1`, `X-Request-Id`, `no-store`, noindex), sem redirecionar; `/_serverFn/*` → "Página não encontrada" (404); `/docs/*` → 301 sem o prefixo |
 | `app.notemfiscal.com.br/docs*` | 301 para docs. (mesmo caminho) |
 | `app.notemfiscal.com.br/*` | painel e API, com `X-Robots-Tag: noindex, nofollow`; `robots.txt` bloqueia tudo |
 | `notemfiscal.com.br`, `www.`, `notem-waiting-garden.lovable.app` | 301 para app. (mesmo caminho e consulta) |

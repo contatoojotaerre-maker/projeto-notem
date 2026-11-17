@@ -30,7 +30,9 @@ describe('endereços aceitos', () => {
     expect(DOCS_ROBOTS).toContain('Allow: /'); expect(DOCS_ROBOTS).toContain('Sitemap: https://docs.notemfiscal.com.br/sitemap.xml')
     for (const p of ['/entrar', '/esqueci-senha', '/definir-senha', '/redefinir-senha', '/o/acme/notas', '/conta', '/admin'])
       expect(r(`https://docs.notemfiscal.com.br${p}`)).toEqual({ kind: 'redirect', location: `https://app.notemfiscal.com.br${p}` })
-    expect(r('https://docs.notemfiscal.com.br/api/v1/status')).toEqual({ kind: 'docs', path: '/api/v1/status', base: '' })
+    for (const p of ['/api', '/api/', '/api/v1/status', '/api/v1/notas?x=1', '/api/public/qualquer'])
+      expect(r(`https://docs.notemfiscal.com.br${p}`)).toEqual({ kind: 'docs-api-404' })
+    expect(r('https://docs.notemfiscal.com.br/apis')).toEqual({ kind: 'docs', path: '/apis', base: '' })
   })
   it('prévia do editor e local: painel como antes, docs em /docs', () => {
     for (const host of ['https://id-preview--24f0f935-7f21-4010-b7cf-276026256fea.lovable.app', 'http://localhost:8080']) {

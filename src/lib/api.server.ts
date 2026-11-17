@@ -5,6 +5,7 @@ import type { Database, Json } from '@/integrations/supabase/types';
 import { hashKey, keyEnvironment, sanitizeLog } from './integrations';
 import { anonymousRules, limitMessages, limitRules, sandboxChange, type RateRule, type SlotRule } from './api-policy';
 import { ApiFailure, bodyHash, defaultMessages, fail, idParam, idempotencyKey, type Env } from './api-contract';
+import { apiErrorEnvelope, newRequestId } from './api-envelope';
 
 export type DB = SupabaseClient<Database>;
 export type ApiCtx = { db: DB; requestId: string; request: Request; url: URL; params: Record<string, string>; body: unknown; env: Env; organization_id: string; integration_id: string; integration_name: string; actor: string; background: (p: Promise<unknown>) => void; setCompany: (id: string | null) => void };
@@ -13,7 +14,7 @@ type Handler = (ctx: ApiCtx) => Promise<ApiResult>;
 const MAX_BODY = 200 * 1024;
 const MUTATING = new Set(['POST', 'PATCH', 'PUT', 'DELETE']);
 
-export function errorBody(id: string, e: ApiFailure) { return { erro: { codigo: e.code, mensagem: e.userMessage, detalhes: e.details, codigo_governo: null, mensagem_governo: null }, id_requisicao: id }; }
+export function errorBody(id: string, e: ApiFailure) { return apiErrorEnvelope(id, e.code, e.userMessage, e.details); }
 /** Strips certificate payloads before anything is logged; the generic sanitizer handles other secrets. */
 export function logBody(path: string, body: unknown): Json | null {
   if (body === undefined || body === null) return null;
@@ -74,7 +75,7 @@ async function authenticate(db: DB, request: Request) {
 
 export function apiRoute(handlers: Partial<Record<'GET' | 'POST' | 'PATCH' | 'PUT' | 'DELETE', Handler>>) {
   const run = async ({ request, params }: { request: Request; params: Record<string, string> }) => {
-    const started = performance.now(); const requestId = `req_${crypto.randomUUID().replaceAll('-', '')}`; const url = new URL(request.url);
+    const started = performance.now(); const requestId = newRequestId(); const url = new URL(request.url);
     const { supabaseAdmin: db } = await import('@/integrations/supabase/client.server');
     const waitUntil = (request as Request & { waitUntil?: (p: Promise<unknown>) => void }).waitUntil;
     const pending: Promise<unknown>[] = [];

@@ -2,7 +2,8 @@ import "./lib/error-capture";
 
 import { consumeLastCapturedError } from "./lib/error-capture";
 import { renderErrorPage } from "./lib/error-page";
-import { routeRequest, type HostDecision } from "./lib/hosts";
+import { routeRequest, DOCS_API_MESSAGE, type HostDecision } from "./lib/hosts";
+import { apiErrorEnvelope, newRequestId } from "./lib/api-envelope";
 
 type ServerEntry = {
   fetch: (request: Request, env: unknown, ctx: unknown) => Promise<Response> | Response;
@@ -83,6 +84,13 @@ function withNoindex(response: Response, decision: HostDecision): Response {
 /** Host-level answers that never reach the app: redirects between domains and per-domain robots.txt. */
 export function hostResponse(request: Request, decision: HostDecision): Response | null {
   if (decision.kind === "redirect") return withSecurityHeaders(request, new Response(null, { status: 301, headers: { Location: decision.location, "Cache-Control": "public, max-age=3600" } }));
+  if (decision.kind === "docs-api-404") {
+    const requestId = newRequestId();
+    return withSecurityHeaders(request, new Response(JSON.stringify(apiErrorEnvelope(requestId, "NAO_ENCONTRADO", DOCS_API_MESSAGE)), {
+      status: 404,
+      headers: { "Content-Type": "application/json; charset=utf-8", "X-Request-Id": requestId, "Cache-Control": "no-store", "X-Robots-Tag": "noindex, nofollow" },
+    }));
+  }
   if (decision.kind === "robots") return withSecurityHeaders(request, new Response(decision.body, { headers: { "Content-Type": "text/plain; charset=utf-8", "Cache-Control": "public, max-age=3600" } }));
   return null;
 }

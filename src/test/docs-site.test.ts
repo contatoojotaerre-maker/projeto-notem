@@ -170,7 +170,7 @@ describe('separação de domínios', () => {
   const r = (u: string) => routeRequest(new URL(u))
   it('docs serve a documentação e nunca o painel nem a API', () => {
     expect(r('https://docs.notemfiscal.com.br/guias/emissao')).toEqual({ kind: 'docs', path: '/guias/emissao', base: '' })
-    expect(r('https://docs.notemfiscal.com.br/api/v1/status')).toEqual({ kind: 'docs', path: '/api/v1/status', base: '' })
+    expect(r('https://docs.notemfiscal.com.br/api/v1/status')).toEqual({ kind: 'docs-api-404' })
     expect(r('https://docs.notemfiscal.com.br/_serverFn/abc')).toEqual({ kind: 'docs', path: '/_serverFn/abc', base: '' })
     expect(r('https://docs.notemfiscal.com.br/o/grupo/notas?aba=x')).toEqual({ kind: 'redirect', location: 'https://app.notemfiscal.com.br/o/grupo/notas?aba=x' })
     expect(r('https://docs.notemfiscal.com.br/entrar')).toEqual({ kind: 'redirect', location: 'https://app.notemfiscal.com.br/entrar' })

@@ -32,8 +32,8 @@ describe('documentação servida', () => {
     expect(await r.text()).toContain('href="/docs/guias/cancelamento"')
     expect(r.headers.get('X-Robots-Tag')).toBe('noindex')
   })
-  it('endereço inexistente, /api e funções internas no docs: "Página não encontrada" (404)', async () => {
-    for (const p of ['/nao-existe', '/api/v1/status', '/_serverFn/abc']) {
+  it('endereço inexistente e funções internas no docs: "Página não encontrada" (404)', async () => {
+    for (const p of ['/nao-existe', '/_serverFn/abc']) {
       const r = await get('https://docs.notemfiscal.com.br' + p)
       expect(r.status, p).toBe(404); expect(await r.text()).toContain('Página não encontrada')
     }
@@ -51,6 +51,25 @@ describe('documentação servida', () => {
   it('redirecionamento 301 mantém caminho e consulta', () => {
     const r = hostResponse(new Request('https://www.notemfiscal.com.br/o/x?aba=y'), routeRequest(new URL('https://www.notemfiscal.com.br/o/x?aba=y')))!
     expect(r.status).toBe(301); expect(r.headers.get('Location')).toBe('https://app.notemfiscal.com.br/o/x?aba=y')
+  })
+})
+
+// Owner decision (17/11/2026): /api/ on the docs domain, any method, answers JSON 404 in the API error format; never a redirect.
+describe('docs.: chamadas à API recebem 404 em JSON', () => {
+  it.each(['GET', 'POST', 'PATCH', 'PUT', 'DELETE', 'OPTIONS', 'HEAD'])('%s /api/v1/status', async method => {
+    const url = 'https://docs.notemfiscal.com.br/api/v1/status'
+    const res = hostResponse(new Request(url, { method }), routeRequest(new URL(url)))!
+    expect(res.status).toBe(404)
+    expect(res.headers.get('Location')).toBeNull()
+    expect(res.headers.get('Content-Type')).toBe('application/json; charset=utf-8')
+    expect(res.headers.get('Cache-Control')).toBe('no-store')
+    expect(res.headers.get('X-Robots-Tag')).toBe('noindex, nofollow')
+    const id = res.headers.get('X-Request-Id')!
+    expect(id).toMatch(/^req_[0-9a-f]{32}$/)
+    expect(await res.json()).toEqual({
+      erro: { codigo: 'NAO_ENCONTRADO', mensagem: 'A API da notem fica em https://app.notemfiscal.com.br/api/v1. Este endereço é da documentação.', detalhes: [], codigo_governo: null, mensagem_governo: null },
+      id_requisicao: id,
+    })
   })
 })
 
