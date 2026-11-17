@@ -107,6 +107,18 @@
 .nav-item[data-parent-active="true"] { color:var(--foreground);font-weight:600; }
 .app-collapsed .nav-subitem { display:none; }
 .app-collapsed .nav-item[data-parent-active="true"] { background:var(--primary);color:var(--primary-foreground); }
+/* Collapsible groups: the parent is a button with a chevron (› closed, ˅ open); the panel animates its height
+   (grid rows 0fr→1fr) without delaying navigation; closed panels are inert. */
+button.nav-item { text-align:left;cursor:pointer; }
+.nav-item:focus-visible { outline:2px solid var(--primary);outline-offset:-2px; }
+.nav-group-chevron { margin-left:auto;flex-shrink:0;transition:transform .15s ease; }
+.nav-group[data-open="true"] .nav-group-chevron { transform:rotate(90deg); }
+.nav-group-panel { display:grid;grid-template-rows:0fr;opacity:0;transition:grid-template-rows .15s ease,opacity .15s ease; }
+.nav-group[data-open="true"] .nav-group-panel { grid-template-rows:1fr;opacity:1; }
+.nav-group-inner { overflow:hidden;min-height:0; }
+.nav-group[data-open="false"] .nav-group-inner { padding-top:0; }
+.nav-flyout-item { padding:8px 12px;font-size:12.5px; }
+@media (prefers-reduced-motion: reduce) { .nav-group-panel,.nav-group-chevron { transition:none; } }
 .breadcrumb-trail { display:flex;flex-wrap:wrap;align-items:center;gap:6px;font-size:13px;color:var(--muted-foreground);margin-bottom:10px; }
 .breadcrumb-trail a { text-decoration:underline;text-underline-offset:4px; }
 .breadcrumb-trail a:hover { color:var(--foreground); }
