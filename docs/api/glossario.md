@@ -12,7 +12,7 @@
 | **Certificado A1** | Certificado digital e-CNPJ (ICP-Brasil) da empresa, usado para assinar e transmitir as notas. |
 | **Situação da empresa** | Indica se a empresa está pronta para emitir (certificado, configuração fiscal, serviço, município). |
 | **Configuração fiscal** | Dados tributários da empresa: Simples Nacional, regime de apuração, regime especial, tributos aproximados. |
-| **Serviço (perfil de serviço)** | Modelo de um serviço prestado pela empresa: código nacional, descrição, tributação do ISS, retenção. |
+| **Serviço** | Modelo de um serviço prestado pela empresa: código nacional, descrição, tributação do ISS, retenção. |
 | **Código de tributação nacional** | Código de 6 dígitos da lista nacional de serviços (`cTribNac`). |
 | **NBS** | Nomenclatura Brasileira de Serviços (9 dígitos). Usada no IBS/CBS. |
 | **ISS** | Imposto sobre serviços, municipal. |

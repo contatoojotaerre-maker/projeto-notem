@@ -2,7 +2,7 @@ import { createFileRoute, Link, notFound, useNavigate } from '@tanstack/react-ro
 import { queryOptions, useSuspenseQuery } from '@tanstack/react-query';
 import { useEffect, useState } from 'react';
 import { Building2, Plus, Search, ArrowUpRight, ChevronLeft, ChevronRight } from 'lucide-react';
-import { getCompanies } from '@/lib/notem.functions';
+import { getCompanies, COMPANIES_PAGE } from '@/lib/notem.functions';
 import { canEditCompany, formatCnpj, pageHead } from '@/lib/notem';
 import { COMPANY_SITUATIONS, situationBadge, situationLabels, type CompanySituation } from '@/lib/home-metrics';
 import { parseCompaniesSearch, rememberList, type CompaniesSearch } from '@/lib/list-search';
@@ -11,7 +11,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { workspaceQuery } from '@/lib/notem.queries';
 type Env='sandbox'|'production';
-const PAGE=30;
+const PAGE=COMPANIES_PAGE;
 const companiesQuery=(organization_id:string,environment:Env,situacao:CompanySituation|'',search='',page=0)=>queryOptions({queryKey:['companies',organization_id,environment,situacao,search,page],queryFn:()=>getCompanies({data:{organization_id,environment,situacao,search,page}})});
 // Search, situation and page live in the address (?busca, situacao=prontas|pendencia|inativas, pagina) so the Início tiles link here and "voltar" keeps them.
 export const Route=createFileRoute('/_authenticated/o/$orgSlug/empresas/')({head:()=>pageHead('Empresas'),validateSearch:(search:Record<string,unknown>):CompaniesSearch=>parseCompaniesSearch(search),loaderDeps:({search})=>({situacao:search.situacao??'' as CompanySituation|'',busca:search.busca??'',page:(search.pagina??1)-1}),loader:async({context,params,deps})=>{const w=await context.queryClient.ensureQueryData(workspaceQuery());const o=w.organizations.find(o=>o.slug===params.orgSlug);if(!o)throw notFound();await context.queryClient.ensureQueryData(companiesQuery(o.id,w.profile?.environment??'production',deps.situacao,deps.busca,deps.page));},component:Companies});

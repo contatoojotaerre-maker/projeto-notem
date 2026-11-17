@@ -27,4 +27,16 @@ describe("App routing", () => {
     expect(router.matchRoutes('/o/org/notas').at(-1)?.routeId).toBe('/_authenticated/o/$orgSlug/notas/');
     expect(router.matchRoutes('/o/org/notas/0b5d1c1e-8f7a-4a7e-9a1d-2f3e4d5c6b7a').at(-1)?.routeId).toBe('/_authenticated/o/$orgSlug/notas/$invoiceId');
   });
+  it('Notas recebidas têm rotas próprias: /notas/recebidas/{id} nunca é tratada como /notas/{id}', () => {
+    const router = createRouter({ routeTree, context: { queryClient: new QueryClient() } });
+    const id = '0b5d1c1e-8f7a-4a7e-9a1d-2f3e4d5c6b7a';
+    expect(router.matchRoutes('/o/org/notas/recebidas').at(-1)?.routeId).toBe('/_authenticated/o/$orgSlug/notas/recebidas/');
+    expect(router.matchRoutes(`/o/org/notas/recebidas/${id}`).at(-1)?.routeId).toBe('/_authenticated/o/$orgSlug/notas/recebidas/$noteId');
+    expect(router.matchRoutes('/o/org/notas/recebidas/abc').at(-1)?.routeId).toBe('/_authenticated/o/$orgSlug/notas/recebidas/$noteId');
+    expect(router.matchRoutes(`/o/org/notas/${id}`).at(-1)?.routeId).toBe('/_authenticated/o/$orgSlug/notas/$invoiceId');
+  });
+  it('Minha conta tem rota própria', () => {
+    const router = createRouter({ routeTree, context: { queryClient: new QueryClient() } });
+    expect(router.matchRoutes('/conta').at(-1)?.routeId).toBe('/_authenticated/conta');
+  });
 });

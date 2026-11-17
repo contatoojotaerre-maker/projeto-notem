@@ -3,7 +3,7 @@
 A notem traz do Ambiente de Dados Nacional (ADN) as notas de cada empresa que foram emitidas **fora da notem** (outro sistema ou Portal Nacional) e as notas em que a empresa é **tomadora ou intermediária**. Também traz os eventos registrados depois da emissão (cancelamentos, análises fiscais, ações da prefeitura).
 
 ## Como a sincronização acontece
-- A sincronização é **iniciada apenas no painel**, por empresa e ambiente (aba **Sincronização** da empresa), por proprietário ou administrador da organização. A API **não** oferece sincronização; ela só consulta a situação.
+- A sincronização é **iniciada apenas no painel**, por empresa, no ambiente escolhido no topo do painel (aba **Sincronização** da empresa), por proprietário ou administrador da organização. A API **não** oferece sincronização; ela só consulta a situação.
 - Opções: períodos de 1, 3, 6, 12 ou 24 meses (padrão 1 mês). Depois da primeira sincronização concluída aparece também "Novidades desde a última sincronização".
 - O governo exige **1 hora** de intervalo depois de uma consulta sem documentos novos. Durante esse intervalo o botão fica desabilitado e `proxima_consulta_permitida` mostra quando será possível sincronizar de novo.
 - Para começar um período, a notem localiza o primeiro documento do período pela data de geração, com no máximo 25 consultas espaçadas em pelo menos 2 segundos. Se o governo indicar consumo indevido ou rejeitar a consulta, a sincronização é interrompida e o motivo aparece em `ultimo_erro`.

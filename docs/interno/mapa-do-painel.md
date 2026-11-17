@@ -1,5 +1,33 @@
 # Mapa do painel (levantamento, somente leitura)
 
+
+> **Atualização (Parte 2 da reorganização, 17/11/2026).** As seções 1 a 8 abaixo descrevem o painel **antes** da reorganização e ficam como registro. O painel atual é o resumido aqui.
+
+## 0. Painel atual (depois da Parte 2)
+
+**Menu:** Início · Notas (Emitidas, Recebidas) · Empresas · Integrações · Alertas · Organização (Dados, Equipe — só proprietário, administrador e AP). A marca leva ao Início da organização atual. Topo: seletor de ambiente, botão "?" (frase da API e suporte por e-mail/WhatsApp, ocultos se vazios), tema e conta (Minha conta, Sair). Faixa de ambiente sempre visível, também em produção ("Produção — notas com validade fiscal").
+
+| Endereço | Tela |
+|---|---|
+| `/o/{org}/inicio` | Início |
+| `/o/{org}/notas` | Notas › Emitidas (notem e emitidas fora da notem), filtros no endereço, CSV/ZIP |
+| `/o/{org}/notas/{id}` | Detalhe de nota emitida |
+| `/o/{org}/notas/recebidas` | Notas › Recebidas (empresa da organização como tomadora ou intermediária, com prova de posse do CNPJ), mesmos filtros (sem origem), CSV próprio (prestador, CNPJ do prestador, papel) e ZIP |
+| `/o/{org}/notas/recebidas/{id}` | Detalhe de nota recebida, só leitura (atualizar com o governo, PDF, XML). Rota própria: nunca é tratada como `/notas/{id}`; id inválido ou de outra organização → "Página não encontrada" |
+| `/o/{org}/empresas/{id}` | Empresa: "Empresas › {nome}", CNPJ, Ativa/Inativa, "Ver notas desta empresa"; abas Resumo (padrão), Cadastro, Configuração fiscal, Serviços, Certificado, Tomadores, Sincronização |
+| `/o/{org}/integracoes/{id}` | Integração: "Integrações › {nome}"; abas Chaves, Webhooks, Chamadas, Configurações, Como testar |
+| `/o/{org}/alertas` | Alertas e histórico de falhas de webhook do ambiente atual |
+| `/o/{org}/organizacao` | Organização › Dados (nome; tipo só leitura; "Identificador no painel") e `?aba=equipe` |
+| `/conta` | Minha conta: nome (2 a 80 caracteres), e-mail só leitura, trocar senha (senha atual conferida no servidor, mínimo 8, encerra as outras sessões e mantém a atual), "Definir senha" por e-mail para quem entra só com Google, tema, Sair |
+
+**Regra única de ambiente.** Seguem o seletor: Início, Notas (Emitidas e Recebidas), Alertas (com o histórico de falhas de webhook), Chaves, Webhooks (sem sub-abas), Chamadas (sem filtro de ambiente; `?ambiente=` antigo é descartado), Sincronização (só o cartão do ambiente atual) e o Resumo da empresa. Mostram "Cadastro compartilhado entre produção e homologação.": Cadastro, Configuração fiscal, Serviços, Certificado, Tomadores e Organização. Confirmações dizem o ambiente: gerar/revogar chave, criar/editar/ativar/desativar/excluir endereço de webhook, trocar segredo e reenviar entrega.
+
+**Redirecionamentos.** `/o/{org}/ajuda` e `/o/{org}/modelos-de-servico` → Início; `/o/{org}/equipe` → Organização › Equipe; aba antiga "Notas recebidas" da empresa → Notas › Recebidas filtrada pela empresa; abas antigas da empresa e da integração (`requisicoes` → `chamadas`); telas "em breve" de `/admin/` → Organizações; `/dashboard` com uma única organização (sem ser AP) → Início. Trocar de organização mantém a seção (detalhe → lista); seção não permitida ao papel na nova organização → Início.
+
+**Listas:** 50 por página com "Página N de M" (notas, empresas, tomadores, chamadas, entregas de webhook).
+
+**Testes:** `panel-nav.test.ts` (redirecionamentos e troca de organização), `panel-routes-notfound.test.ts` (id inválido nas duas páginas de nota, aba antiga da empresa), `app-routing.test.tsx` (rotas de Recebidas e Minha conta), `account.test.ts` (nome e senha), `panel-tabs.test.ts`, `list-search.test.ts`; `isolation-matrix.database.sql` cobre `list_org_notes`/`org_notes_count` com `_direction='recebidas'`.
+
 Data do levantamento: 16/11/2026. Fonte: leitura do código atual (rotas em `src/routes/`, telas em `src/components/notem/`, regras em `src/lib/`, permissões nas funções do servidor e nas políticas das migrações).
 
 **Como foi verificado**

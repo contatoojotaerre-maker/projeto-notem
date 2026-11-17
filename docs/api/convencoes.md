@@ -151,7 +151,7 @@ Os limites contam **por chave e por ambiente** (homologação e produção são 
 ## 11. Segurança
 - Somente HTTPS.
 - A API é para uso entre servidores: não há liberação de CORS para navegadores. Pedidos `OPTIONS` recebem `204` sem permissões de origem.
-- Os registros de requisições guardam o mínimo: documentos aparecem mascarados (só os 2 últimos dígitos), e-mail, telefone e endereço são omitidos, e XML/PDF aparecem só como tipo e tamanho. Ficam disponíveis por 90 dias para proprietário, administrador e desenvolvedor da organização.
+- Os registros de chamadas (aba Chamadas da integração, no painel) guardam o mínimo: documentos aparecem mascarados (só os 2 últimos dígitos), e-mail, telefone e endereço são omitidos, e XML/PDF aparecem só como tipo e tamanho. Ficam disponíveis por 90 dias para proprietário, administrador e desenvolvedor da organização.
 - Nunca envie a chave em parâmetros de URL.
 - Certificados digitais enviados pela API nunca são devolvidos em nenhuma resposta.
 
