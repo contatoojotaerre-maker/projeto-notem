@@ -9,7 +9,7 @@ beforeAll(() => { globalThis.ResizeObserver ??= class { observe() {} unobserve()
 beforeEach(() => { window.localStorage.clear(); });
 afterEach(() => { vi.restoreAllMocks(); });
 
-const link = (key: string, label: string, active: boolean, href: string): NavGroupItem => ({ key, label, active, render: ({ children, ...p }) => <a href={href} {...p}>{children}</a> });
+const link = (key: string, label: string, active: boolean, href: string): NavGroupItem => ({ key, label, active, render: ({ children, onClick, ...p }) => <a href={href} {...p} onClick={e => { e.preventDefault(); onClick(); }}>{children}</a> }); // jsdom cannot navigate
 /** The two groups exactly as the shell wires them (same hook, same component, same active rule). */
 function Menu({ path, search = '', iconOnly = false, onNavigate = () => {} }: { path: string; search?: string; iconOnly?: boolean; onNavigate?: () => void }) {
   const groups = useNavGroups(currentNavGroup(path), path + search); const sub = navSubitemActive(path, search);
