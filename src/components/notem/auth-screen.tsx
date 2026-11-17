@@ -30,7 +30,7 @@ export function AuthScreen({ mode = 'login', destination }: {mode?:'login'|'forg
   async function submit(e:React.FormEvent){e.preventDefault();setBusy(true);setError('');try{
     if(mode==='forgot'){const result=await supabase.auth.resetPasswordForEmail(email,{redirectTo:appLink('/redefinir-senha')});if(result.error)throw result.error;setMessage('Se este e-mail tiver acesso à notem, você receberá um link para redefinir sua senha.');}
     else if(mode==='reset'||mode==='invite'){
-      if(!validLink)throw new Error('Solicite um novo link.');if(password.length<8)throw new Error('Use pelo menos 8 caracteres.');if(password!==confirm)throw new Error('As senhas não coincidem.');
+      if(!validLink)throw new Error('Solicite um novo link.');if(password.length<PASSWORD_MIN)throw new Error(passwordMessages.short);if(password!==confirm)throw new Error('As senhas não coincidem.');
       const verified=await supabase.auth.getUser();if(!verified.data.user)throw new Error('Link expirado. Solicite um novo e-mail.');
       const result=await supabase.auth.updateUser({password});if(result.error)throw result.error;
       if(mode==='invite')await finish();await goOn();
