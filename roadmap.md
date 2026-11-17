@@ -68,3 +68,12 @@
 - [x] Busca: resumo só texto (sem código/JSON/Markdown)
 - [x] Blocos de código: linhas longas quebram (sem corte) nas duas colunas e no celular
 - [x] Relatório antes/depois (5 operações + trecho de Emissão); não publicar
+
+## Saúde do sistema + avisos por e-mail (pedido 17/11)
+- [ ] Plano aprovado
+- [ ] Tela Administração › Saúde do sistema (8 blocos, topo, Verificar agora)
+- [ ] Registro das chamadas reais ao governo; tabelas só do servidor com limpeza de 30 dias
+- [ ] Rota OIDC separada a cada 5 min + comando do Cloud Scheduler
+- [ ] Avisos por e-mail (Resend, destinatários, teste, estados, lembrete 6 h, Resolvido)
+- [ ] Vigia externo (passo a passo) e conferência da tabela notem_rls_probe_
+- [ ] Testes, matriz de isolamento, prints, relatório; não publicar
