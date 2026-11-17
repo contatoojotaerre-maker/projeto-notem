@@ -38,13 +38,13 @@ autorizada -> cancelada_prefeitura
   "restricoes": [],
   "manifestacao": null,
   "numero": "123",
-  "chave_acesso": "42122542211222333000181000000000012326110000000001",
+  "chave_acesso": "42054072211222333000181000000000012326110000000001",
   "serie_dps": "00900",
   "numero_dps": "57",
   "competencia": "2026-11-12",
   "emitida_em": "2026-11-12T10:15:03-03:00",
   "autorizada_em": "2026-11-12T10:15:05-03:00",
-  "tomador": { "tipo": "pj", "documento": "99888777000166", "nome": "Cliente Exemplo LTDA" },
+  "tomador": { "tipo": "pj", "documento": "99888777000100", "nome": "Cliente Exemplo LTDA" },
   "servico": { "servico_id": "UUID", "codigo_servico": "140101", "descricao": "Vistoria veicular - placa ABC1D23" },
   "valores": {
     "servico": "150.00",
@@ -56,7 +56,7 @@ autorizada -> cancelada_prefeitura
     "iss_retido": false,
     "valor_liquido": "150.00"
   },
-  "local_prestacao": { "codigo_municipio": "4212254", "municipio": "Passo de Torres", "uf": "SC" },
+  "local_prestacao": { "codigo_municipio": "4205407", "municipio": "Florianópolis", "uf": "SC" },
   "ibs_cbs": null,
   "erros_governo": [],
   "substitui_nota_id": null,
@@ -66,7 +66,7 @@ autorizada -> cancelada_prefeitura
   "links": {
     "xml": "https://app.notemfiscal.com.br/api/v1/notas/UUID/xml",
     "pdf": "https://app.notemfiscal.com.br/api/v1/notas/UUID/pdf",
-    "consulta_publica": "https://www.nfse.gov.br/ConsultaPublica?tpc=1&chave=42122542211222333000181000000000012326110000000001"
+    "consulta_publica": "https://www.nfse.gov.br/ConsultaPublica?tpc=1&chave=42054072211222333000181000000000012326110000000001"
   },
   "criada_em": "2026-11-12T10:15:03-03:00",
   "atualizada_em": "2026-11-12T10:15:05-03:00"

@@ -48,6 +48,7 @@ paths:
       tags:
         - Notas
       operationId: listarNotas
+      x-titulo: Listar notas
       summary: Lista notas da organização no ambiente da chave
       description: >-
         Lista paginada das notas da organização no ambiente da chave, da mais recente para a mais antiga. Inclui notas emitidas fora da notem (`origem:
@@ -126,7 +127,7 @@ paths:
                 listaNotas:
                   $ref: "#/components/examples/ListaNotas"
         "400":
-          description: Erro no formato padrão (https://docs.notemfiscal.com.br/primeiros-passos/erros)
+          description: '[Erro no formato padrão](https://docs.notemfiscal.com.br/primeiros-passos/erros)'
           headers:
             X-Request-Id:
               $ref: "#/components/headers/XRequestId"
@@ -153,6 +154,7 @@ paths:
       tags:
         - Notas
       operationId: emitirNota
+      x-titulo: Emitir nota
       summary: Emite NFS-e com numeração e idempotência definitivas
       description: |
         Valida empresa, serviço, tomador, E0202, E0172/E0174/E0175, E0204/E0237 e tributos antes de numerar.
@@ -203,7 +205,7 @@ paths:
                 notaEmVerificacao:
                   $ref: "#/components/examples/NotaEmVerificacao"
         "400":
-          description: Erro no formato padrão (https://docs.notemfiscal.com.br/primeiros-passos/erros)
+          description: '[Erro no formato padrão](https://docs.notemfiscal.com.br/primeiros-passos/erros)'
           headers:
             X-Request-Id:
               $ref: "#/components/headers/XRequestId"
@@ -227,7 +229,7 @@ paths:
                 erroAutenticacao:
                   $ref: "#/components/examples/ErroAutenticacao"
         "404":
-          description: Erro no formato padrão (https://docs.notemfiscal.com.br/primeiros-passos/erros)
+          description: '[Erro no formato padrão](https://docs.notemfiscal.com.br/primeiros-passos/erros)'
           headers:
             X-Request-Id:
               $ref: "#/components/headers/XRequestId"
@@ -265,7 +267,7 @@ paths:
             X-Request-Id:
               $ref: "#/components/headers/XRequestId"
         "503":
-          description: Erro no formato padrão (https://docs.notemfiscal.com.br/primeiros-passos/erros)
+          description: '[Erro no formato padrão](https://docs.notemfiscal.com.br/primeiros-passos/erros)'
           headers:
             X-Request-Id:
               $ref: "#/components/headers/XRequestId"
@@ -289,6 +291,7 @@ paths:
       tags:
         - Notas
       operationId: consultarNota
+      x-titulo: Consultar nota
       summary: Consulta nota (outra organização ou ambiente retorna 404)
       description: Consulta a nota completa. Nota de outra organização ou de outro ambiente responde 404.
       responses:
@@ -317,7 +320,7 @@ paths:
                 erroAutenticacao:
                   $ref: "#/components/examples/ErroAutenticacao"
         "404":
-          description: Erro no formato padrão (https://docs.notemfiscal.com.br/primeiros-passos/erros)
+          description: '[Erro no formato padrão](https://docs.notemfiscal.com.br/primeiros-passos/erros)'
           headers:
             X-Request-Id:
               $ref: "#/components/headers/XRequestId"
@@ -341,6 +344,7 @@ paths:
       tags:
         - Notas
       operationId: baixarXmlNota
+      x-titulo: Baixar XML da nota
       summary: Baixa XML oficial da NFS-e autorizada
       description: XML oficial da NFS-e autorizada, exatamente como devolvido pelo governo.
       responses:
@@ -369,7 +373,7 @@ paths:
                 erroAutenticacao:
                   $ref: "#/components/examples/ErroAutenticacao"
         "404":
-          description: Erro no formato padrão (https://docs.notemfiscal.com.br/primeiros-passos/erros)
+          description: '[Erro no formato padrão](https://docs.notemfiscal.com.br/primeiros-passos/erros)'
           headers:
             X-Request-Id:
               $ref: "#/components/headers/XRequestId"
@@ -393,6 +397,7 @@ paths:
       tags:
         - Notas
       operationId: cancelarNota
+      x-titulo: Cancelar nota
       summary: Cancela NFS-e autorizada (evento 101101)
       description: >
         Somente nota autorizada do ambiente da chave e sem outro pedido em andamento. Idempotency-Key obrigatória e associada de forma duradoura ao pedido.
@@ -444,7 +449,7 @@ paths:
                 notaCancelamentoPendente:
                   $ref: "#/components/examples/NotaCancelamentoPendente"
         "400":
-          description: Erro no formato padrão (https://docs.notemfiscal.com.br/primeiros-passos/erros)
+          description: '[Erro no formato padrão](https://docs.notemfiscal.com.br/primeiros-passos/erros)'
           headers:
             X-Request-Id:
               $ref: "#/components/headers/XRequestId"
@@ -468,7 +473,7 @@ paths:
                 erroAutenticacao:
                   $ref: "#/components/examples/ErroAutenticacao"
         "404":
-          description: Erro no formato padrão (https://docs.notemfiscal.com.br/primeiros-passos/erros)
+          description: '[Erro no formato padrão](https://docs.notemfiscal.com.br/primeiros-passos/erros)'
           headers:
             X-Request-Id:
               $ref: "#/components/headers/XRequestId"
@@ -504,7 +509,7 @@ paths:
             X-Request-Id:
               $ref: "#/components/headers/XRequestId"
         "503":
-          description: Erro no formato padrão (https://docs.notemfiscal.com.br/primeiros-passos/erros)
+          description: '[Erro no formato padrão](https://docs.notemfiscal.com.br/primeiros-passos/erros)'
           headers:
             X-Request-Id:
               $ref: "#/components/headers/XRequestId"
@@ -528,6 +533,7 @@ paths:
       tags:
         - Notas
       operationId: solicitarAnaliseCancelamento
+      x-titulo: Solicitar análise do cancelamento
       summary: Solicita análise fiscal do cancelamento à prefeitura (evento 101103)
       description: Mesmas regras e respostas do cancelamento. Registrado o pedido, a nota fica cancelamento_em_analise até a decisão da prefeitura.
       parameters:
@@ -573,7 +579,7 @@ paths:
                 notaCancelamentoPendente:
                   $ref: "#/components/examples/NotaCancelamentoPendente"
         "400":
-          description: Erro no formato padrão (https://docs.notemfiscal.com.br/primeiros-passos/erros)
+          description: '[Erro no formato padrão](https://docs.notemfiscal.com.br/primeiros-passos/erros)'
           headers:
             X-Request-Id:
               $ref: "#/components/headers/XRequestId"
@@ -597,7 +603,7 @@ paths:
                 erroAutenticacao:
                   $ref: "#/components/examples/ErroAutenticacao"
         "404":
-          description: Erro no formato padrão (https://docs.notemfiscal.com.br/primeiros-passos/erros)
+          description: '[Erro no formato padrão](https://docs.notemfiscal.com.br/primeiros-passos/erros)'
           headers:
             X-Request-Id:
               $ref: "#/components/headers/XRequestId"
@@ -609,7 +615,7 @@ paths:
                 erroNaoEncontrado:
                   $ref: "#/components/examples/ErroNaoEncontrado"
         "409":
-          description: Erro no formato padrão (https://docs.notemfiscal.com.br/primeiros-passos/erros)
+          description: '[Erro no formato padrão](https://docs.notemfiscal.com.br/primeiros-passos/erros)'
           headers:
             X-Request-Id:
               $ref: "#/components/headers/XRequestId"
@@ -621,7 +627,7 @@ paths:
                 erroConflitoNota:
                   $ref: "#/components/examples/ErroConflitoNota"
         "422":
-          description: Erro no formato padrão (https://docs.notemfiscal.com.br/primeiros-passos/erros)
+          description: '[Erro no formato padrão](https://docs.notemfiscal.com.br/primeiros-passos/erros)'
           headers:
             X-Request-Id:
               $ref: "#/components/headers/XRequestId"
@@ -633,7 +639,7 @@ paths:
                 erroEmpresaNaoPronta:
                   $ref: "#/components/examples/ErroEmpresaNaoPronta"
         "503":
-          description: Erro no formato padrão (https://docs.notemfiscal.com.br/primeiros-passos/erros)
+          description: '[Erro no formato padrão](https://docs.notemfiscal.com.br/primeiros-passos/erros)'
           headers:
             X-Request-Id:
               $ref: "#/components/headers/XRequestId"
@@ -657,6 +663,7 @@ paths:
       tags:
         - Notas
       operationId: substituirNota
+      x-titulo: Substituir nota
       summary: Emite nota substituta (grupo subst)
       description: |
         Campos não enviados vêm da nota original; a empresa é sempre a da original. Validações de emissão e E0060/E0061 ocorrem antes de numerar.
@@ -704,7 +711,7 @@ paths:
                 notaEmVerificacao:
                   $ref: "#/components/examples/NotaEmVerificacao"
         "400":
-          description: Erro no formato padrão (https://docs.notemfiscal.com.br/primeiros-passos/erros)
+          description: '[Erro no formato padrão](https://docs.notemfiscal.com.br/primeiros-passos/erros)'
           headers:
             X-Request-Id:
               $ref: "#/components/headers/XRequestId"
@@ -728,7 +735,7 @@ paths:
                 erroAutenticacao:
                   $ref: "#/components/examples/ErroAutenticacao"
         "404":
-          description: Erro no formato padrão (https://docs.notemfiscal.com.br/primeiros-passos/erros)
+          description: '[Erro no formato padrão](https://docs.notemfiscal.com.br/primeiros-passos/erros)'
           headers:
             X-Request-Id:
               $ref: "#/components/headers/XRequestId"
@@ -764,7 +771,7 @@ paths:
             X-Request-Id:
               $ref: "#/components/headers/XRequestId"
         "503":
-          description: Erro no formato padrão (https://docs.notemfiscal.com.br/primeiros-passos/erros)
+          description: '[Erro no formato padrão](https://docs.notemfiscal.com.br/primeiros-passos/erros)'
           headers:
             X-Request-Id:
               $ref: "#/components/headers/XRequestId"
@@ -796,6 +803,7 @@ paths:
       tags:
         - Notas
       operationId: baixarXmlEvento
+      x-titulo: Baixar XML do evento
       summary: Baixa o XML oficial de um evento registrado
       description: "XML oficial do evento registrado no governo: 101101 (cancelamento) ou 101103 (análise fiscal do cancelamento). Sem evento registrado: 404."
       responses:
@@ -824,7 +832,7 @@ paths:
                 erroAutenticacao:
                   $ref: "#/components/examples/ErroAutenticacao"
         "404":
-          description: Erro no formato padrão (https://docs.notemfiscal.com.br/primeiros-passos/erros)
+          description: '[Erro no formato padrão](https://docs.notemfiscal.com.br/primeiros-passos/erros)'
           headers:
             X-Request-Id:
               $ref: "#/components/headers/XRequestId"
@@ -842,6 +850,7 @@ paths:
       tags:
         - Tomadores
       operationId: listarTomadores
+      x-titulo: Listar tomadores
       summary: Lista tomadores da empresa
       description: Lista paginada dos tomadores cadastrados na empresa. Cada tomador pertence a uma empresa.
       parameters:
@@ -882,7 +891,7 @@ paths:
             X-Request-Id:
               $ref: "#/components/headers/XRequestId"
         "404":
-          description: Erro no formato padrão (https://docs.notemfiscal.com.br/primeiros-passos/erros)
+          description: '[Erro no formato padrão](https://docs.notemfiscal.com.br/primeiros-passos/erros)'
           headers:
             X-Request-Id:
               $ref: "#/components/headers/XRequestId"
@@ -897,6 +906,7 @@ paths:
       tags:
         - Tomadores
       operationId: cadastrarTomador
+      x-titulo: Cadastrar tomador
       summary: Cadastra tomador (id_externo único por empresa)
       description: Cadastra um tomador na empresa, com os mesmos campos do tomador da nota e `id_externo` opcional, único por empresa.
       parameters:
@@ -924,7 +934,7 @@ paths:
             X-Request-Id:
               $ref: "#/components/headers/XRequestId"
         "400":
-          description: Erro no formato padrão (https://docs.notemfiscal.com.br/primeiros-passos/erros)
+          description: '[Erro no formato padrão](https://docs.notemfiscal.com.br/primeiros-passos/erros)'
           headers:
             X-Request-Id:
               $ref: "#/components/headers/XRequestId"
@@ -961,6 +971,7 @@ paths:
       tags:
         - Tomadores
       operationId: consultarTomador
+      x-titulo: Consultar tomador
       summary: Consulta tomador
       description: Consulta um tomador da empresa.
       responses:
@@ -977,7 +988,7 @@ paths:
             X-Request-Id:
               $ref: "#/components/headers/XRequestId"
         "404":
-          description: Erro no formato padrão (https://docs.notemfiscal.com.br/primeiros-passos/erros)
+          description: '[Erro no formato padrão](https://docs.notemfiscal.com.br/primeiros-passos/erros)'
           headers:
             X-Request-Id:
               $ref: "#/components/headers/XRequestId"
@@ -992,6 +1003,7 @@ paths:
       tags:
         - Tomadores
       operationId: alterarTomador
+      x-titulo: Alterar tomador
       summary: Altera campos enviados do tomador
       description: "Altera os campos enviados. Notas já emitidas não mudam: os dados do tomador são copiados para a nota no momento da emissão."
       parameters:
@@ -1019,7 +1031,7 @@ paths:
             X-Request-Id:
               $ref: "#/components/headers/XRequestId"
         "404":
-          description: Erro no formato padrão (https://docs.notemfiscal.com.br/primeiros-passos/erros)
+          description: '[Erro no formato padrão](https://docs.notemfiscal.com.br/primeiros-passos/erros)'
           headers:
             X-Request-Id:
               $ref: "#/components/headers/XRequestId"
@@ -1047,6 +1059,7 @@ paths:
       tags:
         - Notas
       operationId: baixarPdfNota
+      x-titulo: Baixar PDF (DANFSe)
       summary: Baixa DANFSe v2.0 em PDF
       description: >-
         Gerado do XML autorizado e situação atual; autorizada, cancelada, cancelada_prefeitura ou substituida. Canhoto opcional; mesma organização e ambiente da
@@ -1089,7 +1102,7 @@ paths:
                 erroAutenticacao:
                   $ref: "#/components/examples/ErroAutenticacao"
         "404":
-          description: Erro no formato padrão (https://docs.notemfiscal.com.br/primeiros-passos/erros)
+          description: '[Erro no formato padrão](https://docs.notemfiscal.com.br/primeiros-passos/erros)'
           headers:
             X-Request-Id:
               $ref: "#/components/headers/XRequestId"
@@ -1105,6 +1118,7 @@ paths:
       tags:
         - Status
       operationId: consultarStatus
+      x-titulo: Consultar status
       summary: Verifica a chave e informa o ambiente
       description: |
         Use para testar a integração. Não consome nada e não acessa o governo.
@@ -1139,6 +1153,7 @@ paths:
       tags:
         - Empresas
       operationId: listarEmpresas
+      x-titulo: Listar empresas
       summary: Lista as empresas da organização da chave
       description: Lista paginada das empresas da organização da chave, da mais recente para a mais antiga. Filtros combináveis.
       parameters:
@@ -1183,7 +1198,7 @@ paths:
             X-Request-Id:
               $ref: "#/components/headers/XRequestId"
         "400":
-          description: Erro no formato padrão (https://docs.notemfiscal.com.br/primeiros-passos/erros)
+          description: '[Erro no formato padrão](https://docs.notemfiscal.com.br/primeiros-passos/erros)'
           headers:
             X-Request-Id:
               $ref: "#/components/headers/XRequestId"
@@ -1210,6 +1225,7 @@ paths:
       tags:
         - Empresas
       operationId: cadastrarEmpresa
+      x-titulo: Cadastrar empresa
       summary: Cadastra uma empresa
       description: >-
         Cadastra uma empresa emitente na organização da chave. `municipio` e `uf` são preenchidos pela notem a partir de `codigo_municipio`. A empresa vale para
@@ -1239,7 +1255,7 @@ paths:
             X-Request-Id:
               $ref: "#/components/headers/XRequestId"
         "400":
-          description: Erro no formato padrão (https://docs.notemfiscal.com.br/primeiros-passos/erros)
+          description: '[Erro no formato padrão](https://docs.notemfiscal.com.br/primeiros-passos/erros)'
           headers:
             X-Request-Id:
               $ref: "#/components/headers/XRequestId"
@@ -1285,6 +1301,7 @@ paths:
       tags:
         - Empresas
       operationId: consultarEmpresa
+      x-titulo: Consultar empresa
       summary: Consulta uma empresa
       description: Consulta uma empresa da organização da chave. Empresa de outra organização responde 404.
       responses:
@@ -1301,7 +1318,7 @@ paths:
             X-Request-Id:
               $ref: "#/components/headers/XRequestId"
         "404":
-          description: Erro no formato padrão (https://docs.notemfiscal.com.br/primeiros-passos/erros)
+          description: '[Erro no formato padrão](https://docs.notemfiscal.com.br/primeiros-passos/erros)'
           headers:
             X-Request-Id:
               $ref: "#/components/headers/XRequestId"
@@ -1316,6 +1333,7 @@ paths:
       tags:
         - Empresas
       operationId: alterarEmpresa
+      x-titulo: Alterar empresa
       summary: Altera os campos enviados (ativa false desativa; true reativa)
       description: >-
         Altera somente os campos enviados. `ativa: false` desativa a empresa (bloqueia novas emissões e mantém o histórico); `ativa: true` reativa. O CNPJ não
@@ -1345,7 +1363,7 @@ paths:
             X-Request-Id:
               $ref: "#/components/headers/XRequestId"
         "404":
-          description: Erro no formato padrão (https://docs.notemfiscal.com.br/primeiros-passos/erros)
+          description: '[Erro no formato padrão](https://docs.notemfiscal.com.br/primeiros-passos/erros)'
           headers:
             X-Request-Id:
               $ref: "#/components/headers/XRequestId"
@@ -1374,6 +1392,7 @@ paths:
       tags:
         - Empresas
       operationId: excluirEmpresa
+      x-titulo: Excluir empresa
       summary: Exclui definitivamente (somente se nunca reservou número de DPS)
       description: >-
         Exclui definitivamente a empresa, seus serviços e o certificado guardado. Só é permitido se a empresa nunca reservou número de DPS e não tem notas em
@@ -1384,7 +1403,7 @@ paths:
         "204":
           description: Excluída (serviços, certificado e configuração removidos)
         "404":
-          description: Erro no formato padrão (https://docs.notemfiscal.com.br/primeiros-passos/erros)
+          description: '[Erro no formato padrão](https://docs.notemfiscal.com.br/primeiros-passos/erros)'
           headers:
             X-Request-Id:
               $ref: "#/components/headers/XRequestId"
@@ -1414,6 +1433,7 @@ paths:
       tags:
         - Configuração fiscal
       operationId: consultarConfiguracaoFiscal
+      x-titulo: Consultar configuração fiscal
       summary: Consulta a configuração fiscal
       description: Consulta a configuração fiscal da empresa, com a série DPS atribuída.
       responses:
@@ -1430,7 +1450,7 @@ paths:
             X-Request-Id:
               $ref: "#/components/headers/XRequestId"
         "404":
-          description: Erro no formato padrão (https://docs.notemfiscal.com.br/primeiros-passos/erros)
+          description: '[Erro no formato padrão](https://docs.notemfiscal.com.br/primeiros-passos/erros)'
           headers:
             X-Request-Id:
               $ref: "#/components/headers/XRequestId"
@@ -1445,6 +1465,7 @@ paths:
       tags:
         - Configuração fiscal
       operationId: gravarConfiguracaoFiscal
+      x-titulo: Gravar configuração fiscal
       summary: Grava a configuração fiscal (serie_dps é ignorada; atribuída automaticamente)
       description: >-
         Grava a configuração fiscal completa. Combinações proibidas pelo governo (E0710, E0712, E0713, E0172, E0174, E0175) são recusadas com o campo e a regra.
@@ -1474,7 +1495,7 @@ paths:
             X-Request-Id:
               $ref: "#/components/headers/XRequestId"
         "400":
-          description: Erro no formato padrão (https://docs.notemfiscal.com.br/primeiros-passos/erros)
+          description: '[Erro no formato padrão](https://docs.notemfiscal.com.br/primeiros-passos/erros)'
           headers:
             X-Request-Id:
               $ref: "#/components/headers/XRequestId"
@@ -1486,7 +1507,7 @@ paths:
                 erroValidacao:
                   $ref: "#/components/examples/ErroValidacao"
         "404":
-          description: Erro no formato padrão (https://docs.notemfiscal.com.br/primeiros-passos/erros)
+          description: '[Erro no formato padrão](https://docs.notemfiscal.com.br/primeiros-passos/erros)'
           headers:
             X-Request-Id:
               $ref: "#/components/headers/XRequestId"
@@ -1516,6 +1537,7 @@ paths:
       tags:
         - Certificado
       operationId: consultarCertificado
+      x-titulo: Consultar certificado
       summary: Metadados do certificado ativo
       description: "Metadados do certificado ativo. O arquivo e a senha nunca são devolvidos. Sem certificado: 404."
       responses:
@@ -1532,7 +1554,7 @@ paths:
             X-Request-Id:
               $ref: "#/components/headers/XRequestId"
         "404":
-          description: Erro no formato padrão (https://docs.notemfiscal.com.br/primeiros-passos/erros)
+          description: '[Erro no formato padrão](https://docs.notemfiscal.com.br/primeiros-passos/erros)'
           headers:
             X-Request-Id:
               $ref: "#/components/headers/XRequestId"
@@ -1547,6 +1569,7 @@ paths:
       tags:
         - Certificado
       operationId: enviarCertificado
+      x-titulo: Enviar certificado
       summary: Envia ou substitui o certificado A1 (arquivo e senha nunca são devolvidos nem registrados)
       description: >-
         Envia ou substitui o certificado A1 (.pfx/.p12 de até 100 KB, em base64). O anterior continua valendo até o novo ser aceito. O CNPJ do certificado
@@ -1586,7 +1609,7 @@ paths:
             X-Request-Id:
               $ref: "#/components/headers/XRequestId"
         "400":
-          description: Erro no formato padrão (https://docs.notemfiscal.com.br/primeiros-passos/erros)
+          description: '[Erro no formato padrão](https://docs.notemfiscal.com.br/primeiros-passos/erros)'
           headers:
             X-Request-Id:
               $ref: "#/components/headers/XRequestId"
@@ -1598,7 +1621,7 @@ paths:
                 erroValidacao:
                   $ref: "#/components/examples/ErroValidacao"
         "404":
-          description: Erro no formato padrão (https://docs.notemfiscal.com.br/primeiros-passos/erros)
+          description: '[Erro no formato padrão](https://docs.notemfiscal.com.br/primeiros-passos/erros)'
           headers:
             X-Request-Id:
               $ref: "#/components/headers/XRequestId"
@@ -1630,6 +1653,7 @@ paths:
       tags:
         - Serviços
       operationId: listarServicos
+      x-titulo: Listar serviços
       summary: Lista os serviços da empresa
       description: Lista paginada dos serviços da empresa, ativos e inativos.
       parameters:
@@ -1655,7 +1679,7 @@ paths:
             X-Request-Id:
               $ref: "#/components/headers/XRequestId"
         "404":
-          description: Erro no formato padrão (https://docs.notemfiscal.com.br/primeiros-passos/erros)
+          description: '[Erro no formato padrão](https://docs.notemfiscal.com.br/primeiros-passos/erros)'
           headers:
             X-Request-Id:
               $ref: "#/components/headers/XRequestId"
@@ -1670,6 +1694,7 @@ paths:
       tags:
         - Serviços
       operationId: cadastrarServico
+      x-titulo: Cadastrar serviço
       summary: Cadastra um serviço
       description: Cadastra um serviço da empresa. O código nacional, o NBS e a classificação IBS/CBS precisam existir nos catálogos oficiais.
       parameters:
@@ -1697,7 +1722,7 @@ paths:
             X-Request-Id:
               $ref: "#/components/headers/XRequestId"
         "400":
-          description: Erro no formato padrão (https://docs.notemfiscal.com.br/primeiros-passos/erros)
+          description: '[Erro no formato padrão](https://docs.notemfiscal.com.br/primeiros-passos/erros)'
           headers:
             X-Request-Id:
               $ref: "#/components/headers/XRequestId"
@@ -1721,7 +1746,7 @@ paths:
             X-Request-Id:
               $ref: "#/components/headers/XRequestId"
         "422":
-          description: Erro no formato padrão (https://docs.notemfiscal.com.br/primeiros-passos/erros)
+          description: '[Erro no formato padrão](https://docs.notemfiscal.com.br/primeiros-passos/erros)'
           headers:
             X-Request-Id:
               $ref: "#/components/headers/XRequestId"
@@ -1746,6 +1771,7 @@ paths:
       tags:
         - Serviços
       operationId: consultarServico
+      x-titulo: Consultar serviço
       summary: Consulta um serviço
       description: Consulta um serviço da empresa.
       responses:
@@ -1762,7 +1788,7 @@ paths:
             X-Request-Id:
               $ref: "#/components/headers/XRequestId"
         "404":
-          description: Erro no formato padrão (https://docs.notemfiscal.com.br/primeiros-passos/erros)
+          description: '[Erro no formato padrão](https://docs.notemfiscal.com.br/primeiros-passos/erros)'
           headers:
             X-Request-Id:
               $ref: "#/components/headers/XRequestId"
@@ -1777,6 +1803,7 @@ paths:
       tags:
         - Serviços
       operationId: alterarServico
+      x-titulo: Alterar serviço
       summary: Altera um serviço (ativo false desativa; não há exclusão)
       description: "Altera os campos enviados. Serviços não são excluídos: use `ativo: false`."
       parameters:
@@ -1804,7 +1831,7 @@ paths:
             X-Request-Id:
               $ref: "#/components/headers/XRequestId"
         "404":
-          description: Erro no formato padrão (https://docs.notemfiscal.com.br/primeiros-passos/erros)
+          description: '[Erro no formato padrão](https://docs.notemfiscal.com.br/primeiros-passos/erros)'
           headers:
             X-Request-Id:
               $ref: "#/components/headers/XRequestId"
@@ -1816,7 +1843,7 @@ paths:
                 erroNaoEncontrado:
                   $ref: "#/components/examples/ErroNaoEncontrado"
         "422":
-          description: Erro no formato padrão (https://docs.notemfiscal.com.br/primeiros-passos/erros)
+          description: '[Erro no formato padrão](https://docs.notemfiscal.com.br/primeiros-passos/erros)'
           headers:
             X-Request-Id:
               $ref: "#/components/headers/XRequestId"
@@ -1834,6 +1861,7 @@ paths:
       tags:
         - Situação da empresa
       operationId: consultarSituacao
+      x-titulo: Consultar situação
       summary: Pronta para emitir? (ambiente da chave)
       description: Calcula, para o ambiente da chave, se a empresa está pronta para emitir e lista o que falta. `avisos` não impedem a emissão.
       responses:
@@ -1852,7 +1880,7 @@ paths:
             X-Request-Id:
               $ref: "#/components/headers/XRequestId"
         "404":
-          description: Erro no formato padrão (https://docs.notemfiscal.com.br/primeiros-passos/erros)
+          description: '[Erro no formato padrão](https://docs.notemfiscal.com.br/primeiros-passos/erros)'
           headers:
             X-Request-Id:
               $ref: "#/components/headers/XRequestId"
@@ -1870,6 +1898,7 @@ paths:
       tags:
         - Situação da empresa
       operationId: verificarMunicipio
+      x-titulo: Verificar município
       summary: Consulta o convênio do município no governo e devolve a situação atualizada
       description: >-
         Consulta no governo o convênio do município para o ambiente da chave e devolve a situação atualizada. Exige certificado válido. Limite de 1 vez por
@@ -1890,7 +1919,7 @@ paths:
             X-Request-Id:
               $ref: "#/components/headers/XRequestId"
         "404":
-          description: Erro no formato padrão (https://docs.notemfiscal.com.br/primeiros-passos/erros)
+          description: '[Erro no formato padrão](https://docs.notemfiscal.com.br/primeiros-passos/erros)'
           headers:
             X-Request-Id:
               $ref: "#/components/headers/XRequestId"
@@ -1933,6 +1962,7 @@ paths:
       tags:
         - Sincronização
       operationId: consultarSincronizacao
+      x-titulo: Consultar sincronização
       summary: Situação da sincronização com o ADN (somente consulta, ambiente da chave)
       description: A sincronização é iniciada apenas no painel. A API não oferece sincronização por NSU.
       responses:
@@ -1961,7 +1991,7 @@ paths:
                 erroAutenticacao:
                   $ref: "#/components/examples/ErroAutenticacao"
         "404":
-          description: Erro no formato padrão (https://docs.notemfiscal.com.br/primeiros-passos/erros)
+          description: '[Erro no formato padrão](https://docs.notemfiscal.com.br/primeiros-passos/erros)'
           headers:
             X-Request-Id:
               $ref: "#/components/headers/XRequestId"
@@ -1979,6 +2009,7 @@ paths:
       tags:
         - Notas recebidas
       operationId: listarNotasRecebidas
+      x-titulo: Listar notas recebidas
       summary: Notas em que a empresa é tomadora ou intermediária (ambiente da chave)
       description: "Exige prova de posse: a empresa precisa ter tido certificado digital cadastrado nesta organização."
       parameters:
@@ -2031,7 +2062,7 @@ paths:
                 listaNotasRecebidas:
                   $ref: "#/components/examples/ListaNotasRecebidas"
         "400":
-          description: Erro no formato padrão (https://docs.notemfiscal.com.br/primeiros-passos/erros)
+          description: '[Erro no formato padrão](https://docs.notemfiscal.com.br/primeiros-passos/erros)'
           headers:
             X-Request-Id:
               $ref: "#/components/headers/XRequestId"
@@ -2055,7 +2086,7 @@ paths:
                 erroAutenticacao:
                   $ref: "#/components/examples/ErroAutenticacao"
         "404":
-          description: Erro no formato padrão (https://docs.notemfiscal.com.br/primeiros-passos/erros)
+          description: '[Erro no formato padrão](https://docs.notemfiscal.com.br/primeiros-passos/erros)'
           headers:
             X-Request-Id:
               $ref: "#/components/headers/XRequestId"
@@ -2080,6 +2111,7 @@ paths:
       tags:
         - Notas recebidas
       operationId: consultarNotaRecebida
+      x-titulo: Consultar nota recebida
       summary: Consulta nota recebida
       description: Consulta uma nota em que a empresa é tomadora ou intermediária. Notas recebidas são somente leitura.
       responses:
@@ -2108,7 +2140,7 @@ paths:
                 erroAutenticacao:
                   $ref: "#/components/examples/ErroAutenticacao"
         "404":
-          description: Erro no formato padrão (https://docs.notemfiscal.com.br/primeiros-passos/erros)
+          description: '[Erro no formato padrão](https://docs.notemfiscal.com.br/primeiros-passos/erros)'
           headers:
             X-Request-Id:
               $ref: "#/components/headers/XRequestId"
@@ -2133,6 +2165,7 @@ paths:
       tags:
         - Notas recebidas
       operationId: baixarXmlNotaRecebida
+      x-titulo: Baixar XML da nota recebida
       summary: XML oficial da nota recebida, sem alterações
       description: XML oficial da nota recebida, exatamente como trazido do Ambiente de Dados Nacional.
       responses:
@@ -2161,7 +2194,7 @@ paths:
                 erroAutenticacao:
                   $ref: "#/components/examples/ErroAutenticacao"
         "404":
-          description: Erro no formato padrão (https://docs.notemfiscal.com.br/primeiros-passos/erros)
+          description: '[Erro no formato padrão](https://docs.notemfiscal.com.br/primeiros-passos/erros)'
           headers:
             X-Request-Id:
               $ref: "#/components/headers/XRequestId"
@@ -2186,6 +2219,7 @@ paths:
       tags:
         - Notas recebidas
       operationId: baixarPdfNotaRecebida
+      x-titulo: Baixar PDF da nota recebida
       summary: DANFSe da nota recebida, gerado do XML oficial
       description: DANFSe gerado a partir do XML oficial da nota recebida.
       responses:
@@ -2215,7 +2249,7 @@ paths:
                 erroAutenticacao:
                   $ref: "#/components/examples/ErroAutenticacao"
         "404":
-          description: Erro no formato padrão (https://docs.notemfiscal.com.br/primeiros-passos/erros)
+          description: '[Erro no formato padrão](https://docs.notemfiscal.com.br/primeiros-passos/erros)'
           headers:
             X-Request-Id:
               $ref: "#/components/headers/XRequestId"
@@ -2231,6 +2265,7 @@ paths:
       tags:
         - Catálogos
       operationId: listarMunicipios
+      x-titulo: Municípios
       summary: Municípios (nome sem acento ou código IBGE)
       description: Catálogo oficial de municípios (IBGE). A busca aceita o nome sem acento ou o código IBGE de 7 dígitos.
       parameters:
@@ -2267,7 +2302,7 @@ paths:
             X-Request-Id:
               $ref: "#/components/headers/XRequestId"
         "400":
-          description: Erro no formato padrão (https://docs.notemfiscal.com.br/primeiros-passos/erros)
+          description: '[Erro no formato padrão](https://docs.notemfiscal.com.br/primeiros-passos/erros)'
           headers:
             X-Request-Id:
               $ref: "#/components/headers/XRequestId"
@@ -2283,6 +2318,7 @@ paths:
       tags:
         - Catálogos
       operationId: listarCodigosServico
+      x-titulo: Códigos de serviço
       summary: Códigos nacionais de serviço (descrição ou código)
       description: Lista nacional de serviços (código de tributação nacional de 6 dígitos). A busca aceita descrição ou código.
       parameters:
@@ -2319,7 +2355,7 @@ paths:
             X-Request-Id:
               $ref: "#/components/headers/XRequestId"
         "400":
-          description: Erro no formato padrão (https://docs.notemfiscal.com.br/primeiros-passos/erros)
+          description: '[Erro no formato padrão](https://docs.notemfiscal.com.br/primeiros-passos/erros)'
           headers:
             X-Request-Id:
               $ref: "#/components/headers/XRequestId"
@@ -2335,6 +2371,7 @@ paths:
       tags:
         - Catálogos
       operationId: listarNbs
+      x-titulo: Códigos NBS
       summary: Códigos NBS (descrição ou código)
       description: Nomenclatura Brasileira de Serviços (9 dígitos), usada no IBS/CBS. A busca aceita descrição ou código.
       parameters:
@@ -2371,7 +2408,7 @@ paths:
             X-Request-Id:
               $ref: "#/components/headers/XRequestId"
         "400":
-          description: Erro no formato padrão (https://docs.notemfiscal.com.br/primeiros-passos/erros)
+          description: '[Erro no formato padrão](https://docs.notemfiscal.com.br/primeiros-passos/erros)'
           headers:
             X-Request-Id:
               $ref: "#/components/headers/XRequestId"
@@ -2387,6 +2424,7 @@ paths:
       tags:
         - Catálogos
       operationId: listarClassificacoesTributarias
+      x-titulo: Classificações tributárias
       summary: Classificações tributárias do IBS/CBS aceitas na NFS-e (cClassTrib)
       description: >-
         Tabela oficial (73 classificações com NFS-e = Sim). suportada = false indica classificação que a notem ainda não aceita (tributação regular, crédito
@@ -2425,7 +2463,7 @@ paths:
             X-Request-Id:
               $ref: "#/components/headers/XRequestId"
         "400":
-          description: Erro no formato padrão (https://docs.notemfiscal.com.br/primeiros-passos/erros)
+          description: '[Erro no formato padrão](https://docs.notemfiscal.com.br/primeiros-passos/erros)'
           headers:
             X-Request-Id:
               $ref: "#/components/headers/XRequestId"
@@ -2441,6 +2479,7 @@ paths:
       tags:
         - Catálogos
       operationId: listarIndicadoresOperacao
+      x-titulo: Indicadores de operação
       summary: Indicadores de operação do IBS/CBS (cIndOp, Anexo VII v1.03)
       description: >-
         Por padrão lista só os 28 indicadores ativos. incluir_inativos=true inclui os 5 retirados da tabela oficial (ativo = false), que não podem ser
@@ -2484,7 +2523,7 @@ paths:
             X-Request-Id:
               $ref: "#/components/headers/XRequestId"
         "400":
-          description: Erro no formato padrão (https://docs.notemfiscal.com.br/primeiros-passos/erros)
+          description: '[Erro no formato padrão](https://docs.notemfiscal.com.br/primeiros-passos/erros)'
           headers:
             X-Request-Id:
               $ref: "#/components/headers/XRequestId"
@@ -2500,6 +2539,7 @@ paths:
       tags:
         - Catálogos
       operationId: sugerirClassificacao
+      x-titulo: Sugestão de classificação
       summary: Sugestão de NBS, classificação, indicador e atividade do Simples (Anexo VIII)
       description: >-
         Primeira opção da tabela oficial de correlação para o código de serviço, com as alternativas. Nunca é aplicada automaticamente; valores não aceitos na
@@ -2525,7 +2565,7 @@ paths:
             X-Request-Id:
               $ref: "#/components/headers/XRequestId"
         "400":
-          description: Erro no formato padrão (https://docs.notemfiscal.com.br/primeiros-passos/erros)
+          description: '[Erro no formato padrão](https://docs.notemfiscal.com.br/primeiros-passos/erros)'
           headers:
             X-Request-Id:
               $ref: "#/components/headers/XRequestId"
@@ -2537,7 +2577,7 @@ paths:
                 erroValidacao:
                   $ref: "#/components/examples/ErroValidacao"
         "404":
-          description: Erro no formato padrão (https://docs.notemfiscal.com.br/primeiros-passos/erros)
+          description: '[Erro no formato padrão](https://docs.notemfiscal.com.br/primeiros-passos/erros)'
           headers:
             X-Request-Id:
               $ref: "#/components/headers/XRequestId"
@@ -4315,7 +4355,7 @@ components:
           schema:
             $ref: "#/components/schemas/Erro"
     Erro:
-      description: Erro no formato padrão (https://docs.notemfiscal.com.br/primeiros-passos/erros)
+      description: '[Erro no formato padrão](https://docs.notemfiscal.com.br/primeiros-passos/erros)'
       headers:
         X-Request-Id:
           $ref: "#/components/headers/XRequestId"
@@ -4559,7 +4599,7 @@ components:
       value:
         id_externo: CLI-881
         tipo: pj
-        documento: "99888777000166"
+        documento: "99888777000100"
         nome: Cliente Exemplo LTDA
         email: financeiro@exemplo.com.br
         telefone: "48988880000"
@@ -4577,7 +4617,7 @@ components:
         id: 00000000-0000-4000-8000-000000000601
         id_externo: CLI-881
         tipo: pj
-        documento: "99888777000166"
+        documento: "99888777000100"
         nome: Cliente Exemplo LTDA
         email: financeiro@exemplo.com.br
         telefone: "48988880000"
@@ -4602,7 +4642,7 @@ components:
           - id: 00000000-0000-4000-8000-000000000601
             id_externo: CLI-881
             tipo: pj
-            documento: "99888777000166"
+            documento: "99888777000100"
             nome: Cliente Exemplo LTDA
             email: financeiro@exemplo.com.br
             telefone: "48988880000"
@@ -4701,7 +4741,7 @@ components:
         descricao: Vistoria veicular - placa ABC1D23
         tomador:
           tipo: pj
-          documento: "99888777000166"
+          documento: "99888777000100"
           nome: Cliente Exemplo LTDA
           email: financeiro@exemplo.com.br
           endereco:
@@ -4724,7 +4764,7 @@ components:
         restricoes: []
         manifestacao: null
         numero: "123"
-        chave_acesso: "42122542211222333000181000000000012326110000000001"
+        chave_acesso: "42054072211222333000181000000000012326110000000001"
         serie_dps: "00900"
         numero_dps: "57"
         competencia: "2026-11-12"
@@ -4732,7 +4772,7 @@ components:
         autorizada_em: "2026-11-12T10:15:05-03:00"
         tomador:
           tipo: pj
-          documento: "99888777000166"
+          documento: "99888777000100"
           nome: Cliente Exemplo LTDA
         servico:
           servico_id: 00000000-0000-4000-8000-000000000301
@@ -4760,7 +4800,7 @@ components:
         links:
           xml: https://app.notemfiscal.com.br/api/v1/notas/00000000-0000-4000-8000-000000000101/xml
           pdf: https://app.notemfiscal.com.br/api/v1/notas/00000000-0000-4000-8000-000000000101/pdf
-          consulta_publica: https://www.nfse.gov.br/ConsultaPublica?tpc=1&chave=42122542211222333000181000000000012326110000000001
+          consulta_publica: https://www.nfse.gov.br/ConsultaPublica?tpc=1&chave=42054072211222333000181000000000012326110000000001
         criada_em: "2026-11-12T10:15:03-03:00"
         atualizada_em: "2026-11-12T10:15:05-03:00"
     NotaEmVerificacao:
@@ -4783,7 +4823,7 @@ components:
         autorizada_em: null
         tomador:
           tipo: pj
-          documento: "99888777000166"
+          documento: "99888777000100"
           nome: Cliente Exemplo LTDA
         servico:
           servico_id: 00000000-0000-4000-8000-000000000301
@@ -4827,7 +4867,7 @@ components:
             restricoes: []
             manifestacao: null
             numero: "123"
-            chave_acesso: "42122542211222333000181000000000012326110000000001"
+            chave_acesso: "42054072211222333000181000000000012326110000000001"
             serie_dps: "00900"
             numero_dps: "57"
             competencia: "2026-11-12"
@@ -4835,7 +4875,7 @@ components:
             autorizada_em: "2026-11-12T10:15:05-03:00"
             tomador:
               tipo: pj
-              documento: "99888777000166"
+              documento: "99888777000100"
               nome: Cliente Exemplo LTDA
             servico:
               servico_id: 00000000-0000-4000-8000-000000000301
@@ -4863,7 +4903,7 @@ components:
             links:
               xml: https://app.notemfiscal.com.br/api/v1/notas/00000000-0000-4000-8000-000000000101/xml
               pdf: https://app.notemfiscal.com.br/api/v1/notas/00000000-0000-4000-8000-000000000101/pdf
-              consulta_publica: https://www.nfse.gov.br/ConsultaPublica?tpc=1&chave=42122542211222333000181000000000012326110000000001
+              consulta_publica: https://www.nfse.gov.br/ConsultaPublica?tpc=1&chave=42054072211222333000181000000000012326110000000001
             criada_em: "2026-11-12T10:15:03-03:00"
             atualizada_em: "2026-11-12T10:15:05-03:00"
         proximo_cursor: null
@@ -4889,7 +4929,7 @@ components:
         restricoes: []
         manifestacao: null
         numero: "123"
-        chave_acesso: "42122542211222333000181000000000012326110000000001"
+        chave_acesso: "42054072211222333000181000000000012326110000000001"
         serie_dps: "00900"
         numero_dps: "57"
         competencia: "2026-11-12"
@@ -4897,7 +4937,7 @@ components:
         autorizada_em: "2026-11-12T10:15:05-03:00"
         tomador:
           tipo: pj
-          documento: "99888777000166"
+          documento: "99888777000100"
           nome: Cliente Exemplo LTDA
         servico:
           servico_id: 00000000-0000-4000-8000-000000000301
@@ -4934,7 +4974,7 @@ components:
         links:
           xml: https://app.notemfiscal.com.br/api/v1/notas/00000000-0000-4000-8000-000000000101/xml
           pdf: https://app.notemfiscal.com.br/api/v1/notas/00000000-0000-4000-8000-000000000101/pdf
-          consulta_publica: https://www.nfse.gov.br/ConsultaPublica?tpc=1&chave=42122542211222333000181000000000012326110000000001
+          consulta_publica: https://www.nfse.gov.br/ConsultaPublica?tpc=1&chave=42054072211222333000181000000000012326110000000001
         criada_em: "2026-11-12T10:15:03-03:00"
         atualizada_em: "2026-11-13T09:20:41-03:00"
     NotaCancelamentoPendente:
@@ -4949,7 +4989,7 @@ components:
         restricoes: []
         manifestacao: null
         numero: "123"
-        chave_acesso: "42122542211222333000181000000000012326110000000001"
+        chave_acesso: "42054072211222333000181000000000012326110000000001"
         serie_dps: "00900"
         numero_dps: "57"
         competencia: "2026-11-12"
@@ -4957,7 +4997,7 @@ components:
         autorizada_em: "2026-11-12T10:15:05-03:00"
         tomador:
           tipo: pj
-          documento: "99888777000166"
+          documento: "99888777000100"
           nome: Cliente Exemplo LTDA
         servico:
           servico_id: 00000000-0000-4000-8000-000000000301
@@ -4997,7 +5037,7 @@ components:
         links:
           xml: https://app.notemfiscal.com.br/api/v1/notas/00000000-0000-4000-8000-000000000101/xml
           pdf: https://app.notemfiscal.com.br/api/v1/notas/00000000-0000-4000-8000-000000000101/pdf
-          consulta_publica: https://www.nfse.gov.br/ConsultaPublica?tpc=1&chave=42122542211222333000181000000000012326110000000001
+          consulta_publica: https://www.nfse.gov.br/ConsultaPublica?tpc=1&chave=42054072211222333000181000000000012326110000000001
         criada_em: "2026-11-12T10:15:03-03:00"
         atualizada_em: "2026-11-12T10:15:05-03:00"
     NotaEmAnalise:
@@ -5012,7 +5052,7 @@ components:
         restricoes: []
         manifestacao: null
         numero: "123"
-        chave_acesso: "42122542211222333000181000000000012326110000000001"
+        chave_acesso: "42054072211222333000181000000000012326110000000001"
         serie_dps: "00900"
         numero_dps: "57"
         competencia: "2026-11-12"
@@ -5020,7 +5060,7 @@ components:
         autorizada_em: "2026-11-12T10:15:05-03:00"
         tomador:
           tipo: pj
-          documento: "99888777000166"
+          documento: "99888777000100"
           nome: Cliente Exemplo LTDA
         servico:
           servico_id: 00000000-0000-4000-8000-000000000301
@@ -5057,7 +5097,7 @@ components:
         links:
           xml: https://app.notemfiscal.com.br/api/v1/notas/00000000-0000-4000-8000-000000000101/xml
           pdf: https://app.notemfiscal.com.br/api/v1/notas/00000000-0000-4000-8000-000000000101/pdf
-          consulta_publica: https://www.nfse.gov.br/ConsultaPublica?tpc=1&chave=42122542211222333000181000000000012326110000000001
+          consulta_publica: https://www.nfse.gov.br/ConsultaPublica?tpc=1&chave=42054072211222333000181000000000012326110000000001
         criada_em: "2026-11-12T10:15:03-03:00"
         atualizada_em: "2026-11-12T10:15:05-03:00"
     PedidoSubstituicao:
@@ -5078,7 +5118,7 @@ components:
         restricoes: []
         manifestacao: null
         numero: "124"
-        chave_acesso: "42122542211222333000181000000000012426110000000002"
+        chave_acesso: "42054072211222333000181000000000012426110000000002"
         serie_dps: "00900"
         numero_dps: "58"
         competencia: "2026-11-12"
@@ -5086,7 +5126,7 @@ components:
         autorizada_em: "2026-11-12T10:15:05-03:00"
         tomador:
           tipo: pj
-          documento: "99888777000166"
+          documento: "99888777000100"
           nome: Cliente Exemplo LTDA
         servico:
           servico_id: 00000000-0000-4000-8000-000000000301
@@ -5114,7 +5154,7 @@ components:
         links:
           xml: https://app.notemfiscal.com.br/api/v1/notas/00000000-0000-4000-8000-000000000102/xml
           pdf: https://app.notemfiscal.com.br/api/v1/notas/00000000-0000-4000-8000-000000000102/pdf
-          consulta_publica: https://www.nfse.gov.br/ConsultaPublica?tpc=1&chave=42122542211222333000181000000000012426110000000002
+          consulta_publica: https://www.nfse.gov.br/ConsultaPublica?tpc=1&chave=42054072211222333000181000000000012426110000000002
         criada_em: "2026-11-12T10:15:03-03:00"
         atualizada_em: "2026-11-12T10:15:05-03:00"
     NotaRecebida:
@@ -5212,14 +5252,14 @@ components:
       value: >-
         <?xml version="1.0" encoding="UTF-8"?>
 
-        <NFSe xmlns="http://www.sped.fazenda.gov.br/nfse" versao="1.01"><infNFSe Id="NFS42122542211222333000181000000000012326110000000001"><!-- XML oficial
+        <NFSe xmlns="http://www.sped.fazenda.gov.br/nfse" versao="1.01"><infNFSe Id="NFS42054072211222333000181000000000012326110000000001"><!-- XML oficial
         autorizado, sem alterações --></infNFSe></NFSe>
     XmlEvento:
       summary: XML do evento (resumido)
       value: >-
         <?xml version="1.0" encoding="UTF-8"?>
 
-        <evento xmlns="http://www.sped.fazenda.gov.br/nfse" versao="1.01"><infEvento Id="EVT42122542211222333000181000000000012326110000000001101101001"><!--
+        <evento xmlns="http://www.sped.fazenda.gov.br/nfse" versao="1.01"><infEvento Id="EVT42054072211222333000181000000000012326110000000001101101001"><!--
         XML oficial do evento, sem alterações --></infEvento></evento>
     Pdf:
       summary: Arquivo PDF

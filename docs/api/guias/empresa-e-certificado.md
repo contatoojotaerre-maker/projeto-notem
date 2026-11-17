@@ -10,7 +10,7 @@ descricao: Cadastro da empresa emitente, desativação, exclusão e certificado 
 Rotas para o sistema parceiro cadastrar e preparar as empresas emitentes, sem que o cliente final acesse a notem.
 
 ## Regras gerais
-- Uma integração opera **todas as empresas da sua organização** (não há seleção de empresas por integração).
+- Uma integração opera todas as empresas da organização. Veja [Autenticação](../primeiros-passos/autenticacao.md).
 - Valores fiscais são enviados em texto legível (ex.: `"me_epp"`); a notem converte para os códigos oficiais.
 - `Idempotency-Key` é aceito em `POST`, `PATCH`, `PUT` e `DELETE` (24 h por integração e ambiente; veja [Idempotência](../primeiros-passos/idempotencia.md)) e recomendado em `POST /empresas`.
 - Alterações feitas pela API aparecem no painel como "Alterado via API — integração X".
@@ -30,13 +30,13 @@ Rotas para o sistema parceiro cadastrar e preparar as empresas emitentes, sem qu
   "email": "contato@exemplo.com.br",
   "telefone": "48999990000",
   "endereco": {
-    "cep": "88980000",
+    "cep": "88010000",
     "logradouro": "Rua Exemplo",
     "numero": "100",
     "complemento": null,
     "bairro": "Centro",
-    "codigo_municipio": "4212254",
-    "municipio": "Passo de Torres",
+    "codigo_municipio": "4205407",
+    "municipio": "Florianópolis",
     "uf": "SC"
   },
   "ativa": true,

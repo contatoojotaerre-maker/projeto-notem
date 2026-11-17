@@ -18,7 +18,7 @@ export type DocPage = {
   aside?: string
   toc: TocItem[]
 }
-export type NavItem = { path: string; title: string; method?: string }
+export type NavItem = { path: string; title: string; method?: string | undefined }
 export type NavGroup = { title: string; items: NavItem[] }
 export type NavSection = { title: string; items: NavItem[]; groups: NavGroup[] }
 export type SearchEntry = { p: string; t: string; h: string; s: string; x: string }

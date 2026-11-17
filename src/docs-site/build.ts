@@ -47,7 +47,7 @@ export function tabs(items: { label: string; html: string }[], group = 'codigo')
   return `<div class="docs-tabs" data-tabs="${esc(group)}"><div class="docs-tablist" role="tablist">${btn}</div>${panels}</div>`
 }
 
-type Front = { titulo: string; menu?: string; ordem: number; atualizado: string; descricao: string }
+type Front = { titulo: string; menu?: string | undefined; ordem: number; atualizado: string; descricao: string }
 function frontMatter(file: string, raw: string): { fm: Front; body: string } {
   const m = /^---\n([\s\S]*?)\n---\n/.exec(raw)
   if (!m) throw new Error(`${file}: falta o cabeçalho (titulo, ordem, atualizado, descricao)`)
@@ -65,7 +65,8 @@ export function pagePath(rel: string) {
 }
 
 // ---------- OpenAPI helpers ----------
-type Json = Record<string, any>
+// OpenAPI documents are loosely shaped YAML; property access is checked by the example/spec tests instead.
+type Json = any
 function opPath(tag: string, id: string) { return `/referencia/${slugify(tag)}/${kebab(id)}` }
 const METHOD_ORDER = ['get', 'post', 'put', 'patch', 'delete']
 const SAMPLE_IDS: Record<string, string> = { empresas: '00000000-0000-4000-8000-000000000201', notas: '00000000-0000-4000-8000-000000000101', servico_id: '00000000-0000-4000-8000-000000000301', tomador_id: '00000000-0000-4000-8000-000000000601', nota_id: '00000000-0000-4000-8000-000000000701', codigo: '101101' }
@@ -206,7 +207,7 @@ export function buildDocsSite(root = process.cwd()): DocsSite {
     const top = rel.includes('/') ? rel.split('/')[0]! : rel === 'LEIAME.md' ? '' : rel.replace(/\.md$/, '')
     const section = SECTIONS.find(s => s.dir === top)
     if (!section) { problems.push(`${rel}: pasta fora do menu`); continue }
-    const content = body.replace(/^# .*\n+/, '')
+    const content = body.replace(/^\s*# .*\n+/, '')
     const { html, toc, ids } = renderMarkdown(content, rel)
     const p = pagePath(rel); idsByPath.set(p, ids)
     pages.push({ path: p, source: rel, title: fm.titulo, menu: fm.menu ?? fm.titulo, description: fm.descricao, section: section.title, updated: fm.atualizado, html, toc, ...{ order: fm.ordem } } as DocPage & { order: number })
@@ -243,7 +244,7 @@ export function buildDocsSite(root = process.cwd()): DocsSite {
   function fields(s0: any, prefix: string, mode: 'req' | 'res', depth = 0, seen = new Set<any>()): Row[] {
     const s = merged(s0); if (!s || depth > 4 || seen.has(s)) return []
     const rows: Row[] = []; const req = new Set<string>(s.required ?? [])
-    for (const [name, p0] of Object.entries((s.properties ?? {}) as Json)) {
+    for (const [name, p0] of Object.entries((s.properties ?? {}) as Record<string, Json>)) {
       const p = deref(p0); if (mode === 'req' && p?.readOnly) continue
       const full = prefix ? `${prefix}.${name}` : name
       const desc = [p0.description ?? p?.description ? inline(p0.description ?? p.description) : '', constraints(p0.$ref ? p : p0)].filter(Boolean).join(' · ')
@@ -254,18 +255,20 @@ export function buildDocsSite(root = process.cwd()): DocsSite {
     }
     return rows
   }
-  const fieldTable = (rows: Row[], showReq = true) => rows.length ? `<div class="docs-table docs-fields"><table><thead><tr><th>Campo</th><th>Tipo</th>${showReq ? '<th>Obrigatório</th>' : ''}<th>Descrição</th></tr></thead><tbody>${rows.map(r => `<tr><td><code>${esc(r.name)}</code></td><td>${esc(r.type)}</td>${showReq ? `<td>${r.req ? 'sim' : 'não'}</td>` : ''}<td>${r.desc}</td></tr>`).join('')}</tbody></table></div>` : ''
+  // Field lists render as stacked rows (name · type · required, then description) so they stay readable beside the code column.
+  const fieldRow = (name: string, meta: string[], desc: string) => `<div class="docs-field"><div class="docs-field-head"><code>${esc(name)}</code>${meta.map(m => `<span class="docs-field-meta${m === 'obrigatório' ? ' docs-field-req' : ''}">${m}</span>`).join('')}</div>${desc ? `<div class="docs-field-desc">${desc}</div>` : ''}</div>`
+  const fieldTable = (rows: Row[], showReq = true) => rows.length ? `<div class="docs-fields">${rows.map(r => fieldRow(r.name, [esc(r.type), ...(showReq && r.req ? ['obrigatório'] : [])], r.desc)).join('')}</div>` : ''
   const exampleValues = (content: Json | undefined) => Object.entries((content?.examples ?? {}) as Json).map(([k, v]) => { const e = deref(v); return { key: k, summary: e.summary ?? k, value: e.value } })
 
   for (const o of ops) {
     const toc: TocItem[] = []; const h2 = (id: string, t: string) => { toc.push({ id, text: t, level: 2 }); return `<h2 id="${id}"><a class="docs-anchor" href="#${id}" aria-hidden="true" tabindex="-1">#</a>${esc(t)}</h2>` }
     const M = o.method.toUpperCase()
     let html = `<div class="docs-endpoint"><span class="docs-method" data-method="${o.method}">${M}</span><code>/api/v1${esc(o.route)}</code></div>`
-    html += para(o.op.description ?? '')
+    html = `<p class="docs-lead">${inline(o.op.summary)}</p>` + html + para(o.op.description ?? '')
     const params = [...(o.item.parameters ?? []), ...(o.op.parameters ?? [])].map(deref)
     if (params.length) {
-      const where: Record<string, string> = { path: 'caminho', query: 'consulta', header: 'cabeçalho' }
-      html += h2('parametros', 'Parâmetros') + `<div class="docs-table docs-fields"><table><thead><tr><th>Nome</th><th>Onde</th><th>Obrigatório</th><th>Descrição</th></tr></thead><tbody>` + params.map((p: Json) => `<tr><td><code>${esc(p.name)}</code></td><td>${where[p.in] ?? p.in}</td><td>${p.required ? 'sim' : 'não'}</td><td>${[typeOf(p.schema), p.description ? inline(p.description) : '', constraints(p.schema)].filter(Boolean).join(' · ')}</td></tr>`).join('') + '</tbody></table></div>'
+      const where: Record<string, string> = { path: 'no caminho', query: 'na consulta', header: 'no cabeçalho' }
+      html += h2('parametros', 'Parâmetros') + `<div class="docs-fields">` + params.map((p: Json) => fieldRow(p.name, [esc(typeOf(p.schema)), where[p.in] ?? p.in, ...(p.required ? ['obrigatório'] : [])], [p.description ? inline(p.description) : '', constraints(p.schema)].filter(Boolean).join(' · '))).join('') + '</div>'
     }
     const body = o.op.requestBody ? deref(o.op.requestBody) : null
     const bodyContent = body?.content?.['application/json']
@@ -300,7 +303,8 @@ export function buildDocsSite(root = process.cwd()): DocsSite {
     if (!exampleValues(bodyContent).length && bodyContent) problems.push(`${o.id}: corpo sem exemplo`)
     if (!resTabs.length) problems.push(`${o.id}: resposta sem exemplo`)
     aside += `<p class="docs-aside-title">Resposta</p>` + tabs(resTabs, 'resposta')
-    pages.push({ path: o.path, source: `openapi.yaml#${o.id}`, title: o.op.summary, menu: o.op.summary, description: stripTags(para(o.op.description ?? o.op.summary)).slice(0, 200) || o.op.summary, section: 'Referência da API', group: o.tag, updated: updatedRef, method: M, route: o.route, html, aside, toc })
+    const short = o.op['x-titulo'] ?? o.op.summary
+    pages.push({ path: o.path, source: `openapi.yaml#${o.id}`, title: short, menu: short, description: o.op.summary, section: 'Referência da API', group: o.tag, updated: updatedRef, method: M, route: o.route, html, aside, toc })
   }
 
   // ---------- menu, order ----------
@@ -323,11 +327,12 @@ export function buildDocsSite(root = process.cwd()): DocsSite {
   // ---------- search ----------
   const search: SearchEntry[] = []
   for (const p of pages) {
-    const parts = p.html.split(/(?=<h[23] id=")/)
+    // Operation pages are one entry each (their per-status sections would flood the results); other pages index by heading.
+    const parts = p.method ? [p.html] : p.html.split(/(?=<h[23] id=")/)
     for (const part of parts) {
       const m = /^<h[23] id="([^"]+)">([\s\S]*?)<\/h[23]>/.exec(part)
       const heading = m ? stripTags(m[2]!).replace(/^#\s*/, '') : ''
-      const text = stripTags(m ? part.slice(m[0].length) : part).slice(0, 700)
+      const text = stripTags((m ? part.slice(m[0].length) : part).replace(/<button[\s\S]*?<\/button>/g, '').replace(/<div class="docs-code-head">[\s\S]*?<\/div>/g, '')).slice(0, 700)
       if (!heading && !text) continue
       search.push({ p: p.path + (m ? '#' + m[1] : ''), t: p.method ? `${p.title} (${p.method} ${p.route})` : p.title, h: heading, s: p.section, x: text })
     }

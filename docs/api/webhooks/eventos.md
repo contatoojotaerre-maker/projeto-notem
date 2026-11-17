@@ -7,6 +7,8 @@ descricao: Lista de eventos, assinatura por grupo com curingas e o conteúdo de 
 
 # Eventos
 
+Nomes de eventos em português, no formato `recurso.acontecimento`.
+
 | Tipo | Quando |
 |---|---|
 | `webhook.teste` | Envio de teste pelo painel |
@@ -115,7 +117,7 @@ Valores fictícios para demonstrar o formato; mensagens governamentais são ilus
     "restricoes": [],
     "manifestacao": null,
     "numero": "123",
-    "chave_acesso": "42122542211222333000181000000000012326110000000001",
+    "chave_acesso": "42054072211222333000181000000000012326110000000001",
     "serie_dps": "00900",
     "numero_dps": "57",
     "competencia": "2026-11-12",
@@ -123,7 +125,7 @@ Valores fictícios para demonstrar o formato; mensagens governamentais são ilus
     "autorizada_em": "2026-11-12T10:15:05-03:00",
     "tomador": {
       "tipo": "pj",
-      "documento": "99888777000166",
+      "documento": "99888777000100",
       "nome": "Cliente Exemplo LTDA"
     },
     "servico": {
@@ -142,8 +144,8 @@ Valores fictícios para demonstrar o formato; mensagens governamentais são ilus
       "valor_liquido": "150.00"
     },
     "local_prestacao": {
-      "codigo_municipio": "4212254",
-      "municipio": "Passo de Torres",
+      "codigo_municipio": "4205407",
+      "municipio": "Florianópolis",
       "uf": "SC"
     },
     "ibs_cbs": null,
@@ -155,7 +157,7 @@ Valores fictícios para demonstrar o formato; mensagens governamentais são ilus
     "links": {
       "xml": "https://app.notemfiscal.com.br/api/v1/notas/00000000-0000-4000-8000-000000000101/xml",
       "pdf": "https://app.notemfiscal.com.br/api/v1/notas/00000000-0000-4000-8000-000000000101/pdf",
-      "consulta_publica": "https://www.nfse.gov.br/ConsultaPublica?tpc=1&chave=42122542211222333000181000000000012326110000000001"
+      "consulta_publica": "https://www.nfse.gov.br/ConsultaPublica?tpc=1&chave=42054072211222333000181000000000012326110000000001"
     },
     "criada_em": "2026-11-12T10:15:03-03:00",
     "atualizada_em": "2026-11-12T10:15:05-03:00"
@@ -190,7 +192,7 @@ Valores fictícios para demonstrar o formato; mensagens governamentais são ilus
     "autorizada_em": null,
     "tomador": {
       "tipo": "pj",
-      "documento": "99888777000166",
+      "documento": "99888777000100",
       "nome": "Cliente Exemplo LTDA"
     },
     "servico": {
@@ -209,8 +211,8 @@ Valores fictícios para demonstrar o formato; mensagens governamentais são ilus
       "valor_liquido": null
     },
     "local_prestacao": {
-      "codigo_municipio": "4212254",
-      "municipio": "Passo de Torres",
+      "codigo_municipio": "4205407",
+      "municipio": "Florianópolis",
       "uf": "SC"
     },
     "ibs_cbs": null,
@@ -258,7 +260,7 @@ Enviado quando o governo registra o cancelamento, inclusive quando a notem confi
     "restricoes": [],
     "manifestacao": null,
     "numero": "123",
-    "chave_acesso": "42122542211222333000181000000000012326110000000001",
+    "chave_acesso": "42054072211222333000181000000000012326110000000001",
     "serie_dps": "00900",
     "numero_dps": "57",
     "competencia": "2026-11-12",
@@ -266,7 +268,7 @@ Enviado quando o governo registra o cancelamento, inclusive quando a notem confi
     "autorizada_em": "2026-11-12T10:15:05-03:00",
     "tomador": {
       "tipo": "pj",
-      "documento": "99888777000166",
+      "documento": "99888777000100",
       "nome": "Cliente Exemplo LTDA"
     },
     "servico": {
@@ -285,8 +287,8 @@ Enviado quando o governo registra o cancelamento, inclusive quando a notem confi
       "valor_liquido": "150.00"
     },
     "local_prestacao": {
-      "codigo_municipio": "4212254",
-      "municipio": "Passo de Torres",
+      "codigo_municipio": "4205407",
+      "municipio": "Florianópolis",
       "uf": "SC"
     },
     "ibs_cbs": null,
@@ -309,7 +311,7 @@ Enviado quando o governo registra o cancelamento, inclusive quando a notem confi
     "links": {
       "xml": "https://app.notemfiscal.com.br/api/v1/notas/00000000-0000-4000-8000-000000000101/xml",
       "pdf": "https://app.notemfiscal.com.br/api/v1/notas/00000000-0000-4000-8000-000000000101/pdf",
-      "consulta_publica": "https://www.nfse.gov.br/ConsultaPublica?tpc=1&chave=42122542211222333000181000000000012326110000000001"
+      "consulta_publica": "https://www.nfse.gov.br/ConsultaPublica?tpc=1&chave=42054072211222333000181000000000012326110000000001"
     },
     "criada_em": "2026-11-12T10:15:03-03:00",
     "atualizada_em": "2026-11-13T09:20:41-03:00"
@@ -336,7 +338,7 @@ Enviado quando o pedido de análise fiscal do cancelamento é registrado. Valore
     "restricoes": [],
     "manifestacao": null,
     "numero": "123",
-    "chave_acesso": "42122542211222333000181000000000012326110000000001",
+    "chave_acesso": "42054072211222333000181000000000012326110000000001",
     "serie_dps": "00900",
     "numero_dps": "57",
     "competencia": "2026-11-12",
@@ -344,7 +346,7 @@ Enviado quando o pedido de análise fiscal do cancelamento é registrado. Valore
     "autorizada_em": "2026-11-12T10:15:05-03:00",
     "tomador": {
       "tipo": "pj",
-      "documento": "99888777000166",
+      "documento": "99888777000100",
       "nome": "Cliente Exemplo LTDA"
     },
     "servico": {
@@ -363,8 +365,8 @@ Enviado quando o pedido de análise fiscal do cancelamento é registrado. Valore
       "valor_liquido": "150.00"
     },
     "local_prestacao": {
-      "codigo_municipio": "4212254",
-      "municipio": "Passo de Torres",
+      "codigo_municipio": "4205407",
+      "municipio": "Florianópolis",
       "uf": "SC"
     },
     "ibs_cbs": null,
@@ -387,7 +389,7 @@ Enviado quando o pedido de análise fiscal do cancelamento é registrado. Valore
     "links": {
       "xml": "https://app.notemfiscal.com.br/api/v1/notas/00000000-0000-4000-8000-000000000101/xml",
       "pdf": "https://app.notemfiscal.com.br/api/v1/notas/00000000-0000-4000-8000-000000000101/pdf",
-      "consulta_publica": "https://www.nfse.gov.br/ConsultaPublica?tpc=1&chave=42122542211222333000181000000000012326110000000001"
+      "consulta_publica": "https://www.nfse.gov.br/ConsultaPublica?tpc=1&chave=42054072211222333000181000000000012326110000000001"
     },
     "criada_em": "2026-11-12T10:15:03-03:00",
     "atualizada_em": "2026-11-20T15:02:11-03:00"
@@ -414,7 +416,7 @@ Enviado para a nota **original** quando a substituta é autorizada (a substituta
     "restricoes": [],
     "manifestacao": null,
     "numero": "123",
-    "chave_acesso": "42122542211222333000181000000000012326110000000001",
+    "chave_acesso": "42054072211222333000181000000000012326110000000001",
     "serie_dps": "00900",
     "numero_dps": "57",
     "competencia": "2026-11-12",
@@ -422,7 +424,7 @@ Enviado para a nota **original** quando a substituta é autorizada (a substituta
     "autorizada_em": "2026-11-12T10:15:05-03:00",
     "tomador": {
       "tipo": "pj",
-      "documento": "99888777000166",
+      "documento": "99888777000100",
       "nome": "Cliente Exemplo LTDA"
     },
     "servico": {
@@ -441,8 +443,8 @@ Enviado para a nota **original** quando a substituta é autorizada (a substituta
       "valor_liquido": "150.00"
     },
     "local_prestacao": {
-      "codigo_municipio": "4212254",
-      "municipio": "Passo de Torres",
+      "codigo_municipio": "4205407",
+      "municipio": "Florianópolis",
       "uf": "SC"
     },
     "ibs_cbs": null,
@@ -454,7 +456,7 @@ Enviado para a nota **original** quando a substituta é autorizada (a substituta
     "links": {
       "xml": "https://app.notemfiscal.com.br/api/v1/notas/00000000-0000-4000-8000-000000000101/xml",
       "pdf": "https://app.notemfiscal.com.br/api/v1/notas/00000000-0000-4000-8000-000000000101/pdf",
-      "consulta_publica": "https://www.nfse.gov.br/ConsultaPublica?tpc=1&chave=42122542211222333000181000000000012326110000000001"
+      "consulta_publica": "https://www.nfse.gov.br/ConsultaPublica?tpc=1&chave=42054072211222333000181000000000012326110000000001"
     },
     "criada_em": "2026-11-12T10:15:03-03:00",
     "atualizada_em": "2026-11-14T11:00:07-03:00"

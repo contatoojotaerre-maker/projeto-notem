@@ -2,6 +2,7 @@ import "./lib/error-capture";
 
 import { consumeLastCapturedError } from "./lib/error-capture";
 import { renderErrorPage } from "./lib/error-page";
+import { routeRequest, type HostDecision } from "./lib/hosts";
 
 type ServerEntry = {
   fetch: (request: Request, env: unknown, ctx: unknown) => Promise<Response> | Response;
@@ -71,14 +72,37 @@ function apiPreflight(request: Request): Response | null {
   return new Response(null, { status: 204, headers: { Allow: "GET, POST, PATCH, PUT, DELETE", "Cache-Control": "no-store" } });
 }
 
+/** app.notemfiscal.com.br only: keep the panel and the API out of search engines (headers otherwise unchanged). */
+function withNoindex(response: Response, decision: HostDecision): Response {
+  if (decision.kind !== "app" || !decision.noindex) return response;
+  const headers = new Headers(response.headers);
+  headers.set("X-Robots-Tag", "noindex, nofollow");
+  return new Response(response.body, { status: response.status, statusText: response.statusText, headers });
+}
+
+/** Host-level answers that never reach the app: redirects between domains and per-domain robots.txt. */
+export function hostResponse(request: Request, decision: HostDecision): Response | null {
+  if (decision.kind === "redirect") return withSecurityHeaders(request, new Response(null, { status: 301, headers: { Location: decision.location, "Cache-Control": "public, max-age=3600" } }));
+  if (decision.kind === "robots") return withSecurityHeaders(request, new Response(decision.body, { headers: { "Content-Type": "text/plain; charset=utf-8", "Cache-Control": "public, max-age=3600" } }));
+  return null;
+}
+
 export default {
   async fetch(request: Request, env: unknown, ctx: unknown) {
     try {
+      const decision = routeRequest(new URL(request.url));
+      const early = hostResponse(request, decision);
+      if (early) return early;
+      if (decision.kind === "docs") {
+        // The documentation is plain HTML built from docs/api: it never loads the panel, its session or the database.
+        const { serveDocs } = await import("./docs-site/handler.server");
+        return serveDocs(request, decision);
+      }
       const preflight = apiPreflight(request);
-      if (preflight) return withSecurityHeaders(request, preflight);
+      if (preflight) return withNoindex(withSecurityHeaders(request, preflight), decision);
       const handler = await getServerEntry();
       const response = await handler.fetch(request, env, ctx);
-      return withSecurityHeaders(request, await normalizeCatastrophicSsrResponse(response));
+      return withNoindex(withSecurityHeaders(request, await normalizeCatastrophicSsrResponse(response)), decision);
     } catch (error) {
       console.error(error);
       return withSecurityHeaders(request, new Response(renderErrorPage(), {

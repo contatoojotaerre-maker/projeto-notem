@@ -1,13 +1,13 @@
 // HTML shell of the public documentation. Pages are plain server-rendered HTML plus one small script
 // (no panel bundle, no login session, no database calls).
-import { BASE_TOKEN, type DocPage, type DocsSite, type NavSection } from './types'
+import { BASE_TOKEN, type DocPage, type DocsSite, type NavSection, type NavItem } from './types'
 
 const DOCS_ORIGIN = 'https://docs.notemfiscal.com.br'
 const esc = (s: string) => s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;')
 export const withBase = (html: string, base: string) => html.split(BASE_TOKEN).join(base)
 const dateBr = (d: string) => `${d.slice(8, 10)}/${d.slice(5, 7)}/${d.slice(0, 4)}`
 
-export type Assets = { css: string[]; base: string }
+export type Assets = { css: string[]; base: string; version?: string | undefined }
 
 const icon = {
   menu: '<svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true"><path d="M4 6h16M4 12h16M4 18h16" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>',
@@ -17,7 +17,7 @@ const icon = {
 }
 
 function navHtml(nav: NavSection[], current: string) {
-  const link = (i: { path: string; title: string; method?: string }) => `<a href="${BASE_TOKEN}${i.path}" class="docs-nav-link"${i.path === current ? ' aria-current="page"' : ''}>${i.method ? `<span class="docs-method docs-method-sm" data-method="${i.method.toLowerCase()}">${i.method === 'DELETE' ? 'DEL' : i.method}</span>` : ''}<span>${esc(i.title)}</span></a>`
+  const link = (i: NavItem) => `<a href="${BASE_TOKEN}${i.path}" class="docs-nav-link"${i.path === current ? ' aria-current="page"' : ''}>${i.method ? `<span class="docs-method docs-method-sm" data-method="${i.method.toLowerCase()}">${i.method === 'DELETE' ? 'DEL' : i.method}</span>` : ''}<span>${esc(i.title)}</span></a>`
   return nav.map(s => `<div class="docs-nav-section"><p class="docs-nav-title">${esc(s.title)}</p>${s.items.map(link).join('')}${s.groups.map(g => {
     const open = g.items.some(i => i.path === current)
     return `<details class="docs-nav-group"${open ? ' open' : ''}><summary>${esc(g.title)}</summary>${g.items.map(link).join('')}</details>`
@@ -31,7 +31,7 @@ function head(title: string, description: string, canonicalPath: string, a: Asse
 <meta property="og:title" content="${esc(full)}"><meta property="og:description" content="${esc(description)}"><meta property="og:type" content="${type}"><meta property="og:site_name" content="notem"><meta property="og:url" content="${DOCS_ORIGIN}${canonicalPath}">
 <meta name="twitter:card" content="summary"><meta name="twitter:title" content="${esc(full)}"><meta name="twitter:description" content="${esc(description)}">
 <link rel="canonical" href="${DOCS_ORIGIN}${canonicalPath}"><link rel="icon" href="/favicon.png" type="image/png">
-<script src="${a.base}/_recursos/tema.js"></script>
+<script src="${a.base}/_recursos/tema.js${a.version ? `?v=${a.version}` : ''}"></script>
 <link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap">
 ${a.css.map(c => `<link rel="stylesheet" href="${c}">`).join('')}
@@ -50,7 +50,7 @@ ${main}</div>
 <div class="docs-search" data-search hidden><div class="docs-search-box" role="dialog" aria-modal="true" aria-label="Buscar na documentação">
 <div class="docs-search-field">${icon.search}<input type="search" data-search-input placeholder="Buscar páginas, campos e rotas" autocomplete="off" aria-label="Buscar"><button type="button" class="docs-search-close" data-search-close>Esc</button></div>
 <ul class="docs-search-results" data-search-results role="listbox" aria-label="Resultados"></ul><p class="docs-search-empty" data-search-empty hidden>Nenhum resultado.</p></div></div>
-<script src="${a.base}/_recursos/docs.js" defer></script></body>`
+<script src="${a.base}/_recursos/docs.js${a.version ? `?v=${a.version}` : ''}" defer></script></body>`
 }
 
 export function renderPage(site: DocsSite, page: DocPage, a: Assets) {

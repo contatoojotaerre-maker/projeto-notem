@@ -14,6 +14,7 @@ import { getWorkspace, updatePreferences, acceptInvitation } from '@/lib/notem.f
 import { canManageOrganization } from '@/lib/notem';
 import { orgSwitchTarget } from '@/lib/panel-nav';
 import { Brand } from './brand';
+import { DOCS_URL } from '@/lib/app-url';
 import { NavGroup, useNavGroups } from './nav-group';
 import { currentNavGroup, navSubitemActive } from '@/lib/nav-groups';
 
@@ -25,8 +26,8 @@ export function useWorkspace(){const context=useContext(WorkspaceContext);if(!co
 export function useOrganization(slug:string){const workspace=useWorkspace();const organization=workspace.organizations.find(o=>o.slug===slug);const role=workspace.memberships.find(m=>m.organization_id===organization?.id)?.role;return {organization,role,isAdmin:workspace.isAdmin};}
 /** Administração: only the screens that exist (the "em breve" placeholders redirect to Organizações). */
 const adminItems=[{title:'Organizações',section:'organizacoes',icon:Landmark},{title:'Mensagens de rejeição',section:'mensagens-de-rejeicao',icon:MessageSquare},{title:'Leiaute fiscal',section:'leiaute-fiscal',icon:FileCode2},{title:'Suporte',section:'suporte',icon:LifeBuoy}];
-/** Public API documentation lives at docs.notemfiscal.com.br in the final phase; until then the link stays hidden. */
-export const API_DOCS_URL: string | null = null;
+/** Public API documentation (docs.notemfiscal.com.br), opened from the "?" menu. */
+export const API_DOCS_URL: string | null = DOCS_URL;
 const whatsappLabel = (n: string) => `+${n.slice(0, 2)} (${n.slice(2, 4)}) ${n.slice(4, -4)}-${n.slice(-4)}`;
 export function AppShell(){
  const {data:workspace}=useSuspenseQuery(workspaceQuery());const cache=useQueryClient();const navigate=useNavigate();const path=useRouterState({select:s=>s.location.pathname});const searchStr=useRouterState({select:s=>s.location.searchStr});const save=useServerFn(updatePreferences);const accept=useServerFn(acceptInvitation);const [collapsed,setCollapsed]=useCollapsed();const accountRef=useRef<HTMLDivElement>(null);const [mobile,setMobile]=useState(false);const [account,setAccount]=useState(false);

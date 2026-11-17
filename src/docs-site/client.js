@@ -30,7 +30,8 @@
   if (toggle) toggle.addEventListener('click', function () { setNav(!document.body.classList.contains('docs-nav-open')) })
   if (backdrop) backdrop.addEventListener('click', function () { setNav(false) })
   var current = nav && $('[aria-current="page"]', nav)
-  if (current && current.scrollIntoView && window.innerWidth > 900) current.scrollIntoView({ block: 'center' })
+  // Scroll only the sidebar (never the page) so the current item is visible.
+  if (current && nav) nav.scrollTop = Math.max(0, current.offsetTop - nav.clientHeight / 2)
 
   // Copy buttons.
   document.addEventListener('click', function (e) {
@@ -114,7 +115,7 @@
     active = 0
     list.innerHTML = hits.map(function (h, i) {
       var e = h.e, x = e.x.length > 140 ? e.x.slice(0, 140) + '…' : e.x
-      return '<li role="option" aria-selected="' + (i === 0) + '"><a href="' + escHtml(e.p) + '"><span class="docs-search-sec">' + escHtml(e.s) + '</span><strong>' + escHtml(e.t) + (e.h ? ' › ' + escHtml(e.h) : '') + '</strong><small>' + escHtml(x) + '</small></a></li>'
+      return '<li role="option" aria-selected="' + (i === 0) + '"><a href="' + escHtml(base + e.p) + '"><span class="docs-search-sec">' + escHtml(e.s) + '</span><strong>' + escHtml(e.t) + (e.h ? ' › ' + escHtml(e.h) : '') + '</strong><small>' + escHtml(x) + '</small></a></li>'
     }).join('')
   }
   function move(d) {

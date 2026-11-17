@@ -10,9 +10,9 @@ descricao: Mudanças que afetam respostas da API /api/v1, da mais recente para a
 Mudanças que afetam respostas da API `/api/v1`, da mais recente para a mais antiga.
 
 ## 17/11/2026 — Textos de orientação e documentação pública
-- **Orientações de rejeição sem termos internos.** A explicação em português de duas recusas do governo foi reescrita para o parceiro. `codigo`, `campo` e status não mudaram:
-  - **E0714**: "…Confira o certificado e a assinatura no transmissor antes de repetir a emissão." → "…Confira se o certificado digital da empresa está válido e corresponde ao CNPJ antes de repetir a emissão."
-  - **E0855**: "…Se a data de obrigatoriedade configurada na notem ainda não chegou, o administrador da plataforma precisa antecipá-la para este ambiente." → "…Se a obrigatoriedade do IBS/CBS na notem ainda não começou para este ambiente, fale com o suporte da notem."
+- **Orientações de rejeição mais claras.** A explicação em português de duas recusas do governo deixou de citar etapas internas da notem. `codigo`, `campo` e status não mudaram:
+  - **E0714**: agora orienta "Confira se o certificado digital da empresa está válido e corresponde ao CNPJ antes de repetir a emissão."
+  - **E0855**: agora termina com "Se a obrigatoriedade do IBS/CBS na notem ainda não começou para este ambiente, fale com o suporte da notem."
 - **Especificação OpenAPI.** Grupos por assunto, `operationId`, descrições e exemplos fictícios em todas as 40 operações. Os esquemas passaram a descrever exatamente as respostas atuais (sem mudança de comportamento): empresa com campos `null`, `pendencias` na situação da empresa, itens dos catálogos, corpo parcial na alteração de serviço, `pode_solicitar_analise` nos detalhes de erro e o evento `nota.desbloqueada_prefeitura` na lista de webhooks.
 - **Documentação pública** em https://docs.notemfiscal.com.br.
 

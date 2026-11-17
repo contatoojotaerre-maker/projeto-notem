@@ -10,6 +10,7 @@ Esta pasta contém informações operacionais e de implementação. Não faz par
 | `defeitos-esquema-oficial.md` | Defeitos conhecidos nos XSD oficiais (série do leiaute anterior, chave de acesso do release 1) e correções somente em memória |
 | `cnpj-alfanumerico.md` | CNPJ alfanumérico: regra única, onde se aplica, bloqueio no leiaute anterior e testes |
 | `ibs-cbs.md` | IBS/CBS: catálogos, regras do cadastro, obrigatoriedade por ambiente, regime, leiaute r2, DANFSe e testes |
+| `docs-publica.md` | Site docs.notemfiscal.com.br: montagem, domínios e tabela da migração dos arquivos |
 
 ## Validação do contrato OpenAPI 3.1
 
