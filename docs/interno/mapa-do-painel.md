@@ -512,3 +512,11 @@ Não há testes de tela (cliques, textos de botões, abas ou menu). Renomear aba
 - Módulo único `src/lib/password-rule.ts`; lista ao vivo `src/components/notem/password-requirements.tsx`; o botão de salvar só fica ativo com todos os itens cumpridos e "Confirme a senha" igual. Na troca em Minha conta o servidor repete a mesma regra.
 - Recusas do serviço de login viram português em `src/lib/auth-messages.ts` (lê só código, status e motivos; nunca o texto do serviço). Ex.: senha em vazamentos → "Esta senha apareceu em vazamentos de dados. Escolha outra."; senha fraca → "Esta senha é fraca. Escolha outra.".
 - Limite: em convite/recuperação a senha é gravada pelo navegador direto no serviço de login; para a regra valer também fora do painel, configure a mesma política de senha no painel do Supabase (Authentication → Policies/Providers → Email).
+
+## Menu lateral: grupos recolhíveis (17/11/2026)
+
+- Notas (Emitidas, Recebidas) e Organização (Dados, Equipe) são grupos: o item pai é um botão (`aria-expanded`, seta › fechado / ˅ aberto) que só abre e fecha; a navegação é pelos subitens. Endereços, telas e permissões não mudaram (Organização só para proprietário, administrador e admin da plataforma).
+- Ao chegar numa tela do grupo (inclusive por link, ex.: nota recebida ou Equipe), o grupo abre e o subitem fica destacado; nas outras seções os grupos ficam como o usuário deixou. A pessoa pode fechar o grupo da seção atual; ele volta a abrir na próxima navegação dentro do grupo.
+- Estado lembrado neste navegador (`notem-menu-grupos`); se o armazenamento falhar, tudo começa fechado, exceto o grupo da seção atual. Grupo fechado não recebe foco pelo Tab.
+- Menu recolhido: o ícone abre um menu flutuante ao lado com os subitens (fecha ao escolher, clicar fora ou Esc); o ícone fica destacado na tela do grupo. Celular: igual ao menu expandido; escolher um subitem fecha o menu.
+- Código: regra pura `src/lib/nav-groups.ts`, componente `src/components/notem/nav-group.tsx`; testes `src/test/nav-groups.test.tsx`.

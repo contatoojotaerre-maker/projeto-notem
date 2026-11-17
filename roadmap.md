@@ -31,3 +31,8 @@
 - [x] Testes
 - [x] Publicar e confirmar (16/11 21:38 Brasília)
 - [ ] (etapa própria) 14 avisos antigos do banco
+
+## Menu lateral recolhível
+- [x] Grupos Notas e Organização recolhíveis (seta, abre sozinho, lembrado, flutuante no recolhido, celular, teclado)
+- [x] Testes
+- [ ] Publicar (aguarda aprovação)
