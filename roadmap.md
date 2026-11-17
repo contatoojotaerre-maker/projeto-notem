@@ -15,9 +15,12 @@
 - [x] 12 Pequenos ajustes
 - [x] Testes da Parte 1 + relatório
 
-## Parte 2 (aguarda aprovação da Parte 1)
-- Ver plano aprovado. Ajustes do usuário:
-  - /o/{org}/notas/recebidas/{id} nunca tratada como /notas/{id}; id inválido nas duas → "Página não encontrada" (com teste)
-  - Trocar senha: conferir senha atual de verdade; mínimo igual ao cadastro (8); encerrar outras sessões e manter a atual; mensagens genéricas
-  - Troca de organização: seção não permitida no novo papel → Início, sem tela de "sem acesso"
-  - Nome em Minha conta: obrigatório, 2–80 caracteres, não só espaços, mensagem pt-BR
+## Parte 2 (concluída; aguarda aprovação; não publicar)
+- [x] Menu de 6 itens, marca → Início, /dashboard direto com uma organização, Administração sem telas "em breve"
+- [x] Notas › Recebidas (lista, filtros, CSV/ZIP, prova de posse) e detalhe próprio /notas/recebidas/{id} (id inválido → não encontrada, com teste)
+- [x] Empresa: caminho clicável, CNPJ, Resumo com o que falta, aviso de cadastro compartilhado, aba antiga Recebidas → Recebidas filtrada
+- [x] Integração: abas novas, só o ambiente do topo, confirmações com o ambiente, Chamadas
+- [x] Organização (Dados/Equipe), troca de organização → Início se a seção não é permitida
+- [x] Minha conta: nome 2–80, troca de senha (senha atual conferida, mínimo 8, encerra outras sessões e mantém a atual), Definir senha para Google
+- [x] Regra única de ambiente, glossário, 50 por página, títulos, redirecionamentos, docs
+- [x] Testes, matriz de isolamento, OpenAPI, relatório
