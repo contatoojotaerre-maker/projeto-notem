@@ -70,7 +70,11 @@
 - [x] Relatório antes/depois (5 operações + trecho de Emissão); não publicar
 
 ## Saúde do sistema + avisos por e-mail (pedido 17/11)
-- [ ] Plano aprovado
+- [x] Plano aprovado (17/11, com ajustes)
+- [ ] Publicar antes só o visual novo e confirmar no ar
+- [ ] Gravação das chamadas ao governo depois da resposta, falha descartada com registro interno; teste de falha durante emissão
+- [ ] GET /api/public/saude/ping (200 ok < 15 min / 503 verificacao_atrasada; sem detalhes, sem log de API, no-store, noindex) + passo a passo do Monitoring (200, 5 min, 2 falhas)
+- [ ] Avisos começam desligados
 - [ ] Tela Administração › Saúde do sistema (8 blocos, topo, Verificar agora)
 - [ ] Registro das chamadas reais ao governo; tabelas só do servidor com limpeza de 30 dias
 - [ ] Rota OIDC separada a cada 5 min + comando do Cloud Scheduler
