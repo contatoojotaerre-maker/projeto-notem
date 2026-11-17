@@ -1,5 +1,6 @@
 import { act, render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
+import { FileText, Settings } from 'lucide-react';
 import { afterEach, beforeAll, beforeEach, describe, expect, it, vi } from 'vitest';
 import { NavGroup, useNavGroups, type NavGroupItem } from '@/components/notem/nav-group';
 import { NAV_GROUPS_KEY, currentNavGroup, navSubitemActive, parseNavGroupState } from '@/lib/nav-groups';
@@ -14,10 +15,10 @@ const link = (key: string, label: string, active: boolean, href: string): NavGro
 function Menu({ path, search = '', iconOnly = false, onNavigate = () => {} }: { path: string; search?: string; iconOnly?: boolean; onNavigate?: () => void }) {
   const groups = useNavGroups(currentNavGroup(path), path + search); const sub = navSubitemActive(path, search);
   return <nav>
-    <NavGroup id="notas" label="Notas" icon={() => null} open={groups.isOpen('notas')} onToggle={() => groups.toggle('notas')} iconOnly={iconOnly} onNavigate={onNavigate}
+    <NavGroup id="notas" label="Notas" icon={FileText} open={groups.isOpen('notas')} onToggle={() => groups.toggle('notas')} iconOnly={iconOnly} onNavigate={onNavigate}
       items={[link('emitidas', 'Emitidas', sub.emitidas, '/o/x/notas'), link('recebidas', 'Recebidas', sub.recebidas, '/o/x/notas/recebidas')]} />
     <a href="/o/x/empresas">Empresas</a>
-    <NavGroup id="organizacao" label="Organização" icon={() => null} open={groups.isOpen('organizacao')} onToggle={() => groups.toggle('organizacao')} iconOnly={iconOnly} onNavigate={onNavigate}
+    <NavGroup id="organizacao" label="Organização" icon={FileText} open={groups.isOpen('organizacao')} onToggle={() => groups.toggle('organizacao')} iconOnly={iconOnly} onNavigate={onNavigate}
       items={[link('dados', 'Dados', sub.dados, '/o/x/organizacao'), link('equipe', 'Equipe', sub.equipe, '/o/x/organizacao?aba=equipe')]} />
   </nav>;
 }
