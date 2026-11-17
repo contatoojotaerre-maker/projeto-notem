@@ -29,5 +29,5 @@
 - [x] Regra única (10+, maiúscula, minúscula, número, especial) nas três telas, lista ao vivo, botão só com tudo cumprido
 - [x] Recusas do serviço de login em português (fraca, vazamento etc.)
 - [x] Testes
-- [ ] Publicar e confirmar
+- [x] Publicar e confirmar (16/11 21:38 Brasília)
 - [ ] (etapa própria) 14 avisos antigos do banco
