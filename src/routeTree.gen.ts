@@ -15,6 +15,7 @@ import { Route as DefinirSenhaRouteImport } from './routes/definir-senha'
 import { Route as EntrarRouteImport } from './routes/entrar'
 import { Route as EsqueciSenhaRouteImport } from './routes/esqueci-senha'
 import { Route as RedefinirSenhaRouteImport } from './routes/redefinir-senha'
+import { Route as AuthenticatedContaRouteImport } from './routes/_authenticated/conta'
 import { Route as AuthenticatedDashboardRouteImport } from './routes/_authenticated/dashboard'
 import { Route as AuthenticatedAdminSectionRouteImport } from './routes/_authenticated/admin/$section'
 import { Route as AuthenticatedAdminOrganizacoesRouteImport } from './routes/_authenticated/admin/organizacoes'
@@ -46,6 +47,8 @@ import { Route as ApiV1NotasInvoiceIdPdfRouteImport } from './routes/api/v1/nota
 import { Route as ApiV1NotasInvoiceIdSolicitarAnaliseCancelamentoRouteImport } from './routes/api/v1/notas/$invoiceId/solicitar-analise-cancelamento'
 import { Route as ApiV1NotasInvoiceIdSubstituirRouteImport } from './routes/api/v1/notas/$invoiceId/substituir'
 import { Route as ApiV1NotasInvoiceIdXmlRouteImport } from './routes/api/v1/notas/$invoiceId/xml'
+import { Route as AuthenticatedOOrgSlugNotasRecebidasIndexRouteImport } from './routes/_authenticated/o/$orgSlug/notas/recebidas/index'
+import { Route as AuthenticatedOOrgSlugNotasRecebidasNoteIdRouteImport } from './routes/_authenticated/o/$orgSlug/notas/recebidas/$noteId'
 import { Route as ApiV1EmpresasIdNotasRecebidasIndexRouteImport } from './routes/api/v1/empresas/$id/notas-recebidas/index'
 import { Route as ApiV1EmpresasIdServicosIndexRouteImport } from './routes/api/v1/empresas/$id/servicos/index'
 import { Route as ApiV1EmpresasIdServicosServicoIdRouteImport } from './routes/api/v1/empresas/$id/servicos/$servicoId'
@@ -86,6 +89,11 @@ const RedefinirSenhaRoute = RedefinirSenhaRouteImport.update({
   id: '/redefinir-senha',
   path: '/redefinir-senha',
   getParentRoute: () => rootRouteImport,
+} as any)
+const AuthenticatedContaRoute = AuthenticatedContaRouteImport.update({
+  id: '/conta',
+  path: '/conta',
+  getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
 const AuthenticatedDashboardRoute = AuthenticatedDashboardRouteImport.update({
   id: '/dashboard',
@@ -264,6 +272,18 @@ const ApiV1NotasInvoiceIdXmlRoute = ApiV1NotasInvoiceIdXmlRouteImport.update({
   path: '/api/v1/notas/$invoiceId/xml',
   getParentRoute: () => rootRouteImport,
 } as any)
+const AuthenticatedOOrgSlugNotasRecebidasIndexRoute =
+  AuthenticatedOOrgSlugNotasRecebidasIndexRouteImport.update({
+    id: '/o/$orgSlug/notas/recebidas/',
+    path: '/o/$orgSlug/notas/recebidas/',
+    getParentRoute: () => AuthenticatedRouteRoute,
+  } as any)
+const AuthenticatedOOrgSlugNotasRecebidasNoteIdRoute =
+  AuthenticatedOOrgSlugNotasRecebidasNoteIdRouteImport.update({
+    id: '/o/$orgSlug/notas/recebidas/$noteId',
+    path: '/o/$orgSlug/notas/recebidas/$noteId',
+    getParentRoute: () => AuthenticatedRouteRoute,
+  } as any)
 const ApiV1EmpresasIdNotasRecebidasIndexRoute =
   ApiV1EmpresasIdNotasRecebidasIndexRouteImport.update({
     id: '/api/v1/empresas/$id/notas-recebidas/',
@@ -337,6 +357,7 @@ export interface FileRoutesByFullPath {
   '/entrar': typeof EntrarRoute
   '/esqueci-senha': typeof EsqueciSenhaRoute
   '/redefinir-senha': typeof RedefinirSenhaRoute
+  '/conta': typeof AuthenticatedContaRoute
   '/dashboard': typeof AuthenticatedDashboardRoute
   '/admin/$section': typeof AuthenticatedAdminSectionRoute
   '/admin/organizacoes': typeof AuthenticatedAdminOrganizacoesRoute
@@ -368,9 +389,11 @@ export interface FileRoutesByFullPath {
   '/o/$orgSlug/notas/': typeof AuthenticatedOOrgSlugNotasIndexRoute
   '/api/v1/empresas/$id/': typeof ApiV1EmpresasIdIndexRoute
   '/api/v1/notas/$invoiceId/': typeof ApiV1NotasInvoiceIdIndexRoute
+  '/o/$orgSlug/notas/recebidas/$noteId': typeof AuthenticatedOOrgSlugNotasRecebidasNoteIdRoute
   '/api/v1/empresas/$id/servicos/$servicoId': typeof ApiV1EmpresasIdServicosServicoIdRoute
   '/api/v1/empresas/$id/situacao/verificar-municipio': typeof ApiV1EmpresasIdSituacaoVerificarMunicipioRoute
   '/api/v1/empresas/$id/tomadores/$customerId': typeof ApiV1EmpresasIdTomadoresCustomerIdRoute
+  '/o/$orgSlug/notas/recebidas/': typeof AuthenticatedOOrgSlugNotasRecebidasIndexRoute
   '/api/v1/empresas/$id/notas-recebidas/': typeof ApiV1EmpresasIdNotasRecebidasIndexRoute
   '/api/v1/empresas/$id/servicos/': typeof ApiV1EmpresasIdServicosIndexRoute
   '/api/v1/empresas/$id/situacao/': typeof ApiV1EmpresasIdSituacaoIndexRoute
@@ -386,6 +409,7 @@ export interface FileRoutesByTo {
   '/entrar': typeof EntrarRoute
   '/esqueci-senha': typeof EsqueciSenhaRoute
   '/redefinir-senha': typeof RedefinirSenhaRoute
+  '/conta': typeof AuthenticatedContaRoute
   '/dashboard': typeof AuthenticatedDashboardRoute
   '/admin/$section': typeof AuthenticatedAdminSectionRoute
   '/admin/organizacoes': typeof AuthenticatedAdminOrganizacoesRoute
@@ -417,9 +441,11 @@ export interface FileRoutesByTo {
   '/o/$orgSlug/notas': typeof AuthenticatedOOrgSlugNotasIndexRoute
   '/api/v1/empresas/$id': typeof ApiV1EmpresasIdIndexRoute
   '/api/v1/notas/$invoiceId': typeof ApiV1NotasInvoiceIdIndexRoute
+  '/o/$orgSlug/notas/recebidas/$noteId': typeof AuthenticatedOOrgSlugNotasRecebidasNoteIdRoute
   '/api/v1/empresas/$id/servicos/$servicoId': typeof ApiV1EmpresasIdServicosServicoIdRoute
   '/api/v1/empresas/$id/situacao/verificar-municipio': typeof ApiV1EmpresasIdSituacaoVerificarMunicipioRoute
   '/api/v1/empresas/$id/tomadores/$customerId': typeof ApiV1EmpresasIdTomadoresCustomerIdRoute
+  '/o/$orgSlug/notas/recebidas': typeof AuthenticatedOOrgSlugNotasRecebidasIndexRoute
   '/api/v1/empresas/$id/notas-recebidas': typeof ApiV1EmpresasIdNotasRecebidasIndexRoute
   '/api/v1/empresas/$id/servicos': typeof ApiV1EmpresasIdServicosIndexRoute
   '/api/v1/empresas/$id/situacao': typeof ApiV1EmpresasIdSituacaoIndexRoute
@@ -437,6 +463,7 @@ export interface FileRoutesById {
   '/entrar': typeof EntrarRoute
   '/esqueci-senha': typeof EsqueciSenhaRoute
   '/redefinir-senha': typeof RedefinirSenhaRoute
+  '/_authenticated/conta': typeof AuthenticatedContaRoute
   '/_authenticated/dashboard': typeof AuthenticatedDashboardRoute
   '/_authenticated/admin/$section': typeof AuthenticatedAdminSectionRoute
   '/_authenticated/admin/organizacoes': typeof AuthenticatedAdminOrganizacoesRoute
@@ -468,9 +495,11 @@ export interface FileRoutesById {
   '/_authenticated/o/$orgSlug/notas/': typeof AuthenticatedOOrgSlugNotasIndexRoute
   '/api/v1/empresas/$id/': typeof ApiV1EmpresasIdIndexRoute
   '/api/v1/notas/$invoiceId/': typeof ApiV1NotasInvoiceIdIndexRoute
+  '/_authenticated/o/$orgSlug/notas/recebidas/$noteId': typeof AuthenticatedOOrgSlugNotasRecebidasNoteIdRoute
   '/api/v1/empresas/$id/servicos/$servicoId': typeof ApiV1EmpresasIdServicosServicoIdRoute
   '/api/v1/empresas/$id/situacao/verificar-municipio': typeof ApiV1EmpresasIdSituacaoVerificarMunicipioRoute
   '/api/v1/empresas/$id/tomadores/$customerId': typeof ApiV1EmpresasIdTomadoresCustomerIdRoute
+  '/_authenticated/o/$orgSlug/notas/recebidas/': typeof AuthenticatedOOrgSlugNotasRecebidasIndexRoute
   '/api/v1/empresas/$id/notas-recebidas/': typeof ApiV1EmpresasIdNotasRecebidasIndexRoute
   '/api/v1/empresas/$id/servicos/': typeof ApiV1EmpresasIdServicosIndexRoute
   '/api/v1/empresas/$id/situacao/': typeof ApiV1EmpresasIdSituacaoIndexRoute
@@ -488,6 +517,7 @@ export interface FileRouteTypes {
     | '/entrar'
     | '/esqueci-senha'
     | '/redefinir-senha'
+    | '/conta'
     | '/dashboard'
     | '/admin/$section'
     | '/admin/organizacoes'
@@ -519,9 +549,11 @@ export interface FileRouteTypes {
     | '/o/$orgSlug/notas/'
     | '/api/v1/empresas/$id/'
     | '/api/v1/notas/$invoiceId/'
+    | '/o/$orgSlug/notas/recebidas/$noteId'
     | '/api/v1/empresas/$id/servicos/$servicoId'
     | '/api/v1/empresas/$id/situacao/verificar-municipio'
     | '/api/v1/empresas/$id/tomadores/$customerId'
+    | '/o/$orgSlug/notas/recebidas/'
     | '/api/v1/empresas/$id/notas-recebidas/'
     | '/api/v1/empresas/$id/servicos/'
     | '/api/v1/empresas/$id/situacao/'
@@ -537,6 +569,7 @@ export interface FileRouteTypes {
     | '/entrar'
     | '/esqueci-senha'
     | '/redefinir-senha'
+    | '/conta'
     | '/dashboard'
     | '/admin/$section'
     | '/admin/organizacoes'
@@ -568,9 +601,11 @@ export interface FileRouteTypes {
     | '/o/$orgSlug/notas'
     | '/api/v1/empresas/$id'
     | '/api/v1/notas/$invoiceId'
+    | '/o/$orgSlug/notas/recebidas/$noteId'
     | '/api/v1/empresas/$id/servicos/$servicoId'
     | '/api/v1/empresas/$id/situacao/verificar-municipio'
     | '/api/v1/empresas/$id/tomadores/$customerId'
+    | '/o/$orgSlug/notas/recebidas'
     | '/api/v1/empresas/$id/notas-recebidas'
     | '/api/v1/empresas/$id/servicos'
     | '/api/v1/empresas/$id/situacao'
@@ -587,6 +622,7 @@ export interface FileRouteTypes {
     | '/entrar'
     | '/esqueci-senha'
     | '/redefinir-senha'
+    | '/_authenticated/conta'
     | '/_authenticated/dashboard'
     | '/_authenticated/admin/$section'
     | '/_authenticated/admin/organizacoes'
@@ -618,9 +654,11 @@ export interface FileRouteTypes {
     | '/_authenticated/o/$orgSlug/notas/'
     | '/api/v1/empresas/$id/'
     | '/api/v1/notas/$invoiceId/'
+    | '/_authenticated/o/$orgSlug/notas/recebidas/$noteId'
     | '/api/v1/empresas/$id/servicos/$servicoId'
     | '/api/v1/empresas/$id/situacao/verificar-municipio'
     | '/api/v1/empresas/$id/tomadores/$customerId'
+    | '/_authenticated/o/$orgSlug/notas/recebidas/'
     | '/api/v1/empresas/$id/notas-recebidas/'
     | '/api/v1/empresas/$id/servicos/'
     | '/api/v1/empresas/$id/situacao/'
@@ -714,6 +752,13 @@ declare module '@tanstack/react-router' {
       fullPath: '/redefinir-senha'
       preLoaderRoute: typeof RedefinirSenhaRouteImport
       parentRoute: typeof rootRouteImport
+    }
+    '/_authenticated/conta': {
+      id: '/_authenticated/conta'
+      path: '/conta'
+      fullPath: '/conta'
+      preLoaderRoute: typeof AuthenticatedContaRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
     }
     '/_authenticated/dashboard': {
       id: '/_authenticated/dashboard'
@@ -932,6 +977,20 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ApiV1NotasInvoiceIdXmlRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/_authenticated/o/$orgSlug/notas/recebidas/': {
+      id: '/_authenticated/o/$orgSlug/notas/recebidas/'
+      path: '/o/$orgSlug/notas/recebidas'
+      fullPath: '/o/$orgSlug/notas/recebidas/'
+      preLoaderRoute: typeof AuthenticatedOOrgSlugNotasRecebidasIndexRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/_authenticated/o/$orgSlug/notas/recebidas/$noteId': {
+      id: '/_authenticated/o/$orgSlug/notas/recebidas/$noteId'
+      path: '/o/$orgSlug/notas/recebidas/$noteId'
+      fullPath: '/o/$orgSlug/notas/recebidas/$noteId'
+      preLoaderRoute: typeof AuthenticatedOOrgSlugNotasRecebidasNoteIdRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
     '/api/v1/empresas/$id/notas-recebidas/': {
       id: '/api/v1/empresas/$id/notas-recebidas/'
       path: '/api/v1/empresas/$id/notas-recebidas'
@@ -1013,6 +1072,7 @@ declare module '@tanstack/react-router' {
 }
 
 interface AuthenticatedRouteRouteChildren {
+  AuthenticatedContaRoute: typeof AuthenticatedContaRoute
   AuthenticatedDashboardRoute: typeof AuthenticatedDashboardRoute
   AuthenticatedAdminSectionRoute: typeof AuthenticatedAdminSectionRoute
   AuthenticatedAdminOrganizacoesRoute: typeof AuthenticatedAdminOrganizacoesRoute
@@ -1024,9 +1084,12 @@ interface AuthenticatedRouteRouteChildren {
   AuthenticatedOOrgSlugEmpresasIndexRoute: typeof AuthenticatedOOrgSlugEmpresasIndexRoute
   AuthenticatedOOrgSlugIntegracoesIndexRoute: typeof AuthenticatedOOrgSlugIntegracoesIndexRoute
   AuthenticatedOOrgSlugNotasIndexRoute: typeof AuthenticatedOOrgSlugNotasIndexRoute
+  AuthenticatedOOrgSlugNotasRecebidasNoteIdRoute: typeof AuthenticatedOOrgSlugNotasRecebidasNoteIdRoute
+  AuthenticatedOOrgSlugNotasRecebidasIndexRoute: typeof AuthenticatedOOrgSlugNotasRecebidasIndexRoute
 }
 
 const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
+  AuthenticatedContaRoute: AuthenticatedContaRoute,
   AuthenticatedDashboardRoute: AuthenticatedDashboardRoute,
   AuthenticatedAdminSectionRoute: AuthenticatedAdminSectionRoute,
   AuthenticatedAdminOrganizacoesRoute: AuthenticatedAdminOrganizacoesRoute,
@@ -1044,6 +1107,10 @@ const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedOOrgSlugIntegracoesIndexRoute:
     AuthenticatedOOrgSlugIntegracoesIndexRoute,
   AuthenticatedOOrgSlugNotasIndexRoute: AuthenticatedOOrgSlugNotasIndexRoute,
+  AuthenticatedOOrgSlugNotasRecebidasNoteIdRoute:
+    AuthenticatedOOrgSlugNotasRecebidasNoteIdRoute,
+  AuthenticatedOOrgSlugNotasRecebidasIndexRoute:
+    AuthenticatedOOrgSlugNotasRecebidasIndexRoute,
 }
 
 const AuthenticatedRouteRouteWithChildren =

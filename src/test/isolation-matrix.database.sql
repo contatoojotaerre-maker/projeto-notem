@@ -87,6 +87,10 @@ BEGIN
   -- Fase 8 panel: search/count/summary keep the organization scope and proof of possession
   jsonb_build_object('n','list_org_notes(T, busca CNPJ)','q','select count(*) from public.list_org_notes($1,''production'',_search=>$2)','k','org'),
   jsonb_build_object('n','org_notes_count(T)','q','select public.org_notes_count($1,''production'')','k','org'),
+  -- Painel Parte 2: Notas › Recebidas uses the same functions with _direction (proof of possession inline)
+  jsonb_build_object('n','list_org_notes(T, recebidas)','q','select count(*) from public.list_org_notes($1,''production'',_direction=>''recebidas'')','k','org'),
+  jsonb_build_object('n','list_org_notes(T, recebidas, busca CNPJ)','q','select count(*) from public.list_org_notes($1,''production'',_search=>$2,_direction=>''recebidas'')','k','org'),
+  jsonb_build_object('n','org_notes_count(T, recebidas)','q','select public.org_notes_count($1,''production'',_direction=>''recebidas'')','k','org'),
   jsonb_build_object('n','org_notes_summary(T)','q','select coalesce(sum(emitted),0) from public.org_notes_summary($1,''production'',''2000-01-01'',''2100-01-01'')','k','org'),
   -- Início: integration counts follow the request-log rule (owner, admin, developer, platform admin), per environment
   jsonb_build_object('n','org_integration_summary(T, producao)','q','select coalesce(sum(calls),0) from public.org_integration_summary($1,''production'',now()-interval ''89 days'',now()+interval ''1 second'')','k','logs'),

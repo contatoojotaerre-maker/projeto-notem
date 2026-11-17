@@ -24,8 +24,8 @@ export function HomeView({ organizationId, slug, name, canCreate }: { organizati
   const c = data.companies, n = data.notes.current, p = data.notes.previous.notem, cmp = data.period.label, i = data.integration;
   const compared = `Comparado com ${dateBr(data.period.previous.first)} a ${dateBr(data.period.previous.last)}.`;
   const company = (label: string, value: number, situacao?: 'prontas' | 'pendencia' | 'inativas') => <Link className="metric metric-link" to="/o/$orgSlug/empresas" params={{ orgSlug: slug }} search={situacao ? { situacao } : {}}><Tile label={label} value={value} /></Link>;
-  // Shortcuts open Requisições already filtered: last 24 hours, current environment (and only errors for the error tile).
-  const logs = (body: ReactNode, onlyErrors = false, cls = 'metric metric-link') => i?.single ? <Link className={cls} to="/o/$orgSlug/integracoes/$integrationId" params={{ orgSlug: slug, integrationId: i.single }} search={{ aba: 'chamadas', ultimas: '24h', ambiente: environment, ...(onlyErrors ? { erros: 1 as const } : {}) }}>{body}</Link> : <Link className={cls} to="/o/$orgSlug/integracoes" params={{ orgSlug: slug }}>{body}</Link>;
+  // Shortcuts open Chamadas already filtered: last 24 hours (and only errors for the error tile); the environment is the selector's.
+  const logs = (body: ReactNode, onlyErrors = false, cls = 'metric metric-link') => i?.single ? <Link className={cls} to="/o/$orgSlug/integracoes/$integrationId" params={{ orgSlug: slug, integrationId: i.single }} search={{ aba: 'chamadas', ultimas: '24h', ...(onlyErrors ? { erros: 1 as const } : {}) }}>{body}</Link> : <Link className={cls} to="/o/$orgSlug/integracoes" params={{ orgSlug: slug }}>{body}</Link>;
   const errors = i ? i.client_errors + i.server_errors : 0;
   const a = data.alerts; const alertTotal = a.impeditivo + a.atencao + a.informativo;
   return <TooltipProvider delayDuration={150}><h1 className="page-heading">{name}</h1><p className="mt-2 text-sm text-muted-foreground">{environment === 'sandbox' ? 'Homologação' : 'Produção'}</p>
@@ -45,7 +45,7 @@ export function HomeView({ organizationId, slug, name, canCreate }: { organizati
         {logs(<Tile label="Chamadas à API" value={i.calls} />)}
         <Tooltip><TooltipTrigger asChild>{logs(<><Tile label="Chamadas com erro" value={errors} /><span className="sr-only">Erros do pedido (4xx): {i.client_errors}. Erros da notem (5xx): {i.server_errors}.</span></>, true)}</TooltipTrigger>
           <TooltipContent><p>Erros do pedido (4xx): {i.client_errors}</p><p>Erros da notem (5xx): {i.server_errors}</p></TooltipContent></Tooltip>
-        {i.webhook_integration ? <Link className="metric metric-link" to="/o/$orgSlug/integracoes/$integrationId" params={{ orgSlug: slug, integrationId: i.webhook_integration }} search={{ aba: 'webhooks', ambiente: environment }}><Tile label="Webhooks falhando" value={i.webhooks_failing} /></Link> : <Link className="metric metric-link" to="/o/$orgSlug/integracoes" params={{ orgSlug: slug }}><Tile label="Webhooks falhando" value={i.webhooks_failing} /></Link>}
+        {i.webhook_integration ? <Link className="metric metric-link" to="/o/$orgSlug/integracoes/$integrationId" params={{ orgSlug: slug, integrationId: i.webhook_integration }} search={{ aba: 'webhooks' }}><Tile label="Webhooks falhando" value={i.webhooks_failing} /></Link> : <Link className="metric metric-link" to="/o/$orgSlug/integracoes" params={{ orgSlug: slug }}><Tile label="Webhooks falhando" value={i.webhooks_failing} /></Link>}
       </div>}</Section>}
 
     <Section title="Alertas"><Link to="/o/$orgSlug/$section" params={{ orgSlug: slug, section: 'alertas' }} className="metric-row">

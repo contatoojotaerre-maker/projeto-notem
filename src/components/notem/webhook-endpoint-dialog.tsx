@@ -60,7 +60,7 @@ function Body({ form: initial, onClose, onSave, companies, org, integration, env
     try { await onSave(parsed.data) } catch (err) { toast.error(userMessage(err, 'Não foi possível salvar.')) } finally { setBusy(false) }
   }
   return <form onSubmit={submit} className="flex flex-col min-h-0 flex-1">
-    <DialogHeader className="px-6 pt-6 pb-4 border-b border-border"><DialogTitle>{form.id ? 'Editar endereço' : 'Adicionar endereço'}</DialogTitle></DialogHeader>
+    <DialogHeader className="px-6 pt-6 pb-4 border-b border-border"><DialogTitle>{form.id ? 'Editar endereço' : 'Adicionar endereço'} de {environment === 'sandbox' ? 'homologação' : 'produção'}</DialogTitle></DialogHeader>
     <div className="flex-1 min-h-0 overflow-y-auto overflow-x-hidden px-6 py-5">
       <div className="grid gap-8 md:grid-cols-2">
         <div className="space-y-7 min-w-0">

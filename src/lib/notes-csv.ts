@@ -22,3 +22,16 @@ export function csvLine(note: CsvNote) {
     decimalBr(note.valor_servico), decimalBr(note.valor_liquido), decimalBr(note.iss), note.situacao, note.origem === 'notem' ? 'Emitida pela notem' : 'Emitida fora da notem', dateBr(note.cancelada_em)].map(csvCell).join(';');
 }
 export function buildNotesCsv(notes: CsvNote[]) { return '\uFEFF' + [CSV_HEADER.map(csvCell).join(';'), ...notes.map(csvLine)].join('\r\n') + '\r\n'; }
+
+/** Recebidas: the organization's company is taker or intermediary; the provider is who issued the note. */
+export type ReceivedCsvNote = {
+  empresa: string; cnpj: string; papel: 'tomador' | 'intermediario'; numero: string | null; serie: string | null; chave: string | null; emitida_em: string | null; competencia: string | null;
+  prestador: string | null; cnpj_prestador: string | null; codigo_servico: string | null; valor_servico: string | null; valor_liquido: string | null; iss: string | null;
+  situacao: string; cancelada_em: string | null;
+};
+export const RECEIVED_CSV_HEADER = ['Empresa', 'CNPJ da empresa', 'Participação', 'Número', 'Série', 'Chave de acesso', 'Data de emissão', 'Competência', 'Prestador', 'CNPJ do prestador', 'Código do serviço', 'Valor do serviço', 'Valor líquido', 'ISS', 'Situação', 'Data do cancelamento'];
+export function receivedCsvLine(n: ReceivedCsvNote) {
+  return [n.empresa, n.cnpj, n.papel === 'tomador' ? 'Tomadora' : 'Intermediária', n.numero, n.serie, n.chave, dateBr(n.emitida_em), dateBr(n.competencia), n.prestador, n.cnpj_prestador, n.codigo_servico,
+    decimalBr(n.valor_servico), decimalBr(n.valor_liquido), decimalBr(n.iss), n.situacao, dateBr(n.cancelada_em)].map(csvCell).join(';');
+}
+export function buildReceivedCsv(notes: ReceivedCsvNote[]) { return '\uFEFF' + [RECEIVED_CSV_HEADER.map(csvCell).join(';'), ...notes.map(receivedCsvLine)].join('\r\n') + '\r\n'; }

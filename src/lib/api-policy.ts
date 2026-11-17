@@ -28,6 +28,8 @@ export const LIMITS = {
 export const SLOTS = { emissao: 2, evento: 1, pdf: 2 } as const;
 /** Panel file exports (ZIP batches): per user, counted in the same service-role-only counters/slots as the API. */
 export const PANEL_FILE_LIMITS = { rate: { max: 30, window: 60 }, concurrent: 1 } as const;
+/** Minha conta → Trocar senha: attempts per user (each one checks the current password with the login service). */
+export const PANEL_PASSWORD_LIMITS = { max: 5, window: 900 } as const;
 export const SLOT_TTL_SECONDS = 120;
 
 export const limitMessages: Record<string, string> = {
@@ -35,6 +37,7 @@ export const limitMessages: Record<string, string> = {
   simultaneas: 'Há operações simultâneas demais para este recurso. Aguarde a anterior terminar.',
   painel_arquivos: 'Muitos pedidos de arquivos em pouco tempo. Aguarde alguns segundos; o download continua de onde parou.',
   painel_lote: 'Já há um lote de arquivos sendo preparado para você. Aguarde ele terminar.',
+  painel_senha: 'Muitas tentativas de troca de senha. Aguarde 15 minutos e tente novamente.',
 };
 
 const clean = (p: string) => p.replace(/\/+$/, '') || '/';

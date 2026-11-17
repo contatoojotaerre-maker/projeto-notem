@@ -35,10 +35,10 @@ export function AlertsView({ organizationId, slug }: { organizationId: string; s
     <div className="mb-6 grid max-w-2xl gap-4 sm:grid-cols-2"><div className="space-y-2"><label className="text-sm">Gravidade</label><Select value={severity} onValueChange={setSeverity}><SelectTrigger aria-label="Filtrar gravidade"><SelectValue /></SelectTrigger><SelectContent><SelectItem value="all">Todas as gravidades</SelectItem>{(Object.keys(severityLabels) as AlertSeverity[]).map(s => <SelectItem key={s} value={s}>{severityLabels[s]}</SelectItem>)}</SelectContent></Select></div>
       <div className="space-y-2"><label className="text-sm">Empresa</label><Select value={company} onValueChange={setCompany}><SelectTrigger aria-label="Filtrar empresa dos alertas"><SelectValue /></SelectTrigger><SelectContent><SelectItem value="all">Todas as empresas</SelectItem>{data.companies.map(c => <SelectItem key={c.id} value={c.id}>{c.legal_name}</SelectItem>)}</SelectContent></Select></div></div>
     {list.length ? <AlertRows alerts={list} slug={slug} /> : <AllClear text={data.alerts.length ? 'Nenhum alerta com estes filtros.' : 'Tudo em dia'} />}
-    <WebhookHistory organizationId={organizationId} /></>;
+    <WebhookHistory organizationId={organizationId} environment={environment} /></>;
 }
-function WebhookHistory({ organizationId }: { organizationId: string }) {
-  const { data } = useSuspenseQuery(webhookAlertsQuery(organizationId));
+function WebhookHistory({ organizationId, environment }: { organizationId: string; environment: 'sandbox' | 'production' }) {
+  const { data } = useSuspenseQuery(webhookAlertsQuery(organizationId, environment));
   if (!data.length) return null;
-  return <details className="mt-10 border-y border-border py-5"><summary className="cursor-pointer font-medium">Histórico de falhas de webhook (90 dias)</summary><div className="mt-4 divide-y divide-border">{data.map(a => <section key={a.id} className="py-4"><p className="text-sm">{a.message}</p><p className="mt-1 break-all text-sm text-muted-foreground">{a.webhook_endpoints?.url}</p><p className="mt-1 text-xs text-muted-foreground">{a.environment === 'sandbox' ? 'Homologação' : 'Produção'} · {dateTimeBr(a.created_at)}</p></section>)}</div></details>;
+  return <details className="mt-10 border-y border-border py-5"><summary className="cursor-pointer font-medium">Histórico de falhas de webhook em {environment === 'sandbox' ? 'homologação' : 'produção'} (90 dias)</summary><div className="mt-4 divide-y divide-border">{data.map(a => <section key={a.id} className="py-4"><p className="text-sm">{a.message}</p><p className="mt-1 break-all text-sm text-muted-foreground">{a.webhook_endpoints?.url}</p><p className="mt-1 text-xs text-muted-foreground">{a.environment === 'sandbox' ? 'Homologação' : 'Produção'} · {dateTimeBr(a.created_at)}</p></section>)}</div></details>;
 }

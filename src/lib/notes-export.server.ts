@@ -1,10 +1,10 @@
-// CSV rows and ZIP files of the notes list. Callers check membership and pass ids already returned by
+// CSV rows and ZIP files of the notes list (Emitidas and Recebidas). Callers check membership and pass ids already returned by
 // list_org_notes for the organization, environment and filters; every read stays scoped by organization.
 import type { SupabaseClient } from '@supabase/supabase-js';
 import type { Database } from '@/integrations/supabase/types';
 import type { DB } from './api.server';
 import type { Env } from './api-contract';
-import type { CsvNote } from './notes-csv';
+import type { CsvNote, ReceivedCsvNote } from './notes-csv';
 import { invoiceLabels } from './invoices';
 import { normalizeCnpj } from './notem';
 
@@ -44,6 +44,26 @@ export async function csvRows(db: Caller, org: string, env: Env, listed: (Listed
   return listed.map(x => out.get(x.id)).filter((x): x is CsvNote => Boolean(x));
 }
 
+/** CSV rows of Recebidas in the list order, read with the caller's client (row rules apply). */
+export async function receivedCsvRows(db: Caller, org: string, env: Env, listed: (Listed & { company_id: string })[]): Promise<ReceivedCsvNote[]> {
+  const companies = await db.from('companies').select('id,legal_name,cnpj').eq('organization_id', org); if (companies.error) throw new Error('CSV_READ_FAILED');
+  const company = new Map((companies.data ?? []).map(c => [c.id, c]));
+  const out = new Map<string, ReceivedCsvNote>();
+  for (const part of chunks(listed, 300)) {
+    const docs = await db.from('nfse_documents').select('id,status,nfse_number,dps_series,access_key,issued_at,authorized_at,competence,provider_name,provider_cnpj,taker_document,summary').eq('environment', env).in('id', part.map(x => x.id));
+    if (docs.error) throw new Error('CSV_READ_FAILED');
+    const keys = (docs.data ?? []).filter(d => cancelled.includes(d.status)).map(d => d.access_key);
+    const ev = keys.length ? await db.from('nfse_document_events').select('access_key,code,processed_at,event_at').eq('environment', env).in('access_key', keys).in('code', [...CANCEL_CODES]) : { data: [], error: null };
+    if (ev.error) throw new Error('CSV_READ_FAILED');
+    for (const d of docs.data ?? []) {
+      const l = part.find(x => x.id === d.id); const c = l ? company.get(l.company_id) : undefined; const s = obj(d.summary), v = obj(s['valores']);
+      const e = (ev.data ?? []).filter(x => x.access_key === d.access_key).sort((a, b) => String(a.processed_at ?? a.event_at).localeCompare(String(b.processed_at ?? b.event_at)))[0];
+      out.set(d.id, { empresa: c?.legal_name ?? '', cnpj: c?.cnpj ?? '', papel: c && normalizeCnpj(c.cnpj) === d.taker_document ? 'tomador' : 'intermediario', numero: d.nfse_number, serie: d.dps_series, chave: d.access_key, emitida_em: d.issued_at ?? d.authorized_at, competencia: d.competence, prestador: d.provider_name, cnpj_prestador: d.provider_cnpj, codigo_servico: text(obj(s['servico'])['codigo_servico']), valor_servico: text(v['valor_servico']), valor_liquido: text(v['valor_liquido']), iss: text(v['valor_iss']), situacao: invoiceLabels[d.status] ?? d.status, cancelada_em: e ? e.processed_at ?? e.event_at : null });
+    }
+  }
+  return listed.map(x => out.get(x.id)).filter((x): x is ReceivedCsvNote => Boolean(x));
+}
+
 export type ZipFile = { path: string; text?: string; base64?: string };
 const safe = (v: string | null | undefined) => (v ?? '').replace(/[^0-9A-Za-z_-]/g, '');
 const eventPrefix: Record<string, string> = { '101101': 'Cancelamento', '105102': 'Cancelamento_substituicao', '305101': 'Cancelamento_oficio' };
@@ -64,6 +84,11 @@ export async function zipFiles(db: DB, org: string, env: Env, listed: (Listed & 
       if (r.error || !r.data) throw new Error('ZIP_NOTE_REFUSED'); const row = r.data;
       status = row.status; number = row.nfse_number; key = row.access_key; xml = await notes.invoiceXml(db, row);
       if (cancelled.includes(status)) events = await Promise.all(CANCEL_CODES.map(async code => ({ code, xml: code === '101101' ? await notes.invoiceEventXml(db, row, code) : key ? await notes.documentEventXml(db, env, key, code) : null })));
+    } else if (l.origin === 'recebida') {
+      // Received note: re-checked for the company the frozen filter resolved (taker or intermediary, with proof of possession).
+      const rec = await notes.loadReceivedNote(db, org, env, l.company_id, l.id); if (!rec) throw new Error('ZIP_NOTE_REFUSED');
+      status = rec.doc.status; number = rec.doc.nfse_number; key = rec.doc.access_key; xml = await notes.documentXml(db, rec.doc);
+      if (cancelled.includes(status)) events = await Promise.all(CANCEL_CODES.map(async code => ({ code, xml: await notes.documentEventXml(db, env, rec.doc.access_key, code) })));
     } else {
       const ext = await notes.loadExternalNote(db, org, env, l.id); if (!ext) throw new Error('ZIP_NOTE_REFUSED');
       status = ext.doc.status; number = ext.doc.nfse_number; key = ext.doc.access_key; xml = await notes.documentXml(db, ext.doc);

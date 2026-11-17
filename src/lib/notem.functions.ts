@@ -5,6 +5,7 @@ import { requireSupabaseAuth } from '@/integrations/supabase/auth-middleware';
 import { companySchema, normalizeCnpj, roles, organizationSchema } from './notem';
 import { municipalitySearchTerm } from './municipality-search';
 import { CNPJ_LOCK_MESSAGE } from './fiscal';
+import { displayNameSchema, hasPasswordLogin } from './account';
 
 export const getWorkspace = createServerFn({ method: 'POST' }).middleware([requireSupabaseAuth]).handler(async ({ context }) => {
   const [profile, organizations, members, admin, invitations] = await Promise.all([
@@ -15,7 +16,7 @@ export const getWorkspace = createServerFn({ method: 'POST' }).middleware([requi
   ]);
   for (const result of [profile,organizations,members,admin,invitations]) if (result.error) {console.error('notem: database error',result.error.code);throw new Error('Não foi possível carregar ou salvar os dados. Tente novamente.')};
   if (!admin.data && !members.data?.length && !invitations.data?.length) throw new Error('Acesso não autorizado. Solicite um convite ao administrador da sua organização.');
-  return { profile: profile.data, organizations: organizations.data ?? [], memberships: members.data ?? [], isAdmin: admin.data === true, invitations: invitations.data ?? [], email: String(context.claims.email ?? '') };
+  return { profile: profile.data, organizations: organizations.data ?? [], memberships: members.data ?? [], isAdmin: admin.data === true, invitations: invitations.data ?? [], email: String(context.claims.email ?? ''), hasPassword: hasPasswordLogin((context.claims as { app_metadata?: { providers?: unknown } }).app_metadata?.providers) };
 });
 export const finishSignIn = createServerFn({ method: 'POST' }).middleware([requireSupabaseAuth]).handler(async ({ context }) => {
   const pending = await context.supabase.rpc('pending_invitations');
@@ -33,15 +34,17 @@ export const acceptInvitation = createServerFn({ method: 'POST' }).middleware([r
   if (result.error) throw new Error('Não foi possível aceitar este convite.');
   return result.data;
 });
-export const updatePreferences = createServerFn({ method: 'POST' }).middleware([requireSupabaseAuth]).inputValidator(z.object({ theme: z.enum(['dark','light']).optional(),environment: z.enum(['production','sandbox']).optional(),last_organization_id: z.string().uuid().optional() })).handler(async ({ context,data }) => {
+export const updatePreferences = createServerFn({ method: 'POST' }).middleware([requireSupabaseAuth]).inputValidator(z.object({ theme: z.enum(['dark','light']).optional(),environment: z.enum(['production','sandbox']).optional(),last_organization_id: z.string().uuid().optional(),display_name: displayNameSchema.optional() })).handler(async ({ context,data }) => {
   if (data.last_organization_id) {
     const org = await context.supabase.from('organizations').select('id').eq('id',data.last_organization_id).single();
     if (org.error) throw new Error('Organização não autorizada.');
   }
-  const result = await context.supabase.from('profiles').update({ ...(data.theme ? {theme:data.theme}:{}), ...(data.environment ? {environment:data.environment}:{}), ...(data.last_organization_id ? {last_organization_id:data.last_organization_id}:{}) }).eq('id',context.userId);
+  const result = await context.supabase.from('profiles').update({ ...(data.theme ? {theme:data.theme}:{}), ...(data.environment ? {environment:data.environment}:{}), ...(data.last_organization_id ? {last_organization_id:data.last_organization_id}:{}), ...(data.display_name!==undefined ? {display_name:data.display_name}:{}) }).eq('id',context.userId);
   if (result.error) {console.error('notem: database error',result.error.code);throw new Error('Não foi possível carregar ou salvar os dados. Tente novamente.')};
   return { ok:true };
 });
+/** Empresas: pages of 50, like every panel list. */
+export const COMPANIES_PAGE=50;
 /** Empresas list. Rows come from the caller's own row rules; the situation (pronta / com pendência / inativa)
  *  uses the same readiness calculation as the Início and the API, in the selected environment. */
 export const getCompanies = createServerFn({method:'POST'}).middleware([requireSupabaseAuth]).inputValidator(z.object({organization_id:z.string().uuid(),search:z.string().default(''),page:integer().min(0).default(0),environment:z.enum(['sandbox','production']).default('production'),situacao:z.enum(['','prontas','pendencia','inativas']).default('')})).handler(async ({context,data}) => {
@@ -53,7 +56,7 @@ export const getCompanies = createServerFn({method:'POST'}).middleware([requireS
   const {supabaseAdmin}=await import('@/integrations/supabase/client.server');const {loadOrgReadiness}=await import('./panel-home.server');const {companySituation}=await import('./home-metrics');
   const states=new Map((await loadOrgReadiness(supabaseAdmin,data.organization_id,data.environment)).map(c=>[c.id,companySituation(c)]));
   const rows=(result.data??[]).map(c=>({...c,situacao:states.get(c.id)??(c.active?'pendencia' as const:'inativas' as const)})).filter(c=>!data.situacao||c.situacao===data.situacao);
-  return {rows:rows.slice(data.page*30,data.page*30+30),count:rows.length};
+  return {rows:rows.slice(data.page*COMPANIES_PAGE,data.page*COMPANIES_PAGE+COMPANIES_PAGE),count:rows.length};
 });
 export const getCompany = createServerFn({method:'POST'}).middleware([requireSupabaseAuth]).inputValidator(z.object({id:z.string().uuid(),organization_id:z.string().uuid()})).handler(async({context,data})=>{
   const result=await context.supabase.from('companies').select('*, municipalities(*)').eq('id',data.id).eq('organization_id',data.organization_id).single();if(result.error)throw new Error('Empresa não encontrada ou acesso não autorizado.');

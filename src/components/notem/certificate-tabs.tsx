@@ -12,8 +12,9 @@ import { certificateSituation, cooldownRemaining, formatGovernmentValue, agreeme
 import { formatCnpj } from '@/lib/notem';
 import { dateBr, dateTimeBr } from '@/lib/br-format';
 import { useWorkspace } from '@/components/notem/app-shell';
+import { companySyncQuery } from '@/lib/invoices.queries';
+import type { CompanyTab } from '@/lib/panel-tabs';
 import { fiscalQuery } from '@/lib/fiscal.queries';
-import { fiscalSchema,validReadinessCertificate } from '@/lib/fiscal';
 import { formatAgreementField,agreementUnavailableMessage } from '@/lib/certificates';
 
 const fmt = (d: string) => dateBr(d);
@@ -54,10 +55,35 @@ export function CertificateTab({ companyId, organizationId, canUse }: { companyI
 }
 
 const readinessLabels: Record<string, string> = { empresa_ativa: 'Empresa ativa', certificado: 'Certificado válido', configuracao_fiscal: 'Configuração fiscal', servico_ativo: 'Serviço ativo', classificacao_ibscbs: 'Classificação IBS/CBS', municipio: 'Município' };
-export function ReadinessTab({ companyId, organizationId, canUse,cnpj }: { companyId: string; organizationId: string; canUse: boolean;cnpj:string }) {
+/** Where each pending item is fixed (the button shown next to it in Resumo). */
+const fixes: Record<string, { label: string; tab?: CompanyTab }> = { certificado: { label: 'Enviar certificado', tab: 'certificado' }, configuracao_fiscal: { label: 'Abrir configuração fiscal', tab: 'fiscal' }, servico_ativo: { label: 'Abrir serviços', tab: 'servicos' }, classificacao_ibscbs: { label: 'Abrir serviços', tab: 'servicos' }, municipio: { label: 'Verificar município' }, empresa_ativa: { label: 'Use "Reativar" no topo da página' } };
+/** Empresa → Resumo: situation in the current environment, what is missing (with the button that fixes it),
+ *  certificate validity, last synchronization, active services and the municipality check. */
+export function CompanySummary({ companyId, organizationId, canUse, onTab }: { companyId: string; organizationId: string; canUse: boolean; onTab: (t: CompanyTab) => void }) {
   const {data:fiscal}=useSuspenseQuery(fiscalQuery(companyId,organizationId));
   const { profile } = useWorkspace(); const environment = (profile?.environment ?? 'production') as 'production' | 'sandbox';
-  const qc = useQueryClient(); const fetchLast = useServerFn(getAgreementQueries); const fetchReadiness = useServerFn(getCompanyReadiness); const check = useServerFn(checkAgreement);
+  const fetchReadiness = useServerFn(getCompanyReadiness);
+  const readiness = useQuery({ queryKey: ['readiness', companyId, environment], queryFn: () => fetchReadiness({ data: { id: companyId, organization_id: organizationId, environment } }) });
+  const sync = useQuery(companySyncQuery({ company_id: companyId, organization_id: organizationId }));
+  const syncEnv = sync.data?.environments.find(e => e.environment === environment);
+  const cert = fiscal.certificates.find(c => c.status === 'active'); const certSituation = cert ? certificateSituation(cert.valid_from, cert.valid_until) : null;
+  const services = fiscal.profiles.filter(p => p.active);
+  const pending = readiness.data?.itens.filter(i => i.ok !== true) ?? [];
+  const lastSync = syncEnv?.status.ultima_sincronizacao?.concluida_em ?? syncEnv?.status.ultima_consulta ?? null;
+  return <div className="space-y-8">
+    <section><p className="text-lg font-medium">{readiness.data ? (readiness.data.pronta_para_emitir ? 'Pronta para emitir' : 'Ainda não está pronta para emitir') : 'Calculando situação…'}</p><p className="text-sm text-muted-foreground">Em {environment === 'production' ? 'produção' : 'homologação'}, pelo mesmo cálculo usado pela API.</p>
+      {pending.length > 0 && <ul className="mt-4 divide-y divide-border border-y border-border">{pending.map(i => { const fix = fixes[i.item]; return <li key={i.item} className="flex flex-wrap items-start justify-between gap-4 py-3"><span className="text-sm">{readinessLabels[i.item] ?? i.item}<span className="block text-xs text-muted-foreground">{i.mensagem}</span></span>{!canUse ? <span className="text-xs text-muted-foreground">Peça a um proprietário ou administrador.</span> : fix?.tab ? <Button size="sm" variant="outline" onClick={() => onTab(fix.tab!)}>{fix.label}</Button> : fix ? <span className="text-xs text-muted-foreground">{i.item === 'municipio' ? 'Use "Verificar município" abaixo.' : fix.label}</span> : null}</li>; })}</ul>}
+      {readiness.data?.avisos?.length ? <ul className="mt-4 space-y-2">{readiness.data.avisos.map(a => <li key={a.item} role="status" className="border-l-2 border-primary pl-3 text-sm">{a.mensagem}</li>)}</ul> : null}</section>
+    <dl className="grid gap-5 text-sm sm:grid-cols-3">
+      <div><dt className="text-muted-foreground">Certificado digital</dt><dd className="mt-1">{cert && certSituation ? `${certSituation.label} · válido até ${fmt(cert.valid_until)}` : 'Não enviado'}</dd></div>
+      <div><dt className="text-muted-foreground">Última sincronização ({environment === 'production' ? 'produção' : 'homologação'})</dt><dd className="mt-1">{sync.isLoading ? 'Carregando…' : lastSync ? fmtTime(lastSync) : 'Nunca sincronizada'}</dd></div>
+      <div><dt className="text-muted-foreground">Serviços ativos</dt><dd className="mt-1">{services.length ? services.map(p => p.name).join(', ') : 'Nenhum'}</dd></div>
+    </dl>
+    <MunicipalityCheck companyId={companyId} organizationId={organizationId} canUse={canUse} environment={environment} />
+  </div>;
+}
+function MunicipalityCheck({ companyId, organizationId, canUse, environment }: { companyId: string; organizationId: string; canUse: boolean; environment: 'production' | 'sandbox' }) {
+  const qc = useQueryClient(); const fetchLast = useServerFn(getAgreementQueries); const check = useServerFn(checkAgreement);
   const key = ['agreement', companyId, environment];
   const { data: last, isLoading } = useQuery({ queryKey: key, queryFn: () => fetchLast({ data: { company_id: companyId, organization_id: organizationId, environment } }) });
   const [now, setNow] = useState(Date.now()); const [busy, setBusy] = useState(false); const [message, setMessage] = useState('');
@@ -68,17 +94,15 @@ export function ReadinessTab({ companyId, organizationId, canUse,cnpj }: { compa
   try { parsed = last?.response_body && last.http_status ? JSON.parse(last.response_body) : null; } catch { parsed = null; }
   const fields = parsed?.parametrosConvenio && typeof parsed.parametrosConvenio === 'object' ? parsed.parametrosConvenio : null;
   const unavailable=agreementUnavailableMessage(last?.http_status,parsed?.mensagem,environment);
-  const readiness = useQuery({ queryKey: ['readiness', companyId, environment], queryFn: () => fetchReadiness({ data: { id: companyId, organization_id: organizationId, environment } }) });
-  return <div className="space-y-6"><div><p className="text-lg font-medium">{readiness.data ? (readiness.data.pronta_para_emitir ? 'Pronta para emitir' : 'Ainda não está pronta para emitir') : 'Calculando situação…'}</p><p className="text-sm text-muted-foreground">Mesmo cálculo usado pela API, no ambiente {environment === 'production' ? 'Produção' : 'Homologação'}.</p>{readiness.data && <ul className="mt-4 divide-y divide-border border-y border-border">{readiness.data.itens.map(i => <li key={i.item} className="flex items-start justify-between gap-4 py-3"><span className="text-sm">{readinessLabels[i.item] ?? i.item}<span className="block text-xs text-muted-foreground">{i.mensagem}</span></span><span className="status-badge" data-status={i.ok === true ? 'active' : 'inactive'}>{i.ok === true ? 'OK' : i.ok === null ? 'Não verificado' : 'Pendente'}</span></li>)}</ul>}{readiness.data?.avisos?.length ? <ul className="mt-4 space-y-2">{readiness.data.avisos.map(a => <li key={a.item} role="status" className="border-l-2 border-primary pl-3 text-sm">{a.mensagem}</li>)}</ul> : null}</div><div className="rounded-lg border border-border p-6">
+  return <section className="rounded-lg border border-border p-6">
     <div className="flex flex-wrap items-center justify-between gap-3"><div><h2 className="text-lg font-medium">Município atendido pelo emissor nacional</h2><p className="text-sm text-muted-foreground">Ambiente: {environment === 'production' ? 'Produção' : 'Homologação'}</p></div>
-      {canUse && <div className="text-right"><Button onClick={run} disabled={busy || remaining > 0}>{busy ? 'Verificando…' : last ? 'Verificar município novamente' : 'Verificar município'}</Button>{remaining > 0 && <p className="mt-1 text-xs text-muted-foreground">Poderá verificar novamente em {Math.ceil(remaining / 1000)} s</p>}</div>}</div>
+      {canUse ? <div className="text-right"><Button onClick={run} disabled={busy || remaining > 0}>{busy ? 'Verificando…' : 'Verificar município'}</Button>{remaining > 0 && <p className="mt-1 text-xs text-muted-foreground">Poderá verificar novamente em {Math.ceil(remaining / 1000)} s</p>}</div> : <span className="text-xs text-muted-foreground">Peça a um proprietário ou administrador.</span>}</div>
     {message && <p role="alert" className="mt-4 text-sm text-destructive">{message}</p>}
     {isLoading ? <p className="mt-4 text-sm text-muted-foreground">Carregando…</p> : !last ? <p className="mt-4 text-sm text-muted-foreground">Ainda não verificado neste ambiente.</p> : <div className="mt-4 space-y-3 text-sm">
       <p className="text-muted-foreground">Consultado em {fmtTime(last.created_at)}</p>
       {last.error_code ? <p className="text-destructive">{translateTransmissorError(last.error_code)}</p> : unavailable?<p className="text-destructive">{unavailable}</p>:last.http_status !== 200 ? <p className="text-destructive">O governo respondeu com status HTTP {last.http_status}.</p> : null}
-      {fields && <dl className="grid gap-2 sm:grid-cols-2">{Object.entries(fields).map(([k, v]) => <div key={k}><dt className="text-muted-foreground">{agreementFieldLabels[k] ?? k}</dt><dd>{formatAgreementField(k,v)}</dd>{k==='situacaoEmissaoPadraoContribuintesRFB'&&<p className="text-xs text-muted-foreground">interpretação provável: 1 = habilitados por padrão</p>}</div>)}</dl>}
       {parsed?.mensagem !== undefined && parsed?.mensagem !== null && <p><span className="text-muted-foreground">Mensagem: </span>{formatGovernmentValue(parsed.mensagem)}</p>}
-      <details className="rounded border border-border p-3"><summary className="cursor-pointer">Detalhes técnicos</summary><dl className="mt-2 space-y-1 font-mono text-xs"><div>URL: {last.url ?? '—'}</div><div>Status HTTP: {last.http_status ?? '—'}</div><div>Código de erro: {last.error_code ?? '—'}</div><div>Duração: {last.duration_ms ?? '—'} ms</div></dl><pre className="mt-2 max-h-96 overflow-auto whitespace-pre-wrap break-all text-xs">{last.response_body ?? ''}</pre></details>
+      <details className="rounded border border-border p-3"><summary className="cursor-pointer">Detalhes técnicos</summary>{fields && <dl className="mt-3 grid gap-2 sm:grid-cols-2">{Object.entries(fields).map(([k, v]) => <div key={k}><dt className="text-muted-foreground">{agreementFieldLabels[k] ?? k}</dt><dd>{formatAgreementField(k,v)}</dd>{k==='situacaoEmissaoPadraoContribuintesRFB'&&<p className="text-xs text-muted-foreground">interpretação provável: 1 = habilitados por padrão</p>}</div>)}</dl>}<dl className="mt-3 space-y-1 font-mono text-xs"><div>URL: {last.url ?? '—'}</div><div>Status HTTP: {last.http_status ?? '—'}</div><div>Código de erro: {last.error_code ?? '—'}</div><div>Duração: {last.duration_ms ?? '—'} ms</div></dl><pre className="mt-2 max-h-96 overflow-auto whitespace-pre-wrap break-all text-xs">{last.response_body ?? ''}</pre></details>
     </div>}
-  </div></div>;
+  </section>;
 }
