@@ -9,7 +9,8 @@ import { pageHead } from '@/lib/notem';
 import { appLink } from '@/lib/app-url';
 import { updatePreferences } from '@/lib/notem.functions';
 import { changePassword } from '@/lib/account.functions';
-import { DISPLAY_NAME_MESSAGE, PASSWORD_MAX, PASSWORD_MIN, displayNameError, passwordChangeError, passwordMessages } from '@/lib/account';
+import { DISPLAY_NAME_MESSAGE, PASSWORD_INPUT_MAX, displayNameError, passwordChangeError, passwordMessages } from '@/lib/account';
+import { PasswordRequirements } from '@/components/notem/password-requirements';
 import { useWorkspace } from '@/components/notem/app-shell';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -45,11 +46,14 @@ function PasswordForm() {
     try { const r = await change({ data: { current: f.current, next: f.next } }); if (!r.ok) { setError(r.mensagem); return; } setF({ current: '', next: '', confirm: '' });
       toast.success(r.othersEnded ? 'Senha trocada. As outras sessões foram encerradas; esta continua aberta.' : 'Senha trocada. Não foi possível encerrar as outras sessões agora; saia delas pelo botão Sair em cada aparelho.'); }
     catch { setError(passwordMessages.failed); } finally { setBusy(false); } }
-  const field = (k: keyof typeof f, label: string, auto: string) => <div className="form-field"><label htmlFor={`password-${k}`}>{label}</label><Input id={`password-${k}`} type="password" autoComplete={auto} maxLength={PASSWORD_MAX} value={f[k]} onChange={e => setF(v => ({ ...v, [k]: e.target.value }))} /></div>;
+  const ready = passwordChangeError(f) === null;
+  const field = (k: keyof typeof f, label: string, auto: string) => <div className="form-field"><label htmlFor={`password-${k}`}>{label}</label><Input id={`password-${k}`} type="password" autoComplete={auto} maxLength={PASSWORD_INPUT_MAX} value={f[k]} aria-describedby={k === 'current' ? undefined : 'password-rule'} onChange={e => { setError(''); setF(v => ({ ...v, [k]: e.target.value })); }} /></div>;
   return <form className="mt-10 space-y-4 border-t border-border pt-6" onSubmit={submit} noValidate><h2 className="text-lg font-medium">Trocar senha</h2>
     {field('current', 'Senha atual', 'current-password')}{field('next', 'Nova senha', 'new-password')}{field('confirm', 'Confirme a nova senha', 'new-password')}
-    <p className="text-xs text-muted-foreground">Pelo menos {PASSWORD_MIN} caracteres. Ao trocar, as outras sessões abertas com a sua conta são encerradas.</p>
-    {error && <p role="alert" className="text-sm text-destructive">{error}</p>}<Button disabled={busy}>{busy ? 'Trocando…' : 'Trocar senha'}</Button></form>;
+    <PasswordRequirements id="password-rule" password={f.next} confirm={f.confirm} />
+    {f.current && f.next && f.next === f.current ? <p className="text-xs text-destructive">{passwordMessages.same}</p> : null}
+    <p className="text-xs text-muted-foreground">Ao trocar, as outras sessões abertas com a sua conta são encerradas.</p>
+    {error && <p role="alert" className="text-sm text-destructive">{error}</p>}<Button disabled={busy || !ready}>{busy ? 'Trocando…' : 'Trocar senha'}</Button></form>;
 }
 
 function SetPassword({ email }: { email: string }) {

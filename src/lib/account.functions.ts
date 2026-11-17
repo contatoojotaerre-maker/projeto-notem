@@ -4,7 +4,8 @@
 import { createServerFn } from '@tanstack/react-start';
 import { getRequest } from '@tanstack/react-start/server';
 import { requireSupabaseAuth } from '@/integrations/supabase/auth-middleware';
-import { passwordChangeSchema, passwordMessages, passwordUpdateMessage } from './account';
+import { passwordChangeSchema, passwordMessages } from './account';
+import { authErrorMessage } from './auth-messages';
 import { PANEL_PASSWORD_LIMITS, limitMessages } from './api-policy';
 
 function verifierClient() {
@@ -28,7 +29,7 @@ export const changePassword = createServerFn({ method: 'POST' }).middleware([req
   if (signIn.error || signIn.data.user?.id !== context.userId) { if (signIn.data.session) await verifier.auth.signOut({ scope: 'local' }); return { ok: false as const, mensagem: passwordMessages.notConfirmed }; }
   const updated = await verifier.auth.updateUser({ password: data.next });
   await verifier.auth.signOut({ scope: 'local' }); // the verification session never stays open
-  if (updated.error) { console.error('PANEL_PASSWORD_UPDATE_FAILED', updated.error.code ?? ''); return { ok: false as const, mensagem: passwordUpdateMessage(updated.error.code) }; }
+  if (updated.error) { console.error('PANEL_PASSWORD_UPDATE_FAILED', updated.error.code ?? ''); return { ok: false as const, mensagem: authErrorMessage(updated.error, 'password') }; }
   const token = (getRequest()?.headers.get('authorization') ?? '').replace(/^Bearer /, '');
   const others = token ? await supabaseAdmin.auth.admin.signOut(token, 'others') : { error: new Error('NO_TOKEN') };
   if (others.error) { console.error('PANEL_PASSWORD_OTHERS_SIGNOUT_FAILED'); return { ok: true as const, othersEnded: false as const }; }

@@ -18,7 +18,7 @@
 | `/o/{org}/integracoes/{id}` | Integração: "Integrações › {nome}"; abas Chaves, Webhooks, Chamadas, Configurações, Como testar |
 | `/o/{org}/alertas` | Alertas e histórico de falhas de webhook do ambiente atual |
 | `/o/{org}/organizacao` | Organização › Dados (nome; tipo só leitura; "Identificador no painel") e `?aba=equipe` |
-| `/conta` | Minha conta: nome (2 a 80 caracteres), e-mail só leitura, trocar senha (senha atual conferida no servidor, mínimo 8, encerra as outras sessões e mantém a atual), "Definir senha" por e-mail para quem entra só com Google, tema, Sair |
+| `/conta` | Minha conta: nome (2 a 80 caracteres), e-mail só leitura, trocar senha (senha atual conferida no servidor, regra única de senha, encerra as outras sessões e mantém a atual), "Definir senha" por e-mail para quem entra só com Google, tema, Sair |
 
 **Regra única de ambiente.** Seguem o seletor: Início, Notas (Emitidas e Recebidas), Alertas (com o histórico de falhas de webhook), Chaves, Webhooks (sem sub-abas), Chamadas (sem filtro de ambiente; `?ambiente=` antigo é descartado), Sincronização (só o cartão do ambiente atual) e o Resumo da empresa. Mostram "Cadastro compartilhado entre produção e homologação.": Cadastro, Configuração fiscal, Serviços, Certificado, Tomadores e Organização. Confirmações dizem o ambiente: gerar/revogar chave, criar/editar/ativar/desativar/excluir endereço de webhook, trocar segredo e reenviar entrega.
 
@@ -26,7 +26,7 @@
 
 **Listas:** 50 por página com "Página N de M" (notas, empresas, tomadores, chamadas, entregas de webhook).
 
-**Testes:** `panel-nav.test.ts` (redirecionamentos e troca de organização), `panel-routes-notfound.test.ts` (id inválido nas duas páginas de nota, aba antiga da empresa), `app-routing.test.tsx` (rotas de Recebidas e Minha conta), `account.test.ts` (nome e senha), `panel-tabs.test.ts`, `list-search.test.ts`; `isolation-matrix.database.sql` cobre `list_org_notes`/`org_notes_count` com `_direction='recebidas'`.
+**Testes:** `panel-nav.test.ts` (redirecionamentos e troca de organização), `panel-routes-notfound.test.ts` (id inválido nas duas páginas de nota, aba antiga da empresa), `app-routing.test.tsx` (rotas de Recebidas e Minha conta), `account.test.ts` (nome e senha), `password-rule.test.ts` (regra única de senha e mensagens do serviço de login), `panel-tabs.test.ts`, `list-search.test.ts`; `isolation-matrix.database.sql` cobre `list_org_notes`/`org_notes_count` com `_direction='recebidas'`.
 
 Data do levantamento: 16/11/2026. Fonte: leitura do código atual (rotas em `src/routes/`, telas em `src/components/notem/`, regras em `src/lib/`, permissões nas funções do servidor e nas políticas das migrações).
 
@@ -129,7 +129,7 @@ Da esquerda para a direita:
 | Raiz | `/` | — | — | redireciona para `/entrar` | verificado |
 | Entrar | `/entrar` | "Entrar · notem" | "Acesse sua conta" · "Bem-vindo de volta." | E-mail, Senha (mostrar/ocultar), "Lembrar de mim", "Esqueceu a senha?", "Entrar", "Entrar com Google", "Acesso exclusivo para usuários convidados." | Se já estiver logado, vai direto a `/dashboard`. Erro: "E-mail ou senha inválidos. O acesso é permitido apenas por convite." |
 | Esqueci a senha | `/esqueci-senha` | "Recuperar acesso" | "Esqueceu a senha?" | E-mail, "Enviar link", "Voltar para entrar" | Resposta: "Se este e-mail tiver acesso à notem, você receberá um link…" |
-| Definir senha (convite) | `/definir-senha` | "Aceitar convite" | "Defina sua senha" | Nova senha, Confirme a senha, "Salvar senha" | Sem link válido: "Este link é inválido ou expirou. Solicite um novo e-mail." |
+| Definir senha (convite) | `/definir-senha` | "Aceitar convite" | "Defina sua senha" | Nova senha, Confirme a senha, lista de requisitos ao vivo, "Salvar senha" (só ativo com todos cumpridos e confirmação igual) | Sem link válido: "Este link é inválido ou expirou. Solicite um novo e-mail." |
 | Redefinir senha | `/redefinir-senha` | "Nova senha" | "Redefina sua senha" | igual ao anterior | link vindo do e-mail de recuperação |
 | Qualquer tela com login | `/dashboard`, `/o/...`, `/admin/...` | — | — | sem sessão → `/entrar` | **o endereço pedido é perdido**: depois de entrar, vai sempre para `/dashboard` (verificado o redirecionamento) |
 
@@ -505,3 +505,10 @@ Contagem a partir de qualquer tela da organização, com o menu aberto (computad
 | Testes de banco (`*.database.sql`, matriz de isolamento) | nomes das funções e tabelas; não dependem de nomes de tela |
 
 Não há testes de tela (cliques, textos de botões, abas ou menu). Renomear abas ou itens do menu não quebra testes, mas quebra as ligações `?aba=` de 8.1 e os textos de 8.2.
+
+## Regra única de senha (17/11/2026)
+
+- Vale para Minha conta (trocar senha), convite (`/definir-senha`) e recuperação (`/redefinir-senha`): 10 caracteres ou mais, uma letra maiúscula, uma minúscula, um número e um caractere especial (qualquer caractere que não seja letra, número ou espaço). Limite do serviço de login: 72 bytes (letras com acento contam como dois).
+- Módulo único `src/lib/password-rule.ts`; lista ao vivo `src/components/notem/password-requirements.tsx`; o botão de salvar só fica ativo com todos os itens cumpridos e "Confirme a senha" igual. Na troca em Minha conta o servidor repete a mesma regra.
+- Recusas do serviço de login viram português em `src/lib/auth-messages.ts` (lê só código, status e motivos; nunca o texto do serviço). Ex.: senha em vazamentos → "Esta senha apareceu em vazamentos de dados. Escolha outra."; senha fraca → "Esta senha é fraca. Escolha outra.".
+- Limite: em convite/recuperação a senha é gravada pelo navegador direto no serviço de login; para a regra valer também fora do painel, configure a mesma política de senha no painel do Supabase (Authentication → Policies/Providers → Email).
