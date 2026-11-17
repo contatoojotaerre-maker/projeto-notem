@@ -1053,6 +1053,135 @@ export type Database = {
         }
         Relationships: []
       }
+      government_calls: {
+        Row: {
+          created_at: string
+          duration_ms: number | null
+          environment: Database["public"]["Enums"]["environment"]
+          http_status: number | null
+          id: number
+          outcome: string
+          service: string
+          system: string
+        }
+        Insert: {
+          created_at?: string
+          duration_ms?: number | null
+          environment: Database["public"]["Enums"]["environment"]
+          http_status?: number | null
+          id?: never
+          outcome: string
+          service: string
+          system: string
+        }
+        Update: {
+          created_at?: string
+          duration_ms?: number | null
+          environment?: Database["public"]["Enums"]["environment"]
+          http_status?: number | null
+          id?: never
+          outcome?: string
+          service?: string
+          system?: string
+        }
+        Relationships: []
+      }
+      health_alerts: {
+        Row: {
+          details: Json
+          key: string
+          last_notified_at: string | null
+          last_notified_kind: string | null
+          resolved_at: string | null
+          send_error: string | null
+          send_failed_at: string | null
+          since: string
+          state: string
+          title: string
+          updated_at: string
+        }
+        Insert: {
+          details?: Json
+          key: string
+          last_notified_at?: string | null
+          last_notified_kind?: string | null
+          resolved_at?: string | null
+          send_error?: string | null
+          send_failed_at?: string | null
+          since: string
+          state: string
+          title: string
+          updated_at?: string
+        }
+        Update: {
+          details?: Json
+          key?: string
+          last_notified_at?: string | null
+          last_notified_kind?: string | null
+          resolved_at?: string | null
+          send_error?: string | null
+          send_failed_at?: string | null
+          since?: string
+          state?: string
+          title?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      health_checks: {
+        Row: {
+          actor_id: string | null
+          created_at: string
+          id: string
+          overall: string
+          result: Json
+          trigger: string
+        }
+        Insert: {
+          actor_id?: string | null
+          created_at?: string
+          id?: string
+          overall: string
+          result: Json
+          trigger: string
+        }
+        Update: {
+          actor_id?: string | null
+          created_at?: string
+          id?: string
+          overall?: string
+          result?: Json
+          trigger?: string
+        }
+        Relationships: []
+      }
+      health_runtime: {
+        Row: {
+          id: boolean
+          last_email_error: string | null
+          last_email_failed_at: string | null
+          last_manual_at: string | null
+          last_test_email_at: string | null
+          lease_until: string | null
+        }
+        Insert: {
+          id?: boolean
+          last_email_error?: string | null
+          last_email_failed_at?: string | null
+          last_manual_at?: string | null
+          last_test_email_at?: string | null
+          lease_until?: string | null
+        }
+        Update: {
+          id?: boolean
+          last_email_error?: string | null
+          last_email_failed_at?: string | null
+          last_manual_at?: string | null
+          last_test_email_at?: string | null
+          lease_until?: string | null
+        }
+        Relationships: []
+      }
       ibscbs_classifications: {
         Row: {
           catalog_version: string
@@ -2221,6 +2350,8 @@ export type Database = {
       }
       platform_settings: {
         Row: {
+          health_alert_recipients: string[]
+          health_alerts_enabled: boolean
           ibscbs_required_production_from: string
           ibscbs_required_sandbox_from: string
           id: boolean
@@ -2233,6 +2364,8 @@ export type Database = {
           updated_by: string | null
         }
         Insert: {
+          health_alert_recipients?: string[]
+          health_alerts_enabled?: boolean
           ibscbs_required_production_from?: string
           ibscbs_required_sandbox_from?: string
           id?: boolean
@@ -2245,6 +2378,8 @@ export type Database = {
           updated_by?: string | null
         }
         Update: {
+          health_alert_recipients?: string[]
+          health_alerts_enabled?: boolean
           ibscbs_required_production_from?: string
           ibscbs_required_sandbox_from?: string
           id?: boolean
@@ -2894,6 +3029,8 @@ export type Database = {
           isSetofReturn: true
         }
       }
+      claim_health_run: { Args: { _manual: boolean }; Returns: string }
+      claim_health_test_email: { Args: never; Returns: boolean }
       claim_invoice_dispatch: {
         Args: { _id: string; _org: string }
         Returns: {
@@ -3037,6 +3174,7 @@ export type Database = {
           isSetofReturn: true
         }
       }
+      cleanup_health_data: { Args: never; Returns: undefined }
       create_fiscal_event_request: { Args: { _payload: Json }; Returns: Json }
       create_integration: {
         Args: { _actor: string; _org: string; _payload: Json }
@@ -3317,6 +3455,7 @@ export type Database = {
         }
         Returns: boolean
       }
+      health_snapshot: { Args: never; Returns: Json }
       ibscbs_regime_allowed: {
         Args: { _iss_regime: number; _value: number }
         Returns: boolean
@@ -3558,6 +3697,7 @@ export type Database = {
         }
         Returns: undefined
       }
+      release_health_run: { Args: never; Returns: undefined }
       replace_company_certificate: {
         Args: {
           _cnpj: string
@@ -3700,6 +3840,8 @@ export type Database = {
       set_fiscal_platform_setting: {
         Args: { _actor: string; _setting: string; _value: string }
         Returns: {
+          health_alert_recipients: string[]
+          health_alerts_enabled: boolean
           ibscbs_required_production_from: string
           ibscbs_required_sandbox_from: string
           id: boolean
@@ -3718,9 +3860,18 @@ export type Database = {
           isSetofReturn: false
         }
       }
+      set_health_alert_settings: {
+        Args: { _actor: string; _enabled: boolean; _recipients: string[] }
+        Returns: {
+          enabled: boolean
+          recipients: string[]
+        }[]
+      }
       set_nt009_production_start: {
         Args: { _actor: string; _value: string }
         Returns: {
+          health_alert_recipients: string[]
+          health_alerts_enabled: boolean
           ibscbs_required_production_from: string
           ibscbs_required_sandbox_from: string
           id: boolean
