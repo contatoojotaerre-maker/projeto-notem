@@ -6,7 +6,7 @@
 - [x] Testes de contraste, rosca, horas e documentação intacta
 - [x] Prints com dados fictícios (página temporária) — apagada; os 3 endereços dela dão 404
 - [x] Relatório
-- [ ] Publicar — aguarda aprovação do proprietário
+- [x] Publicado e conferido (17/11 20:48 Brasília)
 - [ ] (futuro) Histórico de "Empresas por status" — etapa própria, nada agora
 
 # Roadmap — Correções e reorganização do painel
@@ -71,7 +71,7 @@
 
 ## Saúde do sistema + avisos por e-mail (pedido 17/11)
 - [x] Plano aprovado (17/11, com ajustes)
-- [ ] Publicar antes só o visual novo e confirmar no ar
+- [x] Publicar antes só o visual novo e confirmar no ar (17/11 20:48 Brasília)
 - [ ] Gravação das chamadas ao governo depois da resposta, falha descartada com registro interno; teste de falha durante emissão
 - [ ] GET /api/public/saude/ping (200 ok < 15 min / 503 verificacao_atrasada; sem detalhes, sem log de API, no-store, noindex) + passo a passo do Monitoring (200, 5 min, 2 falhas)
 - [ ] Avisos começam desligados
