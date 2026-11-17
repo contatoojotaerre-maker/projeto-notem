@@ -49,10 +49,11 @@ paths:
         - Notas
       operationId: listarNotas
       x-titulo: Listar notas
-      summary: Lista notas da organização no ambiente da chave
-      description: >-
-        Lista paginada das notas da organização no ambiente da chave, da mais recente para a mais antiga. Inclui notas emitidas fora da notem (`origem:
-        externa`).
+      summary: "Lista as notas da organização no ambiente da chave, da mais recente para a mais antiga."
+      description: |-
+        Use para acompanhar as notas emitidas ou montar relatórios. A lista é paginada e aceita filtros por empresa, situação, tomador e período de emissão.
+
+        Inclui também as notas que as empresas da organização emitiram fora da notem, por outro sistema ou pelo Portal Nacional. Elas aparecem depois da sincronização com o governo e vêm com `origem: externa`.
       parameters:
         - $ref: "#/components/parameters/Limite"
         - $ref: "#/components/parameters/Cursor"
@@ -155,13 +156,17 @@ paths:
         - Notas
       operationId: emitirNota
       x-titulo: Emitir nota
-      summary: Emite NFS-e com numeração e idempotência definitivas
-      description: |
-        Valida empresa, serviço, tomador, E0202, E0172/E0174/E0175, E0204/E0237 e tributos antes de numerar.
-        A associação entre a chave e a nota é permanente por integração e ambiente, sem expiração em 24 horas.
-        Repetição em processamento/verificação retorna 202 com a nota atual; conteúdo diferente retorna 409.
-        Falha comprovada anterior ao envio permite repetir a mesma DPS/número. Ambiguidade vai para consulta.
-        A resposta pode levar cerca de 20 segundos. E0014 exclusiva permite avançar até cinco números; resultados incertos são confirmados por consulta.
+      summary: "Envia a NFS-e ao governo e devolve a nota autorizada ou o motivo da recusa."
+      description: |-
+        Use para emitir uma nota fiscal de serviço por uma empresa que já está pronta para emitir (veja [Consultar situação](https://docs.notemfiscal.com.br/referencia/situacao-da-empresa/consultar-situacao)). A notem monta a nota com o serviço e o tomador cadastrados ou informados no pedido, envia ao governo e espera a resposta por até cerca de 20 segundos.
+
+        Antes de gerar o número da nota, a notem confere a empresa, o serviço, o tomador e os tributos. Se algo estiver errado, a resposta é 422 com o campo e o motivo, e nenhum número é usado. Por exemplo, o tomador não pode ter o mesmo CPF/CNPJ da empresa (E0202 — o CPF/CNPJ do tomador é igual ao da empresa emitente), e ISS retido pelo tomador exige CPF/CNPJ e endereço completo no Brasil (E0204 e E0237). Todas as recusas do governo, com o que fazer em cada uma, estão em [Rejeições do governo](https://docs.notemfiscal.com.br/referencia/rejeicoes-do-governo).
+
+        O que esperar: 201 com a nota autorizada; 422 REJEITADO_GOVERNO quando o governo recusa, com o motivo original e uma explicação em português; 202 quando o governo não respondeu a tempo. No caso do 202, a nota fica em verificação, a notem descobre o resultado sozinha e avisa por webhook (`nota.autorizada` ou `nota.rejeitada`).
+
+        O cabeçalho `Idempotency-Key` é obrigatório e evita nota duplicada. Se a conexão cair e você não souber se a nota foi emitida, consulte a nota antes de tentar de novo. Repetir com a mesma `Idempotency-Key` é seguro: devolve a mesma nota, sem emitir outra. Nunca use uma chave nova para repetir o mesmo pedido. A chave fica ligada a essa nota para sempre; usá-la com outro conteúdo responde 409.
+
+        Se o único motivo da recusa for número já usado (E0014 — já existe uma nota da empresa com essa série e número), a notem tenta sozinha os números seguintes, até cinco vezes, e a nota mantém o mesmo ID.
       parameters:
         - name: Idempotency-Key
           in: header
@@ -292,8 +297,11 @@ paths:
         - Notas
       operationId: consultarNota
       x-titulo: Consultar nota
-      summary: Consulta nota (outra organização ou ambiente retorna 404)
-      description: Consulta a nota completa. Nota de outra organização ou de outro ambiente responde 404.
+      summary: "Devolve a nota completa, com situação, valores, tomador e links do XML e do PDF."
+      description: |-
+        Use para acompanhar uma nota depois da emissão, principalmente quando a emissão respondeu 202 ou quando a conexão caiu antes da resposta.
+
+        A nota só é encontrada com uma chave da mesma organização e do mesmo ambiente em que foi emitida. Com outra chave, a resposta é 404.
       responses:
         "200":
           description: Nota completa
@@ -345,8 +353,11 @@ paths:
         - Notas
       operationId: baixarXmlNota
       x-titulo: Baixar XML da nota
-      summary: Baixa XML oficial da NFS-e autorizada
-      description: XML oficial da NFS-e autorizada, exatamente como devolvido pelo governo.
+      summary: "Baixa o XML oficial da nota, exatamente como o governo devolveu."
+      description: |-
+        Use para guardar o documento fiscal ou entregá-lo ao seu cliente. A notem não altera o arquivo. O XML continua disponível depois de um cancelamento ou de uma substituição.
+
+        Nota que nunca foi autorizada não tem XML e responde 404.
       responses:
         "200":
           description: XML sem alterações
@@ -398,14 +409,17 @@ paths:
         - Notas
       operationId: cancelarNota
       x-titulo: Cancelar nota
-      summary: Cancela NFS-e autorizada (evento 101101)
-      description: >
-        Somente nota autorizada do ambiente da chave e sem outro pedido em andamento. Idempotency-Key obrigatória e associada de forma duradoura ao pedido.
+      summary: "Pede ao governo o cancelamento de uma nota autorizada e devolve a nota cancelada ou o motivo da recusa."
+      description: |-
+        Use quando a nota foi emitida por engano ou o serviço não foi prestado. Só é possível cancelar nota autorizada, emitida pela notem no ambiente da chave, e cada nota aceita um pedido por vez. Informe o motivo e uma justificativa de 15 a 255 caracteres.
 
-        Recusas por prazo, valor, tomador não identificado ou tributos recolhidos trazem pode_solicitar_analise true.
+        O que esperar: 200 com a nota cancelada; 422 REJEITADO_GOVERNO quando o governo recusa, com o motivo original e uma explicação em português; 202 quando o governo ainda não confirmou. No caso do 202, a nota continua autorizada, com `operacao_pendente` preenchido, até a notem descobrir o resultado e avisar por webhook.
 
-        Se o governo indicar cancelamento já existente, a notem confirma o evento e, encontrado, a nota fica cancelada ("Cancelamento registrado fora da
-        notem").
+        Alguns municípios não permitem cancelar diretamente, por exemplo depois do prazo ou acima de um valor. Nesses casos a recusa vem com `pode_solicitar_analise: true`, e você pode pedir que a prefeitura analise o cancelamento em [Solicitar análise do cancelamento](https://docs.notemfiscal.com.br/referencia/notas/solicitar-analise-cancelamento).
+
+        O cabeçalho `Idempotency-Key` é obrigatório. Repetir o pedido com a mesma chave é seguro: devolve o mesmo resultado, sem enviar outro pedido ao governo.
+
+        Se a nota já tiver sido cancelada por outro caminho, como o Portal Nacional, a notem encontra o cancelamento no governo, marca a nota como cancelada e responde 200. O histórico da nota mostra "Cancelamento registrado fora da notem".
       parameters:
         - name: Idempotency-Key
           in: header
@@ -534,8 +548,11 @@ paths:
         - Notas
       operationId: solicitarAnaliseCancelamento
       x-titulo: Solicitar análise do cancelamento
-      summary: Solicita análise fiscal do cancelamento à prefeitura (evento 101103)
-      description: Mesmas regras e respostas do cancelamento. Registrado o pedido, a nota fica cancelamento_em_analise até a decisão da prefeitura.
+      summary: "Pede à prefeitura que analise um cancelamento que o município não permite fazer diretamente."
+      description: |-
+        Use depois que um cancelamento for recusado com `pode_solicitar_analise: true`, por exemplo porque o prazo de cancelamento do município acabou. O corpo, as regras e as respostas são os mesmos de [Cancelar nota](https://docs.notemfiscal.com.br/referencia/notas/cancelar-nota).
+
+        Quando o pedido é registrado, a nota fica `cancelamento_em_analise` até a prefeitura decidir. A notem ainda não acompanha essa decisão automaticamente; até lá, a nota continua em análise.
       parameters:
         - name: Idempotency-Key
           in: header
@@ -664,10 +681,13 @@ paths:
         - Notas
       operationId: substituirNota
       x-titulo: Substituir nota
-      summary: Emite nota substituta (grupo subst)
-      description: |
-        Campos não enviados vêm da nota original; a empresa é sempre a da original. Validações de emissão e E0060/E0061 ocorrem antes de numerar.
-        A original só fica substituida quando a nova é autorizada; rejeitada a nova, a original não muda. Respostas iguais a POST /notas.
+      summary: "Emite uma nova nota que corrige e substitui uma nota autorizada."
+      description: |-
+        Use para corrigir uma nota autorizada sem cancelá-la antes. Envie o motivo, a justificativa e só os campos que mudam; os demais são copiados da nota original. A empresa é sempre a mesma da original.
+
+        Antes de gerar o número da nova nota, a notem faz as mesmas conferências da emissão e aplica as regras do governo sobre o que pode mudar. Empresa fora do Simples Nacional não pode mudar competência, código do serviço, código municipal nem local da prestação (E0060). Empresa MEI ou ME/EPP não pode mudar o documento do tomador, a competência nem o valor do serviço (E0061).
+
+        As respostas são iguais às de [Emitir nota](https://docs.notemfiscal.com.br/referencia/notas/emitir-nota) e se referem à nova nota. A original só passa a `substituida` quando a nova é autorizada. Se a nova for recusada, a original continua valendo.
       parameters:
         - name: Idempotency-Key
           in: header
@@ -759,7 +779,7 @@ paths:
             X-Request-Id:
               $ref: "#/components/headers/XRequestId"
         "422":
-          description: REGRA_DE_NEGOCIO (inclui E0042, E0060, E0061, justificativa), EMPRESA_NAO_PRONTA ou REJEITADO_GOVERNO
+          description: REGRA_DE_NEGOCIO (empresa diferente da original, campo que não pode mudar na substituição ou justificativa inválida), EMPRESA_NAO_PRONTA ou REJEITADO_GOVERNO
           content:
             application/json:
               schema:
@@ -804,8 +824,11 @@ paths:
         - Notas
       operationId: baixarXmlEvento
       x-titulo: Baixar XML do evento
-      summary: Baixa o XML oficial de um evento registrado
-      description: "XML oficial do evento registrado no governo: 101101 (cancelamento) ou 101103 (análise fiscal do cancelamento). Sem evento registrado: 404."
+      summary: "Baixa o XML oficial de um cancelamento ou de um pedido de análise registrado no governo."
+      description: |-
+        Use o código `101101` para o cancelamento e `101103` para o pedido de análise do cancelamento. O arquivo vem exatamente como o governo registrou.
+
+        Se a nota não tiver esse registro, a resposta é 404.
       responses:
         "200":
           description: XML do evento sem alterações
@@ -851,8 +874,11 @@ paths:
         - Tomadores
       operationId: listarTomadores
       x-titulo: Listar tomadores
-      summary: Lista tomadores da empresa
-      description: Lista paginada dos tomadores cadastrados na empresa. Cada tomador pertence a uma empresa.
+      summary: "Lista os clientes (tomadores) cadastrados em uma empresa."
+      description: |-
+        Use para encontrar um tomador antes de emitir, pelo documento, pelo código no seu sistema (`id_externo`) ou pelo nome. A lista é paginada.
+
+        Cada tomador pertence a uma única empresa: os clientes de uma empresa não aparecem para outra.
       parameters:
         - $ref: "#/components/parameters/Limite"
         - $ref: "#/components/parameters/Cursor"
@@ -907,8 +933,11 @@ paths:
         - Tomadores
       operationId: cadastrarTomador
       x-titulo: Cadastrar tomador
-      summary: Cadastra tomador (id_externo único por empresa)
-      description: Cadastra um tomador na empresa, com os mesmos campos do tomador da nota e `id_externo` opcional, único por empresa.
+      summary: "Guarda os dados de um cliente para usar nas próximas notas."
+      description: |-
+        Use para não repetir os dados do cliente em cada emissão: depois, basta informar `tomador_id` ou `tomador_id_externo` em [Emitir nota](https://docs.notemfiscal.com.br/referencia/notas/emitir-nota). Os campos são os mesmos do tomador da nota.
+
+        O `id_externo` é opcional e não pode se repetir na mesma empresa.
       parameters:
         - $ref: "#/components/parameters/IdempotencyKey"
       requestBody:
@@ -972,8 +1001,9 @@ paths:
         - Tomadores
       operationId: consultarTomador
       x-titulo: Consultar tomador
-      summary: Consulta tomador
-      description: Consulta um tomador da empresa.
+      summary: "Devolve os dados de um tomador cadastrado na empresa."
+      description: |-
+        Tomador de outra empresa responde 404.
       responses:
         "200":
           description: Tomador
@@ -1004,8 +1034,9 @@ paths:
         - Tomadores
       operationId: alterarTomador
       x-titulo: Alterar tomador
-      summary: Altera campos enviados do tomador
-      description: "Altera os campos enviados. Notas já emitidas não mudam: os dados do tomador são copiados para a nota no momento da emissão."
+      summary: "Altera os dados de um tomador cadastrado."
+      description: |-
+        Envie só os campos que mudam. Notas já emitidas não mudam, porque os dados do tomador são copiados para a nota no momento da emissão.
       parameters:
         - $ref: "#/components/parameters/IdempotencyKey"
       requestBody:
@@ -1060,10 +1091,11 @@ paths:
         - Notas
       operationId: baixarPdfNota
       x-titulo: Baixar PDF (DANFSe)
-      summary: Baixa DANFSe v2.0 em PDF
-      description: >-
-        Gerado do XML autorizado e situação atual; autorizada, cancelada, cancelada_prefeitura ou substituida. Canhoto opcional; mesma organização e ambiente da
-        chave.
+      summary: "Gera o PDF da nota (DANFSe) a partir do XML oficial."
+      description: |-
+        Use para entregar a nota ao seu cliente em formato de impressão. O PDF segue o modelo oficial (DANFSe versão 2.0) e mostra a situação atual: nota cancelada ou substituída recebe a marca correspondente.
+
+        Funciona para notas autorizadas, canceladas, canceladas pela prefeitura ou substituídas. O canhoto é opcional e segue a configuração fiscal da empresa.
       parameters:
         - name: id
           in: path
@@ -1119,10 +1151,11 @@ paths:
         - Status
       operationId: consultarStatus
       x-titulo: Consultar status
-      summary: Verifica a chave e informa o ambiente
-      description: |
-        Use para testar a integração. Não consome nada e não acessa o governo.
-        O ambiente, a organização e a integração são determinados exclusivamente pela chave.
+      summary: "Confirma que a chave funciona e informa o ambiente, a organização e a integração."
+      description: |-
+        Use para testar a integração. A chamada não acessa o governo e não altera nada.
+
+        O ambiente (produção ou homologação), a organização e a integração são definidos só pela chave usada.
       responses:
         "200":
           description: Chave válida
@@ -1154,8 +1187,9 @@ paths:
         - Empresas
       operationId: listarEmpresas
       x-titulo: Listar empresas
-      summary: Lista as empresas da organização da chave
-      description: Lista paginada das empresas da organização da chave, da mais recente para a mais antiga. Filtros combináveis.
+      summary: "Lista as empresas emitentes da organização, da mais recente para a mais antiga."
+      description: |-
+        A lista é paginada e aceita filtros que podem ser combinados, como CNPJ, empresa ativa ou inativa e busca pelo nome.
       parameters:
         - $ref: "#/components/parameters/Limite"
         - $ref: "#/components/parameters/Cursor"
@@ -1226,10 +1260,13 @@ paths:
         - Empresas
       operationId: cadastrarEmpresa
       x-titulo: Cadastrar empresa
-      summary: Cadastra uma empresa
-      description: >-
-        Cadastra uma empresa emitente na organização da chave. `municipio` e `uf` são preenchidos pela notem a partir de `codigo_municipio`. A empresa vale para
-        os dois ambientes.
+      summary: "Cadastra uma empresa que vai emitir notas pela notem."
+      description: |-
+        É o primeiro passo para emitir. Informe o CNPJ, a razão social, o endereço e o código IBGE do município; o nome do município e a UF são preenchidos pela notem.
+
+        A empresa vale para os dois ambientes. Uma alteração feita com a chave de homologação também aparece em produção.
+
+        Depois do cadastro, grave a configuração fiscal, envie o certificado digital e cadastre ao menos um serviço. [Consultar situação](https://docs.notemfiscal.com.br/referencia/situacao-da-empresa/consultar-situacao) mostra o que ainda falta. Se o CNPJ já estiver cadastrado na organização, a resposta é 409 com o ID da empresa existente.
       parameters:
         - $ref: "#/components/parameters/IdempotencyKey"
       requestBody:
@@ -1302,8 +1339,9 @@ paths:
         - Empresas
       operationId: consultarEmpresa
       x-titulo: Consultar empresa
-      summary: Consulta uma empresa
-      description: Consulta uma empresa da organização da chave. Empresa de outra organização responde 404.
+      summary: "Devolve os dados cadastrais de uma empresa."
+      description: |-
+        Empresa de outra organização responde 404.
       responses:
         "200":
           description: Empresa
@@ -1334,10 +1372,11 @@ paths:
         - Empresas
       operationId: alterarEmpresa
       x-titulo: Alterar empresa
-      summary: Altera os campos enviados (ativa false desativa; true reativa)
-      description: >-
-        Altera somente os campos enviados. `ativa: false` desativa a empresa (bloqueia novas emissões e mantém o histórico); `ativa: true` reativa. O CNPJ não
-        pode mudar depois que a empresa recebe certificado ou série.
+      summary: "Altera os dados de uma empresa, ou a desativa e reativa."
+      description: |-
+        Envie só os campos que mudam. `ativa: false` desativa a empresa: novas emissões ficam bloqueadas e o histórico é mantido. `ativa: true` reativa.
+
+        O CNPJ não pode mudar depois que a empresa recebe um certificado ou uma série de numeração, porque o governo liga as notas e o certificado ao CNPJ. Nesse caso, a resposta é 409 CNPJ_IMUTAVEL.
       parameters:
         - $ref: "#/components/parameters/IdempotencyKey"
       requestBody:
@@ -1393,10 +1432,11 @@ paths:
         - Empresas
       operationId: excluirEmpresa
       x-titulo: Excluir empresa
-      summary: Exclui definitivamente (somente se nunca reservou número de DPS)
-      description: >-
-        Exclui definitivamente a empresa, seus serviços e o certificado guardado. Só é permitido se a empresa nunca reservou número de DPS e não tem notas em
-        nenhum ambiente; caso contrário, desative com `ativa: false`.
+      summary: "Exclui uma empresa que nunca emitiu nota."
+      description: |-
+        Use para remover um cadastro feito por engano. A exclusão é definitiva e remove também os serviços, a configuração fiscal e o certificado guardado.
+
+        Só é permitida se a empresa nunca usou um número de nota e não tem notas em nenhum ambiente, porque números já usados precisam continuar registrados. Caso contrário, a resposta é 409 EMPRESA_POSSUI_HISTORICO; desative a empresa com `ativa: false`.
       parameters:
         - $ref: "#/components/parameters/IdempotencyKey"
       responses:
@@ -1434,8 +1474,9 @@ paths:
         - Configuração fiscal
       operationId: consultarConfiguracaoFiscal
       x-titulo: Consultar configuração fiscal
-      summary: Consulta a configuração fiscal
-      description: Consulta a configuração fiscal da empresa, com a série DPS atribuída.
+      summary: "Devolve como a empresa é tributada: Simples Nacional, regimes e tributos aproximados."
+      description: |-
+        A resposta inclui a série usada na numeração das notas da empresa (`serie_dps`), que a notem atribui automaticamente.
       responses:
         "200":
           description: Configuração
@@ -1466,10 +1507,11 @@ paths:
         - Configuração fiscal
       operationId: gravarConfiguracaoFiscal
       x-titulo: Gravar configuração fiscal
-      summary: Grava a configuração fiscal (serie_dps é ignorada; atribuída automaticamente)
-      description: >-
-        Grava a configuração fiscal completa. Combinações proibidas pelo governo (E0710, E0712, E0713, E0172, E0174, E0175) são recusadas com o campo e a regra.
-        `serie_dps` é ignorada: a série é atribuída automaticamente.
+      summary: "Grava como a empresa é tributada e recusa combinações que o governo não aceita."
+      description: |-
+        Envie a configuração completa: situação no Simples Nacional, regime de apuração, regime especial e forma de informar os tributos aproximados. O campo `serie_dps` é ignorado, porque a série de numeração é atribuída pela notem.
+
+        A notem recusa com 422, indicando o campo e a regra, as combinações que o governo rejeitaria depois, na emissão. Por exemplo, empresa fora do Simples Nacional precisa informar os tributos aproximados por esfera (federal, estadual e municipal), e MEI não pode ter regime especial. As regras completas estão no guia [Configuração fiscal](https://docs.notemfiscal.com.br/guias/configuracao-fiscal).
       parameters:
         - $ref: "#/components/parameters/IdempotencyKey"
       requestBody:
@@ -1519,7 +1561,7 @@ paths:
                 erroNaoEncontrado:
                   $ref: "#/components/examples/ErroNaoEncontrado"
         "422":
-          description: "REGRA_DE_NEGOCIO com detalhes por campo (ex.: E0710/E0712/E0713, alíquota do ISS no Simples)"
+          description: "REGRA_DE_NEGOCIO com o campo e a regra (ex.: forma de informar os tributos aproximados que não combina com a situação no Simples, alíquota do ISS no Simples)"
           content:
             application/json:
               schema:
@@ -1538,8 +1580,11 @@ paths:
         - Certificado
       operationId: consultarCertificado
       x-titulo: Consultar certificado
-      summary: Metadados do certificado ativo
-      description: "Metadados do certificado ativo. O arquivo e a senha nunca são devolvidos. Sem certificado: 404."
+      summary: "Mostra os dados do certificado digital ativo, como titular e validade."
+      description: |-
+        Use para saber quando o certificado vence e trocá-lo a tempo. O arquivo e a senha nunca são devolvidos.
+
+        Sem certificado cadastrado, a resposta é 404.
       responses:
         "200":
           description: Certificado
@@ -1570,10 +1615,13 @@ paths:
         - Certificado
       operationId: enviarCertificado
       x-titulo: Enviar certificado
-      summary: Envia ou substitui o certificado A1 (arquivo e senha nunca são devolvidos nem registrados)
-      description: >-
-        Envia ou substitui o certificado A1 (.pfx/.p12 de até 100 KB, em base64). O anterior continua valendo até o novo ser aceito. O CNPJ do certificado
-        precisa ser o da empresa.
+      summary: "Envia ou troca o certificado digital A1 que a empresa usa para assinar as notas."
+      description: |-
+        O certificado é necessário para emitir e cancelar notas. Envie o arquivo .pfx ou .p12 (até 100 KB) em base64, com a senha. O CNPJ do certificado precisa ser o da empresa.
+
+        O certificado anterior continua valendo até o novo ser aceito, então uma troca recusada não interrompe as emissões. Quando o arquivo é recusado, a resposta 422 diz o motivo: senha errada, certificado vencido, sem chave privada ou de outro CNPJ.
+
+        O arquivo e a senha nunca são devolvidos nem registrados.
       parameters:
         - $ref: "#/components/parameters/IdempotencyKey"
       requestBody:
@@ -1654,8 +1702,9 @@ paths:
         - Serviços
       operationId: listarServicos
       x-titulo: Listar serviços
-      summary: Lista os serviços da empresa
-      description: Lista paginada dos serviços da empresa, ativos e inativos.
+      summary: "Lista os serviços cadastrados na empresa, ativos e inativos."
+      description: |-
+        A lista é paginada. Cada serviço define o código do serviço, a tributação e a retenção usadas nas notas.
       parameters:
         - $ref: "#/components/parameters/Limite"
         - $ref: "#/components/parameters/Cursor"
@@ -1695,8 +1744,11 @@ paths:
         - Serviços
       operationId: cadastrarServico
       x-titulo: Cadastrar serviço
-      summary: Cadastra um serviço
-      description: Cadastra um serviço da empresa. O código nacional, o NBS e a classificação IBS/CBS precisam existir nos catálogos oficiais.
+      summary: "Cadastra um serviço que a empresa presta, com os códigos que vão na nota."
+      description: |-
+        Toda nota usa um serviço cadastrado. Informe o código nacional do serviço e, para o IBS/CBS, o código NBS e a classificação tributária.
+
+        Os códigos precisam existir nos catálogos oficiais. Use as operações do grupo Catálogos para encontrá-los.
       parameters:
         - $ref: "#/components/parameters/IdempotencyKey"
       requestBody:
@@ -1772,8 +1824,9 @@ paths:
         - Serviços
       operationId: consultarServico
       x-titulo: Consultar serviço
-      summary: Consulta um serviço
-      description: Consulta um serviço da empresa.
+      summary: "Devolve um serviço cadastrado na empresa."
+      description: |-
+        Serviço de outra empresa responde 404.
       responses:
         "200":
           description: Serviço
@@ -1804,8 +1857,9 @@ paths:
         - Serviços
       operationId: alterarServico
       x-titulo: Alterar serviço
-      summary: Altera um serviço (ativo false desativa; não há exclusão)
-      description: "Altera os campos enviados. Serviços não são excluídos: use `ativo: false`."
+      summary: "Altera um serviço ou o desativa."
+      description: |-
+        Envie só os campos que mudam. Serviços não são excluídos, porque as notas emitidas dependem deles. Use `ativo: false` para que o serviço não seja mais usado em novas notas.
       parameters:
         - $ref: "#/components/parameters/IdempotencyKey"
       requestBody:
@@ -1862,8 +1916,11 @@ paths:
         - Situação da empresa
       operationId: consultarSituacao
       x-titulo: Consultar situação
-      summary: Pronta para emitir? (ambiente da chave)
-      description: Calcula, para o ambiente da chave, se a empresa está pronta para emitir e lista o que falta. `avisos` não impedem a emissão.
+      summary: "Diz se a empresa está pronta para emitir no ambiente da chave e o que falta."
+      description: |-
+        Use antes da primeira emissão e sempre que uma emissão for recusada com EMPRESA_NAO_PRONTA. A notem confere o cadastro, a configuração fiscal, o certificado, os serviços e o convênio do município.
+
+        Itens em `avisos` não impedem a emissão.
       responses:
         "200":
           description: Situação
@@ -1899,10 +1956,11 @@ paths:
         - Situação da empresa
       operationId: verificarMunicipio
       x-titulo: Verificar município
-      summary: Consulta o convênio do município no governo e devolve a situação atualizada
-      description: >-
-        Consulta no governo o convênio do município para o ambiente da chave e devolve a situação atualizada. Exige certificado válido. Limite de 1 vez por
-        minuto por empresa e ambiente.
+      summary: "Consulta no governo se o município da empresa aceita a NFS-e nacional e atualiza a situação."
+      description: |-
+        Use quando a situação indicar que o convênio do município ainda não foi verificado. A consulta usa o certificado da empresa, que precisa estar válido.
+
+        Pode ser feita uma vez por minuto por empresa e ambiente. Antes disso, a resposta é 429, com o tempo de espera no cabeçalho Retry-After.
       parameters:
         - $ref: "#/components/parameters/IdempotencyKey"
       responses:
@@ -1963,8 +2021,9 @@ paths:
         - Sincronização
       operationId: consultarSincronizacao
       x-titulo: Consultar sincronização
-      summary: Situação da sincronização com o ADN (somente consulta, ambiente da chave)
-      description: A sincronização é iniciada apenas no painel. A API não oferece sincronização por NSU.
+      summary: "Mostra quando a empresa foi sincronizada com o governo pela última vez e o resultado."
+      description: |-
+        A sincronização traz as notas que a empresa emitiu fora da notem e as notas que ela recebeu. Ela é iniciada no painel da notem; pela API só é possível consultar a situação, no ambiente da chave.
       responses:
         "200":
           description: Situação da sincronização
@@ -2010,8 +2069,11 @@ paths:
         - Notas recebidas
       operationId: listarNotasRecebidas
       x-titulo: Listar notas recebidas
-      summary: Notas em que a empresa é tomadora ou intermediária (ambiente da chave)
-      description: "Exige prova de posse: a empresa precisa ter tido certificado digital cadastrado nesta organização."
+      summary: "Lista as notas em que a empresa aparece como cliente (tomadora) ou intermediária."
+      description: |-
+        As notas vêm do governo pela sincronização feita no painel. A lista é paginada e segue o ambiente da chave.
+
+        Por segurança, a lista só fica disponível para empresas que já tiveram certificado digital cadastrado nesta organização. O certificado comprova que a organização representa a empresa.
       parameters:
         - $ref: "#/components/parameters/Limite"
         - $ref: "#/components/parameters/Cursor"
@@ -2112,8 +2174,9 @@ paths:
         - Notas recebidas
       operationId: consultarNotaRecebida
       x-titulo: Consultar nota recebida
-      summary: Consulta nota recebida
-      description: Consulta uma nota em que a empresa é tomadora ou intermediária. Notas recebidas são somente leitura.
+      summary: "Devolve uma nota recebida pela empresa."
+      description: |-
+        Notas recebidas são somente leitura: não podem ser canceladas nem substituídas pela notem.
       responses:
         "200":
           description: Nota recebida
@@ -2166,8 +2229,9 @@ paths:
         - Notas recebidas
       operationId: baixarXmlNotaRecebida
       x-titulo: Baixar XML da nota recebida
-      summary: XML oficial da nota recebida, sem alterações
-      description: XML oficial da nota recebida, exatamente como trazido do Ambiente de Dados Nacional.
+      summary: "Baixa o XML oficial da nota recebida, sem alterações."
+      description: |-
+        O arquivo vem exatamente como foi obtido no Ambiente de Dados Nacional, o repositório de notas do governo.
       responses:
         "200":
           description: XML oficial
@@ -2220,8 +2284,9 @@ paths:
         - Notas recebidas
       operationId: baixarPdfNotaRecebida
       x-titulo: Baixar PDF da nota recebida
-      summary: DANFSe da nota recebida, gerado do XML oficial
-      description: DANFSe gerado a partir do XML oficial da nota recebida.
+      summary: "Gera o PDF (DANFSe) de uma nota recebida a partir do XML oficial."
+      description: |-
+        O PDF segue o mesmo modelo oficial usado nas notas emitidas.
       responses:
         "200":
           description: PDF
@@ -2266,8 +2331,9 @@ paths:
         - Catálogos
       operationId: listarMunicipios
       x-titulo: Municípios
-      summary: Municípios (nome sem acento ou código IBGE)
-      description: Catálogo oficial de municípios (IBGE). A busca aceita o nome sem acento ou o código IBGE de 7 dígitos.
+      summary: "Busca municípios pelo nome ou pelo código IBGE."
+      description: |-
+        Use para obter o código IBGE de 7 dígitos pedido nos endereços. A busca não diferencia acentos nem letras maiúsculas.
       parameters:
         - $ref: "#/components/parameters/Limite"
         - $ref: "#/components/parameters/Cursor"
@@ -2319,8 +2385,9 @@ paths:
         - Catálogos
       operationId: listarCodigosServico
       x-titulo: Códigos de serviço
-      summary: Códigos nacionais de serviço (descrição ou código)
-      description: Lista nacional de serviços (código de tributação nacional de 6 dígitos). A busca aceita descrição ou código.
+      summary: "Busca códigos da lista nacional de serviços pela descrição ou pelo código."
+      description: |-
+        O código de 6 dígitos identifica o tipo de serviço na nota e é informado no cadastro de serviços.
       parameters:
         - $ref: "#/components/parameters/Limite"
         - $ref: "#/components/parameters/Cursor"
@@ -2372,8 +2439,9 @@ paths:
         - Catálogos
       operationId: listarNbs
       x-titulo: Códigos NBS
-      summary: Códigos NBS (descrição ou código)
-      description: Nomenclatura Brasileira de Serviços (9 dígitos), usada no IBS/CBS. A busca aceita descrição ou código.
+      summary: "Busca códigos NBS pela descrição ou pelo código."
+      description: |-
+        A NBS (Nomenclatura Brasileira de Serviços) tem 9 dígitos e é informada no cadastro de serviços para o IBS/CBS.
       parameters:
         - $ref: "#/components/parameters/Limite"
         - $ref: "#/components/parameters/Cursor"
@@ -2425,10 +2493,11 @@ paths:
         - Catálogos
       operationId: listarClassificacoesTributarias
       x-titulo: Classificações tributárias
-      summary: Classificações tributárias do IBS/CBS aceitas na NFS-e (cClassTrib)
-      description: >-
-        Tabela oficial (73 classificações com NFS-e = Sim). suportada = false indica classificação que a notem ainda não aceita (tributação regular, crédito
-        presumido, diferimento, CST 800/811 e doações 410003/410026), com o motivo.
+      summary: "Lista as classificações tributárias do IBS/CBS aceitas na NFS-e."
+      description: |-
+        A classificação diz como o IBS e a CBS incidem sobre o serviço e é escolhida no cadastro do serviço. A tabela oficial tem 73 classificações válidas para a NFS-e.
+
+        Quando `suportada` é false, a notem ainda não aceita aquela classificação (por exemplo, diferimento, crédito presumido ou doações), e o motivo vem junto.
       parameters:
         - $ref: "#/components/parameters/Limite"
         - $ref: "#/components/parameters/Cursor"
@@ -2480,10 +2549,11 @@ paths:
         - Catálogos
       operationId: listarIndicadoresOperacao
       x-titulo: Indicadores de operação
-      summary: Indicadores de operação do IBS/CBS (cIndOp, Anexo VII v1.03)
-      description: >-
-        Por padrão lista só os 28 indicadores ativos. incluir_inativos=true inclui os 5 retirados da tabela oficial (ativo = false), que não podem ser
-        escolhidos em novos cadastros.
+      summary: "Lista os indicadores de operação do IBS/CBS, que dizem o tipo de operação e onde o imposto é devido."
+      description: |-
+        O indicador é escolhido no cadastro do serviço, junto com a classificação tributária. Por padrão, a lista traz só os 28 indicadores em vigor.
+
+        Com `incluir_inativos=true`, a lista inclui também os 5 indicadores retirados da tabela oficial, que não podem ser usados em novos cadastros.
       parameters:
         - $ref: "#/components/parameters/Limite"
         - $ref: "#/components/parameters/Cursor"
@@ -2540,10 +2610,11 @@ paths:
         - Catálogos
       operationId: sugerirClassificacao
       x-titulo: Sugestão de classificação
-      summary: Sugestão de NBS, classificação, indicador e atividade do Simples (Anexo VIII)
-      description: >-
-        Primeira opção da tabela oficial de correlação para o código de serviço, com as alternativas. Nunca é aplicada automaticamente; valores não aceitos na
-        NFS-e, retirados ou não suportados vêm com aplicavel = false e o motivo.
+      summary: "Sugere NBS, classificação tributária e indicador de operação para um código de serviço."
+      description: |-
+        A sugestão vem da tabela oficial de correlação do governo, com a primeira opção e as alternativas. Nada é aplicado automaticamente: confira e grave no cadastro do serviço.
+
+        Opções que não podem ser usadas na NFS-e, que foram retiradas ou que a notem ainda não aceita vêm com `aplicavel: false` e o motivo.
       parameters:
         - name: codigo_servico
           in: query
@@ -2641,9 +2712,9 @@ components:
       required:
         - valores
       description: >-
-        Textos são normalizados antes de validar e o texto normalizado é o enviado ao governo; caracteres sem equivalente retornam 422 (contém caracteres não
-        aceitos pela NFS-e). Exatamente um seletor de empresa e um de serviço; no máximo um seletor de tomador. CPF/CNPJ/endereço nacional completos exigidos
-        com retenção pelo tomador (E0204/E0237). E0202 e regras fiscais verificadas antes de numerar.
+        Os textos são ajustados antes da conferência (por exemplo, aspas e travessões viram equivalentes aceitos) e a nota usa o texto ajustado; caracteres
+        sem equivalente, como emojis, retornam 422 com a mensagem "contém caracteres não aceitos pela NFS-e". Indique a empresa de uma única forma, o serviço
+        de uma única forma e o tomador de no máximo uma forma. Com ISS retido pelo tomador, o tomador precisa de CPF/CNPJ e endereço completo no Brasil.
       properties:
         empresa_id:
           type: string
@@ -2693,10 +2764,10 @@ components:
               $ref: "#/components/schemas/Valor"
             desconto_incondicionado:
               $ref: "#/components/schemas/Valor"
-              description: Zero omitido na DPS (E0431)
+              description: Zero não é enviado ao governo, que só aceita desconto maior que zero e menor que o valor do serviço.
             desconto_condicionado:
               $ref: "#/components/schemas/Valor"
-              description: Zero omitido na DPS (E0432)
+              description: Zero não é enviado ao governo, que só aceita desconto maior que zero e menor que o valor do serviço.
         retencao_iss:
           type:
             - string
@@ -2774,8 +2845,10 @@ components:
           description: 50 posições; as 14 do CNPJ do emitente podem conter letras
         serie_dps:
           type: string
+          description: Série da DPS, a declaração que a notem envia ao governo para gerar a nota; atribuída pela notem
         numero_dps:
           type: string
+          description: Número da declaração enviada ao governo (DPS); não é o número da NFS-e, que está em numero
         competencia:
           type: string
           format: date
@@ -3104,10 +3177,12 @@ components:
           type:
             - string
             - "null"
+          description: Série da DPS, a declaração que a notem envia ao governo para gerar a nota
         numero_dps:
           type:
             - string
             - "null"
+          description: Número da declaração enviada ao governo (DPS); não é o número da NFS-e, que está em numero
         competencia:
           type:
             - string
@@ -3449,7 +3524,7 @@ components:
                     format: uuid
                   pode_solicitar_analise:
                     type: boolean
-                    description: true quando o município não permite cancelar diretamente (E0822, E0823, E0824, E0827)
+                    description: true quando o município não permite cancelar diretamente (prazo expirado, valor acima do limite, tomador não identificado ou tributos já recolhidos); nesse caso, solicite a análise do cancelamento
             codigo_governo:
               type:
                 - string
@@ -3679,14 +3754,13 @@ components:
           format: date-time
     ConfiguracaoFiscal:
       description: |
-        Matriz obrigatória: nao_optante aceita somente percentual_por_esfera (E0713);
-        mei aceita percentual_por_esfera ou nao_informar, nunca percentual_simples (E0710);
-        me_epp aceita percentual_simples ou percentual_por_esfera, nunca nao_informar (E0712).
-        Por esfera exige federal/estadual/municipal; zero é permitido. Ausentes são null.
-        Legados incompatíveis não são reescritos, ficam com configuração fiscal incompleta
-        e bloqueiam emissão antes de numerar com mensagem da regra.
-        Regime especial deve ser nenhum para MEI (E0174), ME/EPP dentro do Simples (E0175)
-        e serviços ativos com imunidade/exportação/não incidência (E0172).
+        A forma de informar os tributos aproximados depende da situação no Simples Nacional, porque o governo recusa a nota quando elas não combinam.
+        Empresa fora do Simples (nao_optante) usa só percentual_por_esfera.
+        MEI usa percentual_por_esfera ou nao_informar, nunca percentual_simples.
+        ME/EPP usa percentual_simples ou percentual_por_esfera, nunca nao_informar.
+        Por esfera exige os três percentuais (federal, estadual e municipal); zero é permitido. Campos ausentes valem null.
+        O regime especial deve ser nenhum para MEI, para ME/EPP com apuração dentro do Simples e para empresas com serviço ativo imune, de exportação ou sem incidência do ISS.
+        Configurações antigas que não seguem essas regras não são alteradas automaticamente: ficam incompletas e a emissão é recusada, com a regra a corrigir, antes de gerar o número da nota.
       type: object
       required:
         - simples_nacional
@@ -3881,8 +3955,8 @@ components:
             - "null"
     Situacao:
       description: >-
-        Configurações fiscais legadas incompatíveis com E0710/E0712/E0713 ou E0172/E0174/E0175 deixam configuracao_fiscal pendente, com mensagem da regra; não
-        são reescritas.
+        Uma configuração fiscal antiga que o governo não aceitaria não é alterada automaticamente: o item configuracao_fiscal fica pendente, com a regra a
+        corrigir.
       type: object
       properties:
         ambiente:
@@ -3939,9 +4013,9 @@ components:
       required:
         - codigo_classificacao
       description: >-
-        A notem envia só a classificação; alíquotas, base e valores do IBS/CBS são calculados pelo governo. O indicador é obrigatório quando a classificação
-        exige tributação (E0860) e proibido quando não exige (E0859). Quando o indicador aponta para o endereço do tomador/destinatário, a nota exige tomador
-        com CPF/CNPJ e endereço no Brasil (E0239/E0243), e o município do tomador deve ser o mesmo do cadastro na Receita Federal.
+        A notem envia só a classificação; alíquotas, base e valores do IBS/CBS são calculados pelo governo. O indicador de operação é obrigatório quando a
+        classificação tem tributação e proibido quando não tem. Quando o indicador aponta o endereço do tomador ou do destinatário como local do imposto, a nota
+        exige tomador com CPF/CNPJ e endereço no Brasil, e o município do tomador deve ser o mesmo do cadastro na Receita Federal.
       properties:
         codigo_classificacao:
           type: string

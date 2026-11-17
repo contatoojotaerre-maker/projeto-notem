@@ -50,7 +50,7 @@ Antes de validar, a notem ajusta automaticamente o texto colado de editores:
 | Espaços no início e no fim | removidos |
 | Quebras de linha | espaço; **mantidas somente na descrição do serviço** |
 
-A nota guarda e devolve o texto já ajustado, que é exatamente o enviado ao governo. O que não tem equivalente (por exemplo, emojis) é recusado antes de numerar ou enviar: `422 REGRA_DE_NEGOCIO`, com `campo` indicando onde está o caractere e `mensagem` "contém caracteres não aceitos pela NFS-e". Limites de tamanho valem para o texto já ajustado.
+A nota guarda e devolve o texto já ajustado, que é exatamente o enviado ao governo. O que não tem equivalente (por exemplo, emojis) é recusado antes de gerar o número da nota ou enviar: `422 REGRA_DE_NEGOCIO`, com `campo` indicando onde está o caractere e `mensagem` "contém caracteres não aceitos pela NFS-e". Limites de tamanho valem para o texto já ajustado.
 
 ## Respostas de sucesso
 | Situação | Status | Corpo |

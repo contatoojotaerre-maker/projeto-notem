@@ -2,7 +2,7 @@
 titulo: Configuração fiscal
 ordem: 3
 atualizado: 2026-11-17
-descricao: Simples Nacional, regimes, tributos aproximados e as regras E0710, E0712, E0713, E0172, E0174 e E0175.
+descricao: Como informar a situação no Simples Nacional, os regimes e os tributos aproximados, e quais combinações o governo aceita.
 ---
 
 # Configuração fiscal
@@ -34,23 +34,31 @@ descricao: Simples Nacional, regimes, tributos aproximados e as regras E0710, E0
 | `regime_especial` | `nenhum`, `ato_cooperado`, `estimativa`, `microempresa_municipal`, `notario_registrador`, `profissional_autonomo`, `sociedade_profissionais`, `outros` |
 | `tributos_aproximados.modo` | `percentual_simples` (somente ME/EPP), `percentual_por_esfera` (todos), `nao_informar` (somente MEI) |
 | `aliquota_iss_simples` | opcional; só `me_epp` + `dentro_do_simples`; mínimo `"1.80"`. Usada apenas em notas com ISS retido |
-| `regime_apuracao_ibscbs` | só para `me_epp`. Com `dentro_do_simples`: `pelo_simples` (padrão) ou `regime_regular`. Com `iss_fora_do_simples`: `cbs_simples_ibs_regular` (padrão) ou `regime_regular`. Com `tudo_fora_do_simples`: `regime_regular`. Ausente/`null` usa o padrão; ao trocar `regime_apuracao_simples`, o padrão volta a valer. Guardado agora e enviado na nota a partir do próximo leiaute da NT 009 |
-| `serie_dps` | somente leitura; novas atribuições automáticas desde 00900 até 49999; existentes preservadas |
+| `regime_apuracao_ibscbs` | só para `me_epp`. Com `dentro_do_simples`: `pelo_simples` (padrão) ou `regime_regular`. Com `iss_fora_do_simples`: `cbs_simples_ibs_regular` (padrão) ou `regime_regular`. Com `tudo_fora_do_simples`: `regime_regular`. Ausente/`null` usa o padrão; ao trocar `regime_apuracao_simples`, o padrão volta a valer. Guardado agora; passa a ir na nota quando o governo ativar a próxima versão do leiaute (veja [Leiaute da NFS-e](leiaute-nt009.md)) |
+| `serie_dps` | somente leitura; série usada na numeração das notas da empresa, atribuída pela notem a partir de 00900 (até 49999). Séries que a empresa já usava são mantidas |
 | `imprimir_canhoto_danfse` | booleano opcional; padrão false; ausente no PUT preserva a preferência atual |
 
-Erro de combinação inválida: `422 REGRA_DE_NEGOCIO` com `detalhes` por campo, incluindo `tributos_aproximados.modo` e a mensagem da regra.
+A notem recusa já ao gravar as combinações que o governo rejeitaria na emissão. Assim o erro aparece no cadastro, e não no momento de emitir. A recusa é `422 REGRA_DE_NEGOCIO`, com `detalhes` por campo (inclusive `tributos_aproximados.modo`) e a regra a seguir.
 
-### Matriz obrigatória — E0710, E0712 e E0713
-| Situação | Modos permitidos | Proibição |
+### Tributos aproximados: o que cada situação aceita
+A nota informa uma estimativa dos tributos pagos pelo cliente. O governo aceita formas diferentes conforme a situação da empresa no Simples Nacional:
+
+| Situação no Simples | Formas aceitas | Recusa do governo, se não seguir |
 |---|---|---|
-| `nao_optante` (1) | `percentual_por_esfera` | Sem `pTotTribSN` nem `indTotTrib` (E0713) |
-| `mei` (2) | `percentual_por_esfera` ou `nao_informar` (`indTotTrib = 0`) | Sem `pTotTribSN` (E0710) |
-| `me_epp` (3) | `percentual_simples` ou `percentual_por_esfera` | Sem `indTotTrib` (E0712) |
+| `nao_optante` (fora do Simples) | `percentual_por_esfera` | E0713 — empresa fora do Simples não pode usar o percentual do Simples nem deixar de informar |
+| `mei` | `percentual_por_esfera` ou `nao_informar` | E0710 — MEI não pode usar o percentual do Simples |
+| `me_epp` | `percentual_simples` ou `percentual_por_esfera` | E0712 — ME/EPP não pode deixar de informar |
 
-Por esfera exige federal, estadual e municipal (zero é permitido); percentual do Simples exige somente `percentual_simples`. Campos ausentes são tratados como `null`. Não informar não aceita percentuais.
+Por esfera exige os três percentuais: federal, estadual e municipal (zero é permitido). Percentual do Simples exige só `percentual_simples`. `nao_informar` não aceita percentuais. Campos ausentes valem `null`.
 
-Configurações antigas incompatíveis não são alteradas automaticamente. O painel mostra aviso da regra, `/situacao` retorna `configuracao_fiscal` pendente, com mensagem de **configuração fiscal incompleta**, e a emissão será recusada antes de reservar qualquer número.
+Configurações antigas fora dessas regras não são alteradas automaticamente, porque a notem não muda dados fiscais sem a sua decisão. Enquanto não forem corrigidas, o painel mostra um aviso, `/situacao` traz `configuracao_fiscal` pendente (**configuração fiscal incompleta**) e a emissão é recusada antes de gerar o número da nota.
 
-### Regime especial — E0174, E0175 e E0172
-`regime_especial` deve ser `nenhum` quando a empresa é `mei`, quando é `me_epp` com `dentro_do_simples` ou quando possui serviço ativo de `imunidade`, `exportacao` ou `nao_incidencia`. A configuração e o cadastro/edição de serviços validam a combinação; a emissão repete a validação antes da numeração. Dados antigos permanecem intactos, com aviso e configuração fiscal incompleta na situação. Para corrigir, escolha explicitamente `nenhum` e salve.
-Na emissão com `retido_tomador`, o tomador precisa de CPF/CNPJ válido e endereço nacional completo (E0204/E0237); não basta o nome ou NIF estrangeiro.
+### Regime especial: quando precisa ser `nenhum`
+O governo não aceita regime especial nos casos abaixo. A notem confere ao gravar a configuração e ao cadastrar ou alterar serviços, e confere de novo na emissão, antes de gerar o número da nota:
+- empresa MEI (E0174 — MEI não pode ter regime especial);
+- ME/EPP com apuração dentro do Simples (E0175 — quem apura pelo Simples não pode ter regime especial);
+- empresa com serviço ativo imune, de exportação ou sem incidência do ISS (E0172 — esses serviços não admitem regime especial).
+
+Dados antigos fora da regra não são alterados: aparecem com aviso e deixam a configuração fiscal incompleta. Para corrigir, grave `regime_especial: "nenhum"`.
+
+Com ISS retido pelo tomador (`retido_tomador`), o tomador precisa de CPF/CNPJ válido e endereço completo no Brasil; nome ou NIF estrangeiro não bastam. Veja [Emissão de notas](emissao.md#regras-gerais).

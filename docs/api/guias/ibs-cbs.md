@@ -27,7 +27,7 @@ A notem envia ao governo **somente a classificação**; alíquotas, base e valor
 ## IBS/CBS na emissão
 
 - O grupo IBS/CBS vai na DPS **somente** quando a competência for igual ou posterior à data de obrigatoriedade do ambiente (padrão **01/01/2027**, configurável pela administração da notem por ambiente). Antes dela, a nota sai sem o grupo, mesmo com o serviço classificado.
-- A partir da data, o serviço precisa ter `codigo_nbs` e `classificacao_ibscbs` completos. Todas as regras são conferidas **antes de numerar** (`422 REGRA_DE_NEGOCIO`, sem consumir número DPS): NBS obrigatório (E0322), CST igual aos 3 primeiros dígitos da classificação (E0959), indicador conforme a classificação (E0859/E0860), tomador com CPF/CNPJ e endereço no Brasil quando o indicador aponta para o endereço do tomador/destinatário (E0239/E0243) e casos ainda não suportados.
+- A partir da data, o serviço precisa ter `codigo_nbs` e `classificacao_ibscbs` completos. Todas as regras são conferidas **antes de gerar o número da nota** (`422 REGRA_DE_NEGOCIO`, sem consumir número DPS): NBS obrigatório (E0322), CST igual aos 3 primeiros dígitos da classificação (E0959), indicador conforme a classificação (E0859/E0860), tomador com CPF/CNPJ e endereço no Brasil quando o indicador aponta para o endereço do tomador/destinatário (E0239/E0243) e casos ainda não suportados.
 - O município do tomador deve ser o mesmo do cadastro na Receita Federal; a recusa do governo por essa divergência é devolvida com `campo: "tomador.endereco.codigo_municipio"`.
-- Se o leiaute em vigor no ambiente ainda não tiver o grupo IBS/CBS, a nota é recusada antes de numerar (`campo: "competencia"`).
+- Se o leiaute em vigor no ambiente ainda não tiver o grupo IBS/CBS, a nota é recusada antes de gerar o número da nota (`campo: "competencia"`).
 - Rejeições do governo traduzidas: E0855, E0322, E0859, E0860, E0958, E0959, E0960, E0961, E0239, E0243 e a divergência do município do tomador.

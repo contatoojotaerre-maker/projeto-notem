@@ -7,9 +7,13 @@ descricao: Reenvio seguro com Idempotency-Key: mesma chave, mesma resposta, nunc
 
 # Idempotência
 
-- Operações que criam, alteram ou excluem (`POST`, `PATCH`, `PUT`, `DELETE`) aceitam o cabeçalho `Idempotency-Key` (texto de até 100 caracteres, gerado pelo parceiro, ex.: um UUID).
-- **Obrigatório** em emissão, cancelamento e substituição de notas.
-- Repetir a mesma chave com o **mesmo conteúdo** devolve a **mesma resposta**, sem refazer a operação — inclusive após falha de rede. Com conteúdo diferente: `409 IDEMPOTENCIA_CONFLITO`.
-- A chave vale por 24 horas, por integração e ambiente, exceto na emissão (`POST /notas`), no cancelamento, na análise fiscal do cancelamento e na substituição: a associação ao pedido é permanente e a chave não pode ser reutilizada para outro pedido.
-- A resposta repetida traz o cabeçalho `Idempotent-Replayed: true`. Enquanto a primeira requisição ainda estiver em andamento, a repetição recebe `409 CONFLITO`, exceto nessas operações de nota, que retornam `202` com a nota atual enquanto o resultado é confirmado. Respostas `5xx` não são guardadas, para que você possa tentar de novo com a mesma chave.
-- Disponível em todas as rotas de escrita da v1.
+Se a conexão cair no meio de um pedido, você não sabe se ele foi feito. O cabeçalho `Idempotency-Key` resolve isso: você repete o pedido com a mesma chave, e a notem reconhece a repetição e devolve a mesma resposta, sem fazer a operação duas vezes.
+
+- **Como usar.** Gere um valor único por operação (por exemplo, um UUID; até 100 caracteres) e envie no cabeçalho `Idempotency-Key`. Ao repetir, use a mesma chave e o mesmo conteúdo.
+- **Onde vale.** Todas as operações que criam, alteram ou excluem (`POST`, `PATCH`, `PUT`, `DELETE`) aceitam a chave.
+- **Onde é obrigatória.** Para emitir, cancelar, pedir análise do cancelamento e substituir notas. Nessas operações, uma repetição sem chave poderia gerar nota ou pedido em dobro no governo.
+- **Por quanto tempo.** Em geral, a chave vale por 24 horas, por integração e ambiente. Nas operações de nota, ela fica ligada ao pedido para sempre e não pode ser usada em outro pedido.
+- **Mesma chave, conteúdo diferente:** `409 IDEMPOTENCIA_CONFLITO`. Para um pedido novo, gere uma chave nova.
+- **Repetição enquanto a primeira ainda está em andamento:** `409 CONFLITO`. Nas operações de nota, a resposta é `202` com a nota atual, enquanto o resultado é confirmado.
+- **Como reconhecer uma repetição.** A resposta repetida traz o cabeçalho `Idempotent-Replayed: true`.
+- **Erros `5xx` não são guardados**, para que você possa tentar de novo com a mesma chave.
