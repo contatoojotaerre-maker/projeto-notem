@@ -1,6 +1,8 @@
 // Minha conta. The current password is checked for real with the login service (a separate, non-persisted
-// client signs in with it); only then the new password is saved. The browser ends the other sessions afterwards.
+// client signs in with it); only then the new password is saved and every other session of the user is revoked
+// on the server with the caller's own token (scope "others"), so the session in use stays signed in.
 import { createServerFn } from '@tanstack/react-start';
+import { getRequest } from '@tanstack/react-start/server';
 import { requireSupabaseAuth } from '@/integrations/supabase/auth-middleware';
 import { passwordChangeSchema, passwordMessages, passwordUpdateMessage } from './account';
 import { PANEL_PASSWORD_LIMITS, limitMessages } from './api-policy';
@@ -27,5 +29,8 @@ export const changePassword = createServerFn({ method: 'POST' }).middleware([req
   const updated = await verifier.auth.updateUser({ password: data.next });
   await verifier.auth.signOut({ scope: 'local' }); // the verification session never stays open
   if (updated.error) { console.error('PANEL_PASSWORD_UPDATE_FAILED', updated.error.code ?? ''); return { ok: false as const, mensagem: passwordUpdateMessage(updated.error.code) }; }
-  return { ok: true as const };
+  const token = (getRequest()?.headers.get('authorization') ?? '').replace(/^Bearer /, '');
+  const others = token ? await supabaseAdmin.auth.admin.signOut(token, 'others') : { error: new Error('NO_TOKEN') };
+  if (others.error) { console.error('PANEL_PASSWORD_OTHERS_SIGNOUT_FAILED'); return { ok: true as const, othersEnded: false as const }; }
+  return { ok: true as const, othersEnded: true as const };
 });
