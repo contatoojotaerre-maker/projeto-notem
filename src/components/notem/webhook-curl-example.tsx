@@ -12,13 +12,13 @@ export function WebhookCurlExample(props: Props) {
   return (
     <div className="space-y-2">
       <div className="flex flex-wrap items-center justify-between gap-2">
-        <div className="flex gap-1" role="tablist" aria-label="Formato do exemplo">
-          <Button type="button" size="sm" variant={shell === 'bash' ? 'secondary' : 'ghost'} onClick={() => setShell('bash')}>curl (Linux/macOS)</Button>
-          <Button type="button" size="sm" variant={shell === 'powershell' ? 'secondary' : 'ghost'} onClick={() => setShell('powershell')}>PowerShell (curl.exe)</Button>
+        <div className="tab-strip" role="tablist" aria-label="Formato do exemplo">
+          <Button type="button" size="sm" role="tab" aria-selected={shell === 'bash'} variant={shell === 'bash' ? 'secondary' : 'ghost'} onClick={() => setShell('bash')}>curl (Linux/macOS)</Button>
+          <Button type="button" size="sm" role="tab" aria-selected={shell === 'powershell'} variant={shell === 'powershell' ? 'secondary' : 'ghost'} onClick={() => setShell('powershell')}>PowerShell (curl.exe)</Button>
         </div>
         <Button type="button" size="sm" variant="ghost" onClick={async () => { try { await navigator.clipboard.writeText(text); toast.success('Copiado.') } catch { toast.error('Não foi possível copiar.') } }}><Copy />Copiar</Button>
       </div>
-      <pre className="bg-muted p-4 overflow-auto max-h-72 text-xs"><code>{text}</code></pre>
+      <pre className="rounded-lg border border-border bg-muted p-4 overflow-auto max-h-72 text-xs"><code>{text}</code></pre>
       <p className="text-xs text-muted-foreground">A assinatura é ilustrativa e a chave de autorização aparece mascarada. Eventos ainda sem dados definidos são enviados com "dados": {'{}'}; os exemplos completos dos eventos de nota virão com o contrato de emissão.</p>
     </div>
   )

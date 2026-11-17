@@ -1,3 +1,14 @@
+## Novo visual do painel (neon/vidro) — aprovado 17/11
+- [x] Cores e efeitos presos ao painel (docs intacta, com teste)
+- [x] Menu lateral, topo, títulos, abas, botões, campos, diálogos, tabelas, selos
+- [x] Início: cartões com ícones, rosca sem sobreposição, barras por hora (uma chamada, 24 consultas em paralelo, cache 60 s), "Situação agora"
+- [x] Telas de entrada
+- [x] Testes de contraste, rosca, horas e documentação intacta
+- [x] Prints com dados fictícios (página temporária) — apagada; os 3 endereços dela dão 404
+- [x] Relatório
+- [ ] Publicar — aguarda aprovação do proprietário
+- [ ] (futuro) Histórico de "Empresas por status" — etapa própria, nada agora
+
 # Roadmap — Correções e reorganização do painel
 
 ## Parte 1 (publicada)

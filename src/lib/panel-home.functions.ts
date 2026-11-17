@@ -3,7 +3,7 @@ import { requireSupabaseAuth } from '@/integrations/supabase/auth-middleware';
 import { z } from './validation';
 import { requireOrgMember } from './panel-access';
 import { PERIODS, dayRange } from './br-format';
-import { comparisonPeriods, comparisonLabels, companySituation } from './home-metrics';
+import { comparisonPeriods, comparisonLabels, companySituation, hourlyWindows } from './home-metrics';
 
 const scope = z.object({ organization_id: z.string().uuid(), environment: z.enum(['sandbox', 'production']) });
 const failed = 'Não foi possível carregar o painel. Tente novamente.';
@@ -43,6 +43,23 @@ export const getOrgDashboard = createServerFn({ method: 'POST' }).middleware([re
       webhooks_failing: webhookAlerts.length, webhook_integration: webhookIntegrations.length === 1 ? webhookIntegrations[0]! : ids.length === 1 ? ids[0]! : null },
     alerts: { impeditivo: alerts.filter(a => a.severity === 'impeditivo').length, atencao: alerts.filter(a => a.severity === 'atencao').length, informativo: alerts.filter(a => a.severity === 'informativo').length },
   };
+});
+
+/** Início: "Chamadas à API (24h)" bars. One browser call; the 24 hourly windows reuse org_integration_summary
+ *  (same count as the card) in parallel. Same row rule as the card: owner, admin, developer or platform admin;
+ *  anyone else gets null (the block is not shown to them). */
+export const getOrgCallsByHour = createServerFn({ method: 'POST' }).middleware([requireSupabaseAuth]).inputValidator(scope).handler(async ({ context, data }) => {
+  await requireOrgMember(context.supabase, data.organization_id);
+  const [logRole, platform] = await Promise.all([
+    context.supabase.rpc('has_org_role', { org_id: data.organization_id, roles: ['owner', 'admin', 'developer'] }),
+    context.supabase.rpc('is_platform_admin'),
+  ]);
+  if (logRole.error || platform.error) throw new Error(failed);
+  if (logRole.data !== true && platform.data !== true) return null;
+  const windows = hourlyWindows(Date.now());
+  const rows = await Promise.all(windows.map(w => context.supabase.rpc('org_integration_summary', { _org: data.organization_id, _env: data.environment, _from: w.from, _to: w.to })));
+  if (rows.some(r => r.error)) throw new Error(failed);
+  return { buckets: windows.map((w, i) => { const c = rows[i]!.data?.[0]; return { from: w.from, to: w.to, calls: Number(c?.calls ?? 0), errors: Number(c?.client_errors ?? 0) + Number(c?.server_errors ?? 0) }; }) };
 });
 
 export const getOrgAlerts = createServerFn({ method: 'POST' }).middleware([requireSupabaseAuth]).inputValidator(scope).handler(async ({ context, data }) => {
