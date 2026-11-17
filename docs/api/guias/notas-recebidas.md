@@ -1,4 +1,11 @@
-# Sincronização com o governo (ADN)
+---
+titulo: Notas recebidas e sincronização
+ordem: 12
+atualizado: 2026-11-17
+descricao: Notas emitidas fora da notem, notas em que a empresa é tomadora e a sincronização com o Ambiente de Dados Nacional.
+---
+
+# Notas recebidas e sincronização
 
 A notem traz do Ambiente de Dados Nacional (ADN) as notas de cada empresa que foram emitidas **fora da notem** (outro sistema ou Portal Nacional) e as notas em que a empresa é **tomadora ou intermediária**. Também traz os eventos registrados depois da emissão (cancelamentos, análises fiscais, ações da prefeitura).
 
@@ -10,7 +17,7 @@ A notem traz do Ambiente de Dados Nacional (ADN) as notas de cada empresa que fo
 - Requisito: a empresa precisa ter certificado digital cadastrado na organização (prova de posse do CNPJ). Sem isso, notas externas e recebidas não aparecem.
 
 ## Eventos posteriores
-Eventos registrados depois da emissão chegam à notem por três caminhos: a sincronização feita no painel; o botão "Atualizar com o governo" de cada nota; e a **verificação diária automática**, que consulta uma vez por dia apenas as notas emitidas pela notem com cancelamento pendente (em análise ou em verificação). Quando um evento muda a nota, o webhook correspondente é enviado (veja `webhooks.md`).
+Eventos registrados depois da emissão chegam à notem por três caminhos: a sincronização feita no painel; o botão "Atualizar com o governo" de cada nota; e a **verificação diária automática**, que consulta uma vez por dia apenas as notas emitidas pela notem com cancelamento pendente (em análise ou em verificação). Quando um evento muda a nota, o webhook correspondente é enviado (veja [Eventos](../webhooks/eventos.md)).
 
 ## Rotas
 | Rota | Descrição |
@@ -20,7 +27,7 @@ Eventos registrados depois da emissão chegam à notem por três caminhos: a sin
 | `GET /empresas/{id}/notas-recebidas/{nota_id}` | Nota recebida |
 | `GET /empresas/{id}/notas-recebidas/{nota_id}/xml` | XML oficial, sem alterações |
 | `GET /empresas/{id}/notas-recebidas/{nota_id}/pdf` | DANFSe gerado do XML oficial |
-| `GET /notas?origem=externa` | Notas emitidas fora da notem (veja `notas.md`) |
+| `GET /notas?origem=externa` | Notas emitidas fora da notem (veja [Emissão de notas](emissao.md)) |
 
 Empresa de outra organização, nota de outro ambiente ou empresa sem prova de posse respondem `404 NAO_ENCONTRADO`.
 

@@ -1,6 +1,20 @@
-# Histórico de alterações da API
+---
+titulo: Histórico de mudanças
+ordem: 0
+atualizado: 2026-11-17
+descricao: Mudanças que afetam respostas da API /api/v1, da mais recente para a mais antiga.
+---
+
+# Histórico de mudanças
 
 Mudanças que afetam respostas da API `/api/v1`, da mais recente para a mais antiga.
+
+## 17/11/2026 — Textos de orientação e documentação pública
+- **Orientações de rejeição sem termos internos.** A explicação em português de duas recusas do governo foi reescrita para o parceiro. `codigo`, `campo` e status não mudaram:
+  - **E0714**: "…Confira o certificado e a assinatura no transmissor antes de repetir a emissão." → "…Confira se o certificado digital da empresa está válido e corresponde ao CNPJ antes de repetir a emissão."
+  - **E0855**: "…Se a data de obrigatoriedade configurada na notem ainda não chegou, o administrador da plataforma precisa antecipá-la para este ambiente." → "…Se a obrigatoriedade do IBS/CBS na notem ainda não começou para este ambiente, fale com o suporte da notem."
+- **Especificação OpenAPI.** Grupos por assunto, `operationId`, descrições e exemplos fictícios em todas as 40 operações. Os esquemas passaram a descrever exatamente as respostas atuais (sem mudança de comportamento): empresa com campos `null`, `pendencias` na situação da empresa, itens dos catálogos, corpo parcial na alteração de serviço, `pode_solicitar_analise` nos detalhes de erro e o evento `nota.desbloqueada_prefeitura` na lista de webhooks.
+- **Documentação pública** em https://docs.notemfiscal.com.br.
 
 ## 16/11/2026 — Mensagens de validação e identificadores
 - **Mensagens de validação em português.** As mensagens em `detalhes[].mensagem` de `400 REQUISICAO_INVALIDA` e `422 REGRA_DE_NEGOCIO` que antes saíam em inglês agora são escritas pela notem, em português. Exemplos: "Required" → "Campo obrigatório."; "Unrecognized key(s) in object: 'x'" → "Campo não aceito: x."; "Invalid enum value…" → "Valor inválido. Use: a, b ou c."; "String must contain at most 200 character(s)" → "Use no máximo 200 caracteres."; "Invalid uuid" → "Identificador inválido (UUID).". Códigos (`codigo`), status e `campo` não mudaram.

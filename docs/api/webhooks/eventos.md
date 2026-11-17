@@ -1,87 +1,12 @@
-# Webhooks da notem (v1)
+---
+titulo: Eventos
+ordem: 2
+atualizado: 2026-11-17
+descricao: Lista de eventos, assinatura por grupo com curingas e o conteúdo de cada evento, com exemplos completos.
+---
 
-Webhooks são **avisos automáticos** que a notem envia ao sistema parceiro quando algo acontece (ex.: nota autorizada, cancelamento pela prefeitura, certificado vencendo). Assim o parceiro não precisa consultar a API o tempo todo.
+# Eventos
 
-## 1. Cadastro
-- Cada **integração** pode ter **endereços de webhook por ambiente** (homologação e produção), cadastrados no painel (Integrações → Webhooks) ou, futuramente, pela API.
-- Para cada endereço o parceiro escolhe **quais eventos** quer receber.
-- O endereço deve ser **HTTPS** e público. Endereços internos (localhost, IPs privados) são recusados.
-- Ao criar o endereço, a notem gera um **segredo de assinatura** (`whsec_...`), exibido no cadastro. Depois ele fica **oculto**; o botão **Revelar** está disponível apenas para owner, admin, developer e administrador da plataforma, e cada revelação registra quem revelou e quando. O segredo pode ser trocado a qualquer momento.
-- **Chave de autorização (opcional):** o parceiro pode informar um valor escolhido por ele e, opcionalmente, o nome do cabeçalho (padrão `Authorization`). Quando preenchida, a chave é enviada em todas as entregas, junto com a assinatura. Fica guardada cifrada e nunca aparece em registros. Não são aceitos nomes `Notem-*` nem cabeçalhos de protocolo (`Host`, `Content-Length`, `Content-Type`, `Transfer-Encoding`, `Connection`, `Cookie` etc.).
-- **Filtro por empresa (opcional):** o endereço pode receber eventos de apenas uma das empresas da organização. Vazio = todas. O `webhook.teste` é sempre entregue.
-- No cadastro e no detalhe de cada endereço, o painel mostra o **exemplo do envio como comando curl** pronto, com botão copiar, nas versões Linux/macOS e PowerShell (`curl.exe`): POST para a URL cadastrada com `Content-Type`, `Notem-Evento`, `Notem-Evento-Id`, `Notem-Entrega-Id`, `Notem-Assinatura` (valor ilustrativo) e o cabeçalho de autorização configurado (valor mascarado), e o envelope abaixo no corpo. Os exemplos completos de `nota.autorizada` e `nota.rejeitada` estão abaixo.
-
-```bash
-curl -X POST 'https://seu-endereco.exemplo/webhook' \
-  -H 'Content-Type: application/json; charset=utf-8' \
-  -H 'Notem-Evento: webhook.teste' \
-  -H 'Notem-Evento-Id: evt_00000000000000000000000000000000' \
-  -H 'Notem-Entrega-Id: whd_00000000000000000000000000000000' \
-  -H 'Notem-Assinatura: t=1762344000,v1=ASSINATURA_ILUSTRATIVA' \
-  -H 'Authorization: ••••••••' \
-  --data-raw '{"id":"evt_00000000000000000000000000000000","tipo":"webhook.teste","criado_em":"2026-11-05T12:00:00.000Z","ambiente":"homologacao","organizacao_id":"...","integracao_id":"...","dados":{}}'
-```
-
-```powershell
-curl.exe -X POST 'https://seu-endereco.exemplo/webhook' `
-  -H 'Content-Type: application/json; charset=utf-8' `
-  -H 'Notem-Evento: webhook.teste' `
-  -H 'Notem-Assinatura: t=1762344000,v1=ASSINATURA_ILUSTRATIVA' `
-  --data-raw '{\"id\":\"evt_...\",\"tipo\":\"webhook.teste\",\"dados\":{}}'
-```
-
-## 2. Formato da mensagem
-`POST` para o endereço cadastrado, `Content-Type: application/json; charset=utf-8`:
-
-```json
-{
-  "id": "evt_8f3c2a1b...",
-  "tipo": "webhook.teste",
-  "criado_em": "2026-11-04T22:15:03-03:00",
-  "ambiente": "homologacao",
-  "organizacao_id": "UUID",
-  "integracao_id": "UUID",
-  "dados": {}
-}
-```
-
-- `id`: identificador único do evento. **O mesmo evento pode ser entregue mais de uma vez** (reenvios); use o `id` para não processar duas vezes.
-- `dados`: conteúdo específico do evento (documentado por tipo).
-- A ordem de chegada **não é garantida**. Use `criado_em` e consulte a API se precisar do estado mais recente.
-
-## 3. Cabeçalhos
-| Cabeçalho | Conteúdo |
-|---|---|
-| `Notem-Evento` | o `tipo` do evento |
-| `Notem-Evento-Id` | o `id` do evento |
-| `Notem-Entrega-Id` | identificador desta tentativa de entrega |
-| `Notem-Assinatura` | `t={timestamp},v1={assinatura}` |
-
-## 4. Como validar que a mensagem veio da notem
-Há duas formas, que podem ser usadas juntas:
-
-- **Assinatura (recomendada):** sempre enviada em `Notem-Assinatura`. Prova a origem e que o corpo não foi alterado. Passos abaixo.
-- **Chave de autorização (opção simples):** se cadastrada, chega no cabeçalho escolhido (ex.: `Authorization: Bearer minha-chave`). Basta comparar com o valor que você cadastrou. Não protege contra alteração do corpo; prefira a assinatura sempre que possível.
-- **Confirmar pela API:** em caso de dúvida, trate o webhook apenas como aviso e consulte o estado atual pela API (`https://app.notemfiscal.com.br/api/v1`) com a sua chave de integração antes de agir.
-
-### Validação da assinatura
-1. Leia `t` e `v1` do cabeçalho `Notem-Assinatura`.
-2. Monte o texto `{t}.{corpo_bruto}` — o corpo **exatamente como recebido**, antes de converter o JSON.
-3. Calcule HMAC-SHA256 desse texto com o segredo `whsec_...`, em hexadecimal minúsculo.
-4. Compare com `v1` usando comparação de tempo constante.
-5. Recuse se `t` tiver mais de **5 minutos** de diferença do horário atual (proteção contra reenvio malicioso).
-
-Durante a troca de segredo, a notem pode enviar duas assinaturas (`v1=...,v1=...`); aceite se qualquer uma for válida.
-
-## 5. Resposta esperada e reenvios
-- Responda **2xx em até 10 segundos**. Processe de forma assíncrona se precisar de mais tempo.
-- Qualquer outra resposta, erro de conexão ou tempo esgotado é falha. A notem tenta novamente com intervalos crescentes: **1 min, 5 min, 30 min, 2 h, 6 h, 12 h e 24 h** (8 tentativas no total).
-- **Envio de teste pelo painel:** a notem faz uma tentativa (até 10 segundos) e mostra o resultado na tela (HTTP e tempo, ou o motivo). Se falhar, a entrega segue o mesmo cronograma de novas tentativas.
-- **Eventos reais:** o envio começa logo após o evento ou pelo processamento automático em até cerca de 1 minuto.
-- Depois de esgotadas as tentativas, a entrega aparece como **Esgotada** no painel (Integrações › Webhooks) e pode ser reenviada manualmente por lá.
-- Se um endereço falhar continuamente por **3 dias**, ele é **desativado automaticamente** e a organização é avisada no painel.
-
-## 6. Eventos
 | Tipo | Quando |
 |---|---|
 | `webhook.teste` | Envio de teste pelo painel |
@@ -100,11 +25,11 @@ Durante a troca de segredo, a notem pode enviar duas assinaturas (`v1=...,v1=...
 | `certificado.vencido` | Certificado venceu |
 | `municipio.disponivel` | Município passou a ser atendido |
 
-Os campos de `dados` de cada evento são documentados junto com a rota correspondente da API.
+Os campos de `dados` de cada evento estão descritos abaixo e na página do recurso correspondente.
 
 Os avisos `nota.bloqueada_prefeitura` e `nota.desbloqueada_prefeitura` são enviados para notas emitidas pela notem quando a prefeitura registra ou retira o bloqueio por ofício. `dados` é o objeto `nota` completo; durante o bloqueio, `restricoes` contém um item com `"tipo": "bloqueio_prefeitura"`, que deixa de aparecer após o desbloqueio. Como os demais avisos de nota, chegam quando o evento é conhecido pela notem: pela sincronização feita no painel, por "Atualizar com o governo" ou pela verificação diária das notas com cancelamento pendente.
 
-### Dados dos eventos de empresa e certificado
+## Dados dos eventos de empresa e certificado
 `empresa.situacao_alterada` — enviado uma única vez a cada mudança de `pronta_para_emitir` em um ambiente (após alteração pela API ou pelo painel, verificação do município ou vencimento do certificado):
 ```json
 {
@@ -147,16 +72,10 @@ Os avisos `nota.bloqueada_prefeitura` e `nota.desbloqueada_prefeitura` são envi
 `certificado.vencido` usa o mesmo envelope e os mesmos campos em `dados`, com `"tipo": "certificado.vencido"` e `"dias_para_vencer": 0`.
 Esses eventos respeitam o filtro por empresa do endereço. Pela API, a primeira tentativa é imediata; alterações feitas no painel e a rotina diária são entregues pelo processamento automático (cerca de 1 minuto). Novos tipos podem ser adicionados sem aviso; ignore tipos que você não conhece.
 
-## 7. Segurança
-- Nunca confie no conteúdo sem validar a assinatura.
-- O webhook **avisa**; para ações sensíveis, confirme o estado consultando a API.
-- Mensagens nunca contêm certificados, senhas ou chaves.
-
-
 ## Assinatura por grupo
 
-### Eventos de notas
-`nota.autorizada` e `nota.rejeitada` enviam em `dados` o objeto completo de nota descrito em `notas.md`, sem conteúdo XML/PDF, certificado ou senha. Os eventos respeitam organização, ambiente, assinatura e filtro por empresa. Confirme o estado por `GET /notas/{id}`.
+## Eventos de notas
+Todos os eventos `nota.*` trazem em `dados` o **objeto `nota` completo** (veja [Ciclo de vida da nota](../guias/ciclo-de-vida.md)), sem o conteúdo do XML/PDF (use os links). `nota.autorizada` e `nota.rejeitada` enviam esse objeto sem conteúdo XML/PDF, certificado ou senha. Os eventos respeitam organização, ambiente, assinatura e filtro por empresa. Confirme o estado por `GET /notas/{id}`.
 
 Um endereço pode assinar eventos individuais (tipo exato) ou grupos inteiros por curinga. Assinar um grupo inclui automaticamente os eventos que forem adicionados a ele no futuro.
 
@@ -173,7 +92,9 @@ Um endereço pode assinar eventos individuais (tipo exato) ou grupos inteiros po
 - Endereços já cadastrados com eventos individuais continuam funcionando sem alteração.
 - O envelope, os cabeçalhos, a assinatura e o cronograma de tentativas não mudam.
 
-Os dados das notas trazem o objeto `ibs_cbs` (valores do IBS/CBS calculados pelo governo e lidos da nota autorizada; `null` quando a nota não tem o grupo), no mesmo formato de `GET /notas/{id}` (ver `notas.md`).
+Os dados das notas trazem o objeto `ibs_cbs` (valores do IBS/CBS calculados pelo governo e lidos da nota autorizada; `null` quando a nota não tem o grupo), no mesmo formato de `GET /notas/{id}` (veja [IBS/CBS](../guias/ibs-cbs.md)).
+
+## Exemplos completos
 
 ### Exemplo completo: `nota.autorizada`
 Valores fictícios para demonstrar o formato; mensagens governamentais são ilustrativas.
@@ -540,4 +461,3 @@ Enviado para a nota **original** quando a substituta é autorizada (a substituta
   }
 }
 ```
-

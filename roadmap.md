@@ -36,3 +36,17 @@
 - [x] Grupos Notas e Organização recolhíveis (seta, abre sozinho, lembrado, flutuante no recolhido, celular, teclado)
 - [x] Testes
 - [x] Publicar (16/11 21:50 Brasília)
+
+## Documentação pública (docs.notemfiscal.com.br) — aprovada 17/11
+- [ ] Domínio: docs ↔ app por endereço; painel no docs → app.; /api e funções internas no docs → não encontrada; app./docs → docs; raiz/www/.lovable.app → 301 app.; prévia em /docs
+- [ ] app.: só noindex (X-Robots-Tag + robots.txt bloqueando); docs: robots.txt, sitemap.xml, cabeçalhos próprios; painel/API com cabeçalhos iguais
+- [ ] docs sem sessão do painel nem chamada ao banco
+- [ ] docs/api reorganizado em um arquivo por página (mover, não duplicar) + tabela trecho antigo → novo
+- [ ] Páginas novas (primeiros passos, guias, webhooks, referência)
+- [ ] openapi.yaml: tags 11 grupos, descrições, exemplos fictícios nas 40 operações, validados pelo esquema
+- [ ] Termos internos nas mensagens corrigidos na fonte (E0714, E0855, varredura), historico.md, snapshot, teste
+- [ ] Site: layout, busca local, abas cURL/JS, copiar, avisos, tema do aparelho + troca guardada, anterior/próxima, não encontrada, llms.txt
+- [ ] Link "?" do painel → DOCS_URL
+- [ ] Testes: interno ausente, termos proibidos, 40 operações, links, limites, domínios, dados reais ausentes, sem perda/duplicação
+- [ ] Prints claro/escuro, computador/celular; relatório
+- [ ] (após aprovação) publicar; você conecta o domínio e desmarca o principal; eu provo redirecionamentos (.lovable.app)

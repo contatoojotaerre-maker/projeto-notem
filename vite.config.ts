@@ -5,6 +5,7 @@
 //     React/TanStack dedupe, error logger plugins, and sandbox detection (port/host/strictPort).
 // You can pass additional config via defineConfig({ vite: { ... }, etc... }) if needed.
 import { defineConfig } from "@lovable.dev/vite-tanstack-config";
+import { notemDocs } from "./src/docs-site/vite-plugin";
 
 export default defineConfig({
   tanstackStart: {
@@ -12,4 +13,6 @@ export default defineConfig({
     // nitro/vite builds from this
     server: { entry: "server" },
   },
+  // Public documentation (docs.notemfiscal.com.br) is built from docs/api at build time; see src/docs-site.
+  vite: { plugins: [notemDocs()] },
 });

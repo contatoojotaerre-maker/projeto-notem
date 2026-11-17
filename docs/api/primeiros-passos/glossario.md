@@ -1,4 +1,12 @@
-# Glossário da notem
+---
+titulo: Glossário
+ordem: 9
+atualizado: 2026-11-17
+descricao: Termos usados na API e na documentação da notem.
+---
+
+# Glossário
+
 
 | Termo | Significado |
 |---|---|
