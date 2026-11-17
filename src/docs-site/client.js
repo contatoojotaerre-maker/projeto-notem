@@ -114,7 +114,7 @@
     if (!hits.length) { empty.hidden = false; return }
     active = 0
     list.innerHTML = hits.map(function (h, i) {
-      var e = h.e, x = e.x.length > 140 ? e.x.slice(0, 140) + '…' : e.x
+      var e = h.e, x = e.r || ''
       return '<li role="option" aria-selected="' + (i === 0) + '"><a href="' + escHtml(base + e.p) + '"><span class="docs-search-sec">' + escHtml(e.s) + '</span><strong>' + escHtml(e.t) + (e.h ? ' › ' + escHtml(e.h) : '') + '</strong><small>' + escHtml(x) + '</small></a></li>'
     }).join('')
   }

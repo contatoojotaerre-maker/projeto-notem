@@ -8,6 +8,7 @@ import { execFileSync } from 'node:child_process'
 import { readFileSync, readdirSync, statSync, writeFileSync } from 'node:fs'
 import { join, relative } from 'node:path'
 import { describe, expect, it } from 'vitest'
+import yaml from 'js-yaml'
 import { buildDocsSite } from '@/docs-site/build'
 import { LIMITS, SLOTS, limitMessages } from '@/lib/api-policy'
 import { rejectionGuidance } from '@/lib/rejection-guidance'
@@ -100,6 +101,43 @@ describe('links e conteúdo', () => {
   it('llms.txt lista todas as páginas com endereço do docs', () => {
     for (const p of site.pages.filter(p => p.path !== '/historico')) expect(site.llms).toContain(`(${DOCS_URL}${p.path === '/' ? '/' : p.path})`)
     expect(site.llms.startsWith('# ')).toBe(true); expect(site.llms).toMatch(/\n## Optional\n[\s\S]*$/)
+  })
+})
+
+describe('texto para quem não conhece a NFS-e', () => {
+  const spec = yaml.load(readFileSync('docs/api/openapi.yaml', 'utf8')) as { paths: Record<string, Record<string, { summary?: string; description?: string }>> }
+  const ops = Object.values(spec.paths).flatMap(item => ['get', 'post', 'put', 'patch', 'delete'].flatMap(m => item[m] ? [item[m]!] : []))
+  const guides = ['guias/emissao.md', 'guias/cancelamento.md', 'guias/substituicao.md', 'guias/ciclo-de-vida.md', 'guias/configuracao-fiscal.md', 'primeiros-passos/idempotencia.md'].map(f => readFileSync(`docs/api/${f}`, 'utf8'))
+  it('as 40 operações têm resumo em frase completa, sem códigos do governo, e descrição com o que fazem e o resultado', () => {
+    expect(ops).toHaveLength(40)
+    for (const o of ops) {
+      expect(o.summary, o.summary).toMatch(/^[A-ZÁÉÍÓÚ].{30,}\.$/)
+      expect(o.summary, o.summary).not.toMatch(/E0\d{3}/)
+      expect((o.description ?? '').split(/(?<=\.)\s/).length, o.summary).toBeGreaterThanOrEqual(2)
+    }
+  })
+  it('jargão interno não aparece nas operações nem nos guias revisados', () => {
+    const text = [...ops.flatMap(o => [o.summary ?? '', o.description ?? '']), ...guides].join('\n')
+    for (const re of [/numerar/i, /antes da numeração/i, /ambiguidade vai para consulta/i, /falha comprovada anterior ao envio/i, /E0014 exclusiva/i, /DPS\/número/i]) expect(text, String(re)).not.toMatch(re)
+  })
+  it('código do governo nunca aparece em lista solta, sem o significado ao lado', () => {
+    const text = [...ops.flatMap(o => [o.summary ?? '', o.description ?? '']), ...guides].join('\n')
+    expect(text).not.toMatch(/E0\d{3}\s*\/\s*E0\d{3}/)
+    expect(text).not.toMatch(/(regras|inclui|exclusiva|por) E0\d{3}/i)
+  })
+  it('resumos da busca são só texto: sem código, JSON, marcação ou cortes no meio da palavra', () => {
+    expect(site.search.length).toBeGreaterThan(100)
+    for (const e of site.search) {
+      expect(e.r.length, e.p).toBeLessThanOrEqual(161)
+      expect(e.r, e.p).not.toMatch(/[<>`|]|\*\*|^#|":|\{"|\bcurl\b| [.,;:]/)
+    }
+    const emitir = site.search.find(e => e.t.startsWith('Emitir nota'))!
+    expect(emitir.r).toBe('Envia a NFS-e ao governo e devolve a nota autorizada ou o motivo da recusa.')
+  })
+  it('blocos de código quebram linhas longas e aceitam rolagem pelo teclado', () => {
+    const css = readFileSync('src/docs-site/docs.css', 'utf8')
+    expect(css).toMatch(/\.docs-code pre \{[^}]*white-space: pre-wrap/)
+    expect(site.pages.every(p => !/<pre(?! tabindex="0")/.test(p.html + (p.aside ?? '')))).toBe(true)
   })
 })
 

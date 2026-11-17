@@ -21,6 +21,7 @@ export type DocPage = {
 export type NavItem = { path: string; title: string; method?: string | undefined }
 export type NavGroup = { title: string; items: NavItem[] }
 export type NavSection = { title: string; items: NavItem[]; groups: NavGroup[] }
-export type SearchEntry = { p: string; t: string; h: string; s: string; x: string }
+/** x: plain text used only for matching; r: clean prose summary shown in results. */
+export type SearchEntry = { p: string; t: string; h: string; s: string; x: string; r: string }
 export type DocsSite = { pages: DocPage[]; nav: NavSection[]; search: SearchEntry[]; llms: string; problems: string[]; openapi: string }
 export const BASE_TOKEN = '/__DOCS__'

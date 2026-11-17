@@ -1003,7 +1003,7 @@ paths:
       x-titulo: Consultar tomador
       summary: "Devolve os dados de um tomador cadastrado na empresa."
       description: |-
-        Tomador de outra empresa responde 404.
+        Use para conferir o cadastro antes de emitir uma nota para esse tomador. A resposta traz documento, nome, contato e endereço; tomador de outra empresa responde 404.
       responses:
         "200":
           description: Tomador
@@ -1189,7 +1189,7 @@ paths:
       x-titulo: Listar empresas
       summary: "Lista as empresas emitentes da organização, da mais recente para a mais antiga."
       description: |-
-        A lista é paginada e aceita filtros que podem ser combinados, como CNPJ, empresa ativa ou inativa e busca pelo nome.
+        Use para encontrar o ID de uma empresa ou conferir quais estão ativas. A lista é paginada e aceita filtros que podem ser combinados, como CNPJ, empresa ativa ou inativa e busca pelo nome.
       parameters:
         - $ref: "#/components/parameters/Limite"
         - $ref: "#/components/parameters/Cursor"
@@ -1341,7 +1341,7 @@ paths:
       x-titulo: Consultar empresa
       summary: "Devolve os dados cadastrais de uma empresa."
       description: |-
-        Empresa de outra organização responde 404.
+        Use para conferir o cadastro, o endereço e se a empresa está ativa. Empresa de outra organização responde 404.
       responses:
         "200":
           description: Empresa
@@ -1476,7 +1476,7 @@ paths:
       x-titulo: Consultar configuração fiscal
       summary: "Devolve como a empresa é tributada: Simples Nacional, regimes e tributos aproximados."
       description: |-
-        A resposta inclui a série usada na numeração das notas da empresa (`serie_dps`), que a notem atribui automaticamente.
+        Use para conferir como os tributos da empresa serão informados nas notas. A resposta também traz a série usada na numeração das notas (`serie_dps`), que a notem atribui automaticamente.
       responses:
         "200":
           description: Configuração
@@ -1826,7 +1826,7 @@ paths:
       x-titulo: Consultar serviço
       summary: "Devolve um serviço cadastrado na empresa."
       description: |-
-        Serviço de outra empresa responde 404.
+        Use para conferir o código, a tributação e a retenção que esse serviço aplica nas notas. Serviço de outra empresa responde 404.
       responses:
         "200":
           description: Serviço
@@ -2176,7 +2176,7 @@ paths:
       x-titulo: Consultar nota recebida
       summary: "Devolve uma nota recebida pela empresa."
       description: |-
-        Notas recebidas são somente leitura: não podem ser canceladas nem substituídas pela notem.
+        Use para ver os dados de uma nota emitida contra a empresa por outro prestador. Notas recebidas são somente leitura: não podem ser canceladas nem substituídas pela notem.
       responses:
         "200":
           description: Nota recebida
@@ -2231,7 +2231,7 @@ paths:
       x-titulo: Baixar XML da nota recebida
       summary: "Baixa o XML oficial da nota recebida, sem alterações."
       description: |-
-        O arquivo vem exatamente como foi obtido no Ambiente de Dados Nacional, o repositório de notas do governo.
+        Use quando precisar do documento fiscal original, por exemplo para a contabilidade. O arquivo vem exatamente como foi obtido no Ambiente de Dados Nacional, o repositório de notas do governo.
       responses:
         "200":
           description: XML oficial
@@ -2286,7 +2286,7 @@ paths:
       x-titulo: Baixar PDF da nota recebida
       summary: "Gera o PDF (DANFSe) de uma nota recebida a partir do XML oficial."
       description: |-
-        O PDF segue o mesmo modelo oficial usado nas notas emitidas.
+        Use para ter uma versão legível da nota recebida. O PDF segue o mesmo modelo oficial (DANFSe) usado nas notas emitidas.
       responses:
         "200":
           description: PDF
@@ -2387,7 +2387,7 @@ paths:
       x-titulo: Códigos de serviço
       summary: "Busca códigos da lista nacional de serviços pela descrição ou pelo código."
       description: |-
-        O código de 6 dígitos identifica o tipo de serviço na nota e é informado no cadastro de serviços.
+        Use ao cadastrar um serviço, para escolher o código certo. O código de 6 dígitos identifica o tipo de serviço na nota.
       parameters:
         - $ref: "#/components/parameters/Limite"
         - $ref: "#/components/parameters/Cursor"
@@ -2441,7 +2441,7 @@ paths:
       x-titulo: Códigos NBS
       summary: "Busca códigos NBS pela descrição ou pelo código."
       description: |-
-        A NBS (Nomenclatura Brasileira de Serviços) tem 9 dígitos e é informada no cadastro de serviços para o IBS/CBS.
+        Use ao cadastrar um serviço, para informar a NBS exigida pelo IBS/CBS. A NBS (Nomenclatura Brasileira de Serviços) tem 9 dígitos.
       parameters:
         - $ref: "#/components/parameters/Limite"
         - $ref: "#/components/parameters/Cursor"

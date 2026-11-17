@@ -111,6 +111,14 @@
 .docs-copy { font: inherit; font-size: 12px; color: oklch(0.85 0.02 260); background: transparent; border: 1px solid oklch(1 0 0 / 14%); border-radius: 5px; padding: 3px 9px; cursor: pointer; }
 .docs-copy:hover { background: oklch(1 0 0 / 8%); }
 .docs-code pre { margin: 0; padding: 14px 16px; overflow-x: auto; font: 13px/1.6 ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; color: var(--docs-code-fg); }
+/* Long lines wrap (indentation kept) so nothing is cut off in either column or on phones; the visible scrollbar is only a fallback for unbreakable runs. */
+.docs-code pre { white-space: pre-wrap; overflow-wrap: break-word; scrollbar-width: thin; scrollbar-color: oklch(0.62 0.02 260 / 75%) oklch(1 0 0 / 6%); }
+.docs-code pre code { white-space: inherit; }
+.docs-code pre::-webkit-scrollbar { height: 10px; width: 10px; }
+.docs-code pre::-webkit-scrollbar-track { background: oklch(1 0 0 / 6%); }
+.docs-code pre::-webkit-scrollbar-thumb { background: oklch(0.62 0.02 260 / 70%); border-radius: 6px; border: 2px solid var(--docs-code-bg); }
+.docs-code pre:focus-visible { outline: 2px solid var(--ring); outline-offset: -2px; }
+.docs-code, .docs-tabs, .docs-tabpanel { min-width: 0; max-width: 100%; }
 .docs-tabs { margin: 0 0 18px; }
 .docs-tabs .docs-code { margin: 0; border-top-left-radius: 0; border-top-right-radius: 0; }
 .docs-tablist { display: flex; gap: 2px; }
@@ -207,6 +215,7 @@
   .docs-pager { grid-template-columns: 1fr; }
   .docs-pager-next { grid-column: 1; }
   .docs-anchor { display: none; }
+  .docs-code pre { font-size: 12.5px; padding: 12px 13px; }
 }
 @media (prefers-reduced-motion: reduce) { .docs-nav, .docs-card, .docs-nav-group summary::after { transition: none; } }
 .docs-content ul { list-style: disc; } .docs-content ol { list-style: decimal; } .docs-content li::marker { color: var(--muted-foreground); }

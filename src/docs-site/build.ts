@@ -31,6 +31,14 @@ const CALLOUTS: Record<string, string> = { DICA: 'Dica', ATENCAO: 'Atenção', I
 export const esc = (s: string) => s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;')
 export const slugify = (s: string) => s.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase().replace(/<[^>]+>/g, '').replace(/&[a-z]+;/g, ' ').replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '')
 const kebab = (s: string) => s.replace(/([a-z0-9])([A-Z])/g, '$1-$2').toLowerCase()
+/** Search result summary: only sentences from paragraphs and list items (never code, JSON or tables), cut at a word boundary. */
+export function searchSummary(html: string, max = 160): string {
+  const prose = [...html.replace(/<pre[\s\S]*?<\/pre>/g, ' ').replace(/<table[\s\S]*?<\/table>/g, ' ').matchAll(/<(p|li)\b[^>]*>([\s\S]*?)<\/\1>/g)].map(x => stripTags(x[2]!).replace(/ ([.,;:!?)])/g, '$1')).filter(Boolean).join(' ')
+  if (prose.length <= max) return prose
+  const cut = prose.slice(0, max); const sp = cut.lastIndexOf(' ')
+  return (sp > max / 2 ? cut.slice(0, sp) : cut).replace(/[\s,;:.—–-]+$/, '') + '…'
+}
+const inlineText = (s: string) => esc(s.replace(/`/g, '').replace(/\[([^\]]+)\]\([^)]*\)/g, '$1'))
 const stripTags = (h: string) => h.replace(/<[^>]+>/g, ' ').replace(/&lt;/g, '<').replace(/&gt;/g, '>').replace(/&quot;/g, '"').replace(/&#39;/g, "'").replace(/&amp;/g, '&').replace(/\s+/g, ' ').trim()
 
 function highlight(code: string, lang: string) {
@@ -39,7 +47,7 @@ function highlight(code: string, lang: string) {
 }
 export function codeBlock(code: string, lang: string, label?: string) {
   const name = label || LANG_NAMES[lang] || lang || 'Texto'
-  return `<div class="docs-code"><div class="docs-code-head"><span>${esc(name)}</span><button type="button" class="docs-copy" data-copy>Copiar</button></div><pre><code class="hljs language-${esc(lang || 'text')}">${highlight(code.replace(/\n$/, ''), lang)}</code></pre></div>`
+  return `<div class="docs-code"><div class="docs-code-head"><span>${esc(name)}</span><button type="button" class="docs-copy" data-copy>Copiar</button></div><pre tabindex="0"><code class="hljs language-${esc(lang || 'text')}">${highlight(code.replace(/\n$/, ''), lang)}</code></pre></div>`
 }
 export function tabs(items: { label: string; html: string }[], group = 'codigo') {
   const btn = items.map((t, i) => `<button type="button" role="tab" class="docs-tab" data-tab="${esc(t.label)}" aria-selected="${i === 0}">${esc(t.label)}</button>`).join('')
@@ -304,6 +312,8 @@ export function buildDocsSite(root = process.cwd()): DocsSite {
     if (!resTabs.length) problems.push(`${o.id}: resposta sem exemplo`)
     aside += `<p class="docs-aside-title">Resposta</p>` + tabs(resTabs, 'resposta')
     const short = o.op['x-titulo'] ?? o.op.summary
+    // Absolute docs links in the OpenAPI text (kept absolute for spec readers) become site links here, so previews stay on /docs and the link check covers them.
+    html = html.replace(/href="https:\/\/docs\.notemfiscal\.com\.br(\/[^"#]*)?(?:#([^"]*))?"/g, (_m, to = '/', hash = '') => { links.push({ from: o.path, to, hash, text: to }); return `href="${BASE_TOKEN}${to}${hash ? '#' + hash : ''}"` })
     pages.push({ path: o.path, source: `openapi.yaml#${o.id}`, title: short, menu: short, description: o.op.summary, section: 'Referência da API', group: o.tag, updated: updatedRef, method: M, route: o.route, html, aside, toc })
   }
 
@@ -332,9 +342,11 @@ export function buildDocsSite(root = process.cwd()): DocsSite {
     for (const part of parts) {
       const m = /^<h[23] id="([^"]+)">([\s\S]*?)<\/h[23]>/.exec(part)
       const heading = m ? stripTags(m[2]!).replace(/^#\s*/, '') : ''
-      const text = stripTags((m ? part.slice(m[0].length) : part).replace(/<button[\s\S]*?<\/button>/g, '').replace(/<div class="docs-code-head">[\s\S]*?<\/div>/g, '')).slice(0, 700)
+      const body = (m ? part.slice(m[0].length) : part).replace(/<button[\s\S]*?<\/button>/g, '').replace(/<div class="docs-code-head">[\s\S]*?<\/div>/g, '').replace(/<pre[\s\S]*?<\/pre>/g, ' ')
+      const text = stripTags(body).slice(0, 700)
       if (!heading && !text) continue
-      search.push({ p: p.path + (m ? '#' + m[1] : ''), t: p.method ? `${p.title} (${p.method} ${p.route})` : p.title, h: heading, s: p.section, x: text })
+      const r = searchSummary(p.method ? `<p>${inlineText(p.description)}</p>` : body)
+      search.push({ p: p.path + (m ? '#' + m[1] : ''), t: p.method ? `${p.title} (${p.method} ${p.route})` : p.title, h: heading, s: p.section, x: text, r })
     }
   }
 

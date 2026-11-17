@@ -52,8 +52,8 @@
 - [ ] (após aprovação) publicar; você conecta o domínio e desmarca o principal; eu provo redirecionamentos (.lovable.app)
 
 ## Revisão de texto da documentação (17/11, antes de publicar)
-- [ ] 40 operações: subtítulo de uma linha + descrição em frases completas, sem códigos soltos, E0xxx com significado
-- [ ] Guias: emissão, cancelamento, substituição, ciclo de vida, configuração fiscal, idempotência — sem jargão interno
-- [ ] Busca: resumo só texto (sem código/JSON/Markdown)
-- [ ] Blocos de código: rolagem horizontal visível nas duas colunas e no celular
-- [ ] Relatório antes/depois (5 operações + trecho de Emissão); não publicar
+- [x] 40 operações: subtítulo de uma linha + descrição em frases completas, sem códigos soltos, E0xxx com significado
+- [x] Guias: emissão, cancelamento, substituição, ciclo de vida, configuração fiscal, idempotência — sem jargão interno
+- [x] Busca: resumo só texto (sem código/JSON/Markdown)
+- [x] Blocos de código: linhas longas quebram (sem corte) nas duas colunas e no celular
+- [x] Relatório antes/depois (5 operações + trecho de Emissão); não publicar

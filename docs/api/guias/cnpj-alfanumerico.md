@@ -15,7 +15,7 @@ Desde julho de 2026 a Receita Federal pode emitir CNPJ com letras nas 12 primeir
 - A chave de acesso da NFS-e tem 50 posições; as 14 posições do CNPJ do emitente podem conter letras.
 
 ## Na emissão
-- CNPJ alfanumérico (emitente ou tomador): aceito em homologação. Em produção, só a partir da vigência do leiaute da NT 009; antes dela a nota é recusada antes de numerar (`422 REGRA_DE_NEGOCIO`, campo `empresa.cnpj` ou `tomador.documento`): "CNPJ alfanumérico só pode ser usado em produção a partir da vigência da NT 009 (dd/mm/aaaa)".
+- CNPJ alfanumérico (emitente ou tomador): aceito em homologação. Em produção, só a partir da vigência do leiaute da NT 009; antes dela a nota é recusada antes de gerar o número da nota (`422 REGRA_DE_NEGOCIO`, campo `empresa.cnpj` ou `tomador.documento`): "CNPJ alfanumérico só pode ser usado em produção a partir da vigência da NT 009 (dd/mm/aaaa)".
 - Substituição ou cancelamento de nota cuja chave tem letras: se o governo recusar por falha de esquema da chave (defeito conhecido no esquema oficial), a mensagem é "O governo recusou a chave de acesso com CNPJ alfanumérico por um defeito conhecido no esquema oficial. Tente novamente mais tarde ou use o Portal Nacional." O código e a mensagem originais do governo continuam em `detalhes`.
 
 > [!DICA]
