@@ -13,10 +13,9 @@ import { workspaceQuery } from '@/lib/notem.queries';
 import { getWorkspace, updatePreferences, acceptInvitation } from '@/lib/notem.functions';
 import { canManageOrganization } from '@/lib/notem';
 import { orgSwitchTarget } from '@/lib/panel-nav';
-import { organizationTab } from '@/lib/panel-tabs';
 import { Brand } from './brand';
 import { NavGroup, useNavGroups } from './nav-group';
-import { currentNavGroup } from '@/lib/nav-groups';
+import { currentNavGroup, navSubitemActive } from '@/lib/nav-groups';
 
 type Workspace = Awaited<ReturnType<typeof getWorkspace>>;
 const WorkspaceContext=createContext<Workspace|null>(null);
@@ -46,7 +45,7 @@ export function AppShell(){
  async function switchOrganization(id:string){const next=workspace.organizations.find(o=>o.id===id);if(!next)return;await preference({last_organization_id:next.id});const nextRole=workspace.memberships.find(m=>m.organization_id===next.id)?.role;const t=orgSwitchTarget(path,canManageOrganization(nextRole,workspace.isAdmin),searchStr);const orgSlug=next.slug;
   if(t.to==='notas')return navigate({to:'/o/$orgSlug/notas',params:{orgSlug}});if(t.to==='recebidas')return navigate({to:'/o/$orgSlug/notas/recebidas',params:{orgSlug}});if(t.to==='empresas')return navigate({to:'/o/$orgSlug/empresas',params:{orgSlug}});if(t.to==='integracoes')return navigate({to:'/o/$orgSlug/integracoes',params:{orgSlug}});
   return navigate({to:'/o/$orgSlug/$section',params:{orgSlug,section:t.section},search:t.aba?{aba:t.aba}:{}});}
- const manage=canManageOrganization(role,workspace.isAdmin);const base=current?`/o/${current.slug}`:'';const inNotes=path.startsWith(`${base}/notas`);const inReceived=path.startsWith(`${base}/notas/recebidas`);const inOrg=path.startsWith(`${base}/organizacao`);const teamTab=organizationTab(new URLSearchParams(searchStr).get('aba'))==='equipe';
+ const manage=canManageOrganization(role,workspace.isAdmin);const base=current?`/o/${current.slug}`:'';const sub=navSubitemActive(path,searchStr);
  const close=()=>setMobile(false);
  // Notas and Organização are collapsible groups; the icon-only menu shows their sub-items in a floating menu.
  const groups=useNavGroups(currentNavGroup(path),path+searchStr);const iconOnly=collapsed&&!mobile;
@@ -57,14 +56,14 @@ export function AppShell(){
  <nav className="space-y-1" aria-label="Menu da organização">{current?<>
   <Link to="/o/$orgSlug/$section" params={{orgSlug:current.slug,section:'inicio'}} className="nav-item" title="Início" data-active={path===`${base}/inicio`} onClick={close}><Home size={18}/><span className="sidebar-label">Início</span></Link>
   <NavGroup id="notas" label="Notas" icon={FileText} open={groups.isOpen('notas')} onToggle={()=>groups.toggle('notas')} iconOnly={iconOnly} onNavigate={close} items={[
-   {key:'emitidas',label:'Emitidas',active:inNotes&&!inReceived,render:({children,...p})=><Link to="/o/$orgSlug/notas" params={{orgSlug:current.slug}} {...p}>{children}</Link>},
-   {key:'recebidas',label:'Recebidas',active:inReceived,render:({children,...p})=><Link to="/o/$orgSlug/notas/recebidas" params={{orgSlug:current.slug}} {...p}>{children}</Link>}]}/>
+   {key:'emitidas',label:'Emitidas',active:sub.emitidas,render:({children,...p})=><Link to="/o/$orgSlug/notas" params={{orgSlug:current.slug}} {...p}>{children}</Link>},
+   {key:'recebidas',label:'Recebidas',active:sub.recebidas,render:({children,...p})=><Link to="/o/$orgSlug/notas/recebidas" params={{orgSlug:current.slug}} {...p}>{children}</Link>}]}/>
   <Link to="/o/$orgSlug/empresas" params={{orgSlug:current.slug}} className="nav-item" title="Empresas" data-active={path.startsWith(`${base}/empresas`)} onClick={close}><Building2 size={18}/><span className="sidebar-label">Empresas</span></Link>
   <Link to="/o/$orgSlug/$section" params={{orgSlug:current.slug,section:'alertas'}} className="nav-item" title="Alertas" data-active={path===`${base}/alertas`} onClick={close}><Bell size={18}/><span className="sidebar-label">Alertas</span>{alertCount>0&&<span className="nav-count" aria-label={`${alertCount} alertas`}>{alertCount>99?'99+':alertCount}</span>}</Link>
   <Link to="/o/$orgSlug/integracoes" params={{orgSlug:current.slug}} className="nav-item" title="Integrações" data-active={path.startsWith(`${base}/integracoes`)} onClick={close}><Code2 size={18}/><span className="sidebar-label">Integrações</span></Link>
   {manage&&<NavGroup id="organizacao" label="Organização" icon={Settings} open={groups.isOpen('organizacao')} onToggle={()=>groups.toggle('organizacao')} iconOnly={iconOnly} onNavigate={close} items={[
-   {key:'dados',label:'Dados',active:inOrg&&!teamTab,render:({children,...p})=><Link to="/o/$orgSlug/$section" params={{orgSlug:current.slug,section:'organizacao'}} search={{}} {...p}>{children}</Link>},
-   {key:'equipe',label:'Equipe',active:inOrg&&teamTab,render:({children,...p})=><Link to="/o/$orgSlug/$section" params={{orgSlug:current.slug,section:'organizacao'}} search={{aba:'equipe'}} {...p}>{children}</Link>}]}/>}
+   {key:'dados',label:'Dados',active:sub.dados,render:({children,...p})=><Link to="/o/$orgSlug/$section" params={{orgSlug:current.slug,section:'organizacao'}} search={{}} {...p}>{children}</Link>},
+   {key:'equipe',label:'Equipe',active:sub.equipe,render:({children,...p})=><Link to="/o/$orgSlug/$section" params={{orgSlug:current.slug,section:'organizacao'}} search={{aba:'equipe'}} {...p}>{children}</Link>}]}/>}
  </>:<Link to="/dashboard" className="nav-item" data-active="true"><Home size={18}/><span className="sidebar-label">Início</span></Link>}</nav>
  {workspace.isAdmin&&<><div className="my-6 border-t border-border"/><p className="sidebar-label mb-3 px-3 text-[10px] font-semibold uppercase text-muted-foreground">Administração</p><nav className="space-y-1" aria-label="Administração">{adminItems.map(item=><Link key={item.section} to={item.section==='organizacoes'?'/admin/organizacoes':'/admin/$section'} params={item.section==='organizacoes'?{}:{section:item.section}} className="nav-item" title={item.title} data-active={path===`/admin/${item.section}`} onClick={close}><item.icon size={18}/><span className="sidebar-label">{item.title}</span></Link>)}</nav></>}
  </div><div className="flex items-center justify-between border-t border-border p-4"><span className="sidebar-label text-[10px] text-muted-foreground">notem · NFS-e nacional</span><Button variant="ghost" size="icon" title="Recolher menu" aria-label="Recolher menu" onClick={()=>setCollapsed(!collapsed)}><ChevronsLeft/></Button></div></aside>

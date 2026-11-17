@@ -1,3 +1,5 @@
+import { organizationTab } from './panel-tabs';
+
 // Collapsible menu groups (Notas › Emitidas/Recebidas, Organização › Dados/Equipe): which group the current
 // screen belongs to and the open/closed state remembered in this browser. Pure, so the shell and tests share it.
 export const NAV_GROUP_IDS = ['notas', 'organizacao'] as const;
@@ -38,4 +40,12 @@ export function writeNavGroupState(storage: StorageLike | null | undefined, stat
 /** Entering a screen of a group opens that group; the others stay as the person left them. */
 export function withCurrentOpen(state: NavGroupState, current: NavGroupId | null): NavGroupState {
   return current && !state[current] ? { ...state, [current]: true } : state;
+}
+
+/** Highlighted sub-item for the screen at pathname + search (detail screens highlight their list). */
+export function navSubitemActive(pathname: string, search: string) {
+  const group = currentNavGroup(pathname), parts = pathname.split('/').filter(Boolean);
+  const received = group === 'notas' && parts[3] === 'recebidas';
+  const team = group === 'organizacao' && (parts[2] === 'equipe' || organizationTab(new URLSearchParams(search).get('aba')) === 'equipe');
+  return { emitidas: group === 'notas' && !received, recebidas: received, dados: group === 'organizacao' && !team, equipe: team };
 }
