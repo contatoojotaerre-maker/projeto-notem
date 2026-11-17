@@ -1,103 +1,85 @@
-# Documentação pública em docs.notemfiscal.com.br
+# Novo visual do painel notem (neon, vidro, ondas de luz)
 
-## Decisões já tomadas
-- Referência: **uma página por operação (40 operações em 30 endereços)**.
-- docs/api/: **um arquivo por página**, em pastas por seção (`primeiros-passos/`, `guias/`, `webhooks/`, `referencia/`); `openapi.yaml` e `historico.md` ficam onde estão. Texto **movido, nunca duplicado**. Nome do arquivo = endereço da página.
-- Termos internos nas mensagens: **corrigir na fonte**, mantendo `codigo` e `campo`.
-- Endereço do painel aberto pelo docs: **redireciona para app.** (mesmo caminho). `/api/...` no docs: não encontrada.
+As imagens servem só de referência de estilo. Telas, textos, números, rotas, permissões, banco, API e `transmissor/` não mudam. A documentação (docs) continua igual.
 
-## 1. Domínio e separação
-- Um único site atende dois domínios, separados pelo endereço de acesso:
-  - **docs.**: toda página vira página da documentação. Painel (`/entrar`, `/o/...`, `/admin`, `/conta`, `/dashboard`, senha) → redireciona 301 para `app.` no mesmo caminho. `/api/...` e funções internas do painel → não encontrada (bloqueio no servidor, antes de qualquer tela).
-  - **app.**: `/docs` e subpáginas → 301 para `https://docs.notemfiscal.com.br/...` com o mesmo caminho.
-  - **notemfiscal.com.br** e **www**: 301 para `app.` (hoje isso é feito pelo "domínio principal"; ver passo a passo).
-  - Na prévia do Lovable, a documentação fica em `/docs/...` para você conferir antes de publicar.
-- `src/lib/app-url.ts` ganha `DOCS_URL` e `DOCS_HOST`; o link "Documentação da API" do "?" do painel passa a usar `DOCS_URL`.
-- A documentação não carrega a sessão do painel nem fala com o banco. Hoje a estrutura comum de todas as páginas carrega o cliente de login; ela passa a carregá-lo só fora da documentação. Teste no navegador confirma: nenhuma chamada ao banco e nenhuma chave nas páginas do docs.
-- Cabeçalhos no docs: política de conteúdo restritiva (só scripts/estilos do próprio site e a fonte da marca, sem formulários externos, sem molduras), HSTS, sem cookies (removidos se aparecerem), cache público curto.
-- Indexação: docs liberado (robots.txt e sitemap.xml próprios). **Achado:** hoje o painel *não* está bloqueado para buscadores (robots.txt libera tudo). Proposta: `app.` passa a responder `noindex` e robots.txt com bloqueio. Confirme.
+## Direção visual
 
-## 2. Fonte única do conteúdo
-- Na montagem do site, um leitor lê **só** `docs/api/**/*.md` e `docs/api/openapi.yaml` e gera páginas, sumário, menu, índice de busca e `llms.txt`. Nada copiado para o código das telas.
-- Cada arquivo tem um cabeçalho curto: título, posição no menu e data da última atualização (o rodapé mostra essa data).
-- Recursos no Markdown: avisos (`> [!DICA]`, `> [!ATENCAO]`, `> [!IMPORTANTE]`), cartões, abas cURL/JavaScript, diagramas simples desenhados em caixas (sem biblioteca externa). Links entre páginas são links relativos para os `.md` — funcionam no GitHub e no site.
-- Tabela de rejeições do governo: gerada da mesma base da tela "Mensagens de rejeição" (separada num módulo próprio, sem mudar o painel).
+- **Cores da marca:** Midnight, Charcoal, Electric Lime, Acid Yellow e Cool Gray, mais ciano para os brilhos. Os degradês vão de verde-limão a ciano.
+- **Regra da marca mantida:** o verde-limão serve de preenchimento ou destaque. Ele nunca vira texto sobre fundo claro. No tema claro, textos de destaque como "+2 emitidas fora da notem" ficam verde-escuro.
+- **Fundo:** ondas de luz desenhadas por código (curvas suaves de limão e ciano). Ficam fixas no topo direito do conteúdo e no pé do menu lateral, com pouca opacidade e sem baixar imagens novas.
+- **Cartões de vidro:** fundo translúcido, borda fina clara, sombra suave e cantos de 14 px. O desfoque fica só nas superfícies grandes, para não pesar.
+- **Tipografia:** continua Plus Jakarta Sans. Títulos ficam mais fortes (700), com mais contraste de tamanho. Números grandes usam algarismos de largura fixa.
+- **Título da página:** traço inclinado em limão antes do nome, como na referência, com o ambiente logo abaixo.
+- **Títulos de seção:** ícone linear dentro de um quadradinho de vidro (Empresas, Notas, Integração, Alertas).
+- **Menu lateral:** o item ativo ganha preenchimento em degradê limão com texto escuro e um brilho leve. A passagem do mouse fica sutil. Os grupos Notas e Organização continuam funcionando como hoje, e o contador de alertas vira uma bolinha vermelha.
+- **Topo:** seletores de organização e ambiente em "pílulas" de vidro. A faixa "Produção — notas com validade fiscal" fica em pílula com escudo, e a de homologação continua âmbar e bem visível. Os botões de ajuda, tema e conta ficam redondos.
 
-## 3. Estrutura do menu e arquivos
-Origem entre parênteses; "novo" = texto novo, conferido no código.
+## Onde se aplica (todo o painel)
 
-**Início** — `LEIAME.md` (reescrito como página inicial: cartões, "Como a API funciona", "Por onde começar").
+- **Peças comuns:** botões (o principal ganha degradê limão), campos, seletores, abas, caixas de diálogo, tabelas, selos de situação, avisos, listas vazias, trilha de navegação e paginação. Como as telas usam essas peças, listas, detalhes, formulários, abas de empresa e integração, Minha conta, Equipe e Administração mudam juntos.
+- **Início:**
+  - Os números viram cartões separados. O primeiro de cada bloco fica destacado: Total e Emitidas em limão, Chamadas à API em ciano.
+  - Cada cartão ganha um ícone, e os cliques e atalhos continuam iguais.
+- **Telas de entrada** (Entrar, Esqueci a senha, Definir senha, Redefinir senha): o cartão de vidro fica sobre o fundo da marca que já existe, com o botão em degradê e o brilho nas bordas.
+- **Telas de erro** (não encontrada, sem acesso, falha ao carregar): seguem o mesmo estilo.
 
-**Primeiros passos** (`primeiros-passos/`)
-- `primeiros-passos.md` (novo) · `autenticacao.md` (convencoes §2) · `ambientes.md` (convencoes §2 cadastro compartilhado + novo, com aviso destacado) · `requisicoes.md` (convencoes §1, §3–5, §8) · `limites.md` (convencoes §9; números conferidos com os limites reais por teste) · `erros.md` (convencoes §6) · `idempotencia.md` (convencoes §7 + notas "reenvio seguro"/E0014) · `checklist-producao.md` (novo) · `glossario.md` (movido).
+## Gráficos (só com dados que já existem)
 
-**Guias** (`guias/`)
-- `conceitos.md` (novo) · `empresa-e-certificado.md` (empresas §1, §3) · `configuracao-fiscal.md` (empresas §2) · `servicos-e-codigos.md` (empresas §4, §6) · `emissao.md` (notas §1, §3–4, DANFSe) · `ciclo-de-vida.md` (notas §2 situações + novo diagrama) · `cancelamento.md` (cancelamento §1–2, §4–5) · `substituicao.md` (cancelamento §3) · `municipios-conveniados.md` (empresas §5) · `ibs-cbs.md` (empresas/notas IBS/CBS) · `notas-recebidas.md` (sincronizacao.md) · `cnpj-alfanumerico.md` (novo) · `leiaute-nt009.md` (novo).
+1. **Rosca das notas,** ao lado dos três cartões de Notas e seguindo o período escolhido.
+   - **Ponto de atenção:** hoje "Emitidas" já inclui as canceladas. Uma rosca "Emitidas 50% / Canceladas 50%" contaria a mesma nota duas vezes.
+   - **Proposta:** três fatias que não se sobrepõem:
+     - "Emitidas sem cancelamento" (emitidas menos canceladas)
+     - "Canceladas"
+     - "Rejeitadas pelo governo"
+   - **Centro:** "N notas" (emitidas mais rejeitadas).
+   - **Legenda:** quantidade e porcentagem.
+   - **Sem notas no período:** a rosca aparece vazia, com "Nenhuma nota no período".
+2. **Barras de chamadas das últimas 24 horas,** com uma barra por hora.
+   - **Como é calculado:** usa a mesma conta que já gera o cartão "Chamadas à API", repetida para cada hora, sem tabela nem função nova.
+   - **Custo:** são 24 consultas pequenas e rápidas. Elas carregam separadas, depois que o Início abre, e ficam guardadas por 1 minuto.
+   - **Acesso:** só aparece para quem já vê o bloco de Integração.
+   - **Texto alternativo:** um resumo legível, por exemplo "maior volume: 14h, 32 chamadas".
+3. **"Empresas por status" ao longo do tempo:** não entra, porque não há histórico guardado.
+   - **No lugar:** uma barra única "Situação agora", com prontas, com pendência e inativas, usando os números de hoje.
+   - **Minha opinião sobre criar depois:** vale a pena só se você quiser acompanhar a evolução da carteira. Seria um registro diário pequeno (uma linha por organização, ambiente e dia, com três contagens), gravado pela verificação diária que já existe. O gráfico só ficaria útil depois de algumas semanas de coleta. Fica como sugestão para uma etapa própria, sem mexer em nada agora.
 
-**Webhooks** (`webhooks/`)
-- `visao-geral.md` · `eventos.md` · `assinatura.md` (+ validação em JavaScript) · `entregas.md` · `autorizacao.md` — todos de webhooks.md.
+## Legibilidade, desempenho e movimento
 
-**Referência da API** (`referencia/`)
-- `introducao.md` e `rejeicoes-do-governo.md` (texto curto + tabela gerada, com busca).
-- 40 páginas geradas do `openapi.yaml` (endereço `/referencia/{grupo}/{operacao}`), em 11 grupos: Status · Empresas · Configuração fiscal · Certificado · Serviços · Tomadores · Situação da empresa · Sincronização · Notas · Notas recebidas · Catálogos. Cada uma: método e URL, descrição, parâmetros, corpo com todos os campos (tipo, obrigatório, formato, limites, valores), respostas por status, erros da rota, exemplos cURL/JavaScript e resposta na coluna direita fixa.
-- Link para baixar `openapi.yaml`.
+- **Contraste:** pelo menos 4,5:1 para texto comum e 3:1 para ícones e bordas de campos, nos dois temas.
+- **Teste de contraste:** um teste automático lê as cores do estilo e falha se algum desses pares ficar abaixo do mínimo.
+- **Peso:** as ondas são desenhos leves feitos por código e o desfoque é moderado.
+  - Celulares com tela pequena recebem menos desfoque.
+  - Navegadores sem suporte a vidro recebem um fundo sólido equivalente.
+- **Menos movimento:** só há transições curtas (passar o mouse, abrir grupos, a rosca aparecer). Nada fica em repetição. Com "reduzir movimento" ligado no sistema, tudo fica parado.
+- **Celular e computador:**
+  - Cartões em 2 colunas no celular e 4 no computador.
+  - A rosca e as barras vão para baixo dos cartões em telas estreitas.
+  - O menu continua abrindo por cima no celular.
+  - O topo se reorganiza sem cortar texto.
 
-**Histórico de mudanças** — `historico.md`.
+## Documentação intacta
 
-Removidos depois de movidos: `convencoes.md`, `empresas.md`, `notas.md`, `cancelamento.md`, `sincronizacao.md`, `webhooks.md`, `glossario.md` (raiz). Atualizo tudo que aponta para eles: testes, AGENTS.md, `docs/interno/`, descrições do `openapi.yaml`, regras guardadas do projeto.
-- Na revisão, retiro do texto público o que é detalhe interno (ex.: "matriz de empresas.md… sem reescrita automática", quem pode revelar segredo no painel fica descrito sem nomes internos).
+Hoje a documentação reaproveita as cores gerais do painel. As novas cores e efeitos ficam presos ao painel. Um teste confere que as cores usadas pela documentação continuam exatamente as atuais.
 
-## 4. openapi.yaml (sem mudar o contrato)
-Hoje: nenhuma operação tem exemplo de resposta; só 1 tem exemplo de corpo; 26 não têm descrição. Acrescento:
-- exemplos de corpo e de resposta (sucesso e erro principal) nas 40 operações, tirados do formato real das respostas no código;
-- descrições faltantes; grupos (tags) nos 11 nomes acima;
-- referências a arquivos antigos trocadas por links do docs.
-Teste: cada exemplo é validado contra o esquema da própria resposta. Listo tudo no relatório.
+## Verificação e entrega
 
-## 5. Termos internos nas mensagens
-- E0714 ("…assinatura no transmissor…") e E0855 ("…o administrador da plataforma precisa antecipá-la…") reescritas para o parceiro.
-- Varredura completa: orientações de rejeição, mensagens de erro da API e textos de webhooks (transmissor, administrador da plataforma, Supabase, service_role, nomes de tabelas/funções). Corrijo do mesmo jeito.
-- Registro em `historico.md` como melhoria de texto; retrato das mensagens atualizado; teste que falha se um termo interno aparecer numa mensagem.
-- Relatório com texto antigo → novo de cada uma.
+- **Testes:** os automáticos atuais, mais os novos de contraste, de documentação intacta, das contas da rosca (fatias sem sobreposição e período vazio) e das horas das barras (24 horas no horário de Brasília).
+- **Imagens das telas de entrada:** prints nos dois temas, no computador e no celular.
+- **Telas com login:** não consigo entrar na sua conta pela pré-visualização. Faço prints com uma página temporária de conferência, com dados fictícios, que é apagada antes de terminar. Os prints reais com login ficam marcados como não verificados.
+- **Publicação:** só depois da sua aprovação.
 
-## 6. Layout
-- Topo: marca notem (→ início), busca (atalho "/"), "Painel" (→ app.), tema claro/escuro (escuro padrão, salvo no navegador).
-- Esquerda: menu por seções (gaveta no celular). Centro: conteúdo. Direita: "Nesta página"; na Referência, os exemplos fixos ao rolar.
-- Blocos de código com copiar e abas cURL/JavaScript; realce de sintaxe feito na montagem.
-- Rodapé: anterior/próxima e data de atualização. Página "não encontrada" própria.
-- Cores, fonte (Plus Jakarta Sans) e logos da notem; 375 px e computador.
-- Busca local (índice gerado na montagem, carregado só ao abrir a busca): títulos, textos e rotas.
-- `llms.txt` na raiz do docs listando todas as páginas.
+## Decisões para você confirmar
 
-## 7. Testes
-- `docs/interno/` ausente das páginas, do índice de busca e do `llms.txt`.
-- Nenhuma página com termos proibidos.
-- 40 operações com página, exemplo de requisição (cURL e JavaScript) e de resposta; exemplos válidos pelo esquema.
-- Nenhum link interno quebrado (inclui âncoras).
-- Limites da página iguais aos reais.
-- Separação de domínios: docs não serve painel nem API; painel redireciona; `app./docs` redireciona; raiz e www → app.
-- Nenhum texto perdido ou repetido na mudança de arquivos (comparação automática antigo × novo, base da tabela do relatório).
-- OpenAPI 3.1 válido; testes atuais passando; matriz de isolamento sem mudança.
-
-## 8. Passo a passo do domínio (você executa; nenhuma chave no chat)
-Hoje `app.` é o **domínio principal**: todo outro domínio é desviado para ele, inclusive um docs novo. Por isso a ordem importa:
-1. **Lovable** → Project Settings → Domains → **Connect Domain** → `docs.notemfiscal.com.br`. Anote os dois registros mostrados.
-2. **Cloudflare** → zona notemfiscal.com.br → DNS → Add record:
-   - Tipo **A**, nome `docs`, conteúdo `185.158.133.1`, proxy **DNS only** (nuvem cinza), igual ao `app`.
-   - Tipo **TXT**, nome `_lovable.docs`, conteúdo `lovable_verify=…` exatamente como o Lovable mostrar.
-3. Esperar o domínio ficar **Active** no Lovable (enquanto isso, ele cai no painel; sem risco).
-4. Eu publico a versão nova (só com sua aprovação).
-5. **Lovable** → Domains → menu "⋯" de `app.notemfiscal.com.br` → **Unset as primary**. A partir daí os redirecionamentos (raiz/www → app., docs ↔ app.) passam a ser feitos pelo próprio site.
-6. Eu confiro de fora: docs abre, `app./docs` redireciona, raiz/www → app., cabeçalhos e indexação.
-
-## 9. Fora do escopo
-`transmissor/`, regras fiscais, contrato da API (só textos de mensagens e exemplos/descrições do openapi), painel além do link do "?", do redirecionamento de `/docs` e do bloqueio de indexação (se aprovado). Sem publicar antes da sua aprovação.
-
-## 10. Relatório final
-Menu final; páginas novas/alteradas; tabela trecho antigo → arquivo novo; acréscimos do openapi; mensagens antigo → novo; prints (início, um guia, uma página da referência; claro/escuro; computador/celular); verificado e não verificado.
+1. A rosca com as três fatias sem sobreposição descritas acima.
+2. As barras por hora feitas com 24 consultas pequenas, em vez de uma função nova no banco.
+3. A barra "Situação agora" no lugar do gráfico de Empresas por status.
 
 ## Detalhes técnicos
-- Roteamento por domínio com o recurso de reescrita de endereço do roteador: no host docs o caminho `/x` é tratado internamente como `/docs/x` (servidor e navegador); assets passam direto. Redirecionamentos e bloqueios (`/api`, `/_serverFn`) ficam em `src/server.ts`, numa função pura testada.
-- Leitor do conteúdo como plugin de montagem (módulo virtual), usando `js-yaml` (já instalado) e um leitor de Markdown só na montagem; busca com índice JSON pequeno.
-- `rejectionGuidance` vai para um módulo próprio reexportado por `invoices.ts`.
-- AGENTS.md: regra de domínio/roteamento e de fonte única do docs.
+
+- **Cores:** os tokens novos ficam em `src/styles.css`, presos a um atributo do painel (por exemplo `data-surface="panel"` no `<html>` das rotas do app). O handler da documentação não define esse atributo, então a docs recebe os valores atuais.
+- **Ondas:** SVG inline com `pointer-events:none`, `aria-hidden` e degradê linear. O vidro usa `backdrop-filter` só em cartões, topo e menu. Há `@supports not (backdrop-filter)` com fundo sólido e `@media (prefers-reduced-motion: reduce)`.
+- **Peças comuns:** variantes do shadcn (Button `default` com degradê, Tabs, Input, Select, Dialog, Table, Badge) mais as classes compartilhadas (`.glass-panel`, `.metric`, `.nav-item`, `.data-table`, `.status-badge`, `.page-heading`).
+- **Gráficos:** feitos em SVG próprio, sem biblioteca nova.
+  - As contas ficam em funções puras em `src/lib/home-metrics.ts`, com testes.
+  - As barras usam um server function novo, autenticado, que chama `org_integration_summary` 24 vezes com a mesma checagem de papel do resumo atual. É uma consulta separada em React Query com `staleTime` de 60 s.
+- **Fora do escopo:** nenhuma mudança em migrações, RLS, API `/api/v1`, OpenAPI, `docs/` ou `transmissor/`.
