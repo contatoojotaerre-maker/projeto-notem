@@ -1,13 +1,14 @@
 import { describe, expect, it } from 'vitest';
-import { COMPANY_TABS, INTEGRATION_TABS, companyTab, integrationTab } from '@/lib/panel-tabs';
+import { COMPANY_TABS, INTEGRATION_TABS, companyTab, integrationTab, isCompanyReceivedTab } from '@/lib/panel-tabs';
 
 describe('códigos fixos de ?aba=', () => {
   it.each([
     ['Pronta para emitir', 'resumo'], ['Pronta%20para%20emitir', 'resumo'], ['pronta para emitir', 'resumo'],
     ['Dados', 'cadastro'], ['Configuração fiscal', 'fiscal'], ['Configura%C3%A7%C3%A3o%20fiscal', 'fiscal'], ['Configuracao fiscal', 'fiscal'],
     ['Certificado', 'certificado'], ['Serviços', 'servicos'], ['Servi%C3%A7os', 'servicos'], ['Tomadores', 'tomadores'],
-    ['Notas recebidas', 'recebidas'], ['Sincronização', 'sincronizacao'], ['Sincroniza%C3%A7%C3%A3o', 'sincronizacao'],
+    ['Sincronização', 'sincronizacao'], ['Sincroniza%C3%A7%C3%A3o', 'sincronizacao'],
   ])('empresa: %s → %s', (raw, code) => { expect(companyTab(raw)).toBe(code); });
+  it.each(['recebidas', 'Notas recebidas', 'Notas%20recebidas'])('empresa: aba antiga %s não é mais aba (vai para Notas › Recebidas)', raw => { expect(companyTab(raw)).toBeNull(); expect(isCompanyReceivedTab(raw)).toBe(true); });
   it('empresa: códigos novos ficam como estão', () => { for (const t of COMPANY_TABS) expect(companyTab(t)).toBe(t); });
   it.each([
     ['requisicoes', 'chamadas'], ['Requisições', 'chamadas'], ['logs', 'chamadas'], ['webhooks', 'webhooks'], ['Webhooks', 'webhooks'],
