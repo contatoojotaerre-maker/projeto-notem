@@ -35,4 +35,4 @@
 ## Menu lateral recolhível
 - [x] Grupos Notas e Organização recolhíveis (seta, abre sozinho, lembrado, flutuante no recolhido, celular, teclado)
 - [x] Testes
-- [ ] Publicar (aguarda aprovação)
+- [x] Publicar (16/11 21:50 Brasília)
