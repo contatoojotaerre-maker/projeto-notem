@@ -9,6 +9,7 @@ import { rememberDestination, takeDestination } from '@/lib/safe-redirect';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Brand } from './brand';
+import { PASSWORD_MIN, passwordMessages } from '@/lib/account';
 
 export function AuthScreen({ mode = 'login', destination }: {mode?:'login'|'forgot'|'reset'|'invite';destination?:string|undefined}) {
   const [email,setEmail]=useState(''); const [password,setPassword]=useState(''); const [confirm,setConfirm]=useState('');
