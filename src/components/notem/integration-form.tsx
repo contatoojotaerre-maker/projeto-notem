@@ -14,6 +14,6 @@ export function IntegrationForm({organizationId,companies,initial,selected=[],on
  <fieldset disabled={readOnly||busy} className="space-y-6"><div className="form-field"><label htmlFor="integration-name">Nome</label><Input id="integration-name" required maxLength={100} value={name} onChange={e=>setName(e.target.value)}/></div><div className="form-field"><label htmlFor="integration-description">Descrição</label><Textarea id="integration-description" maxLength={2000} value={description} onChange={e=>setDescription(e.target.value)}/></div>
  <label className="flex items-center gap-3"><input type="checkbox" checked={active} onChange={e=>setActive(e.target.checked)}/>Integração ativa</label>
  <p className="text-sm text-muted-foreground">Esta integração opera todas as empresas da organização.</p>
- </fieldset>{!readOnly&&<Button disabled={busy}><Save/>{busy?'Salvando…':initial?'Salvar alterações':'Criar integração'}</Button>}
+ </fieldset>{!readOnly&&<Button disabled={busy}><Save/>{busy?'Salvando…':initial?'Salvar':'Criar integração'}</Button>}
  </form>
 }
