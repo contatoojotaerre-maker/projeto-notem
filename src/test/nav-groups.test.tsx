@@ -18,7 +18,7 @@ function Menu({ path, search = '', iconOnly = false, onNavigate = () => {} }: { 
     <NavGroup id="notas" label="Notas" icon={FileText} open={groups.isOpen('notas')} onToggle={() => groups.toggle('notas')} iconOnly={iconOnly} onNavigate={onNavigate}
       items={[link('emitidas', 'Emitidas', sub.emitidas, '/o/x/notas'), link('recebidas', 'Recebidas', sub.recebidas, '/o/x/notas/recebidas')]} />
     <a href="/o/x/empresas">Empresas</a>
-    <NavGroup id="organizacao" label="Organização" icon={FileText} open={groups.isOpen('organizacao')} onToggle={() => groups.toggle('organizacao')} iconOnly={iconOnly} onNavigate={onNavigate}
+    <NavGroup id="organizacao" label="Organização" icon={Settings} open={groups.isOpen('organizacao')} onToggle={() => groups.toggle('organizacao')} iconOnly={iconOnly} onNavigate={onNavigate}
       items={[link('dados', 'Dados', sub.dados, '/o/x/organizacao'), link('equipe', 'Equipe', sub.equipe, '/o/x/organizacao?aba=equipe')]} />
   </nav>;
 }
