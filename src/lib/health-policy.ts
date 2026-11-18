@@ -94,6 +94,7 @@ export function evaluateQueue(q: { late: number; exhausted_24h: number }, previo
   if (q.late > L.queue.problemLate || growing) return 'problema';
   return q.late > L.queue.attentionLate ? 'atencao' : 'ok';
 }
+const count = (n: number, one: string, many: string) => `${int(n)} ${n === 1 ? one : many}`;
 export function evaluateApi5xx(hour: number): HealthState { return hour >= L.api5xx.problemHour ? 'problema' : hour >= L.api5xx.attentionHour ? 'atencao' : 'ok'; }
 export function evaluateCertificate(validUntil: string, now: number): HealthState {
   const days = (Date.parse(validUntil) - now) / 86_400_000;
@@ -134,7 +135,7 @@ export function evaluateHealth(input: { snapshot: HealthSnapshot; ping: Transmis
   const whState = evaluateAge(whMin, L.scheduler.attentionMinutes, L.scheduler.problemMinutes); const run = s.last_scheduler_run;
   push({ id: 'rotina_webhooks', title: 'Rotina de webhooks', state: whState, lastInfoAt: wh,
     limits: `Roda a cada minuto. Atenção: mais de ${L.scheduler.attentionMinutes} min sem rodar. Problema: mais de ${L.scheduler.problemMinutes} min.`,
-    lines: [{ label: 'Última execução', value: `${brDateTime(wh)} (${ago(whMin)})` }, { label: 'Último ciclo com trabalho', value: run ? `${brDateTime(run.at)} · ${int(run.reserved)} reservados, ${int(run.completed)} concluídos, ${int(run.failed)} falhas${run.error ? ' · com erro' : ''}` : '—' }], items: [] });
+    lines: [{ label: 'Última execução', value: `${brDateTime(wh)} (${ago(whMin)})` }, { label: 'Último ciclo com trabalho', value: run ? `${brDateTime(run.at)} · ${count(run.reserved, 'reservado', 'reservados')}, ${count(run.completed, 'concluído', 'concluídos')}, ${count(run.failed, 'falha', 'falhas')}${run.error ? ' · com erro' : ''}` : '—' }], items: [] });
   if (whState === 'problema') problems.push({ key: 'rotina_webhooks', block: 'rotina_webhooks', title: 'rotina de webhooks parada', detail: wh ? `A rotina não roda desde ${brDateTime(wh)} (Brasília).` : 'A rotina nunca registrou execução.' });
 
   // Daily verification
@@ -143,7 +144,7 @@ export function evaluateHealth(input: { snapshot: HealthSnapshot; ping: Transmis
   const dt = s.daily_today;
   push({ id: 'verificacao_diaria', title: 'Verificação diária', state: dState, lastInfoAt: daily,
     limits: `Roda uma vez por dia a partir das 06:00. Atenção: mais de ${L.daily.attentionHours} h sem rodar. Problema: mais de ${L.daily.problemHours} h.`,
-    lines: [{ label: 'Cancelamentos e análises', value: `${brDateTime(daily)} (${ago(minutes(daily, now))})` }, { label: 'Resultado de hoje', value: dt ? `${int(dt.checked)} notas consultadas, ${int(dt.updated)} atualizadas, ${int(dt.failed)} falhas` : '—' }, { label: 'Certificados e prontidão', value: `${brDateTime(routine)} (${ago(minutes(routine, now))})` }], items: [] });
+    lines: [{ label: 'Cancelamentos e análises', value: `${brDateTime(daily)} (${ago(minutes(daily, now))})` }, { label: 'Resultado de hoje', value: dt ? `${count(dt.checked, 'nota consultada', 'notas consultadas')}, ${count(dt.updated, 'atualizada', 'atualizadas')}, ${count(dt.failed, 'falha', 'falhas')}` : '—' }, { label: 'Certificados e prontidão', value: `${brDateTime(routine)} (${ago(minutes(routine, now))})` }], items: [] });
   if (dState === 'problema') problems.push({ key: 'verificacao_diaria', block: 'verificacao_diaria', title: 'verificação diária parada', detail: `Última verificação de notas: ${brDateTime(daily)}; última rotina de certificados: ${brDateTime(routine)} (Brasília).` });
 
   // Webhook queue
@@ -151,7 +152,7 @@ export function evaluateHealth(input: { snapshot: HealthSnapshot; ping: Transmis
   for (const env of ENVS) {
     const q = s.queue[env] ?? { pending: 0, late: 0, exhausted_24h: 0 }; exhausted[env] = q.exhausted_24h;
     const st = evaluateQueue(q, prev?.exhausted24h?.[env]);
-    qItems.push({ state: st, text: `${ENV_LABEL[env]}: ${int(q.pending)} pendentes, ${int(q.late)} atrasados, ${int(q.exhausted_24h)} esgotados em 24 h` });
+    qItems.push({ state: st, text: `${ENV_LABEL[env]}: ${count(q.pending, 'pendente', 'pendentes')}, ${count(q.late, 'atrasado', 'atrasados')}, ${count(q.exhausted_24h, 'esgotado', 'esgotados')} em 24 h` });
     if (st === 'problema') problems.push({ key: `fila_webhooks:${env}`, block: 'fila_webhooks', title: `fila de webhooks com atraso em ${ENV_LABEL[env].toLowerCase()}`, detail: `${int(q.late)} entregas atrasadas e ${int(q.exhausted_24h)} esgotadas nas últimas 24 h.` });
   }
   push({ id: 'fila_webhooks', title: 'Fila de webhooks', state: worst(qItems.map(i => i.state)), lastInfoAt: s.now, items: qItems, lines: [],

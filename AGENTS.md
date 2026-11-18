@@ -26,7 +26,7 @@
 - Database triggers protect company CNPJ after any certificate or assigned DPS series and serialize certificate/series assignment against company updates; do not synchronize fiscal CNPJ on edits.
 - Keep tenant data and organizational roles scoped by organization IDs with database RLS; global administration is a separate protected table to prevent privilege escalation.
 - Ordinary panel private reads and mutations use authenticated TanStack server functions and loader/query options; privileged invitations authorize the caller before importing the admin client.
-- Certificate files and passwords pass through authenticated panel server functions only in memory and are forwarded to the private transmissor (Google ID token from a server-only service account); only the transmissor holds the envelope key, the panel stores the opaque envelope in a service-role-only table and never logs or returns it.
+- Certificate files/passwords pass only in memory through authenticated panel server functions to the private transmissor (Google ID token, server-only service account); only it holds the envelope key, and the panel stores the opaque envelope service-role-only, never logging or returning it.
 - Keep protected pages under `_authenticated` and public password/OAuth return pages outside it; the shared shell renders children through Outlet.
 - Database triggers own company state derivation, audit fields and immutable organization slugs; forms must not become the authority for these rules.
 - Invitation acceptance is an authenticated atomic database function, never an auth-user creation trigger; existing accounts must explicitly accept pending invitations.
@@ -45,7 +45,8 @@
 - Public refusal text for fiscal builders comes only from `RuleError`; any other caught error maps to a fixed message so library/internal text never reaches partners.
 - New public tables inherit broad default grants here: every migration revokes anon/authenticated and grants back only what the policies need (column grants for partial updates).
 - Panel server functions that read with the service role first check organization membership or platform admin server-side (`requireOrgMember`).
-- zod is imported only through `src/lib/validation.ts` (lint and test enforced), which installs notem's Portuguese error map and pins the e-mail, date-time and integer rules; field messages win, API path/query/body IDs share the strict UUID rule (`idParam`), and `src/test/validation-messages.snapshot.json` must stay identical, so library updates never change partner-facing text.
+- zod is imported only via `src/lib/validation.ts` (lint/test enforced): pt-BR error map, pinned e-mail/date-time/integer rules, field messages win, shared strict UUID `idParam`; `validation-messages.snapshot.json` must not change, so library updates never alter partner text.
 - Panel lists, Início counts and exports share one SQL filter source: rules in `src/lib/AGENTS.md`.
 - Password creation screens share one rule module (password-rule.ts) and login-service errors reach users only through auth-messages.ts (codes/reasons, never service text), so every screen enforces and words refusals identically.
-- `public/brand/email/notem-logo-email.png` is the fixed logo URL of the Supabase e-mail templates: never rename, move or remove it; `/brand/` stays public (no login, no redirect on app., not routed to docs); size/format test-enforced.
+- `public/brand/email/notem-logo-email.png` is the fixed logo URL of Supabase e-mail templates: never rename/move/remove; `/brand/` stays public (no login/redirect, not docs-routed); size test-enforced.
+- System health: limits in `health-policy.ts`; own OIDC Scheduler job; public ping shows only freshness; government-call samples are written after the response, so monitoring never delays fiscal work.

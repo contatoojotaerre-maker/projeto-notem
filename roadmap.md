@@ -72,12 +72,15 @@
 ## Saúde do sistema + avisos por e-mail (pedido 17/11)
 - [x] Plano aprovado (17/11, com ajustes)
 - [x] Publicar antes só o visual novo e confirmar no ar (17/11 20:48 Brasília)
-- [ ] Gravação das chamadas ao governo depois da resposta, falha descartada com registro interno; teste de falha durante emissão
-- [ ] GET /api/public/saude/ping (200 ok < 15 min / 503 verificacao_atrasada; sem detalhes, sem log de API, no-store, noindex) + passo a passo do Monitoring (200, 5 min, 2 falhas)
-- [ ] Avisos começam desligados
-- [ ] Tela Administração › Saúde do sistema (8 blocos, topo, Verificar agora)
-- [ ] Registro das chamadas reais ao governo; tabelas só do servidor com limpeza de 30 dias
-- [ ] Rota OIDC separada a cada 5 min + comando do Cloud Scheduler
-- [ ] Avisos por e-mail (Resend, destinatários, teste, estados, lembrete 6 h, Resolvido)
-- [ ] Vigia externo (passo a passo) e conferência da tabela notem_rls_probe_
-- [ ] Testes, matriz de isolamento, prints, relatório; não publicar
+- [x] Gravação das chamadas ao governo depois da resposta, falha descartada com registro interno; teste de falha durante emissão
+- [x] GET /api/public/saude/ping (200 ok < 15 min / 503 verificacao_atrasada; sem detalhes, sem log de API, no-store, noindex) + passo a passo do Monitoring (200, 5 min, 2 falhas)
+- [x] Avisos começam desligados
+- [x] Tela Administração › Saúde do sistema (8 blocos, topo, Verificar agora)
+- [x] Registro das chamadas reais ao governo; tabelas só do servidor com limpeza de 30 dias
+- [x] Rota OIDC separada a cada 5 min + comando do Cloud Scheduler
+- [x] Avisos por e-mail (Resend, destinatários, teste, estados, lembrete 6 h, Resolvido)
+- [x] Vigia externo (passo a passo) e conferência da tabela notem_rls_probe_
+- [x] Testes, matriz de isolamento, prints, relatório; não publicar
+- [ ] Chave do Resend (RESEND_API_KEY) — aguardando o dono cadastrar
+- [ ] Criar tarefa do Scheduler e uptime check — o dono cria no Google Cloud após publicar
+- [ ] Publicar — aguardando aprovação

@@ -5,6 +5,7 @@ Esta pasta contém informações operacionais e de implementação. Não faz par
 | Arquivo | Conteúdo |
 |---|---|
 | `agendador-webhooks.md` | Configuração OIDC e processamento do Google Cloud Scheduler |
+| `saude-do-sistema.md` | Saúde do sistema: verificação OIDC, vigia externo, medição do governo e avisos |
 | `implementacao-api.md` | Notas de registro, emissão, consulta automática e DANFSe retiradas da documentação pública |
 | `leiaute-nt009.md` | Perfis de leiaute da DPS, data de troca, remontagem com o mesmo número e leitura tolerante |
 | `defeitos-esquema-oficial.md` | Defeitos conhecidos nos XSD oficiais (série do leiaute anterior, chave de acesso do release 1) e correções somente em memória |

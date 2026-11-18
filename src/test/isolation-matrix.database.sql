@@ -58,6 +58,12 @@ BEGIN
  EXCEPTION WHEN OTHERS THEN notes := notes || ('seed override: '||SQLERRM); END;
  BEGIN INSERT INTO public.nfse_daily_checks(run_date,company_id,organization_id,environment) VALUES(current_date,co.id,T,'production');
  EXCEPTION WHEN OTHERS THEN notes := notes || ('seed daily: '||SQLERRM); END;
+ -- Saúde do sistema seeds so the new server-only tables carry rows at baseline
+ BEGIN INSERT INTO public.government_calls(environment,system,service,outcome,http_status,duration_ms) VALUES('production','sefin','emissao','respondeu',201,900);
+  INSERT INTO public.health_checks(trigger,overall,result) VALUES('manual','ok','{}');
+  INSERT INTO public.health_alerts(key,title,state,since) VALUES('matriz','matriz','problema',now());
+  UPDATE public.platform_settings SET health_alert_recipients=array['matriz@example.invalid'] WHERE id;
+ EXCEPTION WHEN OTHERS THEN notes := notes || ('seed health: '||SQLERRM); END;
 
  -- IBS/CBS: apply the Anexo VIII suggestion for 01.05 (NBS 1.1103.21.00, 000001/100501) to T's service so the new columns carry data
  SELECT * INTO sp FROM public.company_service_profiles WHERE organization_id=T ORDER BY created_at LIMIT 1;
@@ -120,6 +126,7 @@ BEGIN
   EXECUTE r->>'q' INTO n USING T, tcnpj, NULL::uuid; base := base || jsonb_build_object(r->>'n', n);
  END LOOP;
 
+ notes := notes || ('base saude: calls='||(base->>'government_calls')||' checks='||(base->>'health_checks')||' alerts='||(base->>'health_alerts')||' runtime='||(base->>'health_runtime'));
  notes := notes || ('base integracao: prod='||(base->>'org_integration_summary(T, producao)')||' homolog='||(base->>'org_integration_summary(T, homologacao)'));
  notes := notes || ('base IBS/CBS: '||(SELECT string_agg(key||'='||value,', ') FROM jsonb_each_text(base) WHERE key ~ '(IBS|ibscbs|Anexo|catalogo|platform_settings)'));
  IF coalesce((base->>'servicos: colunas IBS/CBS')::bigint,0)=0 THEN notes := notes || 'IBS/CBS service columns empty at baseline'::text; END IF;

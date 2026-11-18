@@ -48,7 +48,7 @@ export function SystemHealthView({ view, preview = false }: { view: Extract<Heal
 
 function HealthBlock({ block: b }: { block: Block }) {
   return <section id={`bloco-${b.id}`} className="chart-card scroll-mt-24" aria-labelledby={`t-${b.id}`}>
-    <div className="flex items-start justify-between gap-3"><h3 id={`t-${b.id}`} className="font-bold">{b.title}</h3><Badge state={b.state} /></div>
+    <div className="flex items-start justify-between gap-3"><h3 id={`t-${b.id}`} className="font-bold [font-feature-settings:'calt'_0]">{b.title}</h3><Badge state={b.state} /></div>
     {b.lines.length > 0 && <dl className="mt-3 grid gap-1.5 text-sm">{b.lines.map(l => <div key={l.label} className="flex flex-wrap justify-between gap-2"><dt className="text-muted-foreground">{l.label}</dt><dd className="text-right font-medium">{l.value}</dd></div>)}</dl>}
     {b.items.length > 0 && <ul className="mt-3 space-y-1.5 text-sm">{b.items.slice(0, 12).map((i, n) => <li key={n} className="flex items-start gap-2"><span className="chart-dot mt-1.5 shrink-0" data-state={i.state} aria-hidden /><span className="sr-only">{BADGE[i.state].label}: </span>{i.href ? <Link to={i.href} className="underline-offset-4 hover:underline">{i.text}</Link> : <span>{i.text}</span>}</li>)}{b.items.length > 12 && <li className="text-muted-foreground">e mais {b.items.length - 12}</li>}</ul>}
     <p className="mt-3 text-xs text-muted-foreground">{b.limits}</p>

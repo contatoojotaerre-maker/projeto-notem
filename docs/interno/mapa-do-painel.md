@@ -65,7 +65,7 @@ Grupo **Administração** (só AP), abaixo de uma linha:
 | 3 | Municípios | marcador de mapa | `/admin/municipios` | **"Disponível em breve"** |
 | 4 | Mensagens de rejeição | balão | `/admin/mensagens-de-rejeicao` | só tabela de leitura |
 | 5 | Leiaute fiscal | arquivo de código | `/admin/leiaute-fiscal` | funciona |
-| 6 | Saúde do sistema | atividade | `/admin/saude-do-sistema` | **"Disponível em breve"** |
+| 6 | Saúde do sistema | atividade | `/admin/saude-do-sistema` | Implementada (ver `saude-do-sistema.md`) |
 | 7 | Suporte | ponto de interrogação (o mesmo de Ajuda) | `/admin/suporte` | funciona |
 | 8 | Cobrança | cartão | `/admin/cobranca` | **"Disponível em breve"** |
 
@@ -320,7 +320,7 @@ Da esquerda para a direita:
 | Municípios | `/admin/municipios` | idem | "Municípios" | **"Disponível em breve"** |
 | Mensagens de rejeição | `/admin/mensagens-de-rejeicao` | idem | "Mensagens de rejeição" | tabela Código · Campo · Orientação (só leitura) |
 | Leiaute fiscal | `/admin/leiaute-fiscal` | idem | "Administração" + "Leiaute fiscal" | tabela de leiaute vigente por ambiente; tabela IBS/CBS / próximo leiaute; "Início do leiaute NT 009 em produção" (data e hora + Salvar + confirmação); "IBS/CBS e próximo leiaute" (4 campos, cada um com Salvar e confirmação) |
-| Saúde do sistema | `/admin/saude-do-sistema` | idem | "Saúde do sistema" | **"Disponível em breve"** |
+| Saúde do sistema | `/admin/saude-do-sistema` | idem | "Saúde do sistema" | Implementada (ver `saude-do-sistema.md`) |
 | Suporte | `/admin/suporte` | idem | "Suporte" | E-mail e WhatsApp (só números, com 55) exibidos na Ajuda; "Salvar" |
 | Cobrança | `/admin/cobranca` | idem | "Cobrança" | **"Disponível em breve"** |
 
@@ -416,7 +416,7 @@ Contagem a partir de qualquer tela da organização, com o menu aberto (computad
 | T10 | Webhooks › Entregas | Coluna "HTTP", "Tentativa 3/8", janela "Entrega" com dois códigos internos sem rótulo. |
 | T11 | Notas (vazio) | "Nenhuma nota encontrada." sem diferenciar "sem notas" de "filtro sem resultado" e sem orientação. |
 | T12 | Integrações (vazio) | "Nenhuma integração cadastrada" sem orientação. |
-| T13 | Administração | Quatro telas "Disponível em breve" no menu (Empresas e notas, Municípios, Saúde do sistema, Cobrança). |
+| T13 | Administração | Três telas "Disponível em breve" no menu (Empresas e notas, Municípios, Cobrança); Saúde do sistema implementada. |
 | T14 | Topo | Busca "Buscar na notem" visível e desativada. |
 | T15 | Datas | Parte das telas usa o horário de Brasília; outras (sincronização, chaves, requisições, entregas, histórico da nota, equipe) usam o relógio do aparelho. |
 
