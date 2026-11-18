@@ -4,7 +4,7 @@ import { SandboxChangeAlerts } from './sandbox-change-alerts';
 import { useQuery, useQueryClient, useSuspenseQuery } from '@tanstack/react-query';
 import { orgAlertsQuery, supportContactQuery } from '@/lib/panel-home.queries';
 import { useServerFn } from '@tanstack/react-start';
-import { Building2, FileText, Home, Layers, Bell, Code2, Settings, CircleHelp, ChevronsLeft, Menu, Sun, Moon, LogOut, TriangleAlert, ArrowRight, LifeBuoy, MessageSquare, FileCode2, X, UserRound, ShieldCheck, Mail, MessageCircle, Landmark } from 'lucide-react';
+import { Building2, FileText, Home, Layers, Bell, Code2, Settings, CircleHelp, ChevronsLeft, Menu, Sun, Moon, LogOut, TriangleAlert, ArrowRight, LifeBuoy, MessageSquare, FileCode2, X, UserRound, ShieldCheck, Mail, MessageCircle, Landmark, HeartPulse } from 'lucide-react';
 import { toast } from 'sonner';
 import { Button } from '@/components/ui/button';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
@@ -26,7 +26,7 @@ export function useOptionalWorkspace(){return useContext(WorkspaceContext);}
 export function useWorkspace(){const context=useContext(WorkspaceContext);if(!context)throw new Error('Workspace unavailable');return context;}
 export function useOrganization(slug:string){const workspace=useWorkspace();const organization=workspace.organizations.find(o=>o.slug===slug);const role=workspace.memberships.find(m=>m.organization_id===organization?.id)?.role;return {organization,role,isAdmin:workspace.isAdmin};}
 /** Administração: only the screens that exist (the "em breve" placeholders redirect to Organizações). */
-const adminItems=[{title:'Organizações',section:'organizacoes',icon:Landmark},{title:'Mensagens de rejeição',section:'mensagens-de-rejeicao',icon:MessageSquare},{title:'Leiaute fiscal',section:'leiaute-fiscal',icon:FileCode2},{title:'Suporte',section:'suporte',icon:LifeBuoy}];
+const adminItems=[{title:'Organizações',section:'organizacoes',icon:Landmark},{title:'Mensagens de rejeição',section:'mensagens-de-rejeicao',icon:MessageSquare},{title:'Leiaute fiscal',section:'leiaute-fiscal',icon:FileCode2},{title:'Suporte',section:'suporte',icon:LifeBuoy},{title:'Saúde do sistema',section:'saude-do-sistema',icon:HeartPulse}];
 /** Public API documentation (docs.notemfiscal.com.br), opened from the "?" menu. */
 export const API_DOCS_URL: string | null = DOCS_URL;
 const whatsappLabel = (n: string) => `+${n.slice(0, 2)} (${n.slice(2, 4)}) ${n.slice(4, -4)}-${n.slice(-4)}`;

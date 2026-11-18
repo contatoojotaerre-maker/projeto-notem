@@ -1,4 +1,7 @@
 // Server-only client for the private Cloud Run transmissor. Never log bodies.
+import { runAfterResponse } from './after-response.server';
+import { governmentSample } from './government-calls';
+import { recordGovernmentCall } from './government-calls.server';
 let cachedToken: { token: string; exp: number } | null = null;
 
 export class TransmissorError extends Error {
@@ -52,7 +55,32 @@ export async function callTransmissor<T>(path: '/v1/certificados/preparar' | '/v
     throw new TransmissorError(String(code), res.status);
   }
   if (!res.ok) { console.error('transmissor: status', path, res.status); throw new TransmissorError('INDISPONIVEL', res.status); }
-  return res.json() as Promise<T>;
+  const body = await res.json() as T;
+  noteGovernmentCall(path, payload, body);
+  return body;
+}
+
+/** Health measurement of real government calls: recorded after the response, never awaited, failures only logged. */
+function noteGovernmentCall(path: string, payload: unknown, body: unknown) {
+  try {
+    const sample = governmentSample(path, payload, body);
+    if (sample) runAfterResponse(() => recordGovernmentCall(sample), 'GOV_CALL_RECORD_FAILED');
+  } catch { console.error('GOV_CALL_RECORD_FAILED'); }
+}
+
+/** GET / with the panel's own access: answers {versao}. Used only by the system health check. */
+export async function pingTransmissor(timeoutMs = 10_000): Promise<{ ok: boolean; ms: number | null; version: string | null }> {
+  const started = Date.now();
+  try {
+    const { url, sa } = config();
+    const token = await identityToken(url, sa);
+    const res = await fetch(`${url}/`, { headers: { Authorization: `Bearer ${token}` }, signal: AbortSignal.timeout(timeoutMs), redirect: 'manual' });
+    const ms = Date.now() - started;
+    if (res.status === 401 || res.status === 403) cachedToken = null;
+    if (!res.ok) return { ok: false, ms, version: null };
+    const b = await res.json().catch(() => ({})) as { versao?: unknown };
+    return { ok: true, ms, version: typeof b.versao === 'string' ? b.versao.slice(0, 20) : null };
+  } catch { return { ok: false, ms: null, version: null }; }
 }
 
 export function bytesToBase64(bytes: Uint8Array) { let s = ''; for (let i = 0; i < bytes.length; i += 0x8000) s += String.fromCharCode(...bytes.subarray(i, i + 0x8000)); return btoa(s); }

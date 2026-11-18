@@ -31,7 +31,8 @@ describe('redirecionamentos de endereços antigos', () => {
     expect(organizationTabRedirect('equipe')).toEqual({ kind: 'keep' });
   });
   it('as 4 telas "em breve" da Administração saem do ar', () => {
-    for (const s of ['empresas-e-notas', 'municipios', 'saude-do-sistema', 'cobranca']) expect(isHiddenAdminSection(s)).toBe(true);
+    for (const s of ['empresas-e-notas', 'municipios', 'cobranca']) expect(isHiddenAdminSection(s)).toBe(true);
+    expect(isHiddenAdminSection('saude-do-sistema')).toBe(false);
     expect(isHiddenAdminSection('organizacoes')).toBe(false);
   });
   it('Recebidas não aceita filtro de origem', () => {

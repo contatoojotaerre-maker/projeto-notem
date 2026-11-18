@@ -14,7 +14,8 @@ DECLARE
    'company_customers','certificate_audit_events','municipality_agreement_queries','dps_sequences','integrations','integration_keys',
    'integration_companies','webhook_endpoints','webhook_events','webhook_deliveries','webhook_alerts','webhook_secret_reveals','sandbox_change_audit','invoices',
    'invoice_events','invoice_fiscal_events','invoice_dps_attempts','nfse_daily_checks','api_request_logs','invitations','organization_members'];
- svc_tables text[] := ARRAY['fiscal_xml_files','adn_distributions','nfse_key_refreshes','company_readiness_state','api_idempotency_keys','certificate_expiry_notices','api_rate_counters','api_concurrency_slots'];
+ svc_tables text[] := ARRAY['fiscal_xml_files','adn_distributions','nfse_key_refreshes','company_readiness_state','api_idempotency_keys','certificate_expiry_notices','api_rate_counters','api_concurrency_slots',
+   'government_calls','health_checks','health_alerts','health_runtime'];
  reads jsonb := '[]'; r jsonb; writes jsonb := '[]'; w jsonb;
  sp public.company_service_profiles; sprec jsonb; xsprec jsonb;
  all_auth text := '["owner","admin","operator","developer","viewer","foreign","noorg","platform"]';
@@ -169,6 +170,15 @@ BEGIN
   -- Fase 8: support contact is read and written only by the server (service role), never directly by users
   jsonb_build_object('n','RPC platform_support_contact','q','select count(*) from public.platform_support_contact()','a','[]'),
   jsonb_build_object('n','RPC set_platform_support','q','select count(*) from public.set_platform_support(''x@y.co'',''5548999990000'',$3)','a','[]'),
+  -- Saúde do sistema: numbers, alert states, recipients and the switch are server-only
+  jsonb_build_object('n','RPC health_snapshot','q','select public.health_snapshot()','a','[]'),
+  jsonb_build_object('n','RPC set_health_alert_settings','q','select count(*) from public.set_health_alert_settings(array[''x@y.co''],true,$3)','a','[]'),
+  jsonb_build_object('n','RPC claim_health_run','q','select public.claim_health_run(true)','a','[]'),
+  jsonb_build_object('n','RPC cleanup_health_data','q','select public.cleanup_health_data()','a','[]'),
+  jsonb_build_object('n','ligar avisos direto','q','update public.platform_settings set health_alerts_enabled=true, health_alert_recipients=array[''x@y.co'']','a','[]'),
+  jsonb_build_object('n','ler destinatarios dos avisos','q','select count(health_alert_recipients) from public.platform_settings','a','[]'),
+  jsonb_build_object('n','inserir aviso de saude','q','insert into public.health_alerts(key,title,state,since) values(''x'',''x'',''problema'',now())','a','[]'),
+  jsonb_build_object('n','inserir chamada ao governo','q','insert into public.government_calls(environment,system,service,outcome) values(''production'',''sefin'',''emissao'',''respondeu'')','a','[]'),
   jsonb_build_object('n','alterar data IBS/CBS direto','q','update public.platform_settings set ibscbs_required_production_from=ibscbs_required_production_from','a','[]'),
   jsonb_build_object('n','alterar catalogo ibscbs_classifications','q','update public.ibscbs_classifications set code=code','a','[]'),
   jsonb_build_object('n','apagar catalogo ibscbs_classifications','q','delete from public.ibscbs_classifications','a','[]'),

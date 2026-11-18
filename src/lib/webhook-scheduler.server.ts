@@ -4,7 +4,10 @@ import { appLink } from '@/lib/app-url'
 
 export const schedulerAudience = appLink('/api/public/webhooks/process')
 
-export async function verifyScheduler(request: Request, accountJson: string | undefined) {
+export const healthAudience = appLink('/api/public/saude/verificar')
+
+/** Google OIDC from the configured service account, for exactly one callback URL (audience). */
+export async function verifyScheduler(request: Request, accountJson: string | undefined, audience: string = schedulerAudience) {
   if (!accountJson) return false
   let email: unknown; let clientId: unknown
   try { const a = JSON.parse(accountJson) as { client_email?: unknown; client_id?: unknown }; email = a.client_email; clientId = a.client_id } catch { return false }
@@ -16,10 +19,10 @@ export async function verifyScheduler(request: Request, accountJson: string | un
     const keys = createRemoteJWKSet(new URL('https://www.googleapis.com/oauth2/v3/certs'), { timeoutDuration: 5000 })
     const { payload } = await jwtVerify(authorization.slice(7), keys, {
       algorithms: ['RS256'], issuer: ['https://accounts.google.com', 'accounts.google.com'],
-      audience: schedulerAudience, maxTokenAge: '1h', clockTolerance: 30,
+      audience, maxTokenAge: '1h', clockTolerance: 30,
       requiredClaims: ['exp', 'iat', 'sub', 'email', 'email_verified'],
     })
     // Exactly this service account (stable numeric id) and exactly this callback as the single audience.
-    return payload.aud === schedulerAudience && payload['email'] === email && payload['email_verified'] === true && payload.sub === clientId
+    return payload.aud === audience && payload['email'] === email && payload['email_verified'] === true && payload.sub === clientId
   } catch { return false }
 }

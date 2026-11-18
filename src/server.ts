@@ -4,6 +4,7 @@ import { consumeLastCapturedError } from "./lib/error-capture";
 import { renderErrorPage } from "./lib/error-page";
 import { routeRequest, DOCS_API_MESSAGE, type HostDecision } from "./lib/hosts";
 import { apiErrorEnvelope, newRequestId } from "./lib/api-envelope";
+import { withAfterResponse } from "./lib/after-response.server";
 
 type ServerEntry = {
   fetch: (request: Request, env: unknown, ctx: unknown) => Promise<Response> | Response;
@@ -109,7 +110,9 @@ export default {
       const preflight = apiPreflight(request);
       if (preflight) return withNoindex(withSecurityHeaders(request, preflight), decision);
       const handler = await getServerEntry();
-      const response = await handler.fetch(request, env, ctx);
+      // Bookkeeping that must never delay the reply (e.g. government-call samples) runs through ctx.waitUntil.
+      const wait = (ctx as { waitUntil?: (p: Promise<unknown>) => void } | null)?.waitUntil;
+      const response = await withAfterResponse(typeof wait === "function" ? (p) => wait.call(ctx, p) : null, () => handler.fetch(request, env, ctx));
       return withNoindex(withSecurityHeaders(request, await normalizeCatastrophicSsrResponse(response)), decision);
     } catch (error) {
       console.error(error);

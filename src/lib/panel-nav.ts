@@ -16,7 +16,7 @@ export function sectionRedirect(section: string): { to: 'section'; section: OrgS
 export const sectionNeedsManager = (section: string) => section === 'organizacao';
 
 /** Administration screens that were placeholders ("em breve"): their addresses go to Organizações. */
-export const ADMIN_HIDDEN_SECTIONS = ['empresas-e-notas', 'municipios', 'saude-do-sistema', 'cobranca'] as const;
+export const ADMIN_HIDDEN_SECTIONS = ['empresas-e-notas', 'municipios', 'cobranca'] as const;
 export const isHiddenAdminSection = (s: string) => (ADMIN_HIDDEN_SECTIONS as readonly string[]).includes(s);
 
 /** Company ?aba= → canonical search, or the Notas › Recebidas list for the old "Notas recebidas" tab. */

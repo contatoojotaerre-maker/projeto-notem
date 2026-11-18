@@ -216,6 +216,7 @@ button.nav-item { text-align:left; cursor:pointer; }
 .share-bar { display:flex; height:12px; overflow:hidden; border-radius:999px; background:var(--secondary); }
 .share-bar > span { display:block; height:100%; }
 .chart-dot { display:inline-block; width:10px; height:10px; flex-shrink:0; border-radius:50%; }
+.chart-dot[data-state="ok"] { background:var(--success); } .chart-dot[data-state="atencao"] { background:var(--warning); } .chart-dot[data-state="problema"] { background:var(--destructive); } .chart-dot[data-state="neutro"] { background:var(--neutral); }
 @media (min-width:901px) { .metric,.chart-card,.metric-row { backdrop-filter:blur(10px); } }
 
 /* Badges, tables, empty states */

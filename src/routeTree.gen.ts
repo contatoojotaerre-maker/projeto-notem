@@ -21,6 +21,8 @@ import { Route as AuthenticatedAdminSectionRouteImport } from './routes/_authent
 import { Route as AuthenticatedAdminOrganizacoesRouteImport } from './routes/_authenticated/admin/organizacoes'
 import { Route as ApiV1StatusRouteImport } from './routes/api/v1/status'
 import { Route as AuthenticatedOOrgSlugSectionRouteImport } from './routes/_authenticated/o/$orgSlug/$section'
+import { Route as ApiPublicSaudePingRouteImport } from './routes/api/public/saude/ping'
+import { Route as ApiPublicSaudeVerificarRouteImport } from './routes/api/public/saude/verificar'
 import { Route as ApiPublicWebhooksProcessRouteImport } from './routes/api/public/webhooks/process'
 import { Route as ApiV1CatalogosClassificacoesTributariasRouteImport } from './routes/api/v1/catalogos/classificacoes-tributarias'
 import { Route as ApiV1CatalogosIndicadoresOperacaoRouteImport } from './routes/api/v1/catalogos/indicadores-operacao'
@@ -123,6 +125,16 @@ const AuthenticatedOOrgSlugSectionRoute =
     path: '/o/$orgSlug/$section',
     getParentRoute: () => AuthenticatedRouteRoute,
   } as any)
+const ApiPublicSaudePingRoute = ApiPublicSaudePingRouteImport.update({
+  id: '/api/public/saude/ping',
+  path: '/api/public/saude/ping',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ApiPublicSaudeVerificarRoute = ApiPublicSaudeVerificarRouteImport.update({
+  id: '/api/public/saude/verificar',
+  path: '/api/public/saude/verificar',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const ApiPublicWebhooksProcessRoute =
   ApiPublicWebhooksProcessRouteImport.update({
     id: '/api/public/webhooks/process',
@@ -363,6 +375,8 @@ export interface FileRoutesByFullPath {
   '/admin/organizacoes': typeof AuthenticatedAdminOrganizacoesRoute
   '/api/v1/status': typeof ApiV1StatusRoute
   '/o/$orgSlug/$section': typeof AuthenticatedOOrgSlugSectionRoute
+  '/api/public/saude/ping': typeof ApiPublicSaudePingRoute
+  '/api/public/saude/verificar': typeof ApiPublicSaudeVerificarRoute
   '/api/public/webhooks/process': typeof ApiPublicWebhooksProcessRoute
   '/api/v1/catalogos/classificacoes-tributarias': typeof ApiV1CatalogosClassificacoesTributariasRoute
   '/api/v1/catalogos/indicadores-operacao': typeof ApiV1CatalogosIndicadoresOperacaoRoute
@@ -415,6 +429,8 @@ export interface FileRoutesByTo {
   '/admin/organizacoes': typeof AuthenticatedAdminOrganizacoesRoute
   '/api/v1/status': typeof ApiV1StatusRoute
   '/o/$orgSlug/$section': typeof AuthenticatedOOrgSlugSectionRoute
+  '/api/public/saude/ping': typeof ApiPublicSaudePingRoute
+  '/api/public/saude/verificar': typeof ApiPublicSaudeVerificarRoute
   '/api/public/webhooks/process': typeof ApiPublicWebhooksProcessRoute
   '/api/v1/catalogos/classificacoes-tributarias': typeof ApiV1CatalogosClassificacoesTributariasRoute
   '/api/v1/catalogos/indicadores-operacao': typeof ApiV1CatalogosIndicadoresOperacaoRoute
@@ -469,6 +485,8 @@ export interface FileRoutesById {
   '/_authenticated/admin/organizacoes': typeof AuthenticatedAdminOrganizacoesRoute
   '/api/v1/status': typeof ApiV1StatusRoute
   '/_authenticated/o/$orgSlug/$section': typeof AuthenticatedOOrgSlugSectionRoute
+  '/api/public/saude/ping': typeof ApiPublicSaudePingRoute
+  '/api/public/saude/verificar': typeof ApiPublicSaudeVerificarRoute
   '/api/public/webhooks/process': typeof ApiPublicWebhooksProcessRoute
   '/api/v1/catalogos/classificacoes-tributarias': typeof ApiV1CatalogosClassificacoesTributariasRoute
   '/api/v1/catalogos/indicadores-operacao': typeof ApiV1CatalogosIndicadoresOperacaoRoute
@@ -523,6 +541,8 @@ export interface FileRouteTypes {
     | '/admin/organizacoes'
     | '/api/v1/status'
     | '/o/$orgSlug/$section'
+    | '/api/public/saude/ping'
+    | '/api/public/saude/verificar'
     | '/api/public/webhooks/process'
     | '/api/v1/catalogos/classificacoes-tributarias'
     | '/api/v1/catalogos/indicadores-operacao'
@@ -575,6 +595,8 @@ export interface FileRouteTypes {
     | '/admin/organizacoes'
     | '/api/v1/status'
     | '/o/$orgSlug/$section'
+    | '/api/public/saude/ping'
+    | '/api/public/saude/verificar'
     | '/api/public/webhooks/process'
     | '/api/v1/catalogos/classificacoes-tributarias'
     | '/api/v1/catalogos/indicadores-operacao'
@@ -628,6 +650,8 @@ export interface FileRouteTypes {
     | '/_authenticated/admin/organizacoes'
     | '/api/v1/status'
     | '/_authenticated/o/$orgSlug/$section'
+    | '/api/public/saude/ping'
+    | '/api/public/saude/verificar'
     | '/api/public/webhooks/process'
     | '/api/v1/catalogos/classificacoes-tributarias'
     | '/api/v1/catalogos/indicadores-operacao'
@@ -677,6 +701,8 @@ export interface RootRouteChildren {
   EsqueciSenhaRoute: typeof EsqueciSenhaRoute
   RedefinirSenhaRoute: typeof RedefinirSenhaRoute
   ApiV1StatusRoute: typeof ApiV1StatusRoute
+  ApiPublicSaudePingRoute: typeof ApiPublicSaudePingRoute
+  ApiPublicSaudeVerificarRoute: typeof ApiPublicSaudeVerificarRoute
   ApiPublicWebhooksProcessRoute: typeof ApiPublicWebhooksProcessRoute
   ApiV1CatalogosClassificacoesTributariasRoute: typeof ApiV1CatalogosClassificacoesTributariasRoute
   ApiV1CatalogosIndicadoresOperacaoRoute: typeof ApiV1CatalogosIndicadoresOperacaoRoute
@@ -794,6 +820,20 @@ declare module '@tanstack/react-router' {
       fullPath: '/o/$orgSlug/$section'
       preLoaderRoute: typeof AuthenticatedOOrgSlugSectionRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/api/public/saude/ping': {
+      id: '/api/public/saude/ping'
+      path: '/api/public/saude/ping'
+      fullPath: '/api/public/saude/ping'
+      preLoaderRoute: typeof ApiPublicSaudePingRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/public/saude/verificar': {
+      id: '/api/public/saude/verificar'
+      path: '/api/public/saude/verificar'
+      fullPath: '/api/public/saude/verificar'
+      preLoaderRoute: typeof ApiPublicSaudeVerificarRouteImport
+      parentRoute: typeof rootRouteImport
     }
     '/api/public/webhooks/process': {
       id: '/api/public/webhooks/process'
@@ -1124,6 +1164,8 @@ const rootRouteChildren: RootRouteChildren = {
   EsqueciSenhaRoute: EsqueciSenhaRoute,
   RedefinirSenhaRoute: RedefinirSenhaRoute,
   ApiV1StatusRoute: ApiV1StatusRoute,
+  ApiPublicSaudePingRoute: ApiPublicSaudePingRoute,
+  ApiPublicSaudeVerificarRoute: ApiPublicSaudeVerificarRoute,
   ApiPublicWebhooksProcessRoute: ApiPublicWebhooksProcessRoute,
   ApiV1CatalogosClassificacoesTributariasRoute:
     ApiV1CatalogosClassificacoesTributariasRoute,
