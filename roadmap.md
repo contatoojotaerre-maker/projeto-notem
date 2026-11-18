@@ -83,4 +83,4 @@
 - [x] Testes, matriz de isolamento, prints, relatório; não publicar
 - [ ] Chave do Resend (RESEND_API_KEY) — aguardando o dono cadastrar
 - [ ] Criar tarefa do Scheduler e uptime check — o dono cria no Google Cloud após publicar
-- [ ] Publicar — aguardando aprovação
+- [x] Publicado (17/11 21:13 Brasília)
