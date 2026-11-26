@@ -707,6 +707,8 @@ export type Database = {
           dps_series: number
           ibscbs_simples_regime: number | null
           organization_id: string
+          pis_cofins_cst: string | null
+          pis_cofins_withholding_type: string | null
           print_danfse_receipt: boolean
           simples_iss_withholding_percent: number | null
           simples_nacional_option: number
@@ -730,6 +732,8 @@ export type Database = {
           dps_series: number
           ibscbs_simples_regime?: number | null
           organization_id: string
+          pis_cofins_cst?: string | null
+          pis_cofins_withholding_type?: string | null
           print_danfse_receipt?: boolean
           simples_iss_withholding_percent?: number | null
           simples_nacional_option: number
@@ -753,6 +757,8 @@ export type Database = {
           dps_series?: number
           ibscbs_simples_regime?: number | null
           organization_id?: string
+          pis_cofins_cst?: string | null
+          pis_cofins_withholding_type?: string | null
           print_danfse_receipt?: boolean
           simples_iss_withholding_percent?: number | null
           simples_nacional_option?: number

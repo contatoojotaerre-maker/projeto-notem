@@ -1,6 +1,7 @@
 import { z, integer } from './validation';
 import { normalizeCnpj } from './notem';
 import { IBSCBS_MESSAGES, allowedIbsCbsRegimes, defaultIbsCbsRegime } from './ibscbs';
+import { PIS_COFINS_UNSUPPORTED, pisCofinsFromColumns } from './pis-cofins';
 export const CNPJ_LOCK_MESSAGE = 'O CNPJ não pode ser alterado porque a empresa já tem certificado ou série. Cadastre uma nova empresa.';
 export const fiscalIds = z.object({ company_id: z.string().uuid(), organization_id: z.string().uuid() });
 export function approximateTaxRuleError(option: number, mode: string): string | null {
@@ -20,6 +21,8 @@ export function specialTaxRuleError(option:number,regime:number|null,special:num
 export const seriesSchema = integer().min(1).max(49999);
 export const fiscalSchema = fiscalIds.extend({
   print_danfse_receipt: z.boolean().default(false),
+  pis_cofins_cst: z.string().nullable().default(null),
+  pis_cofins_withholding_type: z.string().nullable().default(null),
   simples_nacional_option: integer().min(1).max(3), simples_nacional_regime: integer().min(1).max(3).nullable(),
   special_tax_regime: z.number().refine(v => [0,1,2,3,4,5,6,9].includes(v)), dps_series: seriesSchema.nullable(),
   approx_taxes_mode: z.enum(['percent_simples','percent_by_sphere','none']), approx_simples_percent: percent,
@@ -27,6 +30,7 @@ export const fiscalSchema = fiscalIds.extend({
   ibscbs_simples_regime: integer().min(1).max(3).nullable().default(null),
   simples_iss_withholding_percent: z.number().min(1.8, 'A alíquota do ISS deve ser pelo menos 1,80%.').max(9.99).refine(v => Math.abs(v * 100 - Math.round(v * 100)) < 1e-8, 'Use até duas casas decimais.').nullable().default(null),
 }).superRefine((v,ctx) => {
+  try { pisCofinsFromColumns(v); } catch { ctx.addIssue({code:'custom',path:['pis_cofins_cst'],message:PIS_COFINS_UNSUPPORTED}); }
   const specialError=specialTaxRuleError(v.simples_nacional_option,v.simples_nacional_regime,v.special_tax_regime);
   if(specialError)ctx.addIssue({code:'custom',path:['special_tax_regime'],message:specialError});
   const ruleError=approximateTaxRuleError(v.simples_nacional_option,v.approx_taxes_mode);

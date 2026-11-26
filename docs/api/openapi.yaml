@@ -1477,6 +1477,7 @@ paths:
       summary: "Devolve como a empresa é tributada: Simples Nacional, regimes e tributos aproximados."
       description: |-
         Use para conferir como os tributos da empresa serão informados nas notas. A resposta também traz a série usada na numeração das notas (`serie_dps`), que a notem atribui automaticamente.
+        `pis_cofins` traz a escolha da empresa para PIS/COFINS (somente CST 99 e retenção 0 nesta versão), ou null quando não configurado.
       responses:
         "200":
           description: Configuração
@@ -1510,6 +1511,8 @@ paths:
       summary: "Grava como a empresa é tributada e recusa combinações que o governo não aceita."
       description: |-
         Envie a configuração completa: situação no Simples Nacional, regime de apuração, regime especial e forma de informar os tributos aproximados. O campo `serie_dps` é ignorado, porque a série de numeração é atribuída pela notem.
+
+        **Reenvie SEMPRE pis_cofins em cada PUT para manter a configuração.** O PUT substitui a configuração inteira: omitir pis_cofins ou enviar null remove a escolha anterior, mesmo ao alterar outro campo. A única combinação suportada é {"cst":"99","tipo_retencao":"0"}; qualquer outra combinação ou configuração parcial retorna 422 REGRA_DE_NEGOCIO, campo pis_cofins, mensagem "combinação de PIS/COFINS ainda não suportada". A escolha é por empresa, sem padrão automático, e não altera notas já criadas. A exceção existente de imprimir_canhoto_danfse continua preservando a preferência quando ausente.
 
         A notem recusa com 422, indicando o campo e a regra, as combinações que o governo rejeitaria depois, na emissão. Por exemplo, empresa fora do Simples Nacional precisa informar os tributos aproximados por esfera (federal, estadual e municipal), e MEI não pode ter regime especial. As regras completas estão no guia [Configuração fiscal](https://docs.notemfiscal.com.br/guias/configuracao-fiscal).
       parameters:
@@ -3752,6 +3755,22 @@ components:
         atualizada_em:
           type: string
           format: date-time
+    PisCofins:
+      description: "Escolha opcional de PIS/COFINS por empresa. Nesta versão, somente CST 99 (Outras Operações) e tipo de retenção 0 (PIS/COFINS/CSLL não retidos), sem base, alíquotas ou valores."
+      type: object
+      additionalProperties: false
+      required:
+        - cst
+        - tipo_retencao
+      properties:
+        cst:
+          type: string
+          const: "99"
+          description: "99 — Outras Operações."
+        tipo_retencao:
+          type: string
+          const: "0"
+          description: "0 — PIS/COFINS/CSLL não retidos."
     ConfiguracaoFiscal:
       description: |
         A forma de informar os tributos aproximados depende da situação no Simples Nacional, porque o governo recusa a nota quando elas não combinam.
@@ -3761,6 +3780,7 @@ components:
         Por esfera exige os três percentuais (federal, estadual e municipal); zero é permitido. Campos ausentes valem null.
         O regime especial deve ser nenhum para MEI, para ME/EPP com apuração dentro do Simples e para empresas com serviço ativo imune, de exportação ou sem incidência do ISS.
         Configurações antigas que não seguem essas regras não são alteradas automaticamente: ficam incompletas e a emissão é recusada, com a regra a corrigir, antes de gerar o número da nota.
+        PIS/COFINS é opcional por empresa: só cst "99" com tipo_retencao "0" é suportado. Reenvie SEMPRE pis_cofins em cada PUT para manter a escolha; ausência ou null remove a configuração. Notas existentes preservam a escolha usada na criação.
       type: object
       required:
         - simples_nacional
@@ -3768,12 +3788,14 @@ components:
         - tributos_aproximados
       properties:
         simples_nacional:
+          description: "Correspondência na DPS (opSimpNac): nao_optante = 1; mei = 2; me_epp = 3."
           type: string
           enum:
             - nao_optante
             - mei
             - me_epp
         regime_apuracao_simples:
+          description: "Somente ME/EPP. Correspondência na DPS (regApTribSN): dentro_do_simples = 1 (federais e ISS pelo Simples); iss_fora_do_simples = 2 (federais pelo Simples e ISS por fora); tudo_fora_do_simples = 3 (federais e ISS por fora)."
           type:
             - string
             - "null"
@@ -3783,6 +3805,7 @@ components:
             - tudo_fora_do_simples
             - null
         regime_especial:
+          description: "Regime especial da empresa; nenhum corresponde a regEspTrib = 0 na DPS."
           type: string
           enum:
             - nenhum
@@ -3793,6 +3816,11 @@ components:
             - profissional_autonomo
             - sociedade_profissionais
             - outros
+        pis_cofins:
+          description: "Opcional por empresa, definido com seu contador. Reenvie SEMPRE em cada PUT para manter: ausência ou null remove a configuração. Somente cst 99 e tipo_retencao 0; outras combinações são recusadas com 422 REGRA_DE_NEGOCIO. Sem configuração, a DPS omite tribFed."
+          oneOf:
+            - $ref: "#/components/schemas/PisCofins"
+            - type: "null"
         tributos_aproximados:
           type: object
           required:
@@ -4561,6 +4589,9 @@ components:
           estadual: null
           municipal: null
         aliquota_iss_simples: null
+        pis_cofins:
+          cst: "99"
+          tipo_retencao: "0"
     ConfiguracaoFiscal:
       summary: Configuração fiscal
       value:
@@ -4577,6 +4608,9 @@ components:
         regime_apuracao_ibscbs: pelo_simples
         imprimir_canhoto_danfse: false
         serie_dps: "00900"
+        pis_cofins:
+          cst: "99"
+          tipo_retencao: "0"
     CertificadoEnvio:
       summary: Envio do certificado
       value:

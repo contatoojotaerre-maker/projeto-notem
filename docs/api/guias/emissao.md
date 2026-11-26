@@ -1,7 +1,7 @@
 ---
 titulo: Emissão de notas
 ordem: 6
-atualizado: 2026-11-17
+atualizado: 2026-11-26
 descricao: Como emitir a NFS-e: pedido, tomador, resposta, numeração, reenvio seguro, consultas, XML e PDF.
 ---
 
@@ -19,6 +19,7 @@ Cancelamento, análise fiscal do cancelamento e substituição estão em [Cancel
   - ISS retido pelo tomador exige tomador com CPF/CNPJ e endereço completo no Brasil: CEP, município, logradouro, número e bairro (E0204 — retenção sem CPF/CNPJ do tomador; E0237 — retenção sem endereço do tomador no Brasil).
 - **Os textos são ajustados antes da conferência.** Nomes, endereços, e-mail, descrição e informações complementares passam pelo ajuste descrito em [Texto aceito pela NFS-e](../primeiros-passos/requisicoes.md#texto-aceito-pela-nfs-e), e a nota guarda o texto ajustado. Um caractere sem equivalente, como um emoji, é recusado com `422 REGRA_DE_NEGOCIO`, o campo e a mensagem "contém caracteres não aceitos pela NFS-e".
 - **A notem cuida da numeração.** Cada nota recebe uma série e um número de DPS (a declaração que a notem envia ao governo para gerar a nota). Um número usado nunca é reaproveitado, mesmo que a nota seja recusada, porque o governo pode já ter registrado aquele número.
+- **PIS/COFINS vem da configuração da empresa.** Se `pis_cofins` estiver configurado com CST `"99"` e retenção `"0"`, a DPS leva esse grupo, sem base, alíquotas ou valores. Sem configuração, omite `tribFed`. A nota guarda a escolha na criação: editar a empresa não altera notas anteriores ou tentativas do mesmo pedido. **Reenvie SEMPRE `pis_cofins` em cada PUT de configuração fiscal para manter a escolha**; omitir ou enviar `null` remove a configuração. Veja [PIS/COFINS](configuracao-fiscal.md#pis-cofins-escolha-opcional-por-empresa).
 - **`Idempotency-Key` é obrigatório.** Repetir o pedido com a mesma chave nunca gera uma segunda nota. Veja [Reenvio seguro](#reenvio-seguro).
 - Para CNPJ com letras, do emitente ou do tomador, veja [CNPJ alfanumérico](cnpj-alfanumerico.md).
 

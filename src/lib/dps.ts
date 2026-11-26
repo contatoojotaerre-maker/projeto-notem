@@ -7,6 +7,7 @@ import { FISCAL_TEXT_MESSAGE, fiscalTextAccepted } from './fiscal-text';
 import { ALPHANUMERIC_CNPJ_LAYOUT_MESSAGE, DPS_LAYOUTS, REGULAR_FIN_NFSE, orderCServ, type DpsLayout } from './dps-layout';
 import { accessKeyIssuer, justificationError, substitutionReasons, type SubstitutionReason } from './fiscal-events';
 import { IBSCBS_MESSAGES, defaultIbsCbsRegime, indicatorPointsToTaker } from './ibscbs';
+import { parsePisCofins, type PisCofins } from './pis-cofins';
 
 export const fiscalDecimal = z.string().regex(/^\d{1,15}\.\d{2}$/, 'Use texto decimal com duas casas.');
 export function decimalUnits(value: string) { return BigInt(fiscalDecimal.parse(value).replace('.', '')); }
@@ -14,7 +15,7 @@ const percent = (v: string) => { if (!/^\d{1,3}(\.\d{1,2})?$/.test(v)) throw new
 export type DpsInput = {
   environment: 'sandbox' | 'production'; emittedAt: string; competence: string; series: number; number: string;
   provider: { cnpj: string; municipality: string; municipalRegistration?: string | null; phone?: string | null; email?: string | null };
-  fiscal: { simples: 1 | 2 | 3; regime: 1 | 2 | 3 | null; ibsCbsRegime?: 1 | 2 | 3 | null; special: number; approximate: { mode: 'percent_simples' | 'percent_by_sphere' | 'none'; simples?: string | null; federal?: string | null; state?: string | null; municipal?: string | null }; withheldRate?: string | null };
+  fiscal: { simples: 1 | 2 | 3; regime: 1 | 2 | 3 | null; ibsCbsRegime?: 1 | 2 | 3 | null; special: number; approximate: { mode: 'percent_simples' | 'percent_by_sphere' | 'none'; simples?: string | null; federal?: string | null; state?: string | null; municipal?: string | null }; withheldRate?: string | null; pisCofins?: PisCofins | null };
   service: { code: string; municipalCode?: string | null; nbs?: string | null; description: string; taxation: 1 | 2 | 3 | 4; immunity?: number | null; withholding: 1 | 2 | 3; municipality?: string | null; simplesActivity?: string | null };
   customer?: Customer | null; values: { service: string; unconditional?: string; conditional?: string }; complementary?: string | null;
   substitution?: { accessKey: string; reason: SubstitutionReason; justification: string } | null;
@@ -69,7 +70,9 @@ export function buildDps(input: DpsInput, layout: DpsLayout) {
   const service = group('serv', group('locPrest', tag('cLocPrestacao', s.municipality || p.municipality)) + group('cServ', orderCServ({ cTribNac: tag('cTribNac', s.code), cTribMun: tag('cTribMun', s.municipalCode), cNBS: tag('cNBS', s.nbs), cAtvSN: L.simplesIbsCbs && f.simples === 3 ? tag('cAtvSN', s.simplesActivity) : '', xDescServ: tag('xDescServ', s.description) }, layout)) + (input.complementary ? group('infoCompl', tag('xInfComp', input.complementary)) : ''));
   // E0431/E0432: only strictly positive discounts may be informed.
   const discounts=(decimalUnits(unconditional)>0n?tag('vDescIncond',unconditional):'')+(decimalUnits(conditional)>0n?tag('vDescCond',conditional):'');
-  const values = group('valores', group('vServPrest', tag('vServ', input.values.service)) + (discounts?group('vDescCondIncond',discounts):'') + group('trib', group('tribMun', tag('tribISSQN', s.taxation) + tag('tpImunidade', s.immunity) + tag('tpRetISSQN', s.withholding) + rate) + group('totTrib', approximate)));
+  const pis = parsePisCofins(f.pisCofins);
+  const federal = pis ? group('tribFed', group('piscofins', tag('CST', pis.cst) + tag('tpRetPisCofins', pis.tipo_retencao))) : '';
+  const values = group('valores', group('vServPrest', tag('vServ', input.values.service)) + (discounts?group('vDescCondIncond',discounts):'') + group('trib', group('tribMun', tag('tribISSQN', s.taxation) + tag('tpImunidade', s.immunity) + tag('tpRetISSQN', s.withholding) + rate) + federal + group('totTrib', approximate)));
   const substitution = input.substitution ? substitutionXml(input.substitution, p) : '';
   // Release 1: IBSCBS = indFinal?, cIndOp?, indDest, valores/trib (CST, cClassTrib, gIBSCBS?). nt009r2 moves indDest to the root.
   const i = input.ibsCbs;
@@ -89,6 +92,7 @@ function substitutionXml(v: NonNullable<DpsInput['substitution']>, p: DpsInput['
 }
 /** Mandatory preflight before definitive numbering; Part 3 must use this boundary. */
 export function validateDpsBeforeNumbering(input: Pick<DpsInput,'provider'|'customer'|'fiscal'> & {service?:DpsInput['service'];ibsCbs?:DpsInput['ibsCbs']}): void {
+ parsePisCofins(input.fiscal.pisCofins);
  const c=input.customer;
  const ibsError=ibsCbsDpsError(input);if(ibsError)throw new RuleError(ibsError);
  if(c&&(c.tipo==='pj'||c.tipo==='pf')&&c.documento&&normalizeCnpj(c.documento)===normalizeCnpj(input.provider.cnpj)) throw new RuleError('O tomador não pode ser a própria empresa emitente');

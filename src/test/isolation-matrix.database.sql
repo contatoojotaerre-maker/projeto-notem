@@ -74,6 +74,8 @@ BEGIN
   SELECT * INTO sp FROM public.company_service_profiles WHERE id=sp.id;
  END IF;
 
+ -- PIS/COFINS carries a concrete pair only inside this rollback-only matrix, never in VistoCash.
+ UPDATE public.company_fiscal_settings SET pis_cofins_cst='99', pis_cofins_withholding_type='0' WHERE organization_id=T;
  -- read checks: name, sql, kind (org | admin_only | platform_only | none | special)
  FOREACH tname IN ARRAY org_tables LOOP
   reads := reads || jsonb_build_object('n',tname,'q',format('select count(%s) from public.%I where organization_id=$1',
@@ -114,6 +116,7 @@ BEGIN
   jsonb_build_object('n','servicos: colunas IBS/CBS','q','select count(*) from public.company_service_profiles where organization_id=$1 and (ibscbs_classification is not null or ibscbs_operation_indicator is not null or ibscbs_final_consumer or simples_activity_code is not null)','k','org'),
   jsonb_build_object('n','servicos: classificacao com catalogo','q','select count(c.code) from public.company_service_profiles s join public.ibscbs_classifications c on c.code=s.ibscbs_classification join public.ibscbs_operation_indicators i on i.code=s.ibscbs_operation_indicator where s.organization_id=$1','k','org'),
   jsonb_build_object('n','configuracao fiscal: regime IBS/CBS','q','select count(*) from public.company_fiscal_settings where organization_id=$1 and (ibscbs_simples_regime is not null or simples_nacional_option<>3)','k','org'),
+  jsonb_build_object('n','configuracao fiscal: colunas PIS/COFINS','q','select count(*) from public.company_fiscal_settings where organization_id=$1 and pis_cofins_cst=''99'' and pis_cofins_withholding_type=''0''','k','org'),
   jsonb_build_object('n','catalogo ibscbs_classifications','q','select count(*) from public.ibscbs_classifications','k','auth'),
   jsonb_build_object('n','catalogo ibscbs_operation_indicators','q','select count(*) from public.ibscbs_operation_indicators','k','auth'),
   jsonb_build_object('n','catalogo ibscbs_service_correlations','q','select count(*) from public.ibscbs_service_correlations','k','auth'),
@@ -136,6 +139,8 @@ BEGIN
  writes := jsonb_build_array(
   jsonb_build_object('n','editar empresa','q','update public.companies set trade_name=trade_name where organization_id=$1','a','["owner","admin","operator","platform"]'),
   jsonb_build_object('n','editar configuracao fiscal','q','update public.company_fiscal_settings set updated_at=updated_at where organization_id=$1','a','["owner","admin","platform"]'),
+  jsonb_build_object('n','configurar PIS/COFINS 99/0','q','update public.company_fiscal_settings set pis_cofins_cst=''99'', pis_cofins_withholding_type=''0'' where organization_id=$1','a','["owner","admin","platform"]'),
+  jsonb_build_object('n','remover PIS/COFINS','q','update public.company_fiscal_settings set pis_cofins_cst=null, pis_cofins_withholding_type=null where organization_id=$1','a','["owner","admin","platform"]'),
   jsonb_build_object('n','editar perfil de servico','q','update public.company_service_profiles set name=name where organization_id=$1','a','["owner","admin","platform"]'),
   jsonb_build_object('n','editar organizacao','q','update public.organizations set name=name where id=$1','a','["owner","admin","platform"]'),
   jsonb_build_object('n','criar empresa em T','q','insert into public.companies select (jsonb_populate_record(null::public.companies, $4)).*','a','["owner","admin","operator","platform"]'),
