@@ -1,12 +1,12 @@
-## Integração VistoCash — planejamento 26/11
-- [ ] Aprovar plano de PIS/COFINS 99/0, tratamento de falhas, links PDF e limites
-- [ ] Implementar PIS/COFINS opcional por empresa, retrato fiscal e documentação/regimes
-- [ ] Implementar classificação de falhas na notem e motivo técnico privado nos logs
-- [ ] Especificar tratamento externo do transmissor (não alterar transmissor/)
-- [ ] Investigar certificado matriz/filiais e apresentar proposta antes de flexibilizar regras
-- [ ] Implementar links PDF de 30 dias com hash, revogação, proteção e documentação
-- [ ] Aplicar overrides exclusivos da VistoCash aprovados no plano
-- [ ] Testes, relatório verificado/não verificado; publicação depende de nova aprovação
+## Integração VistoCash — aprovada 26/11; execução A → C3 → B → C2 → C1
+- [x] Plano aprovado com ajustes; uma etapa por vez, relatório e aprovação antes de cada publicação
+- [ ] A: PIS/COFINS opcional 99/0 por empresa, retrato fiscal, documentação/regimes; destacar reenvio em todo PUT
+- [ ] A: não configurar pelo painel para VistoCash antes de o parceiro enviar o campo; testes e relatório, sem publicar
+- [ ] C3 (após A): VistoCash PDF 60/min, geral chave/org 600/min, rajada 100/10s, concorrência PDF 2; relatório/aprovação
+- [ ] B (após C3): classificação de falhas na notem e motivo técnico privado; relatório/aprovação
+- [ ] B: documento separado completo para o dono aplicar no transmissor (arquivos, mudanças, testes); não alterar transmissor/
+- [ ] C2 (após B): links PDF 30 dias no app.notemfiscal.com.br para cliente final, hash/revogação/proteção/docs; relatório/aprovação
+- [ ] C1 (após C2): somente investigar certificado matriz/filiais e apresentar proposta antes de flexibilizar regras
 
 ## Novo visual do painel (neon/vidro) — aprovado 17/11
 - [x] Cores e efeitos presos ao painel (docs intacta, com teste)
