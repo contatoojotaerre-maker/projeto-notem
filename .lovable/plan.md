@@ -1,119 +1,103 @@
-# Saúde do sistema (Administração) + avisos por e-mail
+# PIS/COFINS por empresa, tratamento de indisponibilidade e integração VistoCash
 
-Só o administrador da plataforma vê e configura. Nada muda em `transmissor/`, regras fiscais, API pública ou documentação.
+## Escopo e sequência
 
-## 1. Tela Administração › Saúde do sistema
-- Volta ao menu da Administração em `/admin/saude-do-sistema` (sai da lista de telas escondidas).
-- **Topo:** "Tudo funcionando" (verde), "Atenção" (âmbar) ou "Problema" (vermelho), lista do que precisa de atenção com link para o bloco, horário da última verificação (Brasília) e botão "Verificar agora".
-- **Blocos:** situação, números, horário da última informação e o limite em texto ("Atenção acima de 3 s…"). Produção e homologação separadas no Governo, na Fila de webhooks e nos Erros 5xx.
-- A tela mostra a última verificação guardada, então tela e e-mail sempre batem.
-- Segue o novo visual do painel (claro e escuro, celular).
+1. Implementar **A — PIS/COFINS** e **B — tratamento do incidente na notem**, com testes e documentação.
+2. Implementar o **link de PDF de 30 dias** e os **limites exclusivos da VistoCash** conforme as propostas abaixo.
+3. Investigar certificado da matriz para filiais e entregar uma proposta separada, sem flexibilizar a validação atual.
+4. Entregar relatório com verificado/não verificado e aguardar autorização para publicar. Nenhuma emissão real, envio de certificado ou alteração de notas existentes faz parte da verificação deste plano.
 
-## De onde vem cada número
+**Limite obrigatório:** não criar, editar, mover ou apagar arquivos em `transmissor/`, nem publicar o serviço Google Cloud Run. A parte B que exige mudanças nesse serviço será entregue como especificação para seu responsável executar fora deste projeto; não ficará declarada como implementada pela notem.
 
-| Bloco | Origem | Precisa guardar algo novo? |
-|---|---|---|
-| Transmissor | `GET /` do transmissor com o mesmo acesso do painel (versão, tempo) | Sim: resultado de cada verificação, para contar "2 seguidas" |
-| Governo (Sefin e ADN) | Cada chamada real que a notem já faz pelo transmissor: o transmissor já devolve o status do governo, o tempo (`ms`) e erros de conexão ou de tempo esgotado | Sim: hoje esse tempo não é guardado em lugar nenhum |
-| Rotina de webhooks | `system_heartbeats` (`webhook_scheduler`) e o último registro de `webhook_scheduler_runs` | Não |
-| Verificação diária | `system_heartbeats` (`nfse_daily_check` e `daily_routine`) e `nfse_daily_checks` do dia | Não |
-| Fila de webhooks | `webhook_deliveries`: pendentes, atrasados (vencidos há mais de 5 min) e esgotados em 24 h | Não |
-| Notas paradas | `invoices` em verificação há mais de 30 min; `invoice_fiscal_events` enviando ou em verificação há mais de 24 h, com organização e empresa | Não |
-| Erros 5xx da API | `api_request_logs` com status ≥ 500 na última hora e nas últimas 24 h, todas as organizações | Não |
-| Certificados | `company_certificates` ativos de empresas ativas, vencendo em até 30 dias ou vencidos | Não |
+## A. PIS/COFINS opcional por empresa
 
-**Como o Governo é medido:**
-- Sefin: emissão, consulta (DPS, nota, evento, convênio) e evento.
-- ADN: distribuição.
-- Conta como "respondeu" qualquer resposta do governo abaixo de 500, inclusive recusa de regra ou "não encontrada", porque o serviço está funcionando.
-- Conta como falha: resposta 5xx, erro de conexão ou de certificado de segurança, e tempo esgotado.
-- Se o próprio transmissor não responder, a falha vai para o bloco Transmissor, não para o Governo.
-- Sem chamadas na janela: "Sem chamadas recentes" (neutro).
-- Nenhuma chamada de teste ao governo.
+### Comportamento
+- Acrescentar à configuração fiscal da empresa o objeto opcional `pis_cofins: { cst, tipo_retencao }`.
+- Primeira versão aceita **somente** `cst: "99"` e `tipo_retencao: "0"`, ambos como texto.
+- Outra combinação, inclusive configuração parcial, retorna **422 `REGRA_DE_NEGOCIO`**, com campo correspondente e mensagem exata **"combinação de PIS/COFINS ainda não suportada"**. JSON inválido continua 400.
+- Ausência ou `null`: sem configuração, sem `tribFed`. No PUT, que substitui a configuração fiscal, ausência/null também remove uma configuração anterior; documentar expressamente esse comportamento.
+- No painel, opção desligada por padrão; quando ativada, mostrar apenas “99 — Outras Operações” e “0 — PIS/COFINS/CSLL não retidos”, sem sugerir essa escolha automaticamente para todas as empresas. Decisão fiscal continua sendo da empresa com seu contador.
+- Com configuração válida, escrever exatamente entre `tribMun` e `totTrib`:
 
-**Limites:** todos ficam num módulo único, exatamente como na sua tabela. Detalhes que defini:
-- "Erros de conexão ou tempo esgotado seguidos" = as 3 últimas chamadas daquele serviço e ambiente falharam assim.
-- "Esgotados crescendo" = há mais esgotados em 24 h do que na verificação anterior.
-
-## Tabelas novas
-São três, todas só para o servidor: sem acesso de usuários e com limpeza automática de 30 dias.
-- **Chamadas ao governo:** ambiente, sistema, serviço, resultado, status HTTP e tempo. Não guarda conteúdo, chave nem CNPJ.
-- **Verificações:** horário, origem (agendada ou manual), situação geral e números de cada bloco.
-- **Estado dos avisos:** um registro por aviso, com situação, desde quando, último e-mail e última falha de envio. Avisos resolvidos são apagados após 30 dias.
-
-Em `platform_settings` entram duas colunas novas:
-- destinatários: até 5 e-mails, validados também no banco;
-- liga/desliga dos avisos, que começa desligado.
-
-Elas não ganham leitura por usuários. A alteração passa por uma função do banco que confere o administrador e grava na auditoria (`admin_audit_events`), como o contato de suporte.
-
-## 2. Verificação automática a cada 5 minutos
-- Rota nova `/api/public/saude/verificar`, separada da rotina de webhooks. Ela recusa com 401 sem o token OIDC do Google.
-- A conferência do token passa a receber o endereço esperado (audiência); a rota de webhooks continua exatamente igual.
-- Sequência: consulta o transmissor, calcula cada bloco, guarda o resultado, envia os e-mails e limpa o que tiver mais de 30 dias.
-- O banco impede duas verificações ao mesmo tempo.
-- "Verificar agora" roda a mesma coisa, no máximo 1 vez por minuto.
-- Falha no e-mail não interrompe a verificação.
-
-**Tarefa do Cloud Scheduler.** Use a mesma região e a mesma conta de serviço da `notem-webhooks-process`. Para conferir as duas:
-`gcloud scheduler jobs describe notem-webhooks-process --location=REGIAO`
-
-```text
-gcloud scheduler jobs create http notem-health-check \
-  --location=REGIAO \
-  --schedule="2-59/5 * * * *" --time-zone="Etc/UTC" \
-  --uri="https://app.notemfiscal.com.br/api/public/saude/verificar" \
-  --http-method=POST \
-  --oidc-service-account-email=CONTA_DA_TAREFA_DE_WEBHOOKS \
-  --oidc-token-audience="https://app.notemfiscal.com.br/api/public/saude/verificar" \
-  --attempt-deadline=120s
+```xml
+<tribFed><piscofins><CST>99</CST><tpRetPisCofins>0</tpRetPisCofins></piscofins></tribFed>
 ```
 
-O minuto 2 evita disparar junto com a virada de cada hora. A tarefa só deve ser criada depois da publicação.
+- Não incluir base, alíquotas, valores monetários ou retenções adicionais; não confundir esse CST com IBS/CBS.
+- Guardar a configuração no retrato fiscal e na entrada de montagem da nota. Reenvio/reconciliação conserva o retrato, mesmo que a empresa seja editada depois.
+- Notas existentes, XML oficiais e PDFs históricos permanecem intactos; dados antigos sem os campos continuam válidos.
 
-## 3. Avisos por e-mail
-- **Seção "Avisos por e-mail" na tela:** destinatários (até 5), liga/desliga e "Enviar e-mail de teste" (no máximo 1 por minuto).
-- **Envio:** pelo Resend, de `notem <avisos@notemfiscal.com.br>`.
-  - A chave `RESEND_API_KEY` será pedida pelo formulário seguro de segredos, só depois da aprovação.
-  - Este projeto não tem domínio de e-mail da Lovable, então não há conflito de DNS.
-- **Quando envia:**
-  - quando um aviso passa para "Problema";
-  - lembrete a cada 6 h enquanto continuar em "Problema";
-  - "Resolvido" quando sai de "Problema";
-  - "Atenção" não envia, exceto certificado vencido em empresa ativa (esse caso já é "Problema" na tabela).
-- **Cada aviso é independente:** um por bloco (e por ambiente e serviço no Governo) e um por certificado. Nunca repete a cada verificação.
-- **Conteúdo:**
-  - assunto curto, por exemplo "[notem] Problema: transmissor não responde";
-  - o que aconteceu, desde quando, organização e empresa pelo nome, e link para a tela;
-  - nada de chaves, certificados, XML ou CPF/CNPJ.
-- **Visual:** fundo branco e a logo fixa `https://app.notemfiscal.com.br/brand/email/notem-logo-email.png`, em português.
-- **Falha no envio:** fica registrada e a tela mostra "Último aviso não enviado".
-- **Avisos desligados:** os estados continuam sendo calculados. Ao religar, problemas em andamento geram e-mail na próxima verificação.
+### Documentação
+- Atualizar configuração fiscal, OpenAPI, guia fiscal, emissão e histórico da API, com exemplos fictícios.
+- Explicitar a correspondência pública: `dentro_do_simples → 1`, `iss_fora_do_simples → 2`, `tudo_fora_do_simples → 3`; `me_epp → opSimpNac 3`; `nenhum → regEspTrib 0`.
+- Explicar omissão, remoção, suporte limitado a 99/0 e recusa 422, sem alterar os demais regimes.
 
-## 4. Vigia externo (Google Cloud Monitoring, você faz no Console)
-1. Monitoring › Alerting › Edit notification channels › Email › adicionar seu e-mail.
-2. Monitoring › Uptime checks › Create uptime check:
-   - Protocolo HTTPS, tipo URL, host `app.notemfiscal.com.br`, caminho `/api/v1/status`, frequência de 1 minuto, regiões Global.
-   - Validação da resposta: código aceito **401** e conteúdo contém `AUTENTICACAO_INVALIDA`.
-3. Na mesma tela, criar o alerta: falha por 5 minutos, enviando para o canal de e-mail.
-4. Testar com "Test" antes de salvar; o resultado esperado é 401 (aceito).
+## B. Tratamento do incidente
 
-## 5. Tabela `notem_rls_probe_`
-- Era uma tabela temporária de 01/11. A própria migração a criou só para provar que a proteção de linhas liga sozinha em tabelas novas, e a apagou em seguida.
-- Ela não existe em nenhuma parte do banco hoje.
-- Não há nada a remover e nenhuma migração será criada.
+### Na notem
+- Criar uma classificação compartilhada de falhas: resposta HTTP 500/503 do serviço de transmissão, conexão, tempo esgotado, identificação do painel e resposta inválida. Usar apenas códigos internos fixos, nunca texto bruto de exceções.
+- API: quando a operação falhar por indisponibilidade confirmada desse serviço, retornar **503 `SERVICO_FISCAL_INDISPONIVEL`**, no envelope existente e com `X-Request-Id`. Mensagem pública: **"O serviço fiscal está indisponível. Tente novamente em instantes."**
+- Preservar recusas fiscais e de certificado em 422, erros não relacionados em 500 e indisponibilidade do governo com seu código existente.
+- **Segurança da emissão:** 500/503 ou timeout não prova, sozinho, que nada foi enviado. Quando houver possibilidade de envio, manter **202 e reconciliação**, sem retransmitir nem criar outra nota. O novo 503 não substitui estados ambíguos. Só afirmar “não enviado” com evidência segura.
+- Aplicar a classificação aos caminhos irmãos: certificado, convênio, emissão, consultas, eventos e ADN, respeitando o contrato próprio de cada operação.
+- No envio de certificado, mensagens de indisponibilidade/erro não mencionarão `Idempotency-Key`. Não remover a regra de idempotência da API ou a orientação necessária aos reenvios de emissão.
+- Acrescentar `internal_reason` a `api_request_logs`: valores fixos como `TRANSMISSOR_HTTP_500`, `TRANSMISSOR_HTTP_503`, `TRANSMISSOR_TIMEOUT`, `TRANSMISSOR_AUTH_FAILED`. Nunca guardar corpo do serviço, senha, envelope, token ou stack trace.
+- Motivo técnico acessível apenas à administração da plataforma; não incluir em respostas ou leituras de parceiros/membros comuns. Registrar também nas respostas 202 originadas por falha, quando o contexto da requisição existir.
+- Falha ao gravar logs não altera o resultado fiscal nem bloqueia o atendimento; preservar o mecanismo atual de gravação pós-resposta e seu fallback.
+- Documentação pública explica o código e como reagir, sem expor nomes de infraestrutura.
 
-## Testes
-- Situação de cada bloco nos limites: abaixo, Atenção, Problema e sem dados, incluindo "Sem chamadas recentes".
-- E-mail: um por entrada em "Problema", lembrete após 6 h, "Resolvido", nada repetido; falha do Resend registrada sem travar.
-- Destinatários: validação, máximo de 5, só administrador, auditoria (também no banco).
-- Rota de verificação: 401 sem token, com token de outra audiência e com outra conta.
-- Matriz de isolamento: usuário comum e administrador de organização não leem as 3 tabelas novas nem as colunas novas. Os testes atuais continuam passando.
+### Serviço de transmissão — entrega para o responsável
+- Especificar tratamento de exceções inesperadas com JSON e código fixo `ERRO_INTERNO_TRANSMISSOR`, status 500, sem exceções na resposta.
+- Preservar recusas de negócio já tratadas, status HTTP corretos e logs técnicos sanitizados.
+- Diferenciar falha anterior ao envio de falha posterior/ambígua; não usar o código genérico como prova de que não houve transmissão.
+- Validar a compatibilidade da notem com respostas simuladas; confirmação do serviço real depende da execução e publicação pelo responsável. Não alterar `transmissor/`.
 
-## Relatório
-- Origem dos números, tabelas novas, comando do Scheduler e passo a passo do vigia externo.
-- Prints claro e escuro com dados fictícios, feitos numa página temporária que será apagada (com prova de 404), e print de um e-mail de aviso.
-- Sem publicar.
+## C1. Certificado da matriz para filiais — investigação, não implementação
+- Conferir regras oficiais de assinatura, mTLS, emissão, eventos e ADN: igualdade dos 14 caracteres versus raiz de CNPJ; incluir CNPJ alfanumérico, sem comparação que descarte letras.
+- Mapear verificações no preparo do certificado, banco, prontidão, uso do envelope e prova de posse das notas recebidas.
+- Avaliar separadamente cada operação: mesma raiz não será considerada autorização universal.
+- Entregar fontes e proposta de guarda/reutilização por filial com isolamento por organização, identificação do titular e auditoria; explicar mudanças necessárias no serviço externo.
+- Sem certificado real, sem chamada fiscal e sem flexibilizar CNPJ ou prova de posse. A implementação aguarda novo plano/aprovação após as evidências.
 
-## Ponto de atenção
-O novo visual do painel ainda não foi publicado. Se esta etapa for publicada antes, ele vai junto.
+## C2. Link público do PDF por 30 dias
+- Criar link mediante chamada autenticada pela integração, para nota própria e situação já permitida pelo PDF atual. Proposta: `POST /api/v1/notas/{id}/links-pdf`; devolver URL e `expira_em`, com idempotência nas condições do contrato existente.
+- Token aleatório de alta entropia, válido por **30 × 24 horas** desde a criação; guardar apenas hash, organização, nota, ambiente, integração, criação, expiração e revogação em tabela privada. Token não contém chave API ou dados fiscais.
+- Link público sob o domínio oficial app, em `/api/public/arquivos/pdf/{token}`; gerar o PDF sob demanda com o mesmo renderizador e sem exigir certificado vigente. Não criar cópia no Storage nem expor URL assinada do bucket.
+- Quem tiver o link poderá acessar o documento até expirar/revogar: é um acesso por posse do link, não uma identificação do destinatário.
+- Revogação autenticada por ID do link, com escopo da organização; expiração exata e recusa neutra para token inválido, expirado ou revogado. Sem XML e sem ampliar acesso a notas recebidas/externas nesta versão.
+- Verificar autorização e estado da nota na criação; verificar vínculo, validade e permissão de PDF novamente no download. Não reutilizar regras de uma organização para outra.
+- `no-store`, `noindex`, `Referrer-Policy: no-referrer`, sem redirecionamentos externos; não registrar token bruto em logs da aplicação, corpos de resposta ou caminho persistido. Verificar também o que é controlável nos registros da hospedagem e informar limitações.
+- Limites próprios por endereço de acesso e por organização, além de concorrência de geração; token público não significa download ilimitado. Reutilizar a política compartilhada sem transformar a rota pública em uma rota autenticada por chave.
+- Limpeza só dos registros de links vencidos/revogados, sem apagar notas ou XML fiscais. Documentar criação, revogação, expiração e responsabilidade por compartilhar a URL; não acrescentar link público automaticamente aos webhooks atuais.
+
+## C3. Limites exclusivos da VistoCash
+
+Proposta inicial conservadora dentro da faixa pedida:
+
+| Regra | Proposta |
+|---|---:|
+| PDF por chave/ambiente | **60/minuto** |
+| Geral por chave/ambiente | **600/minuto** |
+| Teto geral da organização por ambiente | **600/minuto** |
+| Rajada geral por chave/ambiente | **100/10 segundos** |
+| Geração simultânea de PDF | **2**, sem mudança |
+
+- O ajuste da rajada evita que os atuais 30/10 s impeçam o uso sustentado de 600/min; limites específicos de emissão, eventos, XML e certificados permanecem iguais.
+- Aplicar overrides somente ao ID confirmado da organização VistoCash, preservando padrões de todas as demais organizações e overrides não relacionados. A estrutura atual aplica overrides nos dois ambientes; deixar isso explícito no relatório.
+- Começar em 60 PDFs/min; 120/min fica para ajuste posterior com medições. Aumentar teto não garante capacidade/latência; concorrência 2 continua podendo produzir 429.
+- Auditar valores antigos/novos e manter 429 com `Retry-After`. Não fazer carga com emissão real.
+
+## Detalhes técnicos
+- **A:** `fiscal.ts`, `api-contract.ts`, formulários/servidores fiscais, `dps.ts`, montagem em `api-invoices.server.ts`, retratos e migração de `company_fiscal_settings`.
+- **B:** `transmissor.server.ts`, classificadores compartilhados, `api.server.ts`, caminhos de certificados/notas/eventos/ADN e migração de `api_request_logs`. Coluna interna exige revisão de grants e consultas, não apenas ocultação visual.
+- **C2:** módulo próprio de links, rotas de criação/revogação pela API compartilhada, rota pública verificando token dentro do handler, tabela privada e política de limites. Nenhuma chave/material de certificado entra no fluxo público.
+- **C3:** reutilizar `api_rate_limit_overrides` e `api-policy.ts`; não mudar padrões globais.
+- Migrações preservam RLS, isolamento e permissões por coluna; novas tabelas revogam grants herdados antes de conceder apenas os necessários. Atualizar contratos e notas de arquitetura junto da execução.
+
+## Testes e critérios de entrega
+- PIS/COFINS: omissão; XML 99/0 na ordem correta; toda outra combinação/pares incompletos em 422; remoção; retrato imutável; nenhuma mudança nas matrizes fiscais anteriores. Validar XML localmente contra os XSD aplicáveis, sem transmissão.
+- Incidente: 500/503, falhas de conexão/identificação/timeout e JSON inválido simulados; 503 com código próprio onde seguro; 202 nos casos ambíguos; nenhum reenvio cego; certificado sem orientação de Idempotency-Key; motivo técnico fixo privado; falha de log não muda resultado.
+- Links: expiração de 30 dias, revogação, token/hash, isolamento A/B, ambientes, estados de nota, limites, concorrência e ausência de token nos logs; leitura do PDF pela URL em fluxo autorizado com dados de teste, sem emissão real.
+- VistoCash: valores concretos dos overrides e isolamento das demais organizações; 429/Retry-After com respostas simuladas, sem carga fiscal.
+- Rodar testes focados e regressões, validação OpenAPI/exemplos, matriz de isolamento e conferir o resultado da prévia. Fluxos reais só serão declarados verificados quando houver acesso e evidência; caso contrário, marcar **não verificado**.
+- Relatório final identifica migrações, contratos, valores aplicados, dependência externa do transmissor e investigação pendente. **Não publicar sem sua aprovação.**

@@ -1,3 +1,13 @@
+## Integração VistoCash — planejamento 26/11
+- [ ] Aprovar plano de PIS/COFINS 99/0, tratamento de falhas, links PDF e limites
+- [ ] Implementar PIS/COFINS opcional por empresa, retrato fiscal e documentação/regimes
+- [ ] Implementar classificação de falhas na notem e motivo técnico privado nos logs
+- [ ] Especificar tratamento externo do transmissor (não alterar transmissor/)
+- [ ] Investigar certificado matriz/filiais e apresentar proposta antes de flexibilizar regras
+- [ ] Implementar links PDF de 30 dias com hash, revogação, proteção e documentação
+- [ ] Aplicar overrides exclusivos da VistoCash aprovados no plano
+- [ ] Testes, relatório verificado/não verificado; publicação depende de nova aprovação
+
 ## Novo visual do painel (neon/vidro) — aprovado 17/11
 - [x] Cores e efeitos presos ao painel (docs intacta, com teste)
 - [x] Menu lateral, topo, títulos, abas, botões, campos, diálogos, tabelas, selos
