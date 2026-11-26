@@ -46,7 +46,7 @@ BEGIN
       role_checks:=role_checks+1;
       UPDATE public.company_fiscal_settings SET pis_cofins_cst='99',pis_cofins_withholding_type='0' WHERE company_id=company;
       GET DIAGNOSTICS row_count=ROW_COUNT;
-      IF row_count<>CASE WHEN member_role IN ('owner','admin') THEN 1 ELSE 0 END THEN RAISE EXCEPTION 'PIS_COFINS_ROLE_WRITE_FAILED %',member_role; END IF;
+      IF row_count<>(CASE WHEN member_role IN ('owner','admin') THEN 1 ELSE 0 END) THEN RAISE EXCEPTION 'PIS_COFINS_ROLE_WRITE_FAILED %',member_role; END IF;
       role_checks:=role_checks+1;
       RESET ROLE;
     END LOOP;

@@ -10,7 +10,7 @@ descricao: Mudanças que afetam respostas da API /api/v1, da mais recente para a
 Mudanças que afetam respostas da API `/api/v1`, da mais recente para a mais antiga.
 
 ## 26/11/2026 — PIS/COFINS opcional por empresa
-- Configuração fiscal aceita `pis_cofins: { "cst": "99", "tipo_retencao": "0" }`. Essa escolha escreve o grupo de PIS/COFINS nas novas DPS, sem base, alíquotas ou valores; não configura todas as empresas automaticamente.
+- Configuração fiscal aceita PIS/COFINS opcional por empresa, com CST 99 e tipo de retenção 0. Essa escolha escreve o grupo nas novas DPS, sem base, alíquotas ou valores; não configura todas as empresas automaticamente.
 - **Reenvie SEMPRE `pis_cofins` em cada PUT para manter a escolha.** Omissão ou `null` remove a configuração anterior. Consultas sem configuração devolvem `pis_cofins: null`; as DPS omitem `tribFed`.
 - Outra combinação ou configuração parcial retorna `422 REGRA_DE_NEGOCIO`, campo `pis_cofins`, mensagem "combinação de PIS/COFINS ainda não suportada". Notas já criadas e suas tentativas posteriores preservam a configuração original.
 - Referência pública explicita a correspondência dos regimes de apuração do Simples com os códigos 1/2/3 da DPS.
